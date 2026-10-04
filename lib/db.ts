@@ -1,13 +1,27 @@
+import "server-only";
+
 import type { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const getMongoUri = () => {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error(
+      "MONGODB_URI is missing. Copy .env.example to .env.local and set it.",
+    );
+  }
+  return uri;
+};
 
-if (!MONGODB_URI) {
-  throw new Error(
-    "MONGODB_URI is missing. Copy .env.example to .env.local and set it.",
-  );
-}
+const getMongoDbName = () => {
+  const dbName = process.env.MONGODB_DB;
+  if (!dbName) {
+    throw new Error(
+      "MONGODB_DB is missing. Copy .env.example to .env.local and set it.",
+    );
+  }
+  return dbName;
+};
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -20,8 +34,8 @@ const cache = (globalForMongoose.__slMongoose ??= { conn: null, promise: null })
 export const dbConnect = async (): Promise<typeof mongoose> => {
   if (cache.conn) return cache.conn;
 
-  cache.promise ??= mongoose.connect(MONGODB_URI as string, {
-    dbName: process.env.MONGODB_DB,
+  cache.promise ??= mongoose.connect(getMongoUri(), {
+    dbName: getMongoDbName(),
     bufferCommands: false,
     serverSelectionTimeoutMS: 10_000,
   });
@@ -30,6 +44,7 @@ export const dbConnect = async (): Promise<typeof mongoose> => {
     cache.conn = await cache.promise;
   } catch (error) {
     cache.promise = null;
+    cachedClient = null;
     throw error;
   }
 

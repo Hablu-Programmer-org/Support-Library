@@ -3,8 +3,8 @@ import type { UserRole } from "@/models/User";
 
 type StaffSessionUser = DefaultSession["user"] & {
   id: string;
-  role: UserRole;
-  isActive: boolean;
+  role?: UserRole;
+  isActive?: boolean;
 };
 
 declare module "next-auth" {

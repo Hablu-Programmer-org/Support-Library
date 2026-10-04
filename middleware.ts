@@ -14,13 +14,19 @@ export default auth((req) => {
   if (pathname.startsWith("/api/auth")) return NextResponse.next();
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next();
 
-  const role = req.auth?.user?.role;
-
   if (!req.auth?.user) {
     const url = new URL("/login", nextUrl);
     url.searchParams.set("callbackUrl", pathname + search);
     return NextResponse.redirect(url);
   }
+
+  if (req.auth.user.isActive === false) {
+    const url = new URL("/login", nextUrl);
+    url.searchParams.set("error", "Inactive");
+    return NextResponse.redirect(url);
+  }
+
+  const role = req.auth.user.role;
 
   if (pathname.startsWith("/dashboard/admin") && role !== "ADMIN") {
     return NextResponse.redirect(new URL("/unauthorized", nextUrl));

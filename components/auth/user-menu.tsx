@@ -7,7 +7,7 @@ interface UserMenuProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
-    role: string;
+    role?: string;
   };
 }
 
@@ -29,7 +29,7 @@ export function UserMenu({ user }: UserMenuProps) {
             <span
               className="text-xs px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full inline-block w-fit mt-1"
             >
-              {user.role}
+              {user.role ?? "VIEWER"}
             </span>
           </div>
         </DropdownItem>

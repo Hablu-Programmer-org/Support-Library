@@ -1,9 +1,34 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 
+const errorMessages: Record<string, string> = {
+  AccessDenied: "আপনার ইমেইল স্টাফ allowlist-এ নেই।",
+  OAuthSignin: "Google login শুরু করা যায়নি। আবার চেষ্টা করুন।",
+  OAuthCallback: "Google login callback ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
+  Inactive: "আপনার staff account inactive করা হয়েছে।",
+};
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginShell />}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const message = error ? errorMessages[error] ?? "লগইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" : null;
+
+  return <LoginShell message={message} />;
+}
+
+function LoginShell({ message }: { message?: string | null }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <Card className="w-full max-w-md border border-gray-200 dark:border-gray-700">
@@ -15,6 +40,11 @@ export default function LoginPage() {
         </CardHeader>
         <CardBody className="pt-0">
           <div className="space-y-4">
+            {message && (
+              <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900/40 dark:bg-danger-950/40 dark:text-danger-200">
+                {message}
+              </div>
+            )}
             <Button
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               className="w-full"

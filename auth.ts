@@ -3,27 +3,11 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 
 import authConfig from "@/auth.config";
+import { isAllowlisted, normalizeEmail, parseAllowlist } from "@/lib/auth-allowlist";
 import { dbConnect, getMongoClient } from "@/lib/db";
 import { UserModel, type UserRole } from "@/models/User";
 
 const initialAdmin = (process.env.INITIAL_ADMIN_EMAIL ?? "").toLowerCase().trim();
-
-const normalizeEmail = (email?: string | null) =>
-  (email ?? "").toLowerCase().trim();
-
-const parseAllowlist = (env?: string) =>
-  (env ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-
-const isAllowlisted = (email?: string | null, allowlist?: string[]) => {
-  const normalized = normalizeEmail(email);
-  if (!normalized || !allowlist?.length) return false;
-  return allowlist.some(
-    (a) => a.startsWith("@") ? normalized.endsWith(a) : normalized === a,
-  );
-};
 
 const adapter = MongoDBAdapter(
   async () => {
@@ -40,6 +24,8 @@ export const ensureStaffUser = async (user: {
   image?: string | null;
 }) => {
   const email = normalizeEmail(user.email);
+  await dbConnect();
+
   const existing = await UserModel.findOne({ email });
 
   if (existing) {
@@ -71,9 +57,16 @@ const config = {
       if (!isAllowlisted(user.email, parseAllowlist(process.env.STAFF_EMAIL_ALLOWLIST))) {
         return false;
       }
+      if (!user.email) return false;
 
-      const profile = await UserModel.findOne({ email: normalizeEmail(user.email) }).lean();
-      if (profile && !profile.isActive) return false;
+      const profile = await ensureStaffUser({
+        id: user.id ?? user.email,
+        email: user.email,
+        name: user.name,
+        image: user.image,
+      });
+
+      if (!profile.isActive) return false;
 
       return true;
     },
@@ -83,6 +76,7 @@ const config = {
       const email = normalizeEmail(token.email ?? "");
       if (!email) return token;
 
+      await dbConnect();
       const profile = await UserModel.findOne({ email }).lean();
       if (!profile || !profile.isActive) {
         token.role = undefined;
@@ -96,12 +90,7 @@ const config = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = (token.id as string) ?? token.sub ?? "";
-        session.user.role = token.role as UserRole;
-        session.user.isActive = token.isActive === true;
-      }
-      return session;
+      return authConfig.callbacks?.session?.({ session, token } as never) ?? session;
     },
   },
   events: {
