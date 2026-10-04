@@ -35,6 +35,12 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/solutions" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
                   সলিউশন
                 </Link>
+                <Link href="/dashboard/search" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
+                  সার্চ
+                </Link>
+                <Link href="/dashboard/analytics" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
+                  অ্যানালিটিক্স
+                </Link>
                 {user.role === "ADMIN" && (
                   <Link
                     href="/dashboard/admin"

@@ -3,6 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { buildSearchRegex, joinSearchText } from "@/lib/search";
 import { slugify } from "@/lib/slug";
 import { solutionArticleInputSchema, type SolutionArticleInput } from "@/lib/validation";
 import { SolutionArticleModel, type SolutionVisibility } from "@/models";
@@ -31,15 +32,8 @@ export type SolutionListParams = {
   limit?: number;
 };
 
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 export const buildSolutionSearchText = (input: Pick<SolutionArticleInput, "title" | "summary" | "body" | "tags">) =>
-  [input.title, input.summary, input.body, ...(input.tags ?? [])]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
+  joinSearchText([input.title, input.summary, input.body, ...(input.tags ?? [])]);
 
 const toSolutionListItem = (solution: LeanDoc): SolutionListItem => ({
   id: String(solution._id),
@@ -115,7 +109,8 @@ export async function listSolutions(params: SolutionListParams = {}) {
   const filter: Record<string, unknown> = { deletedAt: null };
   if (params.visibility) filter.visibility = params.visibility;
   if (params.tag) filter.tags = params.tag.toLowerCase();
-  if (params.q) filter.searchText = { $regex: escapeRegex(params.q.toLowerCase()), $options: "i" };
+  const searchRegex = buildSearchRegex(params.q);
+  if (searchRegex) filter.searchText = searchRegex;
 
   const [items, total] = await Promise.all([
     SolutionArticleModel.find(filter).sort({ updatedAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),

@@ -3,6 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { buildSearchRegex, joinSearchText } from "@/lib/search";
 import { supportCaseInputSchema, type SupportCaseFilter, type SupportCaseInput } from "@/lib/validation";
 import { StudentRefModel, SupportCaseModel, type CaseStatus } from "@/models";
 
@@ -30,15 +31,8 @@ export type CaseListParams = SupportCaseFilter & {
   limit?: number;
 };
 
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
 export const buildCaseSearchText = (input: Pick<SupportCaseInput, "title" | "question" | "courseSlug" | "moduleSlug" | "contentSlug" | "tags">) =>
-  [input.title, input.question, input.courseSlug, input.moduleSlug, input.contentSlug, ...(input.tags ?? [])]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
+  joinSearchText([input.title, input.question, input.courseSlug, input.moduleSlug, input.contentSlug, ...(input.tags ?? [])]);
 
 const toCaseListItem = (item: LeanDoc, students: Map<string, LeanDoc> = new Map()): SupportCaseListItem => {
   const studentRefId = String(item.studentRefId);
@@ -82,7 +76,8 @@ function buildCaseFilter(params: CaseListParams = {}) {
   if (params.tag) filter.tags = params.tag.toLowerCase();
   if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) filter.mentorId = params.mentorId;
   if (params.studentRefId && mongoose.Types.ObjectId.isValid(params.studentRefId)) filter.studentRefId = params.studentRefId;
-  if (params.q) filter.searchText = { $regex: escapeRegex(params.q.toLowerCase()), $options: "i" };
+  const searchRegex = buildSearchRegex(params.q);
+  if (searchRegex) filter.searchText = searchRegex;
   if (params.from || params.to) {
     filter.createdAt = {
       ...(params.from ? { $gte: new Date(params.from) } : {}),

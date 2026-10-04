@@ -3,6 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { buildSearchRegex, joinSearchText } from "@/lib/search";
 import { listCasesByStudent } from "@/lib/services/cases";
 import { studentRefInputSchema, type StudentRefInput } from "@/lib/validation";
 import { StudentRefModel } from "@/models";
@@ -25,14 +26,7 @@ export type StudentListItem = {
 };
 
 export const buildStudentSearchText = (student: Pick<StudentRefInput, "name" | "email" | "phone" | "studentId" | "lmsUserId">) =>
-  [student.name, student.email, student.phone, student.studentId, student.lmsUserId]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-
-const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  joinSearchText([student.name, student.email, student.phone, student.studentId, student.lmsUserId]);
 
 const toStudentListItem = (student: Record<string, unknown>): StudentListItem => ({
   id: String(student._id),
@@ -90,11 +84,8 @@ export async function listStudents(params: StudentListParams = {}) {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const q = params.q?.trim();
-  const filter = q
-    ? {
-        searchText: { $regex: escapeRegex(q.toLowerCase()), $options: "i" },
-      }
-    : {};
+  const searchRegex = buildSearchRegex(q);
+  const filter = searchRegex ? { searchText: searchRegex } : {};
 
   const [items, total] = await Promise.all([
     StudentRefModel.find(filter).sort({ updatedAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),

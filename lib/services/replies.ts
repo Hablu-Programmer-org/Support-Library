@@ -3,6 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { joinSearchText } from "@/lib/search";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportCaseModel, SupportReplyModel, UserModel } from "@/models";
 
@@ -53,7 +54,7 @@ async function refreshCaseReplySearchText(caseId: string) {
   const replies = await SupportReplyModel.find({ caseId, deletedAt: null, isInternalNote: false })
     .select("body")
     .lean();
-  const replyText = replies.map((reply) => reply.body).join(" ").toLowerCase().replace(/\s+/g, " ").trim();
+  const replyText = joinSearchText(replies.map((reply) => String(reply.body)));
 
   if (replyText) {
     await SupportCaseModel.findByIdAndUpdate(caseId, [

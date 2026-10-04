@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-guard";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader } from "@heroui/react";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,11 @@ export default async function AdminPage() {
             <p className="text-sm text-green-700 dark:text-green-400">
               আপনার রোল: <strong>{user.role}</strong>
             </p>
+          </div>
+          <div className="mt-4">
+            <Button as={Link} href="/dashboard/admin/staff" color="primary">
+              Staff Management
+            </Button>
           </div>
         </CardBody>
       </Card>
