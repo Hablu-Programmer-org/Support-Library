@@ -1,28 +1,36 @@
-# Hablu Support Library
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Planning and research repository for Hablu Programmer's support knowledge system.
+## Getting Started
 
-## Goal
+First, run the development server:
 
-Hablu Programmer's support team solves many student problems every day. This project will turn those daily support interactions into a searchable support database and reusable solution library.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-The core idea is simple:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- Record who asked the question: student ID, name, email, course, batch, or any available identifier.
-- Record what they asked: problem title, details, topic, course/batch/module context.
-- Record how it was solved: text answer, files, screenshots, code samples, and video links.
-- Reuse good answers later as solution articles.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Documents
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-- [`docs/project-plan.md`](docs/project-plan.md) - product plan, MVP scope, data model, workflow, and open decisions.
-- [`docs/full-build-plan.md`](docs/full-build-plan.md) - full technical build plan, feature roadmap, testing gates, and known gaps.
-- [`docs/open-source-research.md`](docs/open-source-research.md) - open-source alternatives and fit analysis.
+## Learn More
 
-## Current Status
+To learn more about Next.js, take a look at the following resources:
 
-Planning and product investigation. No implementation has started yet.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Working Decision
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Start with a staff-first support log and solution library using MongoDB. File uploads are deferred; MVP stores external file links and video links only. Build feature-by-feature with verification after each feature.
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
