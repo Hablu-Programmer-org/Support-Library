@@ -17,6 +17,7 @@ Hablu Support Library will store support interactions so the team can search pre
 - Use MongoDB as the database.
 - Defer file upload/storage. MVP stores external file links only.
 - Store video answers as external links, not uploaded video files.
+- Authentication: Google OAuth (Auth.js) only, staff access via email allowlist, initial admin via env var.
 
 ## Product Shape
 
