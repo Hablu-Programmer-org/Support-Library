@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StudentForm } from "@/components/students/student-form";
+import { StatusBadge } from "@/components/cases/status-badge";
 import { requireSession } from "@/lib/auth-guard";
 import { canMutate } from "@/lib/roles";
 import { getStudentHistory } from "@/lib/services/students";
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentDetailPage({ params }: { params: { id: string } }) {
   const session = await requireSession();
-  const { student } = await getStudentHistory(params.id);
+  const { student, cases } = await getStudentHistory(params.id);
   if (!student) notFound();
 
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
@@ -54,8 +55,28 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
       <Card className="border border-gray-200 dark:border-gray-700">
         <CardHeader className="font-semibold">কেস হিস্টোরি</CardHeader>
-        <CardBody className="text-sm text-gray-500 dark:text-gray-400">
-          কেস সার্ভিস তৈরি হলে এই স্টুডেন্টের সব support case এখানে দেখা যাবে।
+        <CardBody className="p-0">
+          {cases.length === 0 ? (
+            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">এই স্টুডেন্টের কোনো support case নেই।</div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {cases.map((supportCase) => (
+                <Link
+                  key={supportCase.id}
+                  href={`/dashboard/cases/${supportCase.id}`}
+                  className="block p-4 transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{supportCase.title}</div>
+                      <div className="line-clamp-1 text-sm text-gray-500 dark:text-gray-400">{supportCase.question}</div>
+                    </div>
+                    <StatusBadge status={supportCase.status} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>

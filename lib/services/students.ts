@@ -3,6 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { listCasesByStudent } from "@/lib/services/cases";
 import { studentRefInputSchema, type StudentRefInput } from "@/lib/validation";
 import { StudentRefModel } from "@/models";
 
@@ -111,5 +112,6 @@ export async function listStudents(params: StudentListParams = {}) {
 
 export async function getStudentHistory(id: string) {
   const student = await getStudentById(id);
-  return { student, cases: [] as never[] };
+  const cases = student ? await listCasesByStudent(id, 20) : null;
+  return { student, cases: cases?.items ?? [] };
 }
