@@ -12,6 +12,7 @@
 | MVP file support | External file links only |
 | Video support | External video links only |
 | Build method | Feature-by-feature |
+| Auth | Google OAuth (Auth.js) with email allowlist; initial admin via env var |
 | Verification | Lint, typecheck, tests, build, and smoke test after each feature |
 
 ## Recommended Stack
@@ -22,9 +23,9 @@
 | Language | TypeScript strict | Safer product iteration and clearer domain models |
 | Database | MongoDB | Flexible support-case data, tags, metadata, replies, and links |
 | ODM | Mongoose | MongoDB-native schema and indexes; better fit than relational modeling for this MVP |
-| Auth | Auth.js / NextAuth | Staff login, role-based access, optional Google login later |
-| Auth DB adapter | Auth.js MongoDB adapter or custom user/session model | MongoDB adapter exists, but connection lifecycle must be managed explicitly |
-| UI | shadcn/ui + Tailwind CSS | Open-code components, easy customization, good admin dashboard fit |
+| Auth | Auth.js (NextAuth) + Google OAuth | Staff login, role-based access, Google login only |
+| Auth DB adapter | Auth.js MongoDB adapter + Mongoose for app models | Auth collections via adapter; product collections via Mongoose |
+| UI | HeroUI + Tailwind CSS | Matches existing Hablu Programmer UI style and workspace conventions |
 | Forms | React Hook Form + Zod | Fast form UX and shared validation |
 | Testing | Vitest + Testing Library + Playwright | Unit/component tests plus critical user-flow smoke tests |
 | File storage | Deferred: Cloudflare R2 | R2 has a useful free tier, but upload/security work should not block MVP |
@@ -60,7 +61,7 @@ Implementation notes:
 Auth.js has a MongoDB adapter, but the adapter does not manage database connections automatically. We must pass a connected `MongoClient` or manage a shared client helper. If this conflicts with Mongoose, choose one of these approaches:
 
 1. Auth.js MongoDB adapter with native `mongodb` client for auth collections, plus Mongoose for product collections.
-2. Credentials/Google login with custom `User` and session logic in Mongoose.
+2. Google login with Auth.js adapter + custom role/active checks in Mongoose UserProfile model.
 
 Recommendation for MVP: start with Auth.js and MongoDB adapter if login requirements are simple. If role handling becomes custom-heavy, keep Auth.js for providers but control app roles in our own `UserProfile` collection.
 
@@ -364,16 +365,18 @@ Acceptance:
 
 Build:
 
-- Login.
-- Logout.
-- Session handling.
+- Auth.js + Google OAuth login.
+- Email allowlist for staff access.
+- Initial admin from env `INITIAL_ADMIN_EMAIL`.
+- Logout and session handling.
 - User roles: Admin, Mentor, Viewer.
-- Protected dashboard.
+- Protected dashboard with role checks (server-side).
 - Role middleware/helper.
 
 Acceptance:
 
 - Unauthenticated user cannot access dashboard.
+- Non-allowlisted Google account cannot access dashboard.
 - Inactive user cannot access dashboard.
 - Viewer cannot mutate data.
 
@@ -580,13 +583,13 @@ Critical smoke flows:
 
 ## Open Questions Before Coding
 
-- UI library final: shadcn/ui or HeroUI?
-- Auth provider: Google login, credentials login, or both?
-- Deployment target: VPS, Vercel, or another platform?
-- MongoDB target: existing Atlas project or new database?
-- Domain/subdomain: what will be used for the standalone app?
-- Will the first users be manually seeded admins/mentors?
-- Should cases support Bengali UI labels from day one?
+- UI library: HeroUI (confirmed)
+- Auth provider: Google login only (confirmed)
+- Deployment target: VPS, Vercel, or another platform? (to be decided)
+- MongoDB target: existing Atlas project or new database? (to be decided)
+- Domain/subdomain: what will be used for the standalone app? (to be decided)
+- Initial admin: configure via env var `INITIAL_ADMIN_EMAIL` (or manual seed) — decide
+- Should cases support Bengali UI labels from day one? (yes recommended)
 
 ## Recommended First Development Task
 
