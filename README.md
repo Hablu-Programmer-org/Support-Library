@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hablu Support Library
 
-## Getting Started
+Staff-first support library for Hablu Programmer. Mentors can record student support cases, add answers, internal notes, external file/video links, and convert repeated issues into reusable solution articles.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js 14 App Router
+- TypeScript strict
+- Auth.js v5 with Google OAuth only
+- MongoDB + Mongoose
+- HeroUI v2 + Tailwind CSS
+- Vitest and Playwright
+
+## Setup
+
+```powershell
+cmd /c "npm install --legacy-peer-deps"
+copy .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Fill `.env.local`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `MONGODB_URI`
+- `MONGODB_DB`
+- `AUTH_SECRET`
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- `AUTH_URL=http://localhost:3000`
+- `AUTH_TRUST_HOST=true`
+- `STAFF_EMAIL_ALLOWLIST`
+- `INITIAL_ADMIN_EMAIL`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run locally:
 
-## Learn More
+```powershell
+cmd /c "npm run dev"
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Database Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+cmd /c "npm run db:indexes"
+cmd /c "npm run db:seed"
+cmd /c "npm run db:seed -- --demo"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`db:seed` promotes `SEED_ADMIN_EMAIL` or `INITIAL_ADMIN_EMAIL` to `ADMIN` idempotently.
 
-## Deploy on Vercel
+## Verification
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+cmd /c "npm run lint"
+cmd /c "npm run typecheck"
+cmd /c "npm test"
+cmd /c "npm run build"
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Optional browser smoke:
+
+```powershell
+cmd /c "npx playwright install chromium"
+cmd /c "npm run test:e2e"
+```
+
+## Core Flows
+
+- Google login with staff email allowlist
+- Initial admin via `INITIAL_ADMIN_EMAIL`
+- Admin promotes staff from `VIEWER` to `MENTOR` or `ADMIN`
+- Mentor creates student records
+- Mentor creates support cases
+- Mentor adds replies, internal notes, external file links and video links
+- Mentor creates reusable solution articles
+- Cases link to solution articles via `case_solution_links`
+- Global search covers cases and solutions
+- Dashboard and analytics show real DB counts
+
+## Vercel Deploy Notes
+
+Set all env vars in Vercel project settings. Use MongoDB Atlas and allow Vercel outbound access. Auth callback URL:
+
+```text
+https://YOUR_DOMAIN/api/auth/callback/google
+```
+
+DB-backed routes use Node.js runtime. Direct uploads are not implemented; MVP stores external links only.
+
+## Deferred
+
+- Cloudflare R2 uploads
+- Student self-service portal
+- Public knowledge base
+- AI-assisted search/answers
+- Advanced E2E authenticated role matrix
