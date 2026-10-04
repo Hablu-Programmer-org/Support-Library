@@ -14,6 +14,9 @@ Hablu Support Library will store support interactions so the team can search pre
 - Support daily support-center usage by mentors or support agents.
 - Make previous problems and answers searchable.
 - Keep reusable solutions separate from individual student cases.
+- Use MongoDB as the database.
+- Defer file upload/storage. MVP stores external file links only.
+- Store video answers as external links, not uploaded video files.
 
 ## Product Shape
 
@@ -87,6 +90,8 @@ Recommended optional fields:
 - Answer text
 - File attachments
 - Video links
+
+MVP note: attachments mean external file links first. Cloudflare R2 upload is a deferred todo.
 
 ### Support Cases
 
@@ -186,21 +191,23 @@ Fields:
 - `authorId`
 - `body`
 - `isInternalNote`
+- `fileLinks` optional
+- `videoLinks` optional
 - `createdAt`
 
-### Support Attachment
+### External File Link
 
 Fields:
 
-- `id`
-- `caseId` optional
-- `replyId` optional
-- `solutionArticleId` optional
-- `fileName`
-- `mimeType`
-- `size`
-- `storageKey`
+- `title`
 - `url`
+- `type` optional
+- `note` optional
+
+Notes:
+
+- MVP stores links only: Google Drive, GitHub Gist, CodeSandbox, StackBlitz, Cloudinary, or other trusted sources.
+- Actual upload to Cloudflare R2 is deferred.
 
 ### Support Video Link
 
@@ -226,6 +233,8 @@ Fields:
 - `body`
 - `tags`
 - `visibility`: `internal`, `public`
+- `fileLinks` optional
+- `videoLinks` optional
 - `createdBy`
 - `updatedBy`
 - `createdAt`
@@ -272,6 +281,7 @@ Video links should include text summaries because the URL alone is not searchabl
 - A mentor can create a reusable solution article from a support case.
 - A support case can link to one or more solution articles.
 - Student-specific data stays internal by default.
+- MVP file support works through external links only.
 
 ## Future Features
 
@@ -279,6 +289,7 @@ These are not MVP requirements.
 
 - Student self-service portal.
 - Public knowledge base for common problems.
+- Cloudflare R2 file upload.
 - Similar problem suggestions while creating a case.
 - AI-assisted search and answer drafting.
 - Zoom recording transcript import.
@@ -290,10 +301,13 @@ These are not MVP requirements.
 
 - Will students create tickets themselves, or only mentors?
 - Should this be a standalone app or part of the existing Hablu Programmer LMS?
-- Should files be uploaded into our storage or stored as external links first?
 - What is the first target search technology: database text search, external search engine, or AI-assisted search?
 - Should selected solution articles become public for students?
 - Do we trial Frappe Helpdesk/Zammad before building custom?
+
+## Implementation Reference
+
+See [`full-build-plan.md`](full-build-plan.md) for the current technical plan, feature roadmap, verification gates, and known gaps.
 
 ## Recommended Next Step
 

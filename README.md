@@ -16,6 +16,7 @@ The core idea is simple:
 ## Documents
 
 - [`docs/project-plan.md`](docs/project-plan.md) - product plan, MVP scope, data model, workflow, and open decisions.
+- [`docs/full-build-plan.md`](docs/full-build-plan.md) - full technical build plan, feature roadmap, testing gates, and known gaps.
 - [`docs/open-source-research.md`](docs/open-source-research.md) - open-source alternatives and fit analysis.
 
 ## Current Status
@@ -24,4 +25,4 @@ Planning and product investigation. No implementation has started yet.
 
 ## Working Decision
 
-Start with a staff-first support log and solution library. Before building the full custom product, run a short workflow trial against the closest open-source candidates: Frappe Helpdesk and Zammad.
+Start with a staff-first support log and solution library using MongoDB. File uploads are deferred; MVP stores external file links and video links only. Build feature-by-feature with verification after each feature.
