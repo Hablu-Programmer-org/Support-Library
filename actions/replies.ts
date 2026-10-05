@@ -56,7 +56,7 @@ export async function editReplyAction(caseId: string, replyId: string, formData:
   if (!guard.ok) redirect("/unauthorized");
 
   const body = formValue(formData, "body");
-  if (body) await editReply(replyId, body, guard.session.user.id);
+  if (body) await editReply(replyId, body, guard.session.user.id, guard.session.user.role);
   revalidatePath(`/dashboard/cases/${caseId}`);
 }
 
@@ -64,6 +64,6 @@ export async function deleteReplyAction(caseId: string, replyId: string) {
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) redirect("/unauthorized");
 
-  await softDeleteReply(replyId, guard.session.user.id);
+  await softDeleteReply(replyId, guard.session.user.id, guard.session.user.role);
   revalidatePath(`/dashboard/cases/${caseId}`);
 }

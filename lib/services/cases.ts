@@ -3,7 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { buildSearchRegex, joinSearchText } from "@/lib/search";
+import { buildCaseSearchText, buildSearchRegex } from "@/lib/search";
 import { supportCaseInputSchema, type SupportCaseFilter, type SupportCaseInput } from "@/lib/validation";
 import { StudentRefModel, SupportCaseModel, type CaseStatus } from "@/models";
 
@@ -30,9 +30,6 @@ export type CaseListParams = SupportCaseFilter & {
   page?: number;
   limit?: number;
 };
-
-export const buildCaseSearchText = (input: Pick<SupportCaseInput, "title" | "question" | "courseSlug" | "moduleSlug" | "contentSlug" | "tags">) =>
-  joinSearchText([input.title, input.question, input.courseSlug, input.moduleSlug, input.contentSlug, ...(input.tags ?? [])]);
 
 const toCaseListItem = (item: LeanDoc, students: Map<string, LeanDoc> = new Map()): SupportCaseListItem => {
   const studentRefId = String(item.studentRefId);
@@ -176,6 +173,31 @@ export async function listCases(params: CaseListParams = {}) {
 
 export async function listCasesByStudent(studentRefId: string, limit = 20) {
   return listCases({ studentRefId, page: 1, limit });
+}
+
+/**
+ * Distinct course slugs and batch numbers that actually exist on live cases, for
+ * populating the filter dropdowns. Reading them from the data keeps the dropdowns
+ * from offering combinations that can never match.
+ */
+export async function listCaseFilterOptions() {
+  await dbConnect();
+
+  const [courseSlugs, batchNos] = await Promise.all([
+    SupportCaseModel.distinct("courseSlug", {
+      deletedAt: null,
+      courseSlug: { $nin: [null, ""] },
+    }) as Promise<unknown[]>,
+    SupportCaseModel.distinct("batchNo", {
+      deletedAt: null,
+      batchNo: { $nin: [null] },
+    }) as Promise<unknown[]>,
+  ]);
+
+  return {
+    courseSlugs: courseSlugs.filter((value): value is string => typeof value === "string").sort(),
+    batchNos: batchNos.filter((value): value is number => typeof value === "number").sort((a, b) => a - b),
+  };
 }
 
 export async function getCaseDetail(id: string) {

@@ -1,6 +1,18 @@
 import type { Metadata } from "next";
+import { Hind_Siliguri } from "next/font/google";
+
 import "./globals.css";
 import { Providers } from "./providers";
+
+// next/font downloads and self-hosts the file, so there is no runtime request to
+// Google and no layout shift. Weights cover the font-normal/medium/semibold/bold
+// utilities used across the app.
+const bangla = Hind_Siliguri({
+  subsets: ["bengali", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-bangla",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Hablu Support Library",
@@ -13,7 +25,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn" suppressHydrationWarning className="dark">
+    // suppressHydrationWarning is required: next-themes sets the `dark` class on
+    // <html> before React hydrates, so the server and client markup differ.
+    <html lang="bn" suppressHydrationWarning className={bangla.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

@@ -3,21 +3,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-  }
-}
-
-@layer base {
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Hind Siliguri", "Noto Sans Bengali", system-ui, sans-serif;
+    /* font-family is set via tailwind.config.ts -> var(--font-bangla) from next/font */
   }
 }
 

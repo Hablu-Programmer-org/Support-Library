@@ -9,7 +9,14 @@ const config: Config = {
   ],
   darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        // Set by next/font in app/layout.tsx; falls back to the system stack if
+        // the variable is ever missing, so text is never rendered in a
+        // fontless state.
+        sans: ["var(--font-bangla)", "system-ui", "sans-serif"],
+      },
+    },
   },
   plugins: [heroui()],
 };

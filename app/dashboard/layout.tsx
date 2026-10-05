@@ -1,6 +1,8 @@
 import { requireSession } from "@/lib/auth-guard";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserMenu } from "@/components/auth/user-menu";
+import { NavLinks } from "@/components/layout/nav-links";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -22,36 +24,10 @@ export default async function DashboardLayout({
               <Link href="/dashboard" className="text-xl font-bold text-primary-600 dark:text-primary-400">
                 Hablu Support Library
               </Link>
-              <nav className="flex items-center gap-4 text-sm">
-                <Link href="/dashboard" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  ড্যাশবোর্ড
-                </Link>
-                <Link href="/dashboard/students" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  স্টুডেন্ট
-                </Link>
-                <Link href="/dashboard/cases" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  কেস
-                </Link>
-                <Link href="/dashboard/solutions" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  সলিউশন
-                </Link>
-                <Link href="/dashboard/search" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  সার্চ
-                </Link>
-                <Link href="/dashboard/analytics" className="text-gray-600 dark:text-gray-300 hover:text-primary-600">
-                  অ্যানালিটিক্স
-                </Link>
-                {user.role === "ADMIN" && (
-                  <Link
-                    href="/dashboard/admin"
-                    className="text-gray-600 dark:text-gray-300 hover:text-primary-600"
-                  >
-                    অ্যাডমিন
-                  </Link>
-                )}
-              </nav>
+              <NavLinks role={user.role} />
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <UserMenu user={user} />
               <SignOutButton />
             </div>

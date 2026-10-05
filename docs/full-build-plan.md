@@ -87,6 +87,24 @@ Phase 2 search options:
 - Meilisearch or Typesense if we need independent, typo-tolerant search.
 - AI semantic search later, only after enough high-quality solution articles exist.
 
+### Search Benchmark Result
+
+`npm run bench:search` measured the shipped substring-regex search against a
+token array and a MongoDB text index on a seeded 5k collection, then scaled the
+current strategy to 55k. Full numbers are in `docs/implementation.md`.
+
+- The shipped strategy scans every key: ~9ms at 5k docs, ~103ms at 55k.
+- Token and text-index matching examine only matching keys: ~0.3-1ms at 5k.
+- So the gap is not a rounding error, it is a change in complexity class once
+  an external engine is introduced.
+
+Conclusion: Atlas Search / Meilisearch / Typesense are **not** justified for the
+MVP. The cheapest real fix is inside MongoDB, and the remaining question is only
+which MongoDB strategy to adopt. Recommended: an indexed `searchTokens` array,
+with substring matching retained as a fallback for very short queries so partial
+words still work. That trades exact substring semantics for index usage, which is
+a product decision, so it is recorded rather than applied.
+
 ### File Upload Deferred
 
 Cloudflare R2 has a free tier, but uploading files safely is not just storage. It needs:
@@ -461,6 +479,9 @@ Acceptance:
 
 ### Phase 7 - Case-Solution Linking
 
+Status: **partial** — link/unlink and both-side display are done. "Create solution
+from case answer" prefill flow is still open.
+
 Build:
 
 - Link existing solution to case.
@@ -585,11 +606,13 @@ Critical smoke flows:
 
 - UI library: HeroUI (confirmed)
 - Auth provider: Google login only (confirmed)
-- Deployment target: VPS, Vercel, or another platform? (to be decided)
+- Deployment target: VPS, Vercel, or another platform? **still undecided — must be
+  decided before deploy.** Keep env/config target-agnostic until then; nothing in
+  the repo should assume a specific provider.
 - MongoDB target: existing Atlas project or new database? (to be decided)
 - Domain/subdomain: what will be used for the standalone app? (to be decided)
-- Initial admin: configure via env var `INITIAL_ADMIN_EMAIL` (or manual seed) — decide
-- Should cases support Bengali UI labels from day one? (yes recommended)
+- Initial admin: `INITIAL_ADMIN_EMAIL` env var (confirmed)
+- Should cases support Bengali UI labels from day one? (yes, confirmed)
 
 ## Recommended First Development Task
 

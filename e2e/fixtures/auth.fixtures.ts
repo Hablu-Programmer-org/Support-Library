@@ -5,7 +5,8 @@ import path from "path";
 import dotenv from "dotenv";
 
 import { dbConnect } from "../../lib/db";
-import { UserModel, type UserRole } from "../../models/User";
+import { UserModel } from "../../models/User";
+import { STAFF_USERS, staffDisplayName } from "./staff-users";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });
 
@@ -16,21 +17,15 @@ const secret: string = authSecret;
 // Default cookie name for development (non-HTTPS)
 const sessionTokenCookieName = "authjs.session-token";
 
-const users = [
-  { id: "0000000000000000000000a1", name: "admin", email: "owner@hablu-programmer.com", role: "ADMIN", isActive: true },
-  { id: "0000000000000000000000b2", name: "mentor", email: "mentor@hablu-programmer.com", role: "MENTOR", isActive: true },
-  { id: "0000000000000000000000c3", name: "viewer", email: "viewer@hablu-programmer.com", role: "VIEWER", isActive: true },
-];
-
-async function upsertStaffUser(user: (typeof users)[number]) {
+async function upsertStaffUser(user: (typeof STAFF_USERS)[number]) {
   await dbConnect();
   await UserModel.updateOne(
     { _id: new mongoose.Types.ObjectId(user.id) },
     {
       $set: {
-        name: `${user.name.charAt(0).toUpperCase() + user.name.slice(1)} User`,
+        name: staffDisplayName(user.name),
         email: user.email,
-        role: user.role as UserRole,
+        role: user.role,
         isActive: user.isActive,
         lastLoginAt: new Date(),
       },
@@ -39,13 +34,13 @@ async function upsertStaffUser(user: (typeof users)[number]) {
   );
 }
 
-async function createSessionToken(user: typeof users[0]) {
+async function createSessionToken(user: (typeof STAFF_USERS)[number]) {
   return encode({
     token: {
       id: user.id,
       sub: user.id,
       email: user.email,
-      name: `${user.name.charAt(0).toUpperCase() + user.name.slice(1)} User`,
+      name: staffDisplayName(user.name),
       role: user.role,
       isActive: user.isActive,
     },
@@ -55,7 +50,7 @@ async function createSessionToken(user: typeof users[0]) {
   });
 }
 
-for (const user of users) {
+for (const user of STAFF_USERS) {
   setup(`authenticate as ${user.name}`, async ({ page }) => {
     await upsertStaffUser(user);
     const token = await createSessionToken(user);

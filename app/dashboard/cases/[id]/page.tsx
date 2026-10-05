@@ -56,6 +56,11 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             {supportCase.studentId ? ` · ${supportCase.studentId}` : ""}
           </p>
         </div>
+        {canEdit && (
+          <Button as={Link} href={`/dashboard/solutions/new?fromCase=${supportCase.id}`} color="primary" variant="flat">
+            এই কেস থেকে সলিউশন বানান
+          </Button>
+        )}
       </div>
 
       <Card className="border border-gray-200 dark:border-gray-700">
@@ -112,7 +117,12 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         <CardHeader className="font-semibold">Replies & Internal Notes</CardHeader>
         <CardBody className="space-y-4">
           {canEdit && <ReplyComposer caseId={supportCase.id} />}
-          <CaseTimeline caseId={supportCase.id} replies={replies} canMutate={canEdit} />
+          <CaseTimeline
+            caseId={supportCase.id}
+            replies={replies}
+            viewerId={session.user.id}
+            viewerRole={session.user.role}
+          />
         </CardBody>
       </Card>
 

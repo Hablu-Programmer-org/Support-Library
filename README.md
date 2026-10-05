@@ -46,6 +46,19 @@ cmd /c "npm run db:seed -- --demo"
 
 `db:seed` promotes `SEED_ADMIN_EMAIL` or `INITIAL_ADMIN_EMAIL` to `ADMIN` idempotently.
 
+Cleanup and diagnostics:
+
+```powershell
+cmd /c "npm run clean:e2e-artifacts"          # dry run: reports what E2E left behind
+cmd /c "npm run clean:e2e-artifacts -- --apply"
+cmd /c "npm run bench:search"                 # search strategy benchmark
+cmd /c "npm run bench:search -- --docs 20000"
+```
+
+`bench:search` seeds a throwaway collection in the test database and prints a
+markdown comparison of the search strategies plus a scaling curve. It refuses to
+run against the development database. Findings: `docs/implementation.md`.
+
 ## Verification
 
 ```powershell
@@ -62,6 +75,13 @@ cmd /c "npx playwright install chromium"
 cmd /c "npm run test:e2e"
 ```
 
+`test:e2e` requirements:
+
+- A reachable MongoDB (it upserts test staff users).
+- `.env.local` present — `AUTH_SECRET` and `MONGODB_URI` are read.
+- Runs against a dedicated test database (`MONGODB_TEST_DB`) and starts its own
+  dev server on port `3100` so it never touches a dev server on `3000`.
+
 ## Core Flows
 
 - Google login with staff email allowlist
@@ -72,18 +92,25 @@ cmd /c "npm run test:e2e"
 - Mentor adds replies, internal notes, external file links and video links
 - Mentor creates reusable solution articles
 - Cases link to solution articles via `case_solution_links`
+- A case can be turned into a solution draft with fields prefilled from the case and its latest public reply
+- Cases list filters by course, batch, mentor and date range
 - Global search covers cases and solutions
-- Dashboard and analytics show real DB counts
+- Dashboard and analytics show real DB counts, per-course and per-batch breakdowns, and mentor workload (ADMIN/MENTOR only)
 
-## Vercel Deploy Notes
+## Deploy Notes
 
-Set all env vars in Vercel project settings. Use MongoDB Atlas and allow Vercel outbound access. Auth callback URL:
+Deployment target is **undecided (VPS vs Vercel)**. Until it is picked, keep
+configuration provider-agnostic.
+
+If Vercel is chosen: set all env vars in project settings, use MongoDB Atlas, and
+allow Vercel outbound access. Auth callback URL:
 
 ```text
 https://YOUR_DOMAIN/api/auth/callback/google
 ```
 
-DB-backed routes use Node.js runtime. Direct uploads are not implemented; MVP stores external links only.
+DB-backed routes use Node.js runtime. Direct uploads are not implemented; MVP
+stores external links only.
 
 ## Deferred
 
@@ -91,4 +118,5 @@ DB-backed routes use Node.js runtime. Direct uploads are not implemented; MVP st
 - Student self-service portal
 - Public knowledge base
 - AI-assisted search/answers
-- Advanced E2E authenticated role matrix
+- Service-level integration tests
+- Search engine upgrade (Atlas Search / Meilisearch / Typesense)

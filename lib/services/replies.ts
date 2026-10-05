@@ -3,7 +3,8 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { joinSearchText } from "@/lib/search";
+import { isAdmin, type UserRole } from "@/lib/roles";
+import { buildCaseSearchTextWithReplies } from "@/lib/search";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportCaseModel, SupportReplyModel, UserModel } from "@/models";
 
@@ -50,27 +51,43 @@ async function buildAuthorMap(replies: LeanDoc[]) {
   return new Map(authors.map((author) => [String(author._id), author as LeanDoc]));
 }
 
+/**
+ * Rebuilds a case's denormalized `searchText` from its own fields plus every
+ * non-internal, non-deleted reply body.
+ *
+ * This recomputes from the case's fields instead of appending to the stored value
+ * with an aggregation pipeline. The earlier pipeline concatenated only
+ * `$title`/`$question`/`$tags`, which silently dropped
+ * courseSlug/moduleSlug/contentSlug as soon as a reply existed, and left stale
+ * reply text behind once the last public reply was removed.
+ */
 async function refreshCaseReplySearchText(caseId: string) {
-  const replies = await SupportReplyModel.find({ caseId, deletedAt: null, isInternalNote: false })
-    .select("body")
-    .lean();
-  const replyText = joinSearchText(replies.map((reply) => String(reply.body)));
+  const [supportCase, replies] = await Promise.all([
+    SupportCaseModel.findById(caseId).lean(),
+    SupportReplyModel.find({ caseId, deletedAt: null, isInternalNote: false })
+      .select("body")
+      .lean(),
+  ]);
+  if (!supportCase) return;
 
-  if (replyText) {
-    await SupportCaseModel.findByIdAndUpdate(caseId, [
-      {
-        $set: {
-          searchText: {
-            $trim: {
-              input: {
-                $concat: ["$title", " ", "$question", " ", { $reduce: { input: "$tags", initialValue: "", in: { $concat: ["$$value", " ", "$$this"] } } }, " ", replyText],
-              },
-            },
+  await SupportCaseModel.updateOne(
+    { _id: caseId },
+    {
+      $set: {
+        searchText: buildCaseSearchTextWithReplies(
+          {
+            title: supportCase.title,
+            question: supportCase.question,
+            courseSlug: supportCase.courseSlug,
+            moduleSlug: supportCase.moduleSlug,
+            contentSlug: supportCase.contentSlug,
+            tags: supportCase.tags,
           },
-        },
+          replies.map((reply) => reply.body),
+        ),
       },
-    ]);
-  }
+    },
+  );
 }
 
 export async function addReply(input: SupportReplyInput, authorId: string) {
@@ -98,12 +115,29 @@ export async function listReplies(caseId: string, includeInternal = true) {
   return (replies as LeanDoc[]).map((reply) => toReplyListItem(reply, authors));
 }
 
-export async function editReply(replyId: string, body: string, actorId: string) {
+/**
+ * Reply mutation is limited to the author, plus ADMIN as an override.
+ *
+ * Both edit and delete must use this, otherwise the UI shows a control that
+ * silently does nothing for a mentor acting on someone else's reply.
+ */
+function replyMutationFilter(replyId: string, actorId: string, actorRole?: UserRole | null) {
+  const base: Record<string, unknown> = { _id: replyId, deletedAt: null };
+  if (isAdmin(actorRole ?? "VIEWER")) return base;
+  return { ...base, authorId: actorId };
+}
+
+export async function editReply(
+  replyId: string,
+  body: string,
+  actorId: string,
+  actorRole?: UserRole | null,
+) {
   if (!mongoose.Types.ObjectId.isValid(replyId)) return null;
   await dbConnect();
 
   const reply = await SupportReplyModel.findOneAndUpdate(
-    { _id: replyId, authorId: actorId, deletedAt: null },
+    replyMutationFilter(replyId, actorId, actorRole),
     { body: body.trim(), editedAt: new Date() },
     { new: true, runValidators: true },
   ).lean();
@@ -112,12 +146,16 @@ export async function editReply(replyId: string, body: string, actorId: string) 
   return reply ? toReplyListItem(reply) : null;
 }
 
-export async function softDeleteReply(replyId: string, actorId: string) {
+export async function softDeleteReply(
+  replyId: string,
+  actorId: string,
+  actorRole?: UserRole | null,
+) {
   if (!mongoose.Types.ObjectId.isValid(replyId)) return null;
   await dbConnect();
 
   const reply = await SupportReplyModel.findOneAndUpdate(
-    { _id: replyId, authorId: actorId, deletedAt: null },
+    replyMutationFilter(replyId, actorId, actorRole),
     { deletedAt: new Date() },
     { new: true },
   ).lean();

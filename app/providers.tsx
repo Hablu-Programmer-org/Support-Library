@@ -2,6 +2,7 @@
 
 import { HeroUIProvider } from "@heroui/system";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import type { FC, ReactNode } from "react";
 
@@ -12,7 +13,14 @@ export const Providers: FC<Props> = ({ children }) => {
 
   return (
     <SessionProvider>
-      <HeroUIProvider navigate={router.push}>{children}</HeroUIProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <HeroUIProvider navigate={router.push}>{children}</HeroUIProvider>
+      </ThemeProvider>
     </SessionProvider>
   );
 };

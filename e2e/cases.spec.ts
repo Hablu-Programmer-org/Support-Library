@@ -44,5 +44,21 @@ test.describe("Case CRUD (mentor)", () => {
     await statusForm.locator('select[name="status"]').selectOption("SOLVED");
     await statusForm.getByRole("button", { name: "আপডেট" }).click();
     await expect(page.locator("span").filter({ hasText: /^সলভড$/ }).first()).toBeVisible();
+
+    // Edit controls are author-scoped: this mentor owns the reply added above.
+    const reply = page.locator("article").filter({ hasText: "Use public folder with /image.png" });
+    await reply.getByRole("button", { name: "এডিট" }).click();
+
+    // While editing, the body paragraph is replaced by the editor, so anchor the
+    // editor on its own label rather than on the old body text.
+    const editor = page.locator("article").filter({ hasText: "উত্তর সম্পাদনা" });
+    await editor.locator('textarea[name="body"]').fill("Edited: use /public/image.png");
+    await editor.getByRole("button", { name: "সংরক্ষণ" }).click();
+
+    await expect(
+      page.locator("article").filter({ hasText: "Edited: use /public/image.png" }),
+    ).toBeVisible();
+    await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toHaveCount(0);
+    await expect(page.locator("article").filter({ hasText: "edited" }).first()).toBeVisible();
   });
 });

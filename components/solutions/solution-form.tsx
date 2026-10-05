@@ -2,8 +2,17 @@ import { Button, Card, CardBody, Input, Textarea } from "@heroui/react";
 
 import { createSolutionAction, updateSolutionAction } from "@/actions/solutions";
 import type { SolutionListItem } from "@/lib/services/solutions";
+import type { SolutionPrefill } from "@/lib/solution-prefill";
 
-export function SolutionForm({ solution, canPublish = false }: { solution?: SolutionListItem; canPublish?: boolean }) {
+export function SolutionForm({
+  solution,
+  defaults,
+  canPublish = false,
+}: {
+  solution?: SolutionListItem;
+  defaults?: SolutionPrefill;
+  canPublish?: boolean;
+}) {
   const action = solution ? updateSolutionAction.bind(null, solution.slug) : createSolutionAction;
 
   return (
@@ -11,12 +20,38 @@ export function SolutionForm({ solution, canPublish = false }: { solution?: Solu
       <CardBody>
         <form action={action} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Input name="title" label="টাইটেল" defaultValue={solution?.title} isRequired minLength={5} maxLength={200} />
+            <Input
+              name="title"
+              label="টাইটেল"
+              defaultValue={solution?.title ?? defaults?.title}
+              isRequired
+              minLength={5}
+              maxLength={200}
+            />
             <Input name="slug" label="Slug" defaultValue={solution?.slug} description="খালি রাখলে title থেকে তৈরি হবে।" />
           </div>
-          <Textarea name="summary" label="Summary" defaultValue={solution?.summary} isRequired minRows={2} maxLength={500} />
-          <Textarea name="body" label="Step-by-step answer" defaultValue={solution?.body} isRequired minRows={10} maxLength={100_000} />
-          <Input name="tags" label="Tags" defaultValue={solution?.tags.join(", ")} description="কমা দিয়ে আলাদা করুন।" />
+          <Textarea
+            name="summary"
+            label="Summary"
+            defaultValue={solution?.summary ?? defaults?.summary}
+            isRequired
+            minRows={2}
+            maxLength={500}
+          />
+          <Textarea
+            name="body"
+            label="Step-by-step answer"
+            defaultValue={solution?.body ?? defaults?.body}
+            isRequired
+            minRows={10}
+            maxLength={100_000}
+          />
+          <Input
+            name="tags"
+            label="Tags"
+            defaultValue={solution ? solution.tags.join(", ") : defaults?.tags}
+            description="কমা দিয়ে আলাদা করুন।"
+          />
 
           <div className="grid gap-4 md:grid-cols-2">
             <Textarea
