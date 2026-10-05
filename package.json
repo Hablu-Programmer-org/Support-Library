@@ -6,6 +6,7 @@
     "@heroui/react": "^2.8.10",
     "@heroui/system": "^2.4.28",
     "@heroui/theme": "^2.4.26",
+    "dotenv": "^18.0.5",
     "framer-motion": "^12.43.0",
     "mongodb": "^6.21.0",
     "mongoose": "^8.24.4",

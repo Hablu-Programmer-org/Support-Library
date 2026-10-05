@@ -1,5 +1,3 @@
-import "server-only";
-
 import type { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 
