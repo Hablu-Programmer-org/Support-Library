@@ -19,20 +19,20 @@ export function LinkSolutionPanel({
   const available = allSolutions.filter((solution) => !linkedIds.has(solution.id));
 
   return (
-    <Card className="border border-gray-200 dark:border-gray-700">
+    <Card className="border border-slate-200 dark:border-slate-700">
       <CardHeader className="font-semibold">Linked Solutions</CardHeader>
       <CardBody className="space-y-4">
         {linkedSolutions.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">এই কেসে কোনো solution linked নেই।</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">এই কেসে কোনো solution linked নেই।</p>
         ) : (
           <div className="space-y-2">
             {linkedSolutions.map((solution) => (
-              <div key={solution.id} className="flex flex-col gap-2 rounded-xl border border-gray-200 p-3 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+              <div key={solution.id} className="flex flex-col gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <Link href={`/dashboard/solutions/${solution.slug}`} className="font-medium text-primary hover:underline">
                     {solution.title}
                   </Link>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{solution.summary}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{solution.summary}</p>
                 </div>
                 {canMutate && (
                   <form action={unlinkSolutionAction.bind(null, caseId, solution.id)}>
@@ -49,7 +49,7 @@ export function LinkSolutionPanel({
             <select
               name="solutionArticleId"
               required
-              className="flex-1 rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+              className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
               defaultValue=""
             >
               <option value="" disabled>Solution select করুন</option>

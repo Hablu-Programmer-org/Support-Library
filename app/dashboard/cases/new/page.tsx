@@ -17,7 +17,7 @@ export default async function NewCasePage({ searchParams }: { searchParams?: { s
           ← কেস লিস্টে ফিরে যান
         </Link>
         <h1 className="mt-2 text-2xl font-bold">নতুন সাপোর্ট কেস</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Required: student, title, question, status. বাকিগুলো optional.
         </p>
       </div>

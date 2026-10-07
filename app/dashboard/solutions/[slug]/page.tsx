@@ -30,7 +30,7 @@ export default async function SolutionDetailPage({ params }: { params: { slug: s
             <h1 className="text-2xl font-bold">{solution.title}</h1>
             <Chip size="sm" variant="flat" color={solution.visibility === "PUBLIC" ? "success" : "default"}>{solution.visibility}</Chip>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">/{solution.slug}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">/{solution.slug}</p>
         </div>
         {isAdmin && solution.visibility !== "PUBLIC" && (
           <form action={publishSolutionAction.bind(null, solution.slug)}>
@@ -39,33 +39,33 @@ export default async function SolutionDetailPage({ params }: { params: { slug: s
         )}
       </div>
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">সলিউশন</CardHeader>
         <CardBody className="space-y-4">
-          <p className="text-gray-600 dark:text-gray-300">{solution.summary}</p>
+          <p className="text-slate-600 dark:text-slate-300">{solution.summary}</p>
           <div className="flex flex-wrap gap-2">
-            {solution.tags.map((tag) => <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">{tag}</span>)}
+            {solution.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">{tag}</span>)}
           </div>
-          <p className="whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-200">{solution.body}</p>
+          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{solution.body}</p>
           <LinkList fileLinks={solution.fileLinks} videoLinks={solution.videoLinks} />
         </CardBody>
       </Card>
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">Linked Cases</CardHeader>
         <CardBody>
           {linkedCases.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">এই solution এখনো কোনো case-এর সাথে linked না।</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">এই solution এখনো কোনো case-এর সাথে linked না।</p>
           ) : (
             <div className="space-y-2">
               {linkedCases.map((supportCase) => (
                 <Link
                   key={supportCase.id}
                   href={`/dashboard/cases/${supportCase.id}`}
-                  className="block rounded-xl border border-gray-200 p-3 transition hover:border-primary dark:border-gray-700"
+                  className="block rounded-xl border border-slate-200 p-3 transition hover:border-primary dark:border-slate-700"
                 >
                   <div className="font-medium text-primary">{supportCase.title}</div>
-                  <div className="line-clamp-1 text-xs text-gray-500 dark:text-gray-400">{supportCase.question}</div>
+                  <div className="line-clamp-1 text-xs text-slate-500 dark:text-slate-400">{supportCase.question}</div>
                 </Link>
               ))}
             </div>

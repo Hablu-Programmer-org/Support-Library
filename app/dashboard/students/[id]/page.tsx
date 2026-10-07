@@ -25,7 +25,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
             ← স্টুডেন্ট লিস্টে ফিরে যান
           </Link>
           <h1 className="mt-2 text-2xl font-bold">{student.name}</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {[student.studentId, student.email, student.phone].filter(Boolean).join(" · ") || "যোগাযোগ/আইডি যোগ করা হয়নি"}
           </p>
         </div>
@@ -36,7 +36,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
         )}
       </div>
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">স্টুডেন্ট তথ্য</CardHeader>
         <CardBody className="grid gap-3 text-sm sm:grid-cols-2">
           <Info label="স্টুডেন্ট আইডি" value={student.studentId} />
@@ -53,23 +53,23 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
         </section>
       )}
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">কেস হিস্টোরি</CardHeader>
         <CardBody className="p-0">
           {cases.length === 0 ? (
-            <div className="p-6 text-sm text-gray-500 dark:text-gray-400">এই স্টুডেন্টের কোনো support case নেই।</div>
+            <div className="p-6 text-sm text-slate-500 dark:text-slate-400">এই স্টুডেন্টের কোনো support case নেই।</div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {cases.map((supportCase) => (
                 <Link
                   key={supportCase.id}
                   href={`/dashboard/cases/${supportCase.id}`}
-                  className="block p-4 transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="block p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <div className="font-medium">{supportCase.title}</div>
-                      <div className="line-clamp-1 text-sm text-gray-500 dark:text-gray-400">{supportCase.question}</div>
+                      <div className="line-clamp-1 text-sm text-slate-500 dark:text-slate-400">{supportCase.question}</div>
                     </div>
                     <StatusBadge status={supportCase.status} />
                   </div>
@@ -86,7 +86,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <div className="text-gray-500 dark:text-gray-400">{label}</div>
+      <div className="text-slate-500 dark:text-slate-400">{label}</div>
       <div className="font-medium">{value || "—"}</div>
     </div>
   );

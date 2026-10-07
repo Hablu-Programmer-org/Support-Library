@@ -2,7 +2,10 @@ import { Button, Card, CardBody, Input } from "@heroui/react";
 import Link from "next/link";
 
 import { StatusBadge } from "@/components/cases/status-badge";
+import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
+import { nativeFieldClass, nativeLabelClass } from "@/lib/config/fields";
 import { canMutate } from "@/lib/roles";
 import { listCaseFilterOptions, listCases } from "@/lib/services/cases";
 import { listStaff } from "@/lib/services/staff";
@@ -86,30 +89,30 @@ export default async function CasesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">সাপোর্ট কেস</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">সমস্যা, tag, status বা text দিয়ে পুরনো support case খুঁজুন।</p>
-        </div>
-        {canCreate && (
-          <Button as={Link} href="/dashboard/cases/new" color="primary">
-            নতুন কেস
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        action={
+          canCreate && (
+            <Button as={Link} color="primary" href="/dashboard/cases/new">
+              নতুন কেস
+            </Button>
+          )
+        }
+        description="সমস্যা, tag, status বা text দিয়ে পুরনো support case খুঁজুন।"
+        title="সাপোর্ট কেস"
+      />
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardBody>
           <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
             <Input name="q" label="সার্চ" defaultValue={q} />
             <Input name="tag" label="Tag" defaultValue={tag} />
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               Status
               <select
                 name="status"
                 defaultValue={status}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               >
                 <option value="">সব</option>
                 {CASE_STATUSES.map((item) => (
@@ -120,12 +123,12 @@ export default async function CasesPage({
               </select>
             </label>
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               Course
               <select
                 name="courseSlug"
                 defaultValue={courseSlug}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               >
                 <option value="">সব</option>
                 {courseSlugs.map((slug) => (
@@ -136,12 +139,12 @@ export default async function CasesPage({
               </select>
             </label>
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               Batch
               <select
                 name="batchNo"
                 defaultValue={batchNo}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               >
                 <option value="">সব</option>
                 {batchNos.map((batch) => (
@@ -152,12 +155,12 @@ export default async function CasesPage({
               </select>
             </label>
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               Mentor
               <select
                 name="mentorId"
                 defaultValue={mentorId}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               >
                 <option value="">সব</option>
                 {mentors.map((mentor) => (
@@ -168,23 +171,23 @@ export default async function CasesPage({
               </select>
             </label>
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               তারিখ থেকে
               <input
                 type="date"
                 name="from"
                 defaultValue={dateFrom}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               />
             </label>
 
-            <label className="flex flex-col gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+            <label className={nativeLabelClass}>
               তারিখ পর্যন্ত
               <input
                 type="date"
                 name="to"
                 defaultValue={dateTo}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className={nativeFieldClass}
               />
             </label>
 
@@ -200,17 +203,17 @@ export default async function CasesPage({
         </CardBody>
       </Card>
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardBody className="p-0">
           {cases.items.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">কোনো কেস পাওয়া যায়নি।</div>
+            <EmptyState>কোনো কেস পাওয়া যায়নি।</EmptyState>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {cases.items.map((supportCase) => (
                 <Link
                   key={supportCase.id}
                   href={`/dashboard/cases/${supportCase.id}`}
-                  className="block p-4 transition hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="block p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1">
@@ -218,8 +221,8 @@ export default async function CasesPage({
                         <h2 className="font-semibold">{supportCase.title}</h2>
                         <StatusBadge status={supportCase.status} />
                       </div>
-                      <p className="line-clamp-2 text-sm text-gray-500 dark:text-gray-400">{supportCase.question}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportCase.question}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {supportCase.studentName ?? "Unknown student"}
                         {supportCase.studentId ? ` · ${supportCase.studentId}` : ""}
                       </p>
@@ -227,7 +230,7 @@ export default async function CasesPage({
                     {supportCase.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
                         {supportCase.tags.map((item) => (
-                          <span key={item} className="rounded-full bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">
+                          <span key={item} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
                             {item}
                           </span>
                         ))}
@@ -241,7 +244,7 @@ export default async function CasesPage({
         </CardBody>
       </Card>
 
-      <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
           পেজ {cases.page} / {cases.totalPages} · মোট {cases.total}
         </span>

@@ -9,6 +9,30 @@
   }
 }
 
+/* Match the main frontend's scrollbar + autofill treatment. */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(transparent, #30ff00);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(transparent, #00c6ff);
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: #eaf0ffda;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 50px 50px transparent;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

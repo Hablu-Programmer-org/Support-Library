@@ -3,11 +3,11 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-md border border-gray-200 dark:border-gray-700 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+      <Card className="w-full max-w-md border border-slate-200 dark:border-slate-700 text-center">
         <CardHeader>
           <h1 className="text-2xl font-bold text-danger">অনুমতি নেই</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             আপনার এই পেজটি দেখার অনুমতি নেই।
           </p>
         </CardHeader>

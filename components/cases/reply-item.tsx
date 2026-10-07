@@ -24,7 +24,7 @@ export function ReplyItem({
       className={
         reply.isInternalNote
           ? "rounded-2xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-900/40 dark:bg-warning-950/20"
-          : "rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+          : "rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"
       }
     >
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -37,7 +37,7 @@ export function ReplyItem({
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             {reply.createdAt ? new Date(reply.createdAt).toLocaleString("bn-BD") : ""}
             {reply.editedAt ? " · edited" : ""}
           </div>
@@ -85,7 +85,7 @@ export function ReplyItem({
         </form>
       ) : (
         <>
-          <p className="whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-200">
+          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
             {reply.body}
           </p>
           <LinkList fileLinks={reply.fileLinks} videoLinks={reply.videoLinks} />

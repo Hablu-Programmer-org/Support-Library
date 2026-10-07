@@ -30,11 +30,11 @@ function LoginContent() {
 
 function LoginShell({ message }: { message?: string | null }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-md border border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+      <Card className="w-full max-w-md border border-slate-200 dark:border-slate-700">
         <CardHeader className="text-center">
           <h1 className="text-2xl font-bold">Hablu Support Library</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             শুধুমাত্র Hablu Programmer স্টাফদের জন্য
           </p>
         </CardHeader>

@@ -5,12 +5,12 @@ import { addReplyAction } from "@/actions/replies";
 export function ReplyComposer({ caseId }: { caseId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardBody>
           <form action={addReplyAction.bind(null, caseId)} className="space-y-3">
             <input type="hidden" name="isInternalNote" value="false" />
             <Textarea name="body" label="উত্তর লিখুন" minRows={4} isRequired maxLength={20_000} />
-            <details className="rounded-2xl border border-gray-200 p-3 dark:border-gray-700">
+            <details className="rounded-2xl border border-slate-200 p-3 dark:border-slate-700">
               <summary className="cursor-pointer text-sm font-semibold">External file/video links</summary>
               <div className="mt-3 grid gap-3">
                 <Textarea

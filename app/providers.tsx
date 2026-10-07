@@ -15,7 +15,7 @@ export const Providers: FC<Props> = ({ children }) => {
     <SessionProvider>
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
+        defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
       >

@@ -49,7 +49,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <h1 className="text-2xl font-bold">{supportCase.title}</h1>
             <StatusBadge status={supportCase.status} />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             <Link href={`/dashboard/students/${supportCase.studentRefId}`} className="text-primary hover:underline">
               {supportCase.studentName ?? "Student"}
             </Link>
@@ -63,13 +63,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         )}
       </div>
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">সমস্যার বিস্তারিত</CardHeader>
         <CardBody className="space-y-4">
-          <p className="whitespace-pre-wrap text-sm leading-7 text-gray-700 dark:text-gray-200">{supportCase.question}</p>
+          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{supportCase.question}</p>
           <div className="flex flex-wrap gap-2">
             {supportCase.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-gray-100 px-2 py-1 text-xs dark:bg-gray-800">
+              <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
                 {tag}
               </span>
             ))}
@@ -83,14 +83,14 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       </Card>
 
       {canEdit && (
-        <Card className="border border-gray-200 dark:border-gray-700">
+        <Card className="border border-slate-200 dark:border-slate-700">
           <CardHeader className="font-semibold">Status Update</CardHeader>
           <CardBody>
             <form action={changeCaseStatusAction.bind(null, supportCase.id)} className="flex flex-col gap-3 sm:flex-row">
               <select
                 name="status"
                 defaultValue={supportCase.status}
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -113,7 +113,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         </section>
       )}
 
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader className="font-semibold">Replies & Internal Notes</CardHeader>
         <CardBody className="space-y-4">
           {canEdit && <ReplyComposer caseId={supportCase.id} />}
@@ -147,7 +147,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <div className="text-gray-500 dark:text-gray-400">{label}</div>
+      <div className="text-slate-500 dark:text-slate-400">{label}</div>
       <div className="font-medium">{value || "—"}</div>
     </div>
   );

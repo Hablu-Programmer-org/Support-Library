@@ -25,7 +25,7 @@ export function UserMenu({ user }: UserMenuProps) {
         <DropdownItem key="info" isDisabled>
           <div className="flex flex-col gap-1">
             <span className="font-medium">{user.name ?? "বেনামী"}</span>
-            <span className="text-xs text-gray-500">{user.email}</span>
+            <span className="text-xs text-slate-500">{user.email}</span>
             <span
               className="text-xs px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full inline-block w-fit mt-1"
             >

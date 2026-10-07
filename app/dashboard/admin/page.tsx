@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/auth-guard";
+import { PageHeader } from "@/components/shared/page-header";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import Link from "next/link";
 
@@ -10,18 +11,18 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">অ্যাডমিন প্যানেল</h1>
-      <Card className="border border-gray-200 dark:border-gray-700">
+      <PageHeader title="অ্যাডমিন প্যানেল" />
+      <Card className="border border-slate-200 dark:border-slate-700">
         <CardHeader>
           <div className="flex items-center justify-between">
             <span>রোল গেট ডেমো</span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-slate-500 dark:text-slate-400">
               লগড ইন: {user.name} ({user.email})
             </span>
           </div>
         </CardHeader>
         <CardBody>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-slate-600 dark:text-slate-300">
             এই পেজটি শুধুমাত্র ADMIN রোলের জন্য দৃশ্যমান।
           </p>
           <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">

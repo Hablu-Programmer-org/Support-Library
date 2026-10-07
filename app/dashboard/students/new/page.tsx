@@ -15,7 +15,7 @@ export default async function NewStudentPage() {
           ← স্টুডেন্ট লিস্টে ফিরে যান
         </Link>
         <h1 className="mt-2 text-2xl font-bold">নতুন স্টুডেন্ট</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           নাম required. Student ID, email, phone বা LMS ID থাকলে add করুন।
         </p>
       </div>

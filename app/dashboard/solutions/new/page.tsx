@@ -43,7 +43,7 @@ export default async function NewSolutionPage({
       <div>
         <Link href="/dashboard/solutions" className="text-sm text-primary hover:underline">← সলিউশন লিস্টে ফিরে যান</Link>
         <h1 className="mt-2 text-2xl font-bold">নতুন সলিউশন</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Default visibility INTERNAL.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Default visibility INTERNAL.</p>
       </div>
 
       {sourceCaseTitle && (

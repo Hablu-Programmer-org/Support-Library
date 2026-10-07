@@ -10,8 +10,8 @@ export default function DashboardLoading() {
     <div className="space-y-6" aria-busy="true" aria-label="লোড হচ্ছে">
       {/* Page title skeleton */}
       <div className="flex flex-col gap-3">
-        <div className="h-8 w-48 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
-        <div className="h-4 w-72 animate-pulse rounded-xl bg-gray-200 dark:bg-gray-700" />
+        <div className="h-8 w-48 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
       </div>
 
       {/* Stat card skeletons */}
@@ -19,13 +19,13 @@ export default function DashboardLoading() {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="h-28 animate-pulse rounded-2xl border border-gray-200 bg-gray-200 dark:border-gray-700 dark:bg-gray-700"
+            className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-700 dark:bg-slate-700"
           />
         ))}
       </div>
 
       {/* Main content skeleton */}
-      <div className="h-64 animate-pulse rounded-2xl border border-gray-200 bg-gray-200 dark:border-gray-700 dark:bg-gray-700" />
+      <div className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-700 dark:bg-slate-700" />
     </div>
   );
 }

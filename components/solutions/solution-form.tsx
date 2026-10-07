@@ -16,7 +16,7 @@ export function SolutionForm({
   const action = solution ? updateSolutionAction.bind(null, solution.slug) : createSolutionAction;
 
   return (
-    <Card className="border border-gray-200 dark:border-gray-700">
+    <Card className="border border-slate-200 dark:border-slate-700">
       <CardBody>
         <form action={action} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -76,12 +76,12 @@ export function SolutionForm({
               name="visibility"
               defaultValue={solution?.visibility ?? "INTERNAL"}
               disabled={!canPublish}
-              className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary disabled:opacity-70 dark:border-gray-700 dark:bg-gray-900"
+              className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900"
             >
               <option value="INTERNAL">Internal</option>
               <option value="PUBLIC">Public</option>
             </select>
-            {!canPublish && <span className="text-xs text-gray-500">Public করার permission শুধু ADMIN-এর।</span>}
+            {!canPublish && <span className="text-xs text-slate-500">Public করার permission শুধু ADMIN-এর।</span>}
           </label>
 
           {!canPublish && <input type="hidden" name="visibility" value="INTERNAL" />}

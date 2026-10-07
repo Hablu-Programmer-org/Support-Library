@@ -11,7 +11,7 @@ export function StudentForm({ student }: StudentFormProps) {
   const action = student ? updateStudentAction.bind(null, student.id) : createStudentAction;
 
   return (
-    <Card className="border border-gray-200 dark:border-gray-700">
+    <Card className="border border-slate-200 dark:border-slate-700">
       <CardBody>
         <form action={action} className="grid gap-4 md:grid-cols-2">
           <Input

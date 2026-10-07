@@ -20,10 +20,10 @@ export function ErrorContent({ error, reset, message }: ErrorContentProps) {
   }, [error]);
 
   return (
-    <Card className="w-full max-w-md border border-gray-200 text-center dark:border-gray-700">
+    <Card className="w-full max-w-md border border-slate-200 text-center dark:border-slate-700">
       <CardHeader className="flex flex-col items-center">
         <h1 className="text-2xl font-bold text-danger">কিছু ভুল হয়েছে</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{message}</p>
       </CardHeader>
       <CardBody className="pt-0">
         <Button onClick={reset} color="primary" className="w-full">

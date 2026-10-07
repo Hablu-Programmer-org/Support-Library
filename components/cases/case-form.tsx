@@ -31,7 +31,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
   const studentValue = supportCase?.studentRefId ?? selectedStudentId ?? "";
 
   return (
-    <Card className="border border-gray-200 dark:border-gray-700">
+    <Card className="border border-slate-200 dark:border-slate-700">
       <CardBody>
         <form action={action} className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
@@ -41,7 +41,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 name="studentRefId"
                 defaultValue={studentValue}
                 required
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
               >
                 <option value="" disabled>
                   স্টুডেন্ট নির্বাচন করুন
@@ -60,7 +60,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 name="status"
                 defaultValue={supportCase?.status ?? "OPEN"}
                 required
-                className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -81,7 +81,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
             maxLength={20_000}
           />
 
-          <details className="rounded-2xl border border-gray-200 p-4 dark:border-gray-700">
+          <details className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
             <summary className="cursor-pointer text-sm font-semibold">অপশনাল তথ্য</summary>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <Input name="courseSlug" label="Course Slug" defaultValue={supportCase?.courseSlug ?? undefined} />
@@ -99,7 +99,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 <select
                   name="priority"
                   defaultValue={supportCase?.priority ?? "NORMAL"}
-                  className="rounded-xl border border-gray-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
                 >
                   {CASE_PRIORITIES.map((priority) => (
                     <option key={priority} value={priority}>
