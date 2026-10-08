@@ -22,26 +22,12 @@ for (const role of roles) {
       await expect(page.getByRole("heading", { name: "সাপোর্ট কেস" })).toBeVisible();
     });
 
-    test("can access solutions list", async ({ page }) => {
-      await page.goto("/dashboard/solutions");
-      await expect(page.getByRole("heading", { name: "সলিউশন লাইব্রেরি" })).toBeVisible();
-    });
-
     const canMutate = role === "admin" || role === "mentor";
 
     test(`${canMutate ? "can" : "cannot"} create case`, async ({ page }) => {
       await page.goto("/dashboard/cases/new");
       if (canMutate) {
         await expect(page.getByRole("heading", { name: "নতুন সাপোর্ট কেস" })).toBeVisible();
-      } else {
-        await expect(page).toHaveURL(/\/unauthorized/);
-      }
-    });
-
-    test(`${canMutate ? "can" : "cannot"} create solution`, async ({ page }) => {
-      await page.goto("/dashboard/solutions/new");
-      if (canMutate) {
-        await expect(page.getByRole("heading", { name: "নতুন সলিউশন" })).toBeVisible();
       } else {
         await expect(page).toHaveURL(/\/unauthorized/);
       }

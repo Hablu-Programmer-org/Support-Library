@@ -46,13 +46,8 @@ async function main() {
     .collection("support_cases")
     .find({ title: E2E_TITLE_PREFIX }, { projection: { _id: 1 } })
     .toArray();
-  const e2eSolutions = await db
-    .collection("solution_articles")
-    .find({ title: E2E_TITLE_PREFIX }, { projection: { _id: 1 } })
-    .toArray();
 
   const caseIds = e2eCases.map((doc) => doc._id);
-  const solutionIds = e2eSolutions.map((doc) => doc._id);
 
   const plans: Plan[] = [
     {
@@ -61,22 +56,9 @@ async function main() {
       label: "replies on E2E cases",
     },
     {
-      collection: "case_solution_links",
-      filter:
-        caseIds.length || solutionIds.length
-          ? { $or: [{ caseId: { $in: caseIds } }, { solutionId: { $in: solutionIds } }] }
-          : { caseId: { $in: [] } },
-      label: "links touching E2E cases/solutions",
-    },
-    {
       collection: "support_cases",
       filter: { title: E2E_TITLE_PREFIX },
       label: "cases titled 'E2E ...'",
-    },
-    {
-      collection: "solution_articles",
-      filter: { title: E2E_TITLE_PREFIX },
-      label: "solutions titled 'E2E ...'",
     },
     {
       collection: "staff_users",

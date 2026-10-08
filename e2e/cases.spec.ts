@@ -3,18 +3,50 @@ import { test, expect } from "@playwright/test";
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
 test.describe("Case CRUD (mentor)", () => {
+  for (const scenario of [
+    { label: "text and attachments", body: "Use the documented fix for the image path.", solved: true },
+    { label: "attachments only", body: "", solved: true },
+    { label: "answer awaiting confirmation", body: "Please try the attached fix and confirm.", solved: false },
+  ]) {
+    test(`creates a case with ${scenario.label} in one submission`, async ({ page }) => {
+      await page.goto("/dashboard/cases/new");
+      await page.fill('input[name="studentName"]', "E2E Answer Student");
+      await page.fill('input[name="studentEmail"]', `e2e.answer.${Date.now()}@test.com`);
+      await page.fill('input[name="title"]', `E2E ${scenario.label}`);
+      await page.fill('textarea[name="question"]', "How do I fix the broken image path?");
+      await page.locator("summary").filter({ hasText: "সমাধান (জানা থাকলে)" }).click();
+      await page.fill('textarea[name="solutionBody"]', scenario.body);
+      await page.fill('textarea[name="solutionFileLinks"]', "Guide|https://example.com/fix.pdf|pdf\nScreenshot|https://example.com/fix.png|image");
+      await page.fill('textarea[name="solutionVideoLinks"]', "Walkthrough|https://example.com/fix.mp4|01:20");
+      await expect(page.locator('input[name="solveCase"]')).toBeChecked();
+      if (!scenario.solved) await page.locator('input[name="solveCase"]').uncheck();
+      await Promise.all([
+        page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
+        page.getByRole("button", { name: "কেস তৈরি করুন", exact: true }).click(),
+      ]);
+      await expect(page.locator("article")).toHaveCount(1);
+      const reply = page.locator("article");
+      if (scenario.body) await expect(reply).toContainText(scenario.body);
+      await expect(reply.locator('a[href="https://example.com/fix.pdf"]')).toBeVisible();
+      await expect(reply.locator('a[href="https://example.com/fix.png"]')).toBeVisible();
+      await expect(reply.locator('a[href="https://example.com/fix.mp4"]')).toBeVisible();
+      await expect(page.locator("span").filter({ hasText: scenario.solved ? /^সলভড$/ : /^ওপেন$/ }).first()).toBeVisible();
+    });
+  }
+
   test("creates a case, replies, and updates status", async ({ page }) => {
     await page.goto("/dashboard/cases/new");
     await page.fill('input[name="studentName"]', "E2E Test Student");
     await page.fill('input[name="studentEmail"]', `e2e.student.${Date.now().toString()}@test.com`);
     await page.fill('input[name="title"]', "E2E React image not rendering");
     await page.fill('textarea[name="question"]', "Image show hocche na in React component");
-    await page.selectOption('select[name="status"]', "OPEN");
+    await expect(page.locator('select[name="status"]')).toHaveCount(0);
     await Promise.all([
       page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
       page.click('button[type="submit"]'),
     ]);
     await expect(page.getByText("E2E React image not rendering")).toBeVisible();
+    await expect(page.locator("span").filter({ hasText: /^ওপেন$/ }).first()).toBeVisible();
     await expect(page.locator("p").filter({ hasText: "Image show hocche na in React component" }).first()).toBeVisible();
 
     const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "উত্তর যোগ করুন" }) });
@@ -57,10 +89,12 @@ test.describe("Case CRUD (mentor)", () => {
     await expect(page.locator('input[name="studentName"]')).toHaveValue("E2E LMS Student");
     await expect(page.getByText("LMS-এ আছে")).toBeVisible();
 
-    // A manual name edit must not be clobbered by a later lookup.
-    await page.fill('input[name="studentName"]', "Manual Name");
+    await expect(page.locator('input[name="studentName"]')).toBeHidden();
     await page.fill('input[name="studentEmail"]', "some.other.member@test.com");
     await expect(page.getByText("LMS-এ পাওয়া যায়নি")).toBeVisible();
+    await page.fill('input[name="studentName"]', "Manual Name");
+    await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
+    await expect(page.getByText("LMS-এ আছে")).toBeVisible();
     await expect(page.locator('input[name="studentName"]')).toHaveValue("Manual Name");
   });
 });

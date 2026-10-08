@@ -6,9 +6,6 @@ export type CaseStatus = (typeof CASE_STATUSES)[number];
 export const CASE_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
 export type CasePriority = (typeof CASE_PRIORITIES)[number];
 
-export const SOLUTION_VISIBILITIES = ["INTERNAL", "PUBLIC"] as const;
-export type SolutionVisibility = (typeof SOLUTION_VISIBILITIES)[number];
-
 export const externalFileLinkSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 120 },

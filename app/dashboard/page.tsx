@@ -20,10 +20,9 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <PageHeader title="ড্যাশবোর্ড" />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard hint="মোট কেস" label="সাপোর্ট কেস" value={stats.totalCases} />
         <StatCard hint="open/pending/follow-up" label="অমীমাংসিত" value={stats.unresolvedCases} />
-        <StatCard hint="মোট আর্টিকেল" label="সলিউশন আর্টিকেল" value={stats.totalSolutions} />
         <StatCard hint="নতুন কেস" label="এই সপ্তাহের কেস" value={stats.weeklyCases} />
       </div>
 

@@ -36,15 +36,6 @@ export const CaseIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
-export const SolutionIcon: FC<IconSvgProps> = ({ size, ...props }) => (
-  <svg {...base(size)} {...props}>
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    <path d="M9 7h6" />
-    <path d="M9 11h4" />
-  </svg>
-);
-
 export const SearchIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <circle cx="11" cy="11" r="7" />

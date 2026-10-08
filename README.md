@@ -1,6 +1,6 @@
 # Hablu Support Library
 
-Staff-first support library for Hablu Programmer. Mentors can record student support cases, add answers, internal notes, external file/video links, and convert repeated issues into reusable solution articles.
+Staff-first support library for Hablu Programmer. Mentors can record student support cases, add answers, internal notes, external file/video links, and close cases when solved.
 
 ## Stack
 
@@ -86,12 +86,10 @@ cmd /c "npm run test:e2e"
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
 - hp-v2 roles map to `ADMIN` / `MENTOR` / `VIEWER`; an unknown or inactive account is denied
 - Case forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
-- Mentor creates support cases
+- Mentor creates support cases with optional solution (text, file links, video links)
+- If solution provided, it becomes the first reply and case can auto-close as SOLVED
 - Mentor adds replies, internal notes, external file links and video links
-- Mentor creates reusable solution articles
-- VIEWER (students) can read cases but never see internal notes or INTERNAL solutions
-- Cases link to solution articles via `case_solution_links`
-- A case can be turned into a solution draft with fields prefilled from the case and its latest public reply
+- VIEWER (students) can read cases but never see internal notes
 - Cases list filters by course, batch, mentor and date range
 - Dashboard shows real DB counts and recent unresolved cases
 

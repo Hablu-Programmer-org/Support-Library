@@ -1,7 +1,5 @@
 import { dbConnect } from "../lib/db";
 import {
-  CaseSolutionLinkModel,
-  SolutionArticleModel,
   SupportCaseModel,
   SupportReplyModel,
   UserModel,
@@ -11,8 +9,6 @@ const models = [
   UserModel,
   SupportCaseModel,
   SupportReplyModel,
-  SolutionArticleModel,
-  CaseSolutionLinkModel,
 ];
 
 async function main() {

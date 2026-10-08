@@ -16,10 +16,10 @@ export default async function NewCasePage() {
         </Link>
         <h1 className="mt-2 text-2xl font-bold">নতুন সাপোর্ট কেস</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Required: student name, email, title, question, status. বাকিগুলো optional.
+          Required: student email, title, question. Status defaults to OPEN; solution optional.
         </p>
       </div>
-      <CaseForm />
+      <CaseForm minimal />
     </div>
   );
 }

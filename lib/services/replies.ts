@@ -77,6 +77,8 @@ async function refreshCaseReplySearchText(caseId: string) {
         searchText: buildCaseSearchTextWithReplies(
           {
             title: supportCase.title,
+            studentName: supportCase.studentName,
+            studentEmail: supportCase.studentEmail,
             question: supportCase.question,
             courseSlug: supportCase.courseSlug,
             moduleSlug: supportCase.moduleSlug,

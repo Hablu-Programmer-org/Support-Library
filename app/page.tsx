@@ -10,7 +10,7 @@ export default function Home() {
           </span>
           <div className="space-y-5">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-              সাপোর্ট কেস থেকে reusable solution library তৈরি করুন
+              সাপোর্ট কেস দিয়ে টিমের কাজ সহজ করুন
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
               প্রতিদিনের student support question, answer, external file link এবং video summary এক জায়গায় সংরক্ষণ করে দ্রুত খুঁজে বের করার জন্য staff-first support library.

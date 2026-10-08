@@ -1,12 +1,11 @@
 import "server-only";
 
 import { dbConnect } from "@/lib/db";
-import { SolutionArticleModel, SupportCaseModel, UserModel, type CaseStatus } from "@/models";
+import { SupportCaseModel, UserModel, type CaseStatus } from "@/models";
 
 export type DashboardStats = {
   totalCases: number;
   unresolvedCases: number;
-  totalSolutions: number;
   staffCount: number;
   weeklyCases: number;
 };
@@ -18,15 +17,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 7);
 
-  const [totalCases, unresolvedCases, totalSolutions, staffCount, weeklyCases] = await Promise.all([
+  const [totalCases, unresolvedCases, staffCount, weeklyCases] = await Promise.all([
     SupportCaseModel.countDocuments({ deletedAt: null }),
     SupportCaseModel.countDocuments({ deletedAt: null, status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] } }),
-    SolutionArticleModel.countDocuments({ deletedAt: null }),
     UserModel.countDocuments({}),
     SupportCaseModel.countDocuments({ deletedAt: null, createdAt: { $gte: weekStart } }),
   ]);
 
-  return { totalCases, unresolvedCases, totalSolutions, staffCount, weeklyCases };
+  return { totalCases, unresolvedCases, staffCount, weeklyCases };
 }
 
 export async function getTopTags(limit = 12): Promise<TagCount[]> {

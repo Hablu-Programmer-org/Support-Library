@@ -5,16 +5,13 @@ import { notFound } from "next/navigation";
 import { changeCaseStatusAction, deleteCaseAction } from "@/actions/cases";
 import { CaseForm } from "@/components/cases/case-form";
 import { CaseTimeline } from "@/components/cases/case-timeline";
-import { LinkSolutionPanel } from "@/components/cases/link-solution-panel";
 import { ReplyComposer } from "@/components/cases/reply-composer";
 import { StatusBadge } from "@/components/cases/status-badge";
 import { requireSession } from "@/lib/auth-guard";
 import { nativeSelectClass } from "@/lib/config/fields";
 import { canMutate } from "@/lib/roles";
 import { getCaseDetail } from "@/lib/services/cases";
-import { listSolutionsForCase } from "@/lib/services/links";
 import { listReplies } from "@/lib/services/replies";
-import { listSolutions } from "@/lib/services/solutions";
 import { CASE_STATUSES } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -32,12 +29,10 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   const supportCase = await getCaseDetail(params.id);
   if (!supportCase) notFound();
 
-  // VIEWER (students) must not see staff-only content: internal notes and
-  // INTERNAL solutions. Staff (ADMIN/MENTOR) get everything.
+  // VIEWER (students) must not see staff-only content: internal notes.
+  // Staff (ADMIN/MENTOR) get everything.
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
   const replies = await listReplies(supportCase.id, canEdit);
-  const linkedSolutions = await listSolutionsForCase(supportCase.id, canEdit);
-  const allSolutions = await listSolutions({ limit: 100, includeInternal: canEdit });
 
   return (
     <div className="space-y-6">
@@ -55,11 +50,6 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             {supportCase.studentEmail ? ` · ${supportCase.studentEmail}` : ""}
           </p>
         </div>
-        {canEdit && (
-          <Button as={Link} href={`/dashboard/solutions/new?fromCase=${supportCase.id}`} color="primary" variant="flat">
-            এই কেস থেকে সলিউশন বানান
-          </Button>
-        )}
       </div>
 
       <Card className="border border-slate-200 dark:border-slate-700">
@@ -124,13 +114,6 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
           />
         </CardBody>
       </Card>
-
-      <LinkSolutionPanel
-        caseId={supportCase.id}
-        linkedSolutions={linkedSolutions}
-        allSolutions={allSolutions.items}
-        canMutate={canEdit}
-      />
 
       {canEdit && (
         <form action={deleteCaseAction.bind(null, supportCase.id)}>

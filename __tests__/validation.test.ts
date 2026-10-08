@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  caseSolutionLinkInputSchema,
   externalFileLinkSchema,
-  solutionArticleInputSchema,
   supportCaseInputSchema,
   supportReplyInputSchema,
 } from "@/lib/validation";
@@ -75,25 +73,5 @@ describe("product validation", () => {
     expect(() =>
       externalFileLinkSchema.parse({ title: "JS", url: "javascript:alert(1)" }),
     ).toThrow();
-  });
-
-  it("defaults solution visibility to INTERNAL", () => {
-    const parsed = solutionArticleInputSchema.parse({
-      title: "React useEffect loop fix",
-      summary: "Dependency array issue causes loop.",
-      body: "Move unstable object/function dependencies out of render or memoize where needed.",
-      tags: ["react", "useeffect"],
-    });
-
-    expect(parsed.visibility).toBe("INTERNAL");
-  });
-
-  it("validates the separate case-solution link input", () => {
-    expect(
-      caseSolutionLinkInputSchema.parse({
-        caseId: objectId,
-        solutionArticleId: "507f191e810c19729de860ea",
-      }),
-    ).toEqual({ caseId: objectId, solutionArticleId: "507f191e810c19729de860ea" });
   });
 });

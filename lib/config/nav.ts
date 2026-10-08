@@ -1,7 +1,7 @@
 import type { FC } from "react";
 
 import type { IconSvgProps } from "@/components/icons";
-import { CaseIcon, DashboardIcon, SolutionIcon } from "@/components/icons";
+import { CaseIcon, DashboardIcon } from "@/components/icons";
 import type { UserRole } from "@/models";
 import { ROLE_RANK } from "@/lib/roles";
 
@@ -18,7 +18,6 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { label: "ড্যাশবোর্ড", href: "/dashboard", exact: true, icon: DashboardIcon },
   { label: "কেস", href: "/dashboard/cases", icon: CaseIcon },
-  { label: "সলিউশন", href: "/dashboard/solutions", icon: SolutionIcon },
 ];
 
 export function navItemsForRole(role?: UserRole): NavItem[] {
