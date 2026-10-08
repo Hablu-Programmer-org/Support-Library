@@ -11,7 +11,7 @@ export function SignOutButton() {
       variant="flat"
       size="sm"
     >
-      সাইন আউট
+      Sign Out
     </Button>
   );
 }

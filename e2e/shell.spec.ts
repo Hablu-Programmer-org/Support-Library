@@ -5,7 +5,7 @@ test.describe("Shell: dashboard chrome", () => {
 
   test("topbar + collapsible sidebar match the frontend design", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "ড্যাশবোর্ড" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
     const header = page.locator("header").first();
     await expect(header).toHaveCSS("position", "fixed");
@@ -18,11 +18,11 @@ test.describe("Shell: dashboard chrome", () => {
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(2, 6, 23)");
 
     // Bar follows the theme: switching to light turns the chrome light too.
-    await page.getByRole("button", { name: "লাইট মোড" }).click();
+    await page.getByRole("button", { name: "Light mode" }).click();
     await expect
       .poll(async () => header.evaluate((el) => getComputedStyle(el).backgroundColor))
       .toBe("rgba(255, 255, 255, 0.8)");
-    await page.getByRole("button", { name: "ডার্ক মোড" }).click();
+    await page.getByRole("button", { name: "Dark mode" }).click();
     await expect
       .poll(async () => header.evaluate((el) => getComputedStyle(el).backgroundColor))
       .toBe("rgba(2, 6, 23, 0.8)");
@@ -53,7 +53,7 @@ test.describe("Shell: dashboard chrome", () => {
 
   test("cases list keeps native filter selects", async ({ page }) => {
     await page.goto("/dashboard/cases");
-    await expect(page.getByRole("heading", { name: "সাপোর্ট কেস" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Support Cases" })).toBeVisible();
 
     // Filters are collapsed by default; the arrow toggle reveals them.
     await page.getByRole("button", { name: "Advanced filters" }).click();
@@ -71,7 +71,7 @@ test.describe("Shell: mobile drawer", () => {
 
   test("sidebar is off-canvas and opens as a drawer", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: "ড্যাশবোর্ড" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
     const aside = page.locator("aside").first();
     const b1 = await aside.boundingBox();

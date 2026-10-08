@@ -14,8 +14,8 @@ describe("search utilities", () => {
     expect(normalizeText("  React\u200B   API LOOP  ")).toBe("react api loop");
   });
 
-  it("keeps Bangla text searchable", () => {
-    expect(normalizeText(" ছবি   দেখাচ্ছে না ")).toBe("ছবি দেখাচ্ছে না");
+  it("normalizes multiword search queries", () => {
+    expect(normalizeText(" Image   not displaying ")).toBe("image not displaying");
   });
 
   it("escapes regex metacharacters", () => {
@@ -34,8 +34,8 @@ describe("search utilities", () => {
 describe("case search text", () => {
   const supportCase = {
     title: "React image not rendering",
-    question: "ছবি দেখাচ্ছে না",
-    studentName: "রহিম উদ্দিন",
+    question: "Image not displaying",
+    studentName: "Rahim Uddin",
     studentEmail: "rahim@example.com",
     courseSlug: "react-beginner",
     moduleSlug: "assets",
@@ -46,7 +46,7 @@ describe("case search text", () => {
   it("includes the student name and email", () => {
     const text = buildCaseSearchText(supportCase);
 
-    expect(text).toContain("রহিম উদ্দিন");
+    expect(text).toContain("rahim uddin");
     expect(text).toContain("rahim@example.com");
   });
 

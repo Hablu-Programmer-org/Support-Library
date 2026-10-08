@@ -13,18 +13,18 @@ type CaseFormProps = {
 };
 
 const statusLabels = {
-  OPEN: "ওপেন",
-  SOLVED: "সলভড",
-  PENDING: "পেন্ডিং",
-  FOLLOW_UP: "ফলো-আপ",
-  ARCHIVED: "আর্কাইভড",
+  OPEN: "Open",
+  SOLVED: "Solved",
+  PENDING: "Pending",
+  FOLLOW_UP: "Follow-up",
+  ARCHIVED: "Archived",
 };
 
 const priorityLabels = {
-  LOW: "লো",
-  NORMAL: "নরমাল",
-  HIGH: "হাই",
-  URGENT: "আর্জেন্ট",
+  LOW: "Low",
+  NORMAL: "Normal",
+  HIGH: "High",
+  URGENT: "Urgent",
 };
 
 export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
@@ -44,7 +44,7 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
 
             {!minimal && (
               <label className="flex flex-col gap-2 text-sm font-medium">
-                স্ট্যাটাস <span className="text-danger">*</span>
+                Status <span className="text-danger">*</span>
                 <select
                   name="status"
                   defaultValue={supportCase?.status ?? "OPEN"}
@@ -61,10 +61,10 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
             )}
           </div>
 
-          <Input name="title" label="সমস্যার টাইটেল" defaultValue={supportCase?.title} isRequired minLength={5} maxLength={200} />
+          <Input name="title" label="Case Title" defaultValue={supportCase?.title} isRequired minLength={5} maxLength={200} />
           <Textarea
             name="question"
-            label="সমস্যার বিস্তারিত"
+            label="Problem Description"
             defaultValue={supportCase?.question}
             isRequired
             minRows={6}
@@ -74,25 +74,25 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
           {/* Solution section — only on create (minimal) */}
           {!supportCase && minimal && (
             <details className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-              <summary className="cursor-pointer text-sm font-semibold">সমাধান (জানা থাকলে)</summary>
+              <summary className="cursor-pointer text-sm font-semibold">Answer (Optional)</summary>
               <div className="mt-4 space-y-4">
                 <Textarea
                   name="solutionBody"
-                  label="সমাধান টেক্সট"
+                  label="Answer"
                   minRows={4}
                   maxLength={20_000}
-                  description="সমাধান জানলে এখানে লিখুন — এটি কেসের প্রথম রিপ্লাই হিসেবে সেভ হবে"
+                  description="Add an answer if you have one. It will be saved as the first reply."
                 />
                 <Textarea
                   name="solutionFileLinks"
-                  label="File links (PDF/ইমেজ)"
-                  description="প্রতি লাইনে: title|https://url|type|note"
+                  label="File Links (PDF/Images)"
+                  description="One per line: title|https://url|type|note"
                   minRows={2}
                 />
                 <Textarea
                   name="solutionVideoLinks"
                   label="Video links"
-                  description="প্রতি লাইনে: title|https://url|timestamp|summary"
+                  description="One per line: title|https://url|timestamp|summary"
                   minRows={2}
                 />
               </div>
@@ -104,14 +104,14 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" name="solveCase" defaultChecked className="accent-cyan-500" />
-                সমাধান দেওয়া থাকলে কেস সলভ করুন
+                Mark as solved when an answer is provided
               </label>
             </div>
           )}
 
           {(
             <details className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-              <summary className="cursor-pointer text-sm font-semibold">অপশনাল তথ্য</summary>
+              <summary className="cursor-pointer text-sm font-semibold">Additional Details</summary>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Input name="courseSlug" label="Course Slug" defaultValue={supportCase?.courseSlug ?? undefined} />
                 <Input name="batchNo" label="Batch No" type="number" defaultValue={supportCase?.batchNo?.toString()} />
@@ -121,7 +121,7 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
                   name="tags"
                   label="Tags"
                   defaultValue={supportCase?.tags.join(", ")}
-                  description="কমা দিয়ে আলাদা করুন: react, image, api"
+                  description="Separate with commas: react, image, api"
                 />
                 <label className="flex flex-col gap-2 text-sm font-medium">
                   Priority
@@ -143,7 +143,7 @@ export function CaseForm({ supportCase, minimal = false }: CaseFormProps) {
 
           <div className="flex justify-end">
             <Button type="submit" color="primary">
-              {supportCase ? "কেস আপডেট করুন" : "কেস তৈরি করুন"}
+              {supportCase ? "Update Case" : "Create Case"}
             </Button>
           </div>
         </form>

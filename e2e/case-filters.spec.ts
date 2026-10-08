@@ -35,7 +35,7 @@ async function openFilters(page: Page) {
 async function filterWith(page: Page, url: RegExp, fill: () => Promise<unknown>) {
   for (let attempt = 0; attempt < 4; attempt += 1) {
     await fill();
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
+    await page.getByRole("button", { name: "Filter", exact: true }).click();
     const applied = await page
       .waitForURL(url, { timeout: 6_000 })
       .then(() => true)
@@ -59,7 +59,7 @@ async function createCase(
   await page.fill('textarea[name="question"]', `Body for ${title}`);
 
   // Course slug and batch live inside a collapsed <details>.
-  await page.locator("details").filter({ hasText: "অপশনাল তথ্য" }).locator("summary").click();
+  await page.locator("details").filter({ hasText: "Additional Details" }).locator("summary").click();
   await page.fill('input[name="courseSlug"]', courseSlug);
   await page.fill('input[name="batchNo"]', batchNo);
 
@@ -95,7 +95,7 @@ test.describe("Case list filters (mentor)", () => {
 
     // HeroUI renders its polymorphic Button as `<a role="button">`, so the
     // explicit ARIA role wins over the implicit link role.
-    await page.getByRole("button", { name: "রিসেট" }).click();
+    await page.getByRole("button", { name: "Reset" }).click();
     await expect(page).toHaveURL(/\/dashboard\/cases$/);
     await expect(caseHeading(page, "E2E filter react case")).toBeVisible();
     await expect(caseHeading(page, "E2E filter python case")).toBeVisible();

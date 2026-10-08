@@ -38,7 +38,7 @@ export function ReplyItem({
             )}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400">
-            {reply.createdAt ? new Date(reply.createdAt).toLocaleString("bn-BD") : ""}
+            {reply.createdAt ? new Date(reply.createdAt).toLocaleString("en-US") : ""}
             {reply.editedAt ? " · edited" : ""}
           </div>
         </div>
@@ -52,12 +52,12 @@ export function ReplyItem({
                 variant="light"
                 onPress={() => setIsEditing(true)}
               >
-                এডিট
+                Edit
               </Button>
             )}
             <form action={deleteReplyAction.bind(null, caseId, reply.id)}>
               <Button type="submit" size="sm" color="danger" variant="light">
-                মুছুন
+                Delete
               </Button>
             </form>
           </div>
@@ -68,7 +68,7 @@ export function ReplyItem({
         <form action={editReplyAction.bind(null, caseId, reply.id)} className="space-y-3">
           <Textarea
             name="body"
-            label="উত্তর সম্পাদনা"
+            label="Edit Reply"
             defaultValue={reply.body}
             minRows={4}
             isRequired
@@ -76,10 +76,10 @@ export function ReplyItem({
           />
           <div className="flex justify-end gap-2">
             <Button type="button" size="sm" variant="light" onPress={() => setIsEditing(false)}>
-              বাতিল
+              Cancel
             </Button>
             <Button type="submit" size="sm" color="primary">
-              সংরক্ষণ
+              Save
             </Button>
           </div>
         </form>

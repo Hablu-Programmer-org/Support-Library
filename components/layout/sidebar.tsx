@@ -43,7 +43,7 @@ export function Sidebar({ items, open, mobileOpen, user, onCloseMobile }: Sideba
       )}
 
       <aside
-        aria-label="সাইডবার"
+        aria-label="Sidebar"
         className={cn(
           "fixed bottom-0 left-0 top-16 z-50 flex flex-col border-r border-slate-200 bg-white/80 backdrop-blur-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/80",
           // Mobile drawer: off-canvas unless mobileOpen. Desktop: always on-canvas.
@@ -80,10 +80,10 @@ export function Sidebar({ items, open, mobileOpen, user, onCloseMobile }: Sideba
           {expanded && (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
-                {user.name ?? "বেনামী"}
+                {user.name ?? "Unnamed user"}
               </p>
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {user.role ? ROLE_LABELS[user.role] : "ভিউয়ার"}
+                {user.role ? ROLE_LABELS[user.role] : "Viewer"}
               </p>
             </div>
           )}

@@ -9,19 +9,19 @@ import { Panel } from "@/components/shared/panel";
 import { nativeFieldClass, nativeLabelClass, nativeSelectClass } from "@/lib/config/fields";
 
 const statusLabels: Record<string, string> = {
-  OPEN: "ওপেন",
-  SOLVED: "সলভড",
-  PENDING: "পেন্ডিং",
-  FOLLOW_UP: "ফলো-আপ",
-  ARCHIVED: "আর্কাইভড",
+  OPEN: "Open",
+  SOLVED: "Solved",
+  PENDING: "Pending",
+  FOLLOW_UP: "Follow-up",
+  ARCHIVED: "Archived",
 };
 
 const CASE_SORTS = ["newest", "oldest", "priority"] as const;
 export type CaseSort = (typeof CASE_SORTS)[number];
 
 const sortLabels: Record<CaseSort, string> = {
-  newest: "নতুন আগে",
-  oldest: "পুরনো আগে",
+  newest: "Newest first",
+  oldest: "Oldest first",
   priority: "Priority",
 };
 
@@ -80,7 +80,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
             </button>
           }
           name="q"
-          placeholder="সমস্যা, student বা text দিয়ে খুঁজুন"
+          placeholder="Search by problem, student or keyword"
           startContent={<SearchIcon className="text-slate-400" size={18} />}
         />
 
@@ -93,7 +93,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               </label>
 
               <label className={nativeLabelClass}>
-                সাজান
+                Sort by
                 <select className={nativeSelectClass} defaultValue={defaults.sort} name="sort">
                   {CASE_SORTS.map((item) => (
                     <option key={item} value={item}>
@@ -108,7 +108,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               <label className={nativeLabelClass}>
                 Status
                 <select className={nativeSelectClass} defaultValue={defaults.status} name="status">
-                  <option value="">সব</option>
+                  <option value="">All</option>
                   {statuses.map((item) => (
                     <option key={item} value={item}>
                       {statusLabels[item] ?? item}
@@ -120,7 +120,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               <label className={nativeLabelClass}>
                 Course
                 <select className={nativeSelectClass} defaultValue={defaults.courseSlug} name="courseSlug">
-                  <option value="">সব</option>
+                  <option value="">All</option>
                   {courseSlugs.map((slug) => (
                     <option key={slug} value={slug}>
                       {slug}
@@ -132,7 +132,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               <label className={nativeLabelClass}>
                 Batch
                 <select className={nativeSelectClass} defaultValue={defaults.batchNo} name="batchNo">
-                  <option value="">সব</option>
+                  <option value="">All</option>
                   {batchNos.map((batch) => (
                     <option key={batch} value={String(batch)}>
                       {batch}
@@ -144,7 +144,7 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               <label className={nativeLabelClass}>
                 Mentor
                 <select className={nativeSelectClass} defaultValue={defaults.mentorId} name="mentorId">
-                  <option value="">সব</option>
+                  <option value="">All</option>
                   {mentors.map((mentor) => (
                     <option key={mentor.id} value={mentor.id}>
                       {mentor.name}
@@ -154,26 +154,26 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
               </label>
 
               <label className={nativeLabelClass}>
-                তারিখ থেকে
+                From date
                 <input className={nativeFieldClass} defaultValue={defaults.dateFrom} name="from" type="date" />
               </label>
 
               <label className={nativeLabelClass}>
-                তারিখ পর্যন্ত
+                To date
                 <input className={nativeFieldClass} defaultValue={defaults.dateTo} name="to" type="date" />
               </label>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm text-slate-500 dark:text-slate-400">
-                {activeCount > 0 ? `সক্রিয় ফিল্টার: ${activeCount}` : ""}
+                {activeCount > 0 ? `Active filters: ${activeCount}` : ""}
               </span>
               <div className="flex gap-2">
                 <Button as={Link} href="/dashboard/cases" size="sm" variant="light">
-                  রিসেট
+                  Reset
                 </Button>
                 <Button color="primary" size="sm" type="submit" variant="flat">
-                  ফিল্টার
+                  Filter
                 </Button>
               </div>
             </div>

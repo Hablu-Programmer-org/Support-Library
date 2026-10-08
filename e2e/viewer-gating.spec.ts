@@ -26,12 +26,12 @@ test.describe("VIEWER content gating", () => {
     ]);
     const casePath = new URL(page.url()).pathname;
 
-    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "উত্তর যোগ করুন" }) });
+    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
     await replyForm.locator('textarea[name="body"]').fill(publicReply);
-    await replyForm.getByRole("button", { name: "উত্তর যোগ করুন" }).click();
-    const noteForm = page.locator("form").filter({ has: page.getByRole("button", { name: "নোট যোগ করুন" }) });
+    await replyForm.getByRole("button", { name: "Add Reply" }).click();
+    const noteForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Internal Note" }) });
     await noteForm.locator('textarea[name="body"]').fill(internalNote);
-    await noteForm.getByRole("button", { name: "নোট যোগ করুন" }).click();
+    await noteForm.getByRole("button", { name: "Add Internal Note" }).click();
 
     // The viewer sees the case and its public reply, but never the internal note.
     const viewerContext = await browser.newContext({

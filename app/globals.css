@@ -5,7 +5,7 @@
 @layer base {
   body {
     @apply bg-background text-foreground antialiased;
-    /* font-family is set via tailwind.config.ts -> var(--font-bangla) from next/font */
+    /* font-family is set via tailwind.config.ts -> var(--font-sans) from next/font */
   }
 }
 

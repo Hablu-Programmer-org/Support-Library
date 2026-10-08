@@ -2,9 +2,9 @@ export const USER_ROLES = ["ADMIN", "MENTOR", "VIEWER"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: "অ্যাডমিন",
-  MENTOR: "মেন্টর",
-  VIEWER: "ভিউয়ার",
+  ADMIN: "Admin",
+  MENTOR: "Mentor",
+  VIEWER: "Viewer",
 };
 
 export const ROLE_RANK: Record<UserRole, number> = {

@@ -55,7 +55,7 @@ export async function updateStaffRole(userId: string, role: UserRole) {
   const existing = await UserModel.findById(userId).lean();
   if (!existing) return { ok: false as const, error: "Staff not found" };
   if (await wouldRemoveLastActiveAdmin(userId, role, existing.isActive !== false)) {
-    return { ok: false as const, error: "শেষ active ADMIN downgrade করা যাবে না" };
+    return { ok: false as const, error: "The last active admin cannot be demoted." };
   }
 
   const user = await UserModel.findByIdAndUpdate(userId, { role }, { new: true, runValidators: true }).lean();
@@ -69,7 +69,7 @@ export async function updateStaffActive(userId: string, isActive: boolean) {
   const existing = await UserModel.findById(userId).lean();
   if (!existing) return { ok: false as const, error: "Staff not found" };
   if (await wouldRemoveLastActiveAdmin(userId, existing.role as UserRole, isActive)) {
-    return { ok: false as const, error: "শেষ active ADMIN deactivate করা যাবে না" };
+    return { ok: false as const, error: "The last active admin cannot be deactivated." };
   }
 
   const user = await UserModel.findByIdAndUpdate(userId, { isActive }, { new: true, runValidators: true }).lean();

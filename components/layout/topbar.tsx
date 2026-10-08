@@ -24,7 +24,7 @@ export function Topbar({ user, open, mobileOpen, onToggle }: TopbarProps) {
         <div className="flex min-w-fit items-center gap-2.5">
           <button
             aria-expanded={open || mobileOpen}
-            aria-label="সাইডবার টগল"
+            aria-label="Toggle sidebar"
             className="-ml-1 rounded-full text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-white"
             type="button"
             onClick={onToggle}

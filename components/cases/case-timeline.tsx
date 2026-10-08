@@ -19,7 +19,7 @@ export function CaseTimeline({
     return (
       <Card className="border border-slate-200 dark:border-slate-700">
         <CardBody className="text-sm text-slate-500 dark:text-slate-400">
-          এখনো কোনো উত্তর বা internal note যোগ করা হয়নি।
+          No replies or internal notes yet.
         </CardBody>
       </Card>
     );

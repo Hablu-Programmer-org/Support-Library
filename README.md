@@ -2,6 +2,8 @@
 
 Staff-first support library for Hablu Programmer. Mentors can record student support cases, add answers, internal notes, external file/video links, and close cases when solved.
 
+The interface is English throughout, with Inter typography and English date formatting. Case and reply content can still be written and searched in any language.
+
 ## Stack
 
 - Next.js 14 App Router

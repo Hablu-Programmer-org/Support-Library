@@ -94,12 +94,12 @@ export default async function CasesPage({
         action={
           canCreate && (
             <Button as={Link} color="primary" href="/dashboard/cases/new">
-              নতুন কেস
+              New Case
             </Button>
           )
         }
-        description="সমস্যা, tag, status বা text দিয়ে পুরনো support case খুঁজুন।"
-        title="সাপোর্ট কেস"
+        description="Find support cases by problem, tag, status or keyword."
+        title="Support Cases"
       />
 
       <CaseFilterPanel
@@ -113,7 +113,7 @@ export default async function CasesPage({
       <Card className="border border-slate-200 dark:border-slate-800">
         <CardBody className="p-0">
           {cases.items.length === 0 ? (
-            <EmptyState>কোনো কেস পাওয়া যায়নি।</EmptyState>
+            <EmptyState>No cases found.</EmptyState>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
               {cases.items.map((supportCase) => (
@@ -153,17 +153,17 @@ export default async function CasesPage({
 
       <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
-          পেজ {cases.page} / {cases.totalPages} · মোট {cases.total}
+          Page {cases.page} of {cases.totalPages} · Total {cases.total}
         </span>
         <div className="flex gap-2">
           {cases.page > 1 && (
             <Button as={Link} href={pageHref(cases.page - 1)} size="sm" variant="flat">
-              আগের
+              Previous
             </Button>
           )}
           {cases.page < cases.totalPages && (
             <Button as={Link} href={pageHref(cases.page + 1)} size="sm" variant="flat">
-              পরের
+              Next
             </Button>
           )}
         </div>

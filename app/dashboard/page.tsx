@@ -18,20 +18,20 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="ড্যাশবোর্ড" />
+      <PageHeader title="Dashboard" />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard hint="মোট কেস" label="সাপোর্ট কেস" value={stats.totalCases} />
-        <StatCard hint="open/pending/follow-up" label="অমীমাংসিত" value={stats.unresolvedCases} />
-        <StatCard hint="নতুন কেস" label="এই সপ্তাহের কেস" value={stats.weeklyCases} />
+        <StatCard hint="Total cases" label="Support Cases" value={stats.totalCases} />
+        <StatCard hint="Open, pending or follow-up" label="Unresolved" value={stats.unresolvedCases} />
+        <StatCard hint="New cases in the last 7 days" label="Cases This Week" value={stats.weeklyCases} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel>
-          <h2 className="mb-3 font-semibold">সাম্প্রতিক অমীমাংসিত কেস</h2>
+          <h2 className="mb-3 font-semibold">Recent Unresolved Cases</h2>
           <div className="space-y-2">
             {recentCases.length === 0 ? (
-              <EmptyState>কোনো unresolved case নেই।</EmptyState>
+              <EmptyState>No unresolved cases.</EmptyState>
             ) : (
               recentCases.map((item) => (
                 <Link
@@ -48,9 +48,9 @@ export default async function DashboardPage() {
         </Panel>
 
         <Panel>
-          <h2 className="mb-3 font-semibold">জনপ্রিয় ট্যাগ</h2>
+          <h2 className="mb-3 font-semibold">Popular Tags</h2>
           {topTags.length === 0 ? (
-            <EmptyState>এখনো tag data নেই।</EmptyState>
+            <EmptyState>No tags yet.</EmptyState>
           ) : (
             <div className="flex flex-wrap gap-2">
               {topTags.map((item) => (

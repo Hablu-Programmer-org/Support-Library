@@ -14,12 +14,12 @@ for (const role of roles) {
 
     test("can access dashboard", async ({ page }) => {
       await page.goto("/dashboard");
-      await expect(page.getByRole("heading", { name: "ড্যাশবোর্ড" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     });
 
     test("can access cases list", async ({ page }) => {
       await page.goto("/dashboard/cases");
-      await expect(page.getByRole("heading", { name: "সাপোর্ট কেস" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Support Cases" })).toBeVisible();
     });
 
     const canMutate = role === "admin" || role === "mentor";
@@ -27,7 +27,7 @@ for (const role of roles) {
     test(`${canMutate ? "can" : "cannot"} create case`, async ({ page }) => {
       await page.goto("/dashboard/cases/new");
       if (canMutate) {
-        await expect(page.getByRole("heading", { name: "নতুন সাপোর্ট কেস" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "New Support Case" })).toBeVisible();
       } else {
         await expect(page).toHaveURL(/\/unauthorized/);
       }

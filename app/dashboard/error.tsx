@@ -16,7 +16,7 @@ export default function DashboardError({
 }) {
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <ErrorContent error={error} reset={reset} message="এই পেজটি লোড করতে সমস্যা হচ্ছে।" />
+      <ErrorContent error={error} reset={reset} message="We could not load this page." />
     </div>
   );
 }

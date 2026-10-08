@@ -11,7 +11,7 @@ export default function Error({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
-      <ErrorContent error={error} reset={reset} message="অপ্রত্যাশিত একটি ত্রুটি ঘটেছে।" />
+      <ErrorContent error={error} reset={reset} message="An unexpected error occurred." />
     </div>
   );
 }

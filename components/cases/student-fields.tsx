@@ -70,14 +70,14 @@ export function StudentFields({
 
   const lookupHint =
     lookup === "checking" ? (
-      <span className="text-slate-500 dark:text-slate-400">LMS-এ খুঁজছি…</span>
+      <span className="text-slate-500 dark:text-slate-400">Searching the LMS…</span>
     ) : lookup === "found" ? (
       <Chip size="sm" variant="flat" color="success">
-        LMS-এ আছে
+        Found in LMS
       </Chip>
     ) : lookup === "notFound" ? (
       <span className="text-amber-600 dark:text-amber-400">
-        LMS-এ পাওয়া যায়নি — নাম ম্যানুয়ালি বসাও
+        No matching LMS user found. Enter the name manually.
       </span>
     ) : null;
 
@@ -90,7 +90,7 @@ export function StudentFields({
       {showNameInput ? (
         <Input
           name="studentName"
-          label="স্টুডেন্ট নাম"
+          label="Student Name"
           value={name}
           onValueChange={(value) => {
             setName(value);
@@ -107,13 +107,13 @@ export function StudentFields({
       <div className="flex flex-col gap-1">
         <Input
           name="studentEmail"
-          label="স্টুডেন্ট ইমেইল"
+          label="Student Email"
           type="email"
           value={email}
           onValueChange={setEmail}
           isRequired
           maxLength={160}
-          description="LMS ইমেইল দিলে নাম নিজে এসে যাবে"
+          description="Enter an LMS email to fill in the name automatically."
         />
         <div className="min-h-5 text-xs">{lookupHint}</div>
       </div>

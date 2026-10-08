@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Hind_Siliguri } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import "./globals.css";
 import { Providers } from "./providers";
@@ -7,10 +7,10 @@ import { Providers } from "./providers";
 // next/font downloads and self-hosts the file, so there is no runtime request to
 // Google and no layout shift. Weights cover the font-normal/medium/semibold/bold
 // utilities used across the app.
-const bangla = Hind_Siliguri({
-  subsets: ["bengali", "latin"],
+const inter = Inter({
+  subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-bangla",
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning is required: next-themes sets the `dark` class on
     // <html> before React hydrates, so the server and client markup differ.
-    <html lang="bn" suppressHydrationWarning className={bangla.variable}>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

@@ -22,12 +22,12 @@ export function ErrorContent({ error, reset, message }: ErrorContentProps) {
   return (
     <Card className="w-full max-w-md border border-slate-200 text-center dark:border-slate-700">
       <CardHeader className="flex flex-col items-center">
-        <h1 className="text-2xl font-bold text-danger">কিছু ভুল হয়েছে</h1>
+        <h1 className="text-2xl font-bold text-danger">Something Went Wrong</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">{message}</p>
       </CardHeader>
       <CardBody className="pt-0">
         <Button onClick={reset} color="primary" className="w-full">
-          আবার চেষ্টা করুন
+          Try Again
         </Button>
       </CardBody>
     </Card>

@@ -47,9 +47,9 @@ A solution article is a reusable answer created from one or more support cases.
 Example:
 
 ```text
-Title: React useEffect infinite loop কেন হয় এবং কীভাবে ঠিক করবেন
+Title: Why React useEffect causes an infinite loop and how to fix it
 Tags: React, useEffect, API, infinite-loop
-Summary: Dependency array-তে unstable object/function দিলে বারবার render হয়।
+Summary: Unstable objects or functions in the dependency array can cause repeated renders.
 ```
 
 One solution article can be linked to many support cases.
@@ -268,7 +268,7 @@ Search should cover:
 Important examples:
 
 - `image show hocche na`
-- `ছবি দেখাচ্ছে না`
+- `Image not displaying`
 - `image not rendering`
 - `useEffect api call loop`
 

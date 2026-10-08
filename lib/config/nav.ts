@@ -16,8 +16,8 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "ড্যাশবোর্ড", href: "/dashboard", exact: true, icon: DashboardIcon },
-  { label: "কেস", href: "/dashboard/cases", icon: CaseIcon },
+  { label: "Dashboard", href: "/dashboard", exact: true, icon: DashboardIcon },
+  { label: "Cases", href: "/dashboard/cases", icon: CaseIcon },
 ];
 
 export function navItemsForRole(role?: UserRole): NavItem[] {

@@ -17,11 +17,11 @@ import { CASE_STATUSES } from "@/models";
 export const dynamic = "force-dynamic";
 
 const statusLabels = {
-  OPEN: "ওপেন",
-  SOLVED: "সলভড",
-  PENDING: "পেন্ডিং",
-  FOLLOW_UP: "ফলো-আপ",
-  ARCHIVED: "আর্কাইভড",
+  OPEN: "Open",
+  SOLVED: "Solved",
+  PENDING: "Pending",
+  FOLLOW_UP: "Follow-up",
+  ARCHIVED: "Archived",
 };
 
 export default async function CaseDetailPage({ params }: { params: { id: string } }) {
@@ -39,7 +39,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Link href="/dashboard/cases" className="text-sm text-primary hover:underline">
-            ← কেস লিস্টে ফিরে যান
+            ← Back to Cases
           </Link>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold">{supportCase.title}</h1>
@@ -53,7 +53,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       </div>
 
       <Card className="border border-slate-200 dark:border-slate-700">
-        <CardHeader className="font-semibold">সমস্যার বিস্তারিত</CardHeader>
+        <CardHeader className="font-semibold">Problem Description</CardHeader>
         <CardBody className="space-y-4">
           <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{supportCase.question}</p>
           <div className="flex flex-wrap gap-2">
@@ -88,7 +88,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                 ))}
               </select>
               <Button type="submit" color="primary" variant="flat">
-                আপডেট
+                Update
               </Button>
             </form>
           </CardBody>
@@ -97,7 +97,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
 
       {canEdit && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">কেস এডিট</h2>
+          <h2 className="text-lg font-semibold">Edit Case</h2>
           <CaseForm supportCase={supportCase} />
         </section>
       )}
@@ -118,7 +118,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       {canEdit && (
         <form action={deleteCaseAction.bind(null, supportCase.id)}>
           <Button type="submit" color="danger" variant="flat">
-            কেস আর্কাইভ করুন
+            Archive Case
           </Button>
         </form>
       )}

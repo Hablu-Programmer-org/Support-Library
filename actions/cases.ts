@@ -76,7 +76,7 @@ export async function createCaseAction(formData: FormData) {
   // Validate attachments before writing the case, including attachment-only answers.
   const solution = hasSolution
     ? supportReplyInputSchema.omit({ caseId: true }).parse({
-        body: solutionBody ?? "সমাধান দেওয়া হয়েছে (ফাইল/ভিডিও লিংকসহ)।",
+        body: solutionBody ?? "See the attached file or video links for the answer.",
         isInternalNote: false,
         fileLinks: solutionFileLinks,
         videoLinks: solutionVideoLinks,

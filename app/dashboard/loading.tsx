@@ -7,7 +7,7 @@
  */
 export default function DashboardLoading() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="লোড হচ্ছে">
+    <div className="space-y-6" aria-busy="true" aria-label="Loading">
       {/* Page title skeleton */}
       <div className="flex flex-col gap-3">
         <div className="h-8 w-48 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />

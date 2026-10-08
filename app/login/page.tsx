@@ -6,10 +6,10 @@ import { Suspense } from "react";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 
 const errorMessages: Record<string, string> = {
-  AccessDenied: "আপনার ইমেইল Hablu Programmer LMS-এ পাওয়া যায়নি।",
-  OAuthSignin: "Google login শুরু করা যায়নি। আবার চেষ্টা করুন।",
-  OAuthCallback: "Google login callback ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
-  Inactive: "আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।",
+  AccessDenied: "Your email was not found in the Hablu Programmer LMS.",
+  OAuthSignin: "Unable to start Google sign-in. Please try again.",
+  OAuthCallback: "Google sign-in could not be completed. Please try again.",
+  Inactive: "Your account has been deactivated.",
 };
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
-  const message = error ? errorMessages[error] ?? "লগইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" : null;
+  const message = error ? errorMessages[error] ?? "Sign-in failed. Please try again." : null;
 
   return <LoginShell message={message} />;
 }
@@ -35,7 +35,7 @@ function LoginShell({ message }: { message?: string | null }) {
         <CardHeader className="text-center">
           <h1 className="text-2xl font-bold">Hablu Support Library</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Hablu Programmer LMS সদস্যদের জন্য
+            For Hablu Programmer LMS members
           </p>
         </CardHeader>
         <CardBody className="pt-0">
@@ -71,7 +71,7 @@ function LoginShell({ message }: { message?: string | null }) {
                 </svg>
               }
             >
-              Google দিয়ে লগইন করুন
+              Sign in with Google
             </Button>
           </div>
         </CardBody>

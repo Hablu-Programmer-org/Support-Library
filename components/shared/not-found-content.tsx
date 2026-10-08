@@ -12,18 +12,18 @@ export function NotFoundContent() {
     <div className="flex min-h-[50vh] items-center justify-center px-4">
       <Card className="w-full max-w-md border border-slate-200 text-center dark:border-slate-700">
         <CardHeader className="flex flex-col items-center">
-          <h1 className="text-2xl font-bold">৪০৪</h1>
+          <h1 className="text-2xl font-bold">404</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            এই পেজটি পাওয়া যায়নি।
+            This page could not be found.
           </p>
         </CardHeader>
         <CardBody className="space-y-3">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            লিংকটি ভুল হতে পারে, বা রেকর্ডটি আর্কাইভ করা হয়েছে।
+            The link may be incorrect, or the record may have been archived.
           </p>
           <Link href="/dashboard" className="block">
             <Button color="primary" className="w-full">
-              ড্যাশবোর্ডে যান
+              Go to Dashboard
             </Button>
           </Link>
         </CardBody>

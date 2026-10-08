@@ -10,10 +10,10 @@ export default function Home() {
           </span>
           <div className="space-y-5">
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-              সাপোর্ট কেস দিয়ে টিমের কাজ সহজ করুন
+              Simplify support for your team
             </h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              প্রতিদিনের student support question, answer, external file link এবং video summary এক জায়গায় সংরক্ষণ করে দ্রুত খুঁজে বের করার জন্য staff-first support library.
+              Keep student questions, answers, file links and video guides in one searchable workspace built for your support team.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -21,13 +21,13 @@ export default function Home() {
               href="/login"
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600"
             >
-              স্টাফ লগইন
+              Staff Sign In
             </Link>
             <Link
               href="/dashboard"
               className="inline-flex items-center justify-center rounded-full border border-slate-300 dark:border-white/15 px-6 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 transition hover:bg-slate-100 dark:hover:bg-white/10"
             >
-              ড্যাশবোর্ডে যান
+              Go to Dashboard
             </Link>
           </div>
         </div>

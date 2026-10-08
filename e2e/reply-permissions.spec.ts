@@ -23,14 +23,14 @@ test.describe("Reply edit/delete permissions", () => {
     const casePath = new URL(page.url()).pathname;
 
     // Admin authors a reply.
-    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "উত্তর যোগ করুন" }) });
+    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
     await replyForm.locator('textarea[name="body"]').fill("Admin authored reply");
-    await replyForm.getByRole("button", { name: "উত্তর যোগ করুন" }).click();
+    await replyForm.getByRole("button", { name: "Add Reply" }).click();
 
     const adminReply = page.locator("article").filter({ hasText: "Admin authored reply" });
     await expect(adminReply).toBeVisible();
-    await expect(adminReply.getByRole("button", { name: "এডিট" })).toBeVisible();
-    await expect(adminReply.getByRole("button", { name: "মুছুন" })).toBeVisible();
+    await expect(adminReply.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
+    await expect(adminReply.getByRole("button", { name: "Delete" })).toBeVisible();
 
     // The same mentor sees the reply but no edit/delete controls on it.
     const mentorContext = await browser.newContext({
@@ -42,8 +42,8 @@ test.describe("Reply edit/delete permissions", () => {
 
     const mentorReply = mentorPage.locator("article").filter({ hasText: "Admin authored reply" });
     await expect(mentorReply).toBeVisible();
-    await expect(mentorReply.getByRole("button", { name: "এডিট" })).toHaveCount(0);
-    await expect(mentorReply.getByRole("button", { name: "মুছুন" })).toHaveCount(0);
+    await expect(mentorReply.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
+    await expect(mentorReply.getByRole("button", { name: "Delete" })).toHaveCount(0);
 
     await mentorContext.close();
   });

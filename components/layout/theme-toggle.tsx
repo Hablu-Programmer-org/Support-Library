@@ -22,7 +22,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      aria-label={theme === "dark" ? "লাইট মোড" : "ডার্ক মোড"}
+      aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
       className="rounded-full p-2"
     >
       {theme === "dark" ? (

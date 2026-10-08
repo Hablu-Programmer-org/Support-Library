@@ -3,11 +3,11 @@ import { Chip } from "@heroui/react";
 import type { CaseStatus } from "@/models";
 
 const statusLabel: Record<CaseStatus, string> = {
-  OPEN: "ওপেন",
-  SOLVED: "সলভড",
-  PENDING: "পেন্ডিং",
-  FOLLOW_UP: "ফলো-আপ",
-  ARCHIVED: "আর্কাইভড",
+  OPEN: "Open",
+  SOLVED: "Solved",
+  PENDING: "Pending",
+  FOLLOW_UP: "Follow-up",
+  ARCHIVED: "Archived",
 };
 
 const statusColor: Record<CaseStatus, "default" | "primary" | "success" | "warning" | "secondary"> = {
