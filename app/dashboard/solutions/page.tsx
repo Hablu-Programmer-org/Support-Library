@@ -14,8 +14,9 @@ export default async function SolutionsPage({ searchParams }: { searchParams?: {
   const q = searchParams?.q ?? "";
   const tag = searchParams?.tag ?? "";
   const page = Number(searchParams?.page ?? "1");
-  const solutions = await listSolutions({ q, tag, page, limit: 20 });
   const canCreate = Boolean(session.user.role && canMutate(session.user.role));
+  // VIEWER sees only PUBLIC solutions; staff sees INTERNAL ones too.
+  const solutions = await listSolutions({ q, tag, page, limit: 20, includeInternal: canCreate });
 
   return (
     <div className="space-y-6">

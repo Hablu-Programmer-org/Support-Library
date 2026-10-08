@@ -22,7 +22,6 @@ dotenv.config({ path: path.resolve(".env.local") });
 const APPLY = process.argv.includes("--apply");
 
 const E2E_TITLE_PREFIX = /^E2E /;
-const E2E_STUDENT_EMAIL = /^e2e\.student\./;
 
 type Plan = {
   collection: string;
@@ -78,11 +77,6 @@ async function main() {
       collection: "solution_articles",
       filter: { title: E2E_TITLE_PREFIX },
       label: "solutions titled 'E2E ...'",
-    },
-    {
-      collection: "student_refs",
-      filter: { email: E2E_STUDENT_EMAIL },
-      label: "students with e2e.student.*@test.com",
     },
     {
       collection: "staff_users",

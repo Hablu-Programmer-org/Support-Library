@@ -26,18 +26,9 @@ test.describe("Solution CRUD (mentor)", () => {
     const caseTitle = `E2E prefilled case ${suffix}`;
     const answer = `E2E suggested fix ${suffix}`;
 
-    await page.goto("/dashboard/students/new");
-    await page.fill('input[name="name"]', "E2E Prefill Student");
-    await page.fill('input[name="studentId"]', `e2e-prefill-${suffix}`);
-    await page.fill('input[name="email"]', `e2e.prefill.${suffix}@test.com`);
-    await Promise.all([
-      page.waitForURL(/\/dashboard\/students\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
-    ]);
-    const studentId = page.url().split("/").pop()!;
-
-    await page.goto(`/dashboard/cases/new?studentId=${studentId}`);
-    await page.selectOption('select[name="studentRefId"]', studentId);
+    await page.goto("/dashboard/cases/new");
+    await page.fill('input[name="studentName"]', "E2E Prefill Student");
+    await page.fill('input[name="studentEmail"]', `e2e.prefill.${suffix}@test.com`);
     await page.fill('input[name="title"]', caseTitle);
     await page.fill('textarea[name="question"]', `E2E question ${suffix}`);
     await page.locator("details").filter({ hasText: "অপশনাল তথ্য" }).locator("summary").click();

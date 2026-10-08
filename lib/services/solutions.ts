@@ -27,7 +27,8 @@ export type SolutionListItem = {
 export type SolutionListParams = {
   q?: string;
   tag?: string;
-  visibility?: SolutionVisibility;
+  /** When false, INTERNAL solutions are hidden (VIEWER read-only access). */
+  includeInternal?: boolean;
   page?: number;
   limit?: number;
 };
@@ -107,7 +108,7 @@ export async function listSolutions(params: SolutionListParams = {}) {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const filter: Record<string, unknown> = { deletedAt: null };
-  if (params.visibility) filter.visibility = params.visibility;
+  if (params.includeInternal === false) filter.visibility = "PUBLIC";
   if (params.tag) filter.tags = params.tag.toLowerCase();
   const searchRegex = buildSearchRegex(params.q);
   if (searchRegex) filter.searchText = searchRegex;

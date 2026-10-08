@@ -4,12 +4,9 @@ import { CASE_PRIORITIES, CASE_STATUSES } from "./shared";
 
 const supportCaseSchema = new mongoose.Schema(
   {
-    studentRefId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "StudentRef",
-      required: true,
-      index: true,
-    },
+    studentName: { type: String, required: true, trim: true, maxlength: 120 },
+    studentEmail: { type: String, required: true, lowercase: true, trim: true, maxlength: 160 },
+    lmsUserId: { type: String, default: null },
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },
     courseSlug: { type: String, trim: true, default: null, index: true },

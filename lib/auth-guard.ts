@@ -37,10 +37,6 @@ export async function assertRole(...allowed: UserRole[]): Promise<AuthGuardResul
   return { ok: true, session };
 }
 
-export async function requireAdmin() {
-  return requireRole("ADMIN");
-}
-
 export async function requireMentorOrAdmin() {
   return requireRole("ADMIN", "MENTOR");
 }

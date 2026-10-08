@@ -28,24 +28,33 @@ async function openFilters(page: Page) {
   await expect(page.locator('select[name="status"]')).toBeVisible();
 }
 
-async function createStudent(page: Page, suffix: string) {
-  await page.goto("/dashboard/students/new");
-  await page.fill('input[name="name"]', "E2E Filter Student");
-  await page.fill('input[name="studentId"]', `e2e-filter-${suffix}`);
-  await page.fill('input[name="email"]', `e2e.filter.${suffix}@test.com`);
-  await submit(page, /\/dashboard\/students\/[a-f0-9]{24}$/);
-  return page.url().split("/").pop()!;
+// A filter navigation re-renders the panel, and React hydration can reset a
+// select or input to its URL-backed defaultValue after it was set, so the next
+// submit posts a stale or empty value. Re-fill and resubmit until the URL
+// reflects the selection.
+async function filterWith(page: Page, url: RegExp, fill: () => Promise<unknown>) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await fill();
+    await page.getByRole("button", { name: "ফিল্টার" }).click();
+    const applied = await page
+      .waitForURL(url, { timeout: 6_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (applied) return;
+  }
+  throw new Error(`Filter never applied (expected ${url})`);
 }
 
 async function createCase(
   page: Page,
-  studentMongoId: string,
+  suffix: string,
   title: string,
   courseSlug: string,
   batchNo: string,
 ) {
-  await page.goto(`/dashboard/cases/new?studentId=${studentMongoId}`);
-  await page.selectOption('select[name="studentRefId"]', studentMongoId);
+  await page.goto("/dashboard/cases/new");
+  await page.fill('input[name="studentName"]', "E2E Filter Student");
+  await page.fill('input[name="studentEmail"]', `e2e.filter.${suffix}@test.com`);
   await page.fill('input[name="title"]', title);
   await page.fill('textarea[name="question"]', `Body for ${title}`);
 
@@ -62,10 +71,9 @@ const caseHeading = (page: Page, title: string) => page.getByRole("heading", { n
 test.describe("Case list filters (mentor)", () => {
   test("filters by course and batch", async ({ page }) => {
     const suffix = Date.now().toString();
-    const studentMongoId = await createStudent(page, suffix);
 
-    await createCase(page, studentMongoId, "E2E filter react case", "react-beginner", "7");
-    await createCase(page, studentMongoId, "E2E filter python case", "python-basics", "9");
+    await createCase(page, suffix, "E2E filter react case", "react-beginner", "7");
+    await createCase(page, suffix, "E2E filter python case", "python-basics", "9");
 
     await page.goto("/dashboard/cases");
     await openFilters(page);
@@ -74,16 +82,14 @@ test.describe("Case list filters (mentor)", () => {
     await expect(page.locator('select[name="courseSlug"] option[value="react-beginner"]')).toHaveCount(1);
     await expect(page.locator('select[name="batchNo"] option[value="7"]')).toHaveCount(1);
 
-    await page.selectOption('select[name="courseSlug"]', "react-beginner");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
-    await expect(page).toHaveURL(/courseSlug=react-beginner/);
+    await filterWith(page, /courseSlug=react-beginner/, () =>
+      page.selectOption('select[name="courseSlug"]', "react-beginner"),
+    );
     await expect(caseHeading(page, "E2E filter react case")).toBeVisible();
     await expect(caseHeading(page, "E2E filter python case")).toHaveCount(0);
 
     // Adding a batch that belongs to the other course must yield nothing.
-    await page.selectOption('select[name="batchNo"]', "9");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
-    await expect(page).toHaveURL(/batchNo=9/);
+    await filterWith(page, /batchNo=9/, () => page.selectOption('select[name="batchNo"]', "9"));
     await expect(caseHeading(page, "E2E filter react case")).toHaveCount(0);
     await expect(caseHeading(page, "E2E filter python case")).toHaveCount(0);
 
@@ -97,27 +103,28 @@ test.describe("Case list filters (mentor)", () => {
 
   test("filters by mentor and date range", async ({ page }) => {
     const suffix = Date.now().toString();
-    const studentMongoId = await createStudent(page, suffix);
-    await createCase(page, studentMongoId, "E2E filter mentor case", "react-beginner", "11");
+    await createCase(page, suffix, "E2E filter mentor case", "react-beginner", "11");
 
     await page.goto("/dashboard/cases");
     await openFilters(page);
 
     // Cases created by this mentor default to mentorId = the signed-in mentor.
-    await page.selectOption('select[name="mentorId"]', { label: "Mentor User" });
-    await page.fill('input[name="from"]', "2000-01-01");
-    await page.fill('input[name="to"]', "2999-12-31");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
-
-    await expect(page).toHaveURL(/mentorId=[a-f0-9]{24}/);
-    await expect(page).toHaveURL(/from=2000-01-01/);
-    await expect(page).toHaveURL(/to=2999-12-31/);
+    await filterWith(
+      page,
+      /mentorId=[a-f0-9]{24}&from=2000-01-01&to=2999-12-31/,
+      async () => {
+        await page.selectOption('select[name="mentorId"]', { label: "Mentor User" });
+        await page.fill('input[name="from"]', "2000-01-01");
+        await page.fill('input[name="to"]', "2999-12-31");
+      },
+    );
     await expect(caseHeading(page, "E2E filter mentor case")).toBeVisible();
 
     // A date range that ends before the case was created must exclude it.
-    await page.fill('input[name="from"]', "2000-01-01");
-    await page.fill('input[name="to"]', "2000-01-02");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
+    await filterWith(page, /from=2000-01-01&to=2000-01-02/, async () => {
+      await page.fill('input[name="from"]', "2000-01-01");
+      await page.fill('input[name="to"]', "2000-01-02");
+    });
     await expect(caseHeading(page, "E2E filter mentor case")).toHaveCount(0);
   });
 
@@ -125,12 +132,7 @@ test.describe("Case list filters (mentor)", () => {
     await page.goto("/dashboard/cases");
     await openFilters(page);
 
-    await page.selectOption('select[name="sort"]', "oldest");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
-    await expect(page).toHaveURL(/sort=oldest/);
-
-    await page.selectOption('select[name="sort"]', "priority");
-    await page.getByRole("button", { name: "ফিল্টার" }).click();
-    await expect(page).toHaveURL(/sort=priority/);
+    await filterWith(page, /sort=oldest/, () => page.selectOption('select[name="sort"]', "oldest"));
+    await filterWith(page, /sort=priority/, () => page.selectOption('select[name="sort"]', "priority"));
   });
 });

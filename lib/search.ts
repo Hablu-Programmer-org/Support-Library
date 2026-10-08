@@ -26,6 +26,8 @@ export const buildSearchRegex = (query?: string | null) => {
 export type CaseSearchTextSource = {
   title: string;
   question: string;
+  studentName?: string | null;
+  studentEmail?: string | null;
   courseSlug?: string | null;
   moduleSlug?: string | null;
   contentSlug?: string | null;
@@ -37,6 +39,8 @@ export const buildCaseSearchText = (input: CaseSearchTextSource) =>
   joinSearchText([
     input.title,
     input.question,
+    input.studentName,
+    input.studentEmail,
     input.courseSlug,
     input.moduleSlug,
     input.contentSlug,

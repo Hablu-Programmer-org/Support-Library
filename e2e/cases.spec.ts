@@ -3,22 +3,10 @@ import { test, expect } from "@playwright/test";
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
 test.describe("Case CRUD (mentor)", () => {
-  test("creates a student, case, replies, and updates status", async ({ page }) => {
-    const suffix = Date.now().toString();
-    const studentId = `e2e-student-${suffix}`;
-
-    await page.goto("/dashboard/students/new");
-    await page.fill('input[name="name"]', "E2E Test Student");
-    await page.fill('input[name="studentId"]', studentId);
-    await page.fill('input[name="email"]', `e2e.student.${suffix}@test.com`);
-    await Promise.all([
-      page.waitForURL(/\/dashboard\/students\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
-    ]);
-    const studentMongoId = page.url().split("/").pop()!;
-
-    await page.goto(`/dashboard/cases/new?studentId=${studentMongoId}`);
-    await page.selectOption('select[name="studentRefId"]', studentMongoId);
+  test("creates a case, replies, and updates status", async ({ page }) => {
+    await page.goto("/dashboard/cases/new");
+    await page.fill('input[name="studentName"]', "E2E Test Student");
+    await page.fill('input[name="studentEmail"]', `e2e.student.${Date.now().toString()}@test.com`);
     await page.fill('input[name="title"]', "E2E React image not rendering");
     await page.fill('textarea[name="question"]', "Image show hocche na in React component");
     await page.selectOption('select[name="status"]', "OPEN");
@@ -60,5 +48,19 @@ test.describe("Case CRUD (mentor)", () => {
     ).toBeVisible();
     await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toHaveCount(0);
     await expect(page.locator("article").filter({ hasText: "edited" }).first()).toBeVisible();
+  });
+
+  test("autofills student name from an LMS email match", async ({ page }) => {
+    await page.goto("/dashboard/cases/new");
+
+    await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
+    await expect(page.locator('input[name="studentName"]')).toHaveValue("E2E LMS Student");
+    await expect(page.getByText("LMS-এ আছে")).toBeVisible();
+
+    // A manual name edit must not be clobbered by a later lookup.
+    await page.fill('input[name="studentName"]', "Manual Name");
+    await page.fill('input[name="studentEmail"]', "some.other.member@test.com");
+    await expect(page.getByText("LMS-এ পাওয়া যায়নি")).toBeVisible();
+    await expect(page.locator('input[name="studentName"]')).toHaveValue("Manual Name");
   });
 });

@@ -10,20 +10,10 @@ test.describe("Reply edit/delete permissions", () => {
 
   test("only the author or an admin sees edit and delete", async ({ page, browser }) => {
     const baseURL = test.info().project.use.baseURL as string;
-    const suffix = Date.now().toString();
 
-    await page.goto("/dashboard/students/new");
-    await page.fill('input[name="name"]', "E2E Perm Student");
-    await page.fill('input[name="studentId"]', `e2e-perm-${suffix}`);
-    await page.fill('input[name="email"]', `e2e.perm.${suffix}@test.com`);
-    await Promise.all([
-      page.waitForURL(/\/dashboard\/students\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
-    ]);
-    const studentMongoId = page.url().split("/").pop()!;
-
-    await page.goto(`/dashboard/cases/new?studentId=${studentMongoId}`);
-    await page.selectOption('select[name="studentRefId"]', studentMongoId);
+    await page.goto("/dashboard/cases/new");
+    await page.fill('input[name="studentName"]', "E2E Perm Student");
+    await page.fill('input[name="studentEmail"]', `e2e.perm.${Date.now().toString()}@test.com`);
     await page.fill('input[name="title"]', "E2E permission case");
     await page.fill('textarea[name="question"]', "Who may edit this reply?");
     await Promise.all([

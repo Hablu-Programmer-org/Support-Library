@@ -6,10 +6,10 @@ import { Suspense } from "react";
 import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 
 const errorMessages: Record<string, string> = {
-  AccessDenied: "আপনার ইমেইল স্টাফ allowlist-এ নেই।",
-  OAuthSignin: "Google login শুরু করা যায়নি। আবার চেষ্টা করুন।",
-  OAuthCallback: "Google login callback ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
-  Inactive: "আপনার staff account inactive করা হয়েছে।",
+  AccessDenied: "আপনার ইমেইল Hablu Programmer LMS-এ পাওয়া যায়নি।",
+  OAuthSignin: "Google login শুরু করা যায়নি। আবার চেষ্টা করুন।",
+  OAuthCallback: "Google login callback ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
+  Inactive: "আপনার অ্যাকাউন্ট নিষ্ক্রিয় করা হয়েছে।",
 };
 
 export default function LoginPage() {
@@ -35,7 +35,7 @@ function LoginShell({ message }: { message?: string | null }) {
         <CardHeader className="text-center">
           <h1 className="text-2xl font-bold">Hablu Support Library</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            শুধুমাত্র Hablu Programmer স্টাফদের জন্য
+            Hablu Programmer LMS সদস্যদের জন্য
           </p>
         </CardHeader>
         <CardBody className="pt-0">

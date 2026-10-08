@@ -35,11 +35,20 @@ describe("case search text", () => {
   const supportCase = {
     title: "React image not rendering",
     question: "ছবি দেখাচ্ছে না",
+    studentName: "রহিম উদ্দিন",
+    studentEmail: "rahim@example.com",
     courseSlug: "react-beginner",
     moduleSlug: "assets",
     contentSlug: "images-lecture",
     tags: ["react", "image"],
   };
+
+  it("includes the student name and email", () => {
+    const text = buildCaseSearchText(supportCase);
+
+    expect(text).toContain("রহিম উদ্দিন");
+    expect(text).toContain("rahim@example.com");
+  });
 
   it("includes course, module and content slugs", () => {
     const text = buildCaseSearchText(supportCase);

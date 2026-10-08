@@ -22,13 +22,12 @@ Fill `.env.local`:
 
 - `MONGODB_URI`
 - `MONGODB_DB`
+- `LMS_MONGODB_DB` (hp-v2 database name; default `hp-v2`)
 - `AUTH_SECRET`
 - `AUTH_GOOGLE_ID`
 - `AUTH_GOOGLE_SECRET`
 - `AUTH_URL=http://localhost:3000`
 - `AUTH_TRUST_HOST=true`
-- `STAFF_EMAIL_ALLOWLIST`
-- `INITIAL_ADMIN_EMAIL`
 
 Run locally:
 
@@ -44,7 +43,7 @@ cmd /c "npm run db:seed"
 cmd /c "npm run db:seed -- --demo"
 ```
 
-`db:seed` promotes `SEED_ADMIN_EMAIL` or `INITIAL_ADMIN_EMAIL` to `ADMIN` idempotently.
+`db:seed` promotes `SEED_ADMIN_EMAIL` to `ADMIN` idempotently.
 
 Cleanup and diagnostics:
 
@@ -84,18 +83,17 @@ cmd /c "npm run test:e2e"
 
 ## Core Flows
 
-- Google login with staff email allowlist
-- Initial admin via `INITIAL_ADMIN_EMAIL`
-- Admin promotes staff from `VIEWER` to `MENTOR` or `ADMIN`
-- Mentor creates student records
+- Google login for all Hablu Programmer LMS members (roles read from hp-v2)
+- hp-v2 roles map to `ADMIN` / `MENTOR` / `VIEWER`; an unknown or inactive account is denied
+- Case forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
 - Mentor creates support cases
 - Mentor adds replies, internal notes, external file links and video links
 - Mentor creates reusable solution articles
+- VIEWER (students) can read cases but never see internal notes or INTERNAL solutions
 - Cases link to solution articles via `case_solution_links`
 - A case can be turned into a solution draft with fields prefilled from the case and its latest public reply
 - Cases list filters by course, batch, mentor and date range
-- Global search covers cases and solutions
-- Dashboard and analytics show real DB counts, per-course and per-batch breakdowns, and mentor workload (ADMIN/MENTOR only)
+- Dashboard shows real DB counts and recent unresolved cases
 
 ## Deploy Notes
 

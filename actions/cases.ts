@@ -22,7 +22,9 @@ const parseTags = (value?: string) =>
 
 const parseCaseForm = (formData: FormData) =>
   supportCaseInputSchema.parse({
-    studentRefId: formValue(formData, "studentRefId"),
+    studentName: formValue(formData, "studentName"),
+    studentEmail: formValue(formData, "studentEmail"),
+    lmsUserId: formValue(formData, "lmsUserId"),
     title: formValue(formData, "title"),
     question: formValue(formData, "question"),
     status: formValue(formData, "status") ?? "OPEN",
@@ -40,7 +42,6 @@ export async function createCaseAction(formData: FormData) {
 
   const supportCase = await createCase(parseCaseForm(formData), guard.session.user.id);
   revalidatePath("/dashboard/cases");
-  revalidatePath(`/dashboard/students/${supportCase.studentRefId}`);
   redirect(`/dashboard/cases/${supportCase.id}`);
 }
 

@@ -18,17 +18,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        action={
-          <Link
-            className="text-sm text-cyan-600 hover:underline dark:text-cyan-400"
-            href="/dashboard/analytics"
-          >
-            বিস্তারিত অ্যানালিটিক্স
-          </Link>
-        }
-        title="ড্যাশবোর্ড"
-      />
+      <PageHeader title="ড্যাশবোর্ড" />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard hint="মোট কেস" label="সাপোর্ট কেস" value={stats.totalCases} />

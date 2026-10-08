@@ -1,15 +1,14 @@
-import { Button, Card, CardBody, Input, Textarea } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
+import { Input, Textarea } from "@heroui/react";
 
 import { createCaseAction, updateCaseAction } from "@/actions/cases";
+import { StudentFields } from "@/components/cases/student-fields";
 import { nativeSelectClass } from "@/lib/config/fields";
 import type { SupportCaseListItem } from "@/lib/services/cases";
-import type { StudentListItem } from "@/lib/services/students";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models";
 
 type CaseFormProps = {
-  students: StudentListItem[];
   supportCase?: SupportCaseListItem;
-  selectedStudentId?: string;
 };
 
 const statusLabels = {
@@ -27,33 +26,19 @@ const priorityLabels = {
   URGENT: "আর্জেন্ট",
 };
 
-export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormProps) {
+export function CaseForm({ supportCase }: CaseFormProps) {
   const action = supportCase ? updateCaseAction.bind(null, supportCase.id) : createCaseAction;
-  const studentValue = supportCase?.studentRefId ?? selectedStudentId ?? "";
 
   return (
     <Card className="border border-slate-200 dark:border-slate-700">
       <CardBody>
         <form action={action} className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              স্টুডেন্ট <span className="text-danger">*</span>
-              <select
-                name="studentRefId"
-                defaultValue={studentValue}
-                required
-                className={nativeSelectClass}
-              >
-                <option value="" disabled>
-                  স্টুডেন্ট নির্বাচন করুন
-                </option>
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.name} {student.studentId ? `(${student.studentId})` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <StudentFields
+              initialName={supportCase?.studentName}
+              initialEmail={supportCase?.studentEmail ?? undefined}
+              initialLmsUserId={supportCase?.lmsUserId}
+            />
 
             <label className="flex flex-col gap-2 text-sm font-medium">
               স্ট্যাটাস <span className="text-danger">*</span>
@@ -93,7 +78,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 name="tags"
                 label="Tags"
                 defaultValue={supportCase?.tags.join(", ")}
-                description="কমা দিয়ে আলাদা করুন: react, image, api"
+                description="কমা দিয়ে আলাদা করুন: react, image, api"
               />
               <label className="flex flex-col gap-2 text-sm font-medium">
                 Priority

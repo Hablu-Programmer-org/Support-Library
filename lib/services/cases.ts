@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { buildCaseSearchText, buildSearchRegex } from "@/lib/search";
 import { supportCaseInputSchema, type SupportCaseFilter, type SupportCaseInput } from "@/lib/validation";
-import { CASE_PRIORITIES, StudentRefModel, SupportCaseModel, type CaseStatus } from "@/models";
+import { CASE_PRIORITIES, SupportCaseModel, type CaseStatus } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
 
@@ -16,10 +16,9 @@ const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
 
 export type SupportCaseListItem = {
   id: string;
-  studentRefId: string;
-  studentName?: string;
-  studentEmail?: string | null;
-  studentId?: string | null;
+  studentName: string;
+  studentEmail: string | null;
+  lmsUserId?: string | null;
   title: string;
   question: string;
   status: CaseStatus;
@@ -36,38 +35,21 @@ export type CaseListParams = SupportCaseFilter & {
   limit?: number;
 };
 
-const toCaseListItem = (item: LeanDoc, students: Map<string, LeanDoc> = new Map()): SupportCaseListItem => {
-  const studentRefId = String(item.studentRefId);
-  const student = students.get(studentRefId);
-
-  return {
-    id: String(item._id),
-    studentRefId,
-    studentName: student?.name as string | undefined,
-    studentEmail: student?.email as string | null | undefined,
-    studentId: student?.studentId as string | null | undefined,
-    title: String(item.title),
-    question: String(item.question),
-    status: item.status as CaseStatus,
-    priority: item.priority as string | null | undefined,
-    courseSlug: item.courseSlug as string | null | undefined,
-    batchNo: item.batchNo as number | null | undefined,
-    tags: Array.isArray(item.tags) ? item.tags as string[] : [],
-    createdAt: item.createdAt as Date | undefined,
-    updatedAt: item.updatedAt as Date | undefined,
-  };
-};
-
-async function buildStudentMap(cases: LeanDoc[]) {
-  const ids = [...new Set(cases.map((item) => String(item.studentRefId)).filter(Boolean))];
-  if (!ids.length) return new Map<string, LeanDoc>();
-
-  const students = await StudentRefModel.find({ _id: { $in: ids } })
-    .select("name email studentId")
-    .lean();
-
-  return new Map(students.map((student) => [String(student._id), student as LeanDoc]));
-}
+const toCaseListItem = (item: LeanDoc): SupportCaseListItem => ({
+  id: String(item._id),
+  studentName: String(item.studentName ?? ""),
+  studentEmail: (item.studentEmail as string | null) ?? null,
+  lmsUserId: (item.lmsUserId as string | null) ?? null,
+  title: String(item.title),
+  question: String(item.question),
+  status: item.status as CaseStatus,
+  priority: item.priority as string | null | undefined,
+  courseSlug: item.courseSlug as string | null | undefined,
+  batchNo: item.batchNo as number | null | undefined,
+  tags: Array.isArray(item.tags) ? item.tags as string[] : [],
+  createdAt: item.createdAt as Date | undefined,
+  updatedAt: item.updatedAt as Date | undefined,
+});
 
 function buildCaseFilter(params: CaseListParams = {}) {
   const filter: Record<string, unknown> = { deletedAt: null };
@@ -77,7 +59,6 @@ function buildCaseFilter(params: CaseListParams = {}) {
   if (params.batchNo) filter.batchNo = params.batchNo;
   if (params.tag) filter.tags = params.tag.toLowerCase();
   if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) filter.mentorId = params.mentorId;
-  if (params.studentRefId && mongoose.Types.ObjectId.isValid(params.studentRefId)) filter.studentRefId = params.studentRefId;
   const searchRegex = buildSearchRegex(params.q);
   if (searchRegex) filter.searchText = searchRegex;
   if (params.from || params.to) {
@@ -192,19 +173,14 @@ export async function listCases(params: CaseListParams = {}) {
           .lean();
 
   const [items, total] = await Promise.all([itemsQuery, SupportCaseModel.countDocuments(filter)]);
-  const students = await buildStudentMap(items as LeanDoc[]);
 
   return {
-    items: (items as LeanDoc[]).map((item) => toCaseListItem(item, students)),
+    items: (items as LeanDoc[]).map(toCaseListItem),
     page,
     limit,
     total,
     totalPages: Math.max(1, Math.ceil(total / limit)),
   };
-}
-
-export async function listCasesByStudent(studentRefId: string, limit = 20) {
-  return listCases({ studentRefId, page: 1, limit });
 }
 
 /**
@@ -239,6 +215,5 @@ export async function getCaseDetail(id: string) {
   const supportCase = await SupportCaseModel.findOne({ _id: id, deletedAt: null }).lean();
   if (!supportCase) return null;
 
-  const students = await buildStudentMap([supportCase as LeanDoc]);
-  return toCaseListItem(supportCase as LeanDoc, students);
+  return toCaseListItem(supportCase as LeanDoc);
 }

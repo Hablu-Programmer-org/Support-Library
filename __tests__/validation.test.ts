@@ -4,7 +4,6 @@ import {
   caseSolutionLinkInputSchema,
   externalFileLinkSchema,
   solutionArticleInputSchema,
-  studentRefInputSchema,
   supportCaseInputSchema,
   supportReplyInputSchema,
 } from "@/lib/validation";
@@ -12,22 +11,29 @@ import {
 const objectId = "507f1f77bcf86cd799439011";
 
 describe("product validation", () => {
-  it("normalizes student email and rejects unknown keys", () => {
+  it("normalizes the case student email and rejects unknown keys", () => {
     expect(
-      studentRefInputSchema.parse({
-        name: "Rahim Uddin",
-        email: " RAHIM@example.COM ",
-      }).email,
+      supportCaseInputSchema.parse({
+        studentName: "Rahim Uddin",
+        studentEmail: " RAHIM@example.COM ",
+        title: "React image problem",
+        question: "Image show hocche na in React component",
+      }).studentEmail,
     ).toBe("rahim@example.com");
 
     expect(() =>
-      studentRefInputSchema.parse({ name: "Rahim", role: "ADMIN" }),
+      supportCaseInputSchema.parse({
+        studentName: "Rahim",
+        studentEmail: "rahim@example.com",
+        role: "ADMIN",
+      }),
     ).toThrow();
   });
 
   it("defaults case status/priority and normalizes unique tags", () => {
     const parsed = supportCaseInputSchema.parse({
-      studentRefId: objectId,
+      studentName: "Rahim Uddin",
+      studentEmail: "rahim@example.com",
       title: "React image problem",
       question: "Image show hocche na in React component",
       tags: ["React", "react", "next.js"],
@@ -38,10 +44,11 @@ describe("product validation", () => {
     expect(parsed.tags).toEqual(["react", "next.js"]);
   });
 
-  it("rejects invalid case ids", () => {
+  it("rejects a missing student email", () => {
     expect(() =>
       supportCaseInputSchema.parse({
-        studentRefId: "bad-id",
+        studentName: "Rahim Uddin",
+        studentEmail: "not-an-email",
         title: "React image problem",
         question: "Image show hocche na in React component",
       }),

@@ -26,12 +26,6 @@ export default auth((req) => {
     return NextResponse.redirect(url);
   }
 
-  const role = req.auth.user.role;
-
-  if (pathname.startsWith("/dashboard/admin") && role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/unauthorized", nextUrl));
-  }
-
   return NextResponse.next();
 });
 

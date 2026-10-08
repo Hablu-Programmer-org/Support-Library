@@ -15,7 +15,6 @@ import { getCaseDetail } from "@/lib/services/cases";
 import { listSolutionsForCase } from "@/lib/services/links";
 import { listReplies } from "@/lib/services/replies";
 import { listSolutions } from "@/lib/services/solutions";
-import { listStudents } from "@/lib/services/students";
 import { CASE_STATUSES } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +32,12 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
   const supportCase = await getCaseDetail(params.id);
   if (!supportCase) notFound();
 
-  const replies = await listReplies(supportCase.id);
-  const students = await listStudents({ limit: 100 });
-  const linkedSolutions = await listSolutionsForCase(supportCase.id);
-  const allSolutions = await listSolutions({ limit: 100 });
+  // VIEWER (students) must not see staff-only content: internal notes and
+  // INTERNAL solutions. Staff (ADMIN/MENTOR) get everything.
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
+  const replies = await listReplies(supportCase.id, canEdit);
+  const linkedSolutions = await listSolutionsForCase(supportCase.id, canEdit);
+  const allSolutions = await listSolutions({ limit: 100, includeInternal: canEdit });
 
   return (
     <div className="space-y-6">
@@ -51,10 +51,8 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <StatusBadge status={supportCase.status} />
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            <Link href={`/dashboard/students/${supportCase.studentRefId}`} className="text-primary hover:underline">
-              {supportCase.studentName ?? "Student"}
-            </Link>
-            {supportCase.studentId ? ` · ${supportCase.studentId}` : ""}
+            {supportCase.studentName}
+            {supportCase.studentEmail ? ` · ${supportCase.studentEmail}` : ""}
           </p>
         </div>
         {canEdit && (
@@ -110,7 +108,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
       {canEdit && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">কেস এডিট</h2>
-          <CaseForm students={students.items} supportCase={supportCase} />
+          <CaseForm supportCase={supportCase} />
         </section>
       )}
 

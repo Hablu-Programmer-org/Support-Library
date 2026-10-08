@@ -130,8 +130,8 @@ export default async function CasesPage({
                       </div>
                       <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportCase.question}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {supportCase.studentName ?? "Unknown student"}
-                        {supportCase.studentId ? ` · ${supportCase.studentId}` : ""}
+                        {supportCase.studentName || "Unknown student"}
+                        {supportCase.studentEmail ? ` · ${supportCase.studentEmail}` : ""}
                       </p>
                     </div>
                     {supportCase.tags.length > 0 && (

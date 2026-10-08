@@ -25,7 +25,8 @@ const toSolution = (solution: LeanDoc): SolutionListItem => ({
 
 const toCase = (supportCase: LeanDoc): SupportCaseListItem => ({
   id: String(supportCase._id),
-  studentRefId: String(supportCase.studentRefId),
+  studentName: String(supportCase.studentName ?? ""),
+  studentEmail: (supportCase.studentEmail as string | null) ?? null,
   title: String(supportCase.title),
   question: String(supportCase.question),
   status: supportCase.status as SupportCaseListItem["status"],
@@ -60,7 +61,7 @@ export async function unlinkSolutionFromCase(caseId: string, solutionArticleId: 
   return CaseSolutionLinkModel.findOneAndDelete({ caseId, solutionArticleId }).lean();
 }
 
-export async function listSolutionsForCase(caseId: string) {
+export async function listSolutionsForCase(caseId: string, includeInternal = true) {
   if (!mongoose.Types.ObjectId.isValid(caseId)) return [];
   await dbConnect();
 
@@ -68,7 +69,10 @@ export async function listSolutionsForCase(caseId: string) {
   const ids = links.map((link) => link.solutionArticleId);
   if (!ids.length) return [];
 
-  const solutions = await SolutionArticleModel.find({ _id: { $in: ids }, deletedAt: null }).lean();
+  const filter: Record<string, unknown> = { _id: { $in: ids }, deletedAt: null };
+  if (includeInternal === false) filter.visibility = "PUBLIC";
+
+  const solutions = await SolutionArticleModel.find(filter).lean();
   return (solutions as LeanDoc[]).map(toSolution);
 }
 

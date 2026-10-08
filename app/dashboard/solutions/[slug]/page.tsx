@@ -16,9 +16,13 @@ export default async function SolutionDetailPage({ params }: { params: { slug: s
   const session = await requireSession();
   const solution = await getSolutionBySlug(params.slug);
   if (!solution) notFound();
-  const linkedCases = await listCasesForSolution(solution.id);
 
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
+  // VIEWER must not read INTERNAL solutions, including via a direct slug URL.
+  if (solution.visibility !== "PUBLIC" && !canEdit) notFound();
+
+  const linkedCases = await listCasesForSolution(solution.id);
+
   const isAdmin = session.user.role === "ADMIN";
 
   return (

@@ -28,15 +28,6 @@ export const DashboardIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
-export const StudentIcon: FC<IconSvgProps> = ({ size, ...props }) => (
-  <svg {...base(size)} {...props}>
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
 export const CaseIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -64,19 +55,5 @@ export const SearchIcon: FC<IconSvgProps> = ({ size, ...props }) => (
 export const ChevronDownIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="m6 9 6 6 6-6" />
-  </svg>
-);
-
-export const AnalyticsIcon: FC<IconSvgProps> = ({ size, ...props }) => (
-  <svg {...base(size)} {...props}>
-    <path d="M3 3v18h18" />
-    <path d="M7 15l4-5 3.5 3.5L20 7" />
-  </svg>
-);
-
-export const AdminIcon: FC<IconSvgProps> = ({ size, ...props }) => (
-  <svg {...base(size)} {...props}>
-    <path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10z" />
-    <path d="M9 12l2 2 4-4" />
   </svg>
 );

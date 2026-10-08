@@ -12,6 +12,9 @@ const { devDb, testDb } = resolveE2EDatabase();
 process.env.MONGODB_DEV_DB = devDb ?? "";
 process.env.MONGODB_TEST_DB = testDb;
 process.env.MONGODB_DB = testDb;
+// hp-v2 lookups (login + case autocomplete) read LMS_MONGODB_DB. Pin it to the
+// throwaway e2e database too, so no test ever touches the real hp-v2 data.
+process.env.LMS_MONGODB_DB = testDb;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -34,6 +37,7 @@ export default defineConfig({
       MONGODB_DB: testDb,
       MONGODB_TEST_DB: testDb,
       MONGODB_DEV_DB: devDb ?? "",
+      LMS_MONGODB_DB: testDb,
     },
   },
   projects: [

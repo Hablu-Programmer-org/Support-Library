@@ -2,7 +2,6 @@ import { dbConnect } from "../lib/db";
 import {
   CaseSolutionLinkModel,
   SolutionArticleModel,
-  StudentRefModel,
   SupportCaseModel,
   SupportReplyModel,
   UserModel,
@@ -10,7 +9,6 @@ import {
 
 const models = [
   UserModel,
-  StudentRefModel,
   SupportCaseModel,
   SupportReplyModel,
   SolutionArticleModel,
