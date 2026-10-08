@@ -1,6 +1,7 @@
 import { Button, Card, CardBody, Input, Textarea } from "@heroui/react";
 
 import { createSolutionAction, updateSolutionAction } from "@/actions/solutions";
+import { nativeSelectClass } from "@/lib/config/fields";
 import type { SolutionListItem } from "@/lib/services/solutions";
 import type { SolutionPrefill } from "@/lib/solution-prefill";
 
@@ -76,7 +77,7 @@ export function SolutionForm({
               name="visibility"
               defaultValue={solution?.visibility ?? "INTERNAL"}
               disabled={!canPublish}
-              className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900"
+              className={nativeSelectClass}
             >
               <option value="INTERNAL">Internal</option>
               <option value="PUBLIC">Public</option>

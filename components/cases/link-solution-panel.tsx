@@ -2,6 +2,7 @@ import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import Link from "next/link";
 
 import { linkSolutionAction, unlinkSolutionAction } from "@/actions/links";
+import { nativeSelectClass } from "@/lib/config/fields";
 import type { SolutionListItem } from "@/lib/services/solutions";
 
 export function LinkSolutionPanel({
@@ -49,7 +50,7 @@ export function LinkSolutionPanel({
             <select
               name="solutionArticleId"
               required
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+              className={`${nativeSelectClass} flex-1`}
               defaultValue=""
             >
               <option value="" disabled>Solution select করুন</option>

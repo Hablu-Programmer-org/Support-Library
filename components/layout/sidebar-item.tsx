@@ -25,8 +25,8 @@ export function SidebarItem({ item, expanded, onNavigate }: SidebarItemProps) {
     <Link
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-4 rounded-md p-3 text-white transition-colors hover:bg-slate-600/30 active:scale-95",
-        active && "bg-slate-500/30",
+        "group relative flex cursor-pointer items-center gap-4 rounded-md p-3 text-slate-700 transition-colors hover:bg-slate-200 active:scale-95 dark:text-white dark:hover:bg-slate-600/30",
+        active && "bg-slate-200 dark:bg-slate-500/30",
         expanded ? "justify-start" : "w-full justify-center",
       )}
       href={item.href}

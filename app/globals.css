@@ -38,3 +38,62 @@ input:-webkit-autofill:active {
     text-wrap: balance;
   }
 }
+
+/* ===== Modern fields: soft-fill + smooth cyan focus ring =====
+   Native controls: class strings from lib/config/fields.ts.
+   HeroUI Input/Textarea: restyled globally via their data-slot hooks
+   (HeroUI >= 2.8 renders data-slot on every slot element). */
+
+/* Custom chevron for native <select> (paired with nativeSelectClass). */
+.select-chevron {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  padding-inline-end: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+
+/* Rest: soft fill, invisible border, no shadow. */
+[data-slot="input-wrapper"] {
+  @apply rounded-xl border border-transparent bg-slate-100 shadow-none transition-all duration-200 dark:bg-slate-900;
+}
+
+/* Hover: a subtle edge appears. */
+[data-slot="input-wrapper"][data-hover="true"] {
+  @apply border-slate-300 bg-slate-200/70 dark:border-slate-700 dark:bg-slate-800;
+}
+
+/* Focus: white fill + cyan border + soft cyan glow (same specificity as
+   HeroUI's own group-data-[focus] rules; wins by source order). */
+.group[data-focus="true"] [data-slot="input-wrapper"] {
+  @apply border-cyan-500 bg-white ring-2 ring-cyan-500/20 dark:border-cyan-500 dark:bg-slate-950;
+}
+
+/* Focus: label picks up the cyan accent. */
+.group[data-focus="true"] [data-slot="label"] {
+  @apply text-cyan-600 dark:text-cyan-400;
+}
+
+[data-slot="input"] {
+  @apply placeholder:text-slate-400 dark:placeholder:text-slate-500;
+}
+
+/* Focus = border + soft cyan ring only; no outline anywhere on form fields
+   (covers HeroUI inputs/textareas and native input/select/textarea). */
+[data-slot="input"]:focus,
+[data-slot="input"]:focus-visible {
+  outline: none;
+}
+
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+}

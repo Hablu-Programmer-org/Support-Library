@@ -1,11 +1,11 @@
-import { Button, Card, CardBody, Input } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
 import Link from "next/link";
 
+import { CaseFilterPanel } from "@/components/cases/case-filter-panel";
 import { StatusBadge } from "@/components/cases/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
-import { nativeFieldClass, nativeLabelClass } from "@/lib/config/fields";
 import { canMutate } from "@/lib/roles";
 import { listCaseFilterOptions, listCases } from "@/lib/services/cases";
 import { listStaff } from "@/lib/services/staff";
@@ -13,13 +13,8 @@ import { CASE_STATUSES } from "@/models";
 
 export const dynamic = "force-dynamic";
 
-const statusLabels = {
-  OPEN: "ওপেন",
-  SOLVED: "সলভড",
-  PENDING: "পেন্ডিং",
-  FOLLOW_UP: "ফলো-আপ",
-  ARCHIVED: "আর্কাইভড",
-};
+const CASE_SORTS = ["newest", "oldest", "priority"] as const;
+type CaseSort = (typeof CASE_SORTS)[number];
 
 export default async function CasesPage({
   searchParams,
@@ -33,11 +28,15 @@ export default async function CasesPage({
     mentorId?: string;
     from?: string;
     to?: string;
+    sort?: string;
     page?: string;
   };
 }) {
   const session = await requireSession();
   const page = Number(searchParams?.page ?? "1");
+  const sort: CaseSort = CASE_SORTS.includes(searchParams?.sort as CaseSort)
+    ? (searchParams?.sort as CaseSort)
+    : "newest";
 
   // The filter schema expects ISO datetimes, but a date input yields YYYY-MM-DD.
   // `from` starts at midnight, `to` ends at end-of-day, both in UTC.
@@ -53,6 +52,7 @@ export default async function CasesPage({
     mentorId: searchParams?.mentorId || undefined,
     from,
     to,
+    sort,
     page,
     limit: 20,
   });
@@ -83,6 +83,7 @@ export default async function CasesPage({
     if (mentorId) params.set("mentorId", mentorId);
     if (dateFrom) params.set("from", dateFrom);
     if (dateTo) params.set("to", dateTo);
+    if (sort !== "newest") params.set("sort", sort);
     params.set("page", String(nextPage));
     return `/dashboard/cases?${params.toString()}`;
   };
@@ -101,109 +102,15 @@ export default async function CasesPage({
         title="সাপোর্ট কেস"
       />
 
-      <Card className="border border-slate-200 dark:border-slate-700">
-        <CardBody>
-          <form className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
-            <Input name="q" label="সার্চ" defaultValue={q} />
-            <Input name="tag" label="Tag" defaultValue={tag} />
+      <CaseFilterPanel
+        batchNos={batchNos}
+        courseSlugs={courseSlugs}
+        defaults={{ q, tag, status, courseSlug, batchNo, mentorId, dateFrom, dateTo, sort }}
+        mentors={mentors}
+        statuses={CASE_STATUSES}
+      />
 
-            <label className={nativeLabelClass}>
-              Status
-              <select
-                name="status"
-                defaultValue={status}
-                className={nativeFieldClass}
-              >
-                <option value="">সব</option>
-                {CASE_STATUSES.map((item) => (
-                  <option key={item} value={item}>
-                    {statusLabels[item]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={nativeLabelClass}>
-              Course
-              <select
-                name="courseSlug"
-                defaultValue={courseSlug}
-                className={nativeFieldClass}
-              >
-                <option value="">সব</option>
-                {courseSlugs.map((slug) => (
-                  <option key={slug} value={slug}>
-                    {slug}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={nativeLabelClass}>
-              Batch
-              <select
-                name="batchNo"
-                defaultValue={batchNo}
-                className={nativeFieldClass}
-              >
-                <option value="">সব</option>
-                {batchNos.map((batch) => (
-                  <option key={batch} value={String(batch)}>
-                    {batch}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={nativeLabelClass}>
-              Mentor
-              <select
-                name="mentorId"
-                defaultValue={mentorId}
-                className={nativeFieldClass}
-              >
-                <option value="">সব</option>
-                {mentors.map((mentor) => (
-                  <option key={mentor.id} value={mentor.id}>
-                    {mentor.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={nativeLabelClass}>
-              তারিখ থেকে
-              <input
-                type="date"
-                name="from"
-                defaultValue={dateFrom}
-                className={nativeFieldClass}
-              />
-            </label>
-
-            <label className={nativeLabelClass}>
-              তারিখ পর্যন্ত
-              <input
-                type="date"
-                name="to"
-                defaultValue={dateTo}
-                className={nativeFieldClass}
-              />
-            </label>
-
-            <div className="flex items-end gap-2">
-              <Button type="submit" color="primary" variant="flat" className="w-full">
-                ফিল্টার
-              </Button>
-              <Button as={Link} href="/dashboard/cases" variant="light" className="w-full">
-                রিসেট
-              </Button>
-            </div>
-          </form>
-        </CardBody>
-      </Card>
-
-      <Card className="border border-slate-200 dark:border-slate-700">
+      <Card className="border border-slate-200 dark:border-slate-800">
         <CardBody className="p-0">
           {cases.items.length === 0 ? (
             <EmptyState>কোনো কেস পাওয়া যায়নি।</EmptyState>

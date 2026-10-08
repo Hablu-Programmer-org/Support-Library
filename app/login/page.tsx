@@ -30,7 +30,7 @@ function LoginContent() {
 
 function LoginShell({ message }: { message?: string | null }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
       <Card className="w-full max-w-md border border-slate-200 dark:border-slate-700">
         <CardHeader className="text-center">
           <h1 className="text-2xl font-bold">Hablu Support Library</h1>

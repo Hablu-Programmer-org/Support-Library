@@ -3,6 +3,7 @@ import { Button, Card, CardBody, CardHeader, Chip } from "@heroui/react";
 import { updateStaffActiveAction, updateStaffRoleAction } from "@/actions/admin";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireAdmin } from "@/lib/auth-guard";
+import { nativeSelectClass } from "@/lib/config/fields";
 import { listStaff } from "@/lib/services/staff";
 import { USER_ROLES } from "@/models";
 
@@ -46,7 +47,7 @@ export default async function StaffAdminPage() {
                     <select
                       name="role"
                       defaultValue={user.role}
-                      className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                      className={`${nativeSelectClass} min-w-0 flex-1`}
                     >
                       {USER_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
                     </select>
@@ -57,7 +58,7 @@ export default async function StaffAdminPage() {
                     <select
                       name="isActive"
                       defaultValue={String(user.isActive)}
-                      className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                      className={`${nativeSelectClass} min-w-0 flex-1`}
                     >
                       <option value="true">Active</option>
                       <option value="false">Inactive</option>

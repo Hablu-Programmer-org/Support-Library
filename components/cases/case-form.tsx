@@ -1,6 +1,7 @@
 import { Button, Card, CardBody, Input, Textarea } from "@heroui/react";
 
 import { createCaseAction, updateCaseAction } from "@/actions/cases";
+import { nativeSelectClass } from "@/lib/config/fields";
 import type { SupportCaseListItem } from "@/lib/services/cases";
 import type { StudentListItem } from "@/lib/services/students";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models";
@@ -41,7 +42,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 name="studentRefId"
                 defaultValue={studentValue}
                 required
-                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                className={nativeSelectClass}
               >
                 <option value="" disabled>
                   স্টুডেন্ট নির্বাচন করুন
@@ -60,7 +61,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 name="status"
                 defaultValue={supportCase?.status ?? "OPEN"}
                 required
-                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                className={nativeSelectClass}
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -99,7 +100,7 @@ export function CaseForm({ students, supportCase, selectedStudentId }: CaseFormP
                 <select
                   name="priority"
                   defaultValue={supportCase?.priority ?? "NORMAL"}
-                  className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                  className={nativeSelectClass}
                 >
                   {CASE_PRIORITIES.map((priority) => (
                     <option key={priority} value={priority}>

@@ -11,8 +11,21 @@ test.describe("Shell: dashboard chrome", () => {
     await expect(header).toHaveCSS("position", "fixed");
     const hb = await header.boundingBox();
     expect(hb?.height).toBe(64);
-    // bg-slate-950/80 backdrop-blur (always dark)
+    // dark: bg-slate-950/80 backdrop-blur
     expect(await header.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe("rgba(2, 6, 23, 0.8)");
+
+    // body is slate-950 in dark (HeroUI default background was pure black)
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(2, 6, 23)");
+
+    // Bar follows the theme: switching to light turns the chrome light too.
+    await page.getByRole("button", { name: "লাইট মোড" }).click();
+    await expect
+      .poll(async () => header.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe("rgba(255, 255, 255, 0.8)");
+    await page.getByRole("button", { name: "ডার্ক মোড" }).click();
+    await expect
+      .poll(async () => header.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe("rgba(2, 6, 23, 0.8)");
 
     const aside = page.locator("aside").first();
     const w1 = (await aside.boundingBox())?.width ?? 0;
@@ -41,7 +54,15 @@ test.describe("Shell: dashboard chrome", () => {
   test("cases list keeps native filter selects", async ({ page }) => {
     await page.goto("/dashboard/cases");
     await expect(page.getByRole("heading", { name: "সাপোর্ট কেস" })).toBeVisible();
-    await expect(page.locator("select[name]")).toHaveCount(4);
+
+    // Filters are collapsed by default; the arrow toggle reveals them.
+    await page.getByRole("button", { name: "Advanced filters" }).click();
+    await expect(page.locator("select[name]")).toHaveCount(5);
+
+    // HeroUI Card surfaces are slate-900 in dark (theme default was zinc #18181b)
+    expect(
+      await page.locator("main .bg-content1").first().evaluate((el) => getComputedStyle(el).backgroundColor),
+    ).toBe("rgb(15, 23, 42)");
   });
 });
 

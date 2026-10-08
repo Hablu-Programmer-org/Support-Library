@@ -19,13 +19,13 @@ type TopbarProps = {
 
 export function Topbar({ user, open, mobileOpen, onToggle }: TopbarProps) {
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm">
+    <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
       <div className="flex w-full items-center justify-between px-4">
         <div className="flex min-w-fit items-center gap-2.5">
           <button
             aria-expanded={open || mobileOpen}
             aria-label="সাইডবার টগল"
-            className="-ml-1 rounded-full text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+            className="-ml-1 rounded-full text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-white"
             type="button"
             onClick={onToggle}
           >
@@ -56,15 +56,14 @@ export function Topbar({ user, open, mobileOpen, onToggle }: TopbarProps) {
 
           <Link className="flex w-fit items-center gap-2.5" href="/dashboard">
             <Image alt="Hablu Support Library" height={40} src="/logo.png" width={40} />
-            <span className="hidden text-lg font-semibold text-white sm:block lg:text-xl">
+            <span className="hidden text-lg font-semibold text-slate-900 sm:block lg:text-xl dark:text-white">
               Hablu Support Library
             </span>
           </Link>
         </div>
 
-        {/* The bar is always dark, so force HeroUI dark colors inside it —
-            otherwise ThemeToggle/UserMenu render light-theme (dark) text here. */}
-        <div className="dark flex items-center gap-2 sm:gap-4">
+        {/* The bar follows the active theme, so ThemeToggle/UserMenu inherit it. */}
+        <div className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
           <UserMenu user={user} />
           <SignOutButton />

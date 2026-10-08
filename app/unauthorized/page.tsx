@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
       <Card className="w-full max-w-md border border-slate-200 dark:border-slate-700 text-center">
         <CardHeader>
           <h1 className="text-2xl font-bold text-danger">অনুমতি নেই</h1>

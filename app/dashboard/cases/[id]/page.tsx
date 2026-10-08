@@ -9,6 +9,7 @@ import { LinkSolutionPanel } from "@/components/cases/link-solution-panel";
 import { ReplyComposer } from "@/components/cases/reply-composer";
 import { StatusBadge } from "@/components/cases/status-badge";
 import { requireSession } from "@/lib/auth-guard";
+import { nativeSelectClass } from "@/lib/config/fields";
 import { canMutate } from "@/lib/roles";
 import { getCaseDetail } from "@/lib/services/cases";
 import { listSolutionsForCase } from "@/lib/services/links";
@@ -90,7 +91,7 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
               <select
                 name="status"
                 defaultValue={supportCase.status}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+                className={nativeSelectClass}
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>

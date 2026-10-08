@@ -19,6 +19,15 @@ const submit = async (page: Page, url: RegExp) => {
   throw new Error(`Submit never navigated to ${url}`);
 };
 
+// The cases filter panel is collapsed by default; the arrow toggle reveals it.
+async function openFilters(page: Page) {
+  const toggle = page.getByRole("button", { name: "Advanced filters" });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+  await expect(page.locator('select[name="status"]')).toBeVisible();
+}
+
 async function createStudent(page: Page, suffix: string) {
   await page.goto("/dashboard/students/new");
   await page.fill('input[name="name"]', "E2E Filter Student");
@@ -59,6 +68,7 @@ test.describe("Case list filters (mentor)", () => {
     await createCase(page, studentMongoId, "E2E filter python case", "python-basics", "9");
 
     await page.goto("/dashboard/cases");
+    await openFilters(page);
 
     // The dropdowns are populated from values that actually exist on live cases.
     await expect(page.locator('select[name="courseSlug"] option[value="react-beginner"]')).toHaveCount(1);
@@ -91,6 +101,7 @@ test.describe("Case list filters (mentor)", () => {
     await createCase(page, studentMongoId, "E2E filter mentor case", "react-beginner", "11");
 
     await page.goto("/dashboard/cases");
+    await openFilters(page);
 
     // Cases created by this mentor default to mentorId = the signed-in mentor.
     await page.selectOption('select[name="mentorId"]', { label: "Mentor User" });
@@ -108,5 +119,18 @@ test.describe("Case list filters (mentor)", () => {
     await page.fill('input[name="to"]', "2000-01-02");
     await page.getByRole("button", { name: "ফিল্টার" }).click();
     await expect(caseHeading(page, "E2E filter mentor case")).toHaveCount(0);
+  });
+
+  test("applies sort order", async ({ page }) => {
+    await page.goto("/dashboard/cases");
+    await openFilters(page);
+
+    await page.selectOption('select[name="sort"]', "oldest");
+    await page.getByRole("button", { name: "ফিল্টার" }).click();
+    await expect(page).toHaveURL(/sort=oldest/);
+
+    await page.selectOption('select[name="sort"]', "priority");
+    await page.getByRole("button", { name: "ফিল্টার" }).click();
+    await expect(page).toHaveURL(/sort=priority/);
   });
 });

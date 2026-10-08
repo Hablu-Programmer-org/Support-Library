@@ -5,9 +5,14 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { buildCaseSearchText, buildSearchRegex } from "@/lib/search";
 import { supportCaseInputSchema, type SupportCaseFilter, type SupportCaseInput } from "@/lib/validation";
-import { StudentRefModel, SupportCaseModel, type CaseStatus } from "@/models";
+import { CASE_PRIORITIES, StudentRefModel, SupportCaseModel, type CaseStatus } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
+
+/** LOW=1 … URGENT=4 — string order would be wrong, so sorting uses this rank. */
+const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
+  CASE_PRIORITIES.map((priority, index) => [priority, index + 1]),
+);
 
 export type SupportCaseListItem = {
   id: string;
@@ -155,11 +160,38 @@ export async function listCases(params: CaseListParams = {}) {
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const filter = buildCaseFilter(params);
+  const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
-    SupportCaseModel.find(filter).sort({ updatedAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
-    SupportCaseModel.countDocuments(filter),
-  ]);
+  // `priority` needs a computed rank (URGENT highest), which a plain field
+  // sort can't express; other modes sort on `updatedAt` directly.
+  const itemsQuery =
+    params.sort === "priority"
+      ? SupportCaseModel.aggregate([
+          { $match: filter },
+          {
+            $addFields: {
+              priorityRank: {
+                $switch: {
+                  branches: CASE_PRIORITIES.map((priority) => ({
+                    case: { $eq: ["$priority", priority] },
+                    then: CASE_PRIORITY_RANK[priority],
+                  })),
+                  default: CASE_PRIORITY_RANK.NORMAL,
+                },
+              },
+            },
+          },
+          { $sort: { priorityRank: -1, updatedAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+        ])
+      : SupportCaseModel.find(filter)
+          .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+
+  const [items, total] = await Promise.all([itemsQuery, SupportCaseModel.countDocuments(filter)]);
   const students = await buildStudentMap(items as LeanDoc[]);
 
   return {

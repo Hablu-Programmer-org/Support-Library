@@ -30,6 +30,7 @@ export const supportCaseFilterSchema = z
     studentRefId: objectIdSchema.optional(),
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
+    sort: z.enum(["newest", "oldest", "priority"]).optional(),
   })
   .strict();
 

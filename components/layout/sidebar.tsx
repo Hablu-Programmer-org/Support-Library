@@ -45,7 +45,7 @@ export function Sidebar({ items, open, mobileOpen, user, onCloseMobile }: Sideba
       <aside
         aria-label="সাইডবার"
         className={cn(
-          "fixed bottom-0 left-0 top-16 z-50 flex flex-col border-r border-slate-800 bg-slate-950/80 backdrop-blur-sm transition-all duration-300",
+          "fixed bottom-0 left-0 top-16 z-50 flex flex-col border-r border-slate-200 bg-white/80 backdrop-blur-sm transition-all duration-300 dark:border-slate-800 dark:bg-slate-950/80",
           // Mobile drawer: off-canvas unless mobileOpen. Desktop: always on-canvas.
           mobileOpen ? "w-80 translate-x-0" : "w-80 -translate-x-full md:translate-x-0",
           open ? "md:w-80" : "md:w-[70px]",
@@ -66,7 +66,7 @@ export function Sidebar({ items, open, mobileOpen, user, onCloseMobile }: Sideba
 
         <div
           className={cn(
-            "flex items-center gap-3 border-t border-slate-800 px-4 py-4",
+            "flex items-center gap-3 border-t border-slate-200 px-4 py-4 dark:border-slate-800",
             !expanded && "justify-center px-2.5",
           )}
         >
@@ -79,10 +79,10 @@ export function Sidebar({ items, open, mobileOpen, user, onCloseMobile }: Sideba
           />
           {expanded && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
                 {user.name ?? "বেনামী"}
               </p>
-              <p className="truncate text-xs text-slate-400">
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {user.role ? ROLE_LABELS[user.role] : "ভিউয়ার"}
               </p>
             </div>

@@ -61,6 +61,12 @@ export const SearchIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
+export const ChevronDownIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
 export const AnalyticsIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M3 3v18h18" />
