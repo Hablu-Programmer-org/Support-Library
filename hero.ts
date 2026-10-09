@@ -1,5 +1,4 @@
 import { heroui } from "@heroui/theme";
-import type { Config } from "tailwindcss";
 
 /**
  * Cyan palette (Tailwind's `cyan`) as HeroUI's `primary`, so HeroUI
@@ -26,7 +25,7 @@ const cyan = {
  * Tailwind's slate as HeroUI's neutral family, replacing the default zinc
  * scale (#18181b/#27272a/...) so Cards/panels/chips sit on slate like the
  * rest of the app. HeroUI inverts the neutral scale in dark mode (50 = darkest),
- * so slateDark is intentionally reversed.
+ * so slateScaleDark is intentionally reversed.
  */
 const slateScale = {
   50: "#f8fafc",
@@ -87,52 +86,36 @@ const slateForegroundDark = {
   DEFAULT: "#f1f5f9",
 };
 
-const config: Config = {
-  content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}",
-  ],
-  darkMode: "class",
-  theme: {
-    extend: {
-      fontFamily: {
-        // Set by next/font in app/layout.tsx; falls back to the system stack if
-        // the variable is ever missing, so text is never rendered in a
-        // fontless state.
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+/**
+ * HeroUI v2 plugin, loaded from `app/globals.css` via `@plugin`. Tailwind v4
+ * does not auto-scan node_modules, so `@source` points at the HeroUI theme
+ * dist for the component class names.
+ */
+export default heroui({
+  themes: {
+    light: {
+      colors: {
+        primary: cyan,
+        focus: "#06b6d4",
+        foreground: slateForeground,
+        default: slateScale,
+        content2: "#f1f5f9",
+        content3: "#e2e8f0",
+        content4: "#cbd5e1",
+      },
+    },
+    dark: {
+      colors: {
+        primary: cyan,
+        focus: "#06b6d4",
+        background: "#020617",
+        foreground: slateForegroundDark,
+        default: slateScaleDark,
+        content1: "#0f172a",
+        content2: "#1e293b",
+        content3: "#334155",
+        content4: "#475569",
       },
     },
   },
-  plugins: [
-    heroui({
-      themes: {
-        light: {
-          colors: {
-            primary: cyan,
-            focus: "#06b6d4",
-            foreground: slateForeground,
-            default: slateScale,
-            content2: "#f1f5f9",
-            content3: "#e2e8f0",
-            content4: "#cbd5e1",
-          },
-        },
-        dark: {
-          colors: {
-            primary: cyan,
-            focus: "#06b6d4",
-            background: "#020617",
-            foreground: slateForegroundDark,
-            default: slateScaleDark,
-            content1: "#0f172a",
-            content2: "#1e293b",
-            content3: "#334155",
-            content4: "#475569",
-          },
-        },
-      },
-    }),
-  ],
-};
-export default config;
+});

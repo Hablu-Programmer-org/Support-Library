@@ -19,7 +19,7 @@ export const Providers: FC<Props> = ({ children }) => {
         enableSystem
         disableTransitionOnChange
       >
-        <HeroUIProvider navigate={router.push}>{children}</HeroUIProvider>
+        <>{children}</>
       </ThemeProvider>
     </SessionProvider>
   );
