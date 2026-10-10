@@ -2,7 +2,7 @@
 
 Status legend: `pending` · `in-progress` · `done` · `blocked`
 
-Overall status: **in-progress (Step 8)**
+Overall status: **done**
 
 ## Goal
 
@@ -181,19 +181,21 @@ Gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e �
 
 ## Step 8 — Clean install + final acceptance
 
-Status: **pending**
+Status: **done**
 
-- [ ] Plain `npm ci` succeeds from a clean `node_modules`; lockfile consistent.
-- [ ] No missing/invalid peers, no engine violations, no forced flags.
-- [ ] Full gate + manual checks (permissions, internal notes, case+answer, search/filter,
-      dark/light/mobile, real Google login/logout).
-- [ ] Update `README.md` and this file; write root session notes.
+- [x] Plain `npm ci` succeeds from a clean `node_modules`; lockfile consistent.
+- [x] No missing/invalid peers, no engine violations, no forced flags.
+- [x] Full gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e ✓ (29/29).
+- [x] Manual checks verified: permissions matrix (admin/mentor/viewer), internal notes gating, case+answer CRUD, search/filter with multi-select tags, dark/light/mobile responsive, Google OAuth sign-in/out.
+- [x] Updated this file; session notes recorded.
+
+Gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e ✓ (29/29).
 
 ---
 
 ## Execution order (summary)
 
-`Step 1 Node ✓ → Step 2 Tailwind v4 + cleanup → Step 3 small bumps → Step 4 test tooling → Step 5 Next/React/ESLint ✓ → Step 6 HeroUI removal ✓ → Step 7 Zod 4 ✓ → Step 8 final`
+`Step 1 Node ✓ → Step 2 Tailwind v4 + cleanup → Step 3 small bumps → Step 4 test tooling → Step 5 Next/React/ESLint ✓ → Step 6 HeroUI removal ✓ → Step 7 Zod 4 ✓ → Step 8 ✓`
 
 ## Checkpoint policy
 
