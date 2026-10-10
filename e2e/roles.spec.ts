@@ -17,17 +17,17 @@ for (const role of roles) {
       await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
     });
 
-    test("can access cases list", async ({ page }) => {
-      await page.goto("/dashboard/cases");
-      await expect(page.getByRole("heading", { name: "Support Cases" })).toBeVisible();
+    test("can access issues list", async ({ page }) => {
+      await page.goto("/dashboard/issues");
+      await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
     });
 
     const canMutate = role === "admin" || role === "mentor";
 
-    test(`${canMutate ? "can" : "cannot"} create case`, async ({ page }) => {
-      await page.goto("/dashboard/cases/new");
+    test(`${canMutate ? "can" : "cannot"} create issue`, async ({ page }) => {
+      await page.goto("/dashboard/issues/new");
       if (canMutate) {
-        await expect(page.getByRole("heading", { name: "New Support Case" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "New Support Issue" })).toBeVisible();
       } else {
         await expect(page).toHaveURL(/\/unauthorized/);
       }

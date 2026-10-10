@@ -1,13 +1,13 @@
 import { dbConnect } from "../lib/db";
 import {
-  SupportCaseModel,
+  SupportIssueModel,
   SupportReplyModel,
   UserModel,
 } from "../models";
 
 const models = [
   UserModel,
-  SupportCaseModel,
+  SupportIssueModel,
   SupportReplyModel,
 ];
 

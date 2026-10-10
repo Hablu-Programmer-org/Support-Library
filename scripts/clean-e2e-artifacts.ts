@@ -42,23 +42,23 @@ async function main() {
   const db = conn.db!;
 
   // Resolve child records first so their parents can be matched by id.
-  const e2eCases = await db
-    .collection("support_cases")
+  const e2eIssues = await db
+    .collection("support_issues")
     .find({ title: E2E_TITLE_PREFIX }, { projection: { _id: 1 } })
     .toArray();
 
-  const caseIds = e2eCases.map((doc) => doc._id);
+  const issueIds = e2eIssues.map((doc) => doc._id);
 
   const plans: Plan[] = [
     {
       collection: "support_replies",
-      filter: caseIds.length ? { caseId: { $in: caseIds } } : { caseId: { $in: [] } },
-      label: "replies on E2E cases",
+      filter: issueIds.length ? { issueId: { $in: issueIds } } : { issueId: { $in: [] } },
+      label: "replies on E2E issues",
     },
     {
-      collection: "support_cases",
+      collection: "support_issues",
       filter: { title: E2E_TITLE_PREFIX },
-      label: "cases titled 'E2E ...'",
+      label: "issues titled 'E2E ...'",
     },
     {
       collection: "staff_users",

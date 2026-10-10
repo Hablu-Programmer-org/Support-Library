@@ -8,10 +8,10 @@ import { nativeFieldClass, nativeLabelClass } from "@/lib/config/fields";
 type LookupState = "idle" | "checking" | "found" | "notFound";
 
 /**
- * Student identity fields for the case form.
+ * Student identity fields for the issue form.
  *
  * The email is matched against the main hp-v2 database while typing; a match
- * prefills the student name (and keeps the hp-v2 user id for the case). No
+ * prefills the student name (and keeps the hp-v2 user id for the issue). No
  * match is fine - the name can still be typed manually.
  *
  * When `hideWhenFound` is true (create form minimal mode), the name input

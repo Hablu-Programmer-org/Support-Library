@@ -2,14 +2,14 @@ import { test, expect } from "@playwright/test";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
-test.describe("Case CRUD (mentor)", () => {
+test.describe("Issue CRUD (mentor)", () => {
   for (const scenario of [
     { label: "text and attachments", body: "Use the documented fix for the image path.", solved: true },
     { label: "attachments only", body: "", solved: true },
     { label: "answer awaiting confirmation", body: "Please try the attached fix and confirm.", solved: false },
   ]) {
-    test(`creates a case with ${scenario.label} in one submission`, async ({ page }) => {
-      await page.goto("/dashboard/cases/new");
+    test(`creates an issue with ${scenario.label} in one submission`, async ({ page }) => {
+      await page.goto("/dashboard/issues/new");
       await page.fill('input[name="studentName"]', "E2E Answer Student");
       await page.fill('input[name="studentEmail"]', `e2e.answer.${Date.now()}@test.com`);
       await page.fill('input[name="title"]', `E2E ${scenario.label}`);
@@ -18,11 +18,11 @@ test.describe("Case CRUD (mentor)", () => {
       await page.fill('textarea[name="solutionBody"]', scenario.body);
       await page.fill('textarea[name="solutionFileLinks"]', "Guide|https://example.com/fix.pdf|pdf\nScreenshot|https://example.com/fix.png|image");
       await page.fill('textarea[name="solutionVideoLinks"]', "Walkthrough|https://example.com/fix.mp4|01:20");
-      await expect(page.locator('input[name="solveCase"]')).toBeChecked();
-      if (!scenario.solved) await page.locator('input[name="solveCase"]').uncheck();
+      await expect(page.locator('input[name="solveIssue"]')).toBeChecked();
+      if (!scenario.solved) await page.locator('input[name="solveIssue"]').uncheck();
       await Promise.all([
-        page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
-        page.getByRole("button", { name: "Create Case", exact: true }).click(),
+        page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+        page.getByRole("button", { name: "Create Issue", exact: true }).click(),
       ]);
       await expect(page.locator("article")).toHaveCount(1);
       const reply = page.locator("article");
@@ -34,15 +34,15 @@ test.describe("Case CRUD (mentor)", () => {
     });
   }
 
-  test("creates a case, replies, and updates status", async ({ page }) => {
-    await page.goto("/dashboard/cases/new");
+  test("creates an issue, replies, and updates status", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
     await page.fill('input[name="studentName"]', "E2E Test Student");
     await page.fill('input[name="studentEmail"]', `e2e.student.${Date.now().toString()}@test.com`);
     await page.fill('input[name="title"]', "E2E React image not rendering");
     await page.fill('textarea[name="question"]', "Image show hocche na in React component");
     await expect(page.locator('select[name="status"]')).toHaveCount(0);
     await Promise.all([
-      page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
       page.click('button[type="submit"]'),
     ]);
     await expect(page.getByText("E2E React image not rendering")).toBeVisible();
@@ -83,7 +83,7 @@ test.describe("Case CRUD (mentor)", () => {
   });
 
   test("autofills student name from an LMS email match", async ({ page }) => {
-    await page.goto("/dashboard/cases/new");
+    await page.goto("/dashboard/issues/new");
 
     await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
     await expect(page.locator('input[name="studentName"]')).toHaveValue("E2E LMS Student");

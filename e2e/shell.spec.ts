@@ -61,9 +61,9 @@ test.describe("Shell: dashboard chrome", () => {
       .toBeLessThanOrEqual(72);
   });
 
-  test("cases list keeps native filter selects", async ({ page }) => {
-    await page.goto("/dashboard/cases");
-    await expect(page.getByRole("heading", { name: "Support Cases" })).toBeVisible();
+  test("issues list keeps native filter selects", async ({ page }) => {
+    await page.goto("/dashboard/issues");
+    await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
 
     // Filters are collapsed by default; the arrow toggle reveals them.
     await page.getByRole("button", { name: "Advanced filters" }).click();

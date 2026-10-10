@@ -4,9 +4,9 @@ import { externalFileLinkSchema, videoLinkSchema } from "./shared";
 
 const supportReplySchema = new mongoose.Schema(
   {
-    caseId: {
+    issueId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "SupportCase",
+      ref: "SupportIssue",
       required: true,
       index: true,
     },
@@ -24,7 +24,7 @@ const supportReplySchema = new mongoose.Schema(
   },
 );
 
-supportReplySchema.index({ caseId: 1, createdAt: 1 });
+supportReplySchema.index({ issueId: 1, createdAt: 1 });
 
 export type SupportReplyDocument = InferSchemaType<typeof supportReplySchema> & {
   _id: mongoose.Types.ObjectId;

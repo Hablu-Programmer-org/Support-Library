@@ -12,19 +12,19 @@ test.describe("VIEWER content gating", () => {
 
     const publicReply = "E2E public step follows";
     const internalNote = "E2E internal archive note";
-    const caseTitle = "E2E gating case";
+    const issueTitle = "E2E gating issue";
 
-    // Admin prepares a case with one public reply and one internal note.
-    await page.goto("/dashboard/cases/new");
+    // Admin prepares an issue with one public reply and one internal note.
+    await page.goto("/dashboard/issues/new");
     await page.fill('input[name="studentName"]', "E2E Gating Student");
     await page.fill('input[name="studentEmail"]', `e2e.gating.${Date.now().toString()}@test.com`);
-    await page.fill('input[name="title"]', caseTitle);
+    await page.fill('input[name="title"]', issueTitle);
     await page.fill('textarea[name="question"]', "Which content may students see?");
     await Promise.all([
-      page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
       page.click('button[type="submit"]'),
     ]);
-    const casePath = new URL(page.url()).pathname;
+    const issuePath = new URL(page.url()).pathname;
 
     const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
     await replyForm.locator('textarea[name="body"]').fill(publicReply);
@@ -33,15 +33,15 @@ test.describe("VIEWER content gating", () => {
     await noteForm.locator('textarea[name="body"]').fill(internalNote);
     await noteForm.getByRole("button", { name: "Add Internal Note" }).click();
 
-    // The viewer sees the case and its public reply, but never the internal note.
+    // The viewer sees the issue and its public reply, but never the internal note.
     const viewerContext = await browser.newContext({
       storageState: "e2e/.auth/viewer.json",
       baseURL,
     });
     const viewerPage = await viewerContext.newPage();
-    await viewerPage.goto(casePath);
+    await viewerPage.goto(issuePath);
 
-    await expect(viewerPage.getByRole("heading", { name: caseTitle })).toBeVisible();
+    await expect(viewerPage.getByRole("heading", { name: issueTitle })).toBeVisible();
     await expect(viewerPage.locator("article").filter({ hasText: publicReply })).toBeVisible();
     await expect(viewerPage.locator("article").filter({ hasText: internalNote })).toHaveCount(0);
 

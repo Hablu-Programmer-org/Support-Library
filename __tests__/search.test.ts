@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildCaseSearchText,
-  buildCaseSearchTextWithReplies,
+  buildIssueSearchText,
+  buildIssueSearchTextWithReplies,
   buildSearchRegex,
   escapeRegex,
   joinSearchText,
@@ -31,8 +31,8 @@ describe("search utilities", () => {
   });
 });
 
-describe("case search text", () => {
-  const supportCase = {
+describe("issue search text", () => {
+  const supportIssue = {
     title: "React image not rendering",
     question: "Image not displaying",
     studentName: "Rahim Uddin",
@@ -44,14 +44,14 @@ describe("case search text", () => {
   };
 
   it("includes the student name and email", () => {
-    const text = buildCaseSearchText(supportCase);
+    const text = buildIssueSearchText(supportIssue);
 
     expect(text).toContain("rahim uddin");
     expect(text).toContain("rahim@example.com");
   });
 
   it("includes course, module and content slugs", () => {
-    const text = buildCaseSearchText(supportCase);
+    const text = buildIssueSearchText(supportIssue);
 
     expect(text).toContain("react-beginner");
     expect(text).toContain("assets");
@@ -59,14 +59,14 @@ describe("case search text", () => {
   });
 
   it("normalizes and lowercases every field", () => {
-    expect(buildCaseSearchText({ ...supportCase, title: "  React\u200B IMAGE  " })).toContain(
+    expect(buildIssueSearchText({ ...supportIssue, title: "  React\u200B IMAGE  " })).toContain(
       "react image",
     );
   });
 
   it("tolerates null slugs and tags", () => {
     expect(
-      buildCaseSearchText({
+      buildIssueSearchText({
         title: "No slugs",
         question: "Body",
         courseSlug: null,
@@ -81,7 +81,7 @@ describe("case search text", () => {
   // aggregation pipeline that only concatenated title/question/tags, which dropped
   // courseSlug/moduleSlug/contentSlug as soon as any reply existed.
   it("keeps slugs when public replies are appended", () => {
-    const text = buildCaseSearchTextWithReplies(supportCase, [
+    const text = buildIssueSearchTextWithReplies(supportIssue, [
       "Place the file inside the public folder",
     ]);
 
@@ -94,11 +94,11 @@ describe("case search text", () => {
   // Regression: stale reply text used to survive because refresh was skipped when
   // no public reply body remained.
   it("drops reply text but keeps slugs when the last reply is removed", () => {
-    const withReply = buildCaseSearchTextWithReplies(supportCase, ["temporary answer"]);
-    const withoutReply = buildCaseSearchTextWithReplies(supportCase, []);
+    const withReply = buildIssueSearchTextWithReplies(supportIssue, ["temporary answer"]);
+    const withoutReply = buildIssueSearchTextWithReplies(supportIssue, []);
 
     expect(withReply).toContain("temporary answer");
     expect(withoutReply).not.toContain("temporary answer");
-    expect(withoutReply).toBe(buildCaseSearchText(supportCase));
+    expect(withoutReply).toBe(buildIssueSearchText(supportIssue));
   });
 });

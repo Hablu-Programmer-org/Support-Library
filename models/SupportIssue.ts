@@ -2,7 +2,7 @@ import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 import { CASE_PRIORITIES, CASE_STATUSES } from "./shared";
 
-const supportCaseSchema = new mongoose.Schema(
+const supportIssueSchema = new mongoose.Schema(
   {
     studentName: { type: String, required: true, trim: true, maxlength: 120 },
     studentEmail: { type: String, required: true, lowercase: true, trim: true, maxlength: 160 },
@@ -25,18 +25,18 @@ const supportCaseSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: "support_cases",
+    collection: "support_issues",
   },
 );
 
-supportCaseSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
-supportCaseSchema.index({ createdAt: -1 });
-supportCaseSchema.index({ deletedAt: 1 }, { partialFilterExpression: { deletedAt: { $exists: true } } });
+supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
+supportIssueSchema.index({ createdAt: -1 });
+supportIssueSchema.index({ deletedAt: 1 }, { partialFilterExpression: { deletedAt: { $exists: true } } });
 
-export type SupportCaseDocument = InferSchemaType<typeof supportCaseSchema> & {
+export type SupportIssueDocument = InferSchemaType<typeof supportIssueSchema> & {
   _id: mongoose.Types.ObjectId;
 };
 
-export const SupportCaseModel: Model<SupportCaseDocument> =
-  (mongoose.models.SupportCase as Model<SupportCaseDocument>) ??
-  mongoose.model<SupportCaseDocument>("SupportCase", supportCaseSchema);
+export const SupportIssueModel: Model<SupportIssueDocument> =
+  (mongoose.models.SupportIssue as Model<SupportIssueDocument>) ??
+  mongoose.model<SupportIssueDocument>("SupportIssue", supportIssueSchema);

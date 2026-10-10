@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models/shared";
 import { objectIdSchema, optionalSlugSchema, tagsSchema } from "./common";
 
-export const supportCaseInputSchema = z.strictObject({
+export const supportIssueInputSchema = z.strictObject({
   studentName: z.string().trim().min(2).max(120),
   studentEmail: z.string().trim().toLowerCase().email().max(160),
   lmsUserId: z.string().trim().max(64).optional(),
@@ -19,7 +19,7 @@ export const supportCaseInputSchema = z.strictObject({
   mentorId: objectIdSchema.optional(),
 });
 
-export const supportCaseFilterSchema = z.strictObject({
+export const supportIssueFilterSchema = z.strictObject({
   q: z.string().trim().max(200).optional(),
   status: z.enum(CASE_STATUSES).optional(),
   courseSlug: optionalSlugSchema,
@@ -31,5 +31,5 @@ export const supportCaseFilterSchema = z.strictObject({
   sort: z.enum(["newest", "oldest", "priority"]).optional(),
 });
 
-export type SupportCaseInput = z.infer<typeof supportCaseInputSchema>;
-export type SupportCaseFilter = z.infer<typeof supportCaseFilterSchema>;
+export type SupportIssueInput = z.infer<typeof supportIssueInputSchema>;
+export type SupportIssueFilter = z.infer<typeof supportIssueFilterSchema>;

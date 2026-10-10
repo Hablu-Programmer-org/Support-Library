@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 
-export const CASE_STATUSES = ["OPEN", "SOLVED", "PENDING", "FOLLOW_UP", "ARCHIVED"] as const;
-export type CaseStatus = (typeof CASE_STATUSES)[number];
+import { CASE_STATUSES, CASE_PRIORITIES } from "@/lib/constants";
 
-export const CASE_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
-export type CasePriority = (typeof CASE_PRIORITIES)[number];
+export { CASE_STATUSES, CASE_PRIORITIES };
+export type { CaseStatus, CasePriority } from "@/lib/constants";
 
 export const externalFileLinkSchema = new mongoose.Schema(
   {

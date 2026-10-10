@@ -3,11 +3,11 @@ import type { TextareaHTMLAttributes } from "react";
 import { addReplyAction } from "@/actions/replies";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 
-export function ReplyComposer({ caseId }: { caseId: string }) {
+export function ReplyComposer({ issueId }: { issueId: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-          <form action={addReplyAction.bind(null, caseId)} className="space-y-3">
+          <form action={addReplyAction.bind(null, issueId)} className="space-y-3">
             <input type="hidden" name="isInternalNote" value="false" />
             <TextAreaField name="body" label="Write a Reply" rows={4} required maxLength={20_000} />
             <details className="rounded-2xl border border-slate-200 p-3 dark:border-slate-700">
@@ -26,7 +26,7 @@ export function ReplyComposer({ caseId }: { caseId: string }) {
       </section>
 
       <section className="rounded-2xl border border-warning-200 bg-warning-50/50 p-4 dark:border-warning-900/40 dark:bg-warning-950/20">
-          <form action={addReplyAction.bind(null, caseId)} className="space-y-3">
+          <form action={addReplyAction.bind(null, issueId)} className="space-y-3">
             <input type="hidden" name="isInternalNote" value="true" />
             <TextAreaField name="body" label="Internal Note" rows={4} required maxLength={20_000} />
             <details className="rounded-2xl border border-warning-200 p-3 dark:border-warning-900/40">

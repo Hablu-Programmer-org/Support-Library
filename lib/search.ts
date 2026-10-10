@@ -18,12 +18,12 @@ export const buildSearchRegex = (query?: string | null) => {
 };
 
 /**
- * Case fields that feed the denormalized `searchText`.
+ * Issue fields that feed the denormalized `searchText`.
  *
  * Typed as nullable because persisted documents store null for absent slugs,
  * while validated input uses undefined. `joinSearchText` ignores both.
  */
-export type CaseSearchTextSource = {
+export type IssueSearchTextSource = {
   title: string;
   question: string;
   studentName?: string | null;
@@ -34,8 +34,8 @@ export type CaseSearchTextSource = {
   tags?: readonly string[] | null;
 };
 
-/** Base searchable text for a case, excluding reply bodies. */
-export const buildCaseSearchText = (input: CaseSearchTextSource) =>
+/** Base searchable text for an issue, excluding reply bodies. */
+export const buildIssueSearchText = (input: IssueSearchTextSource) =>
   joinSearchText([
     input.title,
     input.question,
@@ -48,14 +48,14 @@ export const buildCaseSearchText = (input: CaseSearchTextSource) =>
   ]);
 
 /**
- * Full searchable text for a case: its own fields plus the bodies of its public
+ * Full searchable text for an issue: its own fields plus the bodies of its public
  * replies.
  *
- * Always rebuilds from the case's fields rather than appending to whatever is
+ * Always rebuilds from the issue's fields rather than appending to whatever is
  * stored, so course/module/content slugs can never be dropped and reply text can
  * never go stale when the last public reply is removed.
  */
-export const buildCaseSearchTextWithReplies = (
-  input: CaseSearchTextSource,
+export const buildIssueSearchTextWithReplies = (
+  input: IssueSearchTextSource,
   replyBodies: readonly string[],
-) => joinSearchText([buildCaseSearchText(input), ...replyBodies]);
+) => joinSearchText([buildIssueSearchText(input), ...replyBodies]);

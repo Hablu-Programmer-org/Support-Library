@@ -1,6 +1,6 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-export const USER_ROLES = ["ADMIN", "MENTOR", "VIEWER"] as const;
+import { USER_ROLES } from "@/lib/constants";
 export type UserRole = (typeof USER_ROLES)[number];
 
 const userSchema = new mongoose.Schema(

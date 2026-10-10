@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import {
   externalFileLinkSchema,
-  supportCaseInputSchema,
+  supportIssueInputSchema,
   supportReplyInputSchema,
 } from "@/lib/validation";
 
 const objectId = "507f1f77bcf86cd799439011";
 
 describe("product validation", () => {
-  it("normalizes the case student email and rejects unknown keys", () => {
+  it("normalizes the issue student email and rejects unknown keys", () => {
     expect(
-      supportCaseInputSchema.parse({
+      supportIssueInputSchema.parse({
         studentName: "Rahim Uddin",
         studentEmail: " RAHIM@example.COM ",
         title: "React image problem",
@@ -20,7 +20,7 @@ describe("product validation", () => {
     ).toBe("rahim@example.com");
 
     expect(() =>
-      supportCaseInputSchema.parse({
+      supportIssueInputSchema.parse({
         studentName: "Rahim",
         studentEmail: "rahim@example.com",
         role: "ADMIN",
@@ -28,8 +28,8 @@ describe("product validation", () => {
     ).toThrow();
   });
 
-  it("defaults case status/priority and normalizes unique tags", () => {
-    const parsed = supportCaseInputSchema.parse({
+  it("defaults issue status/priority and normalizes unique tags", () => {
+    const parsed = supportIssueInputSchema.parse({
       studentName: "Rahim Uddin",
       studentEmail: "rahim@example.com",
       title: "React image problem",
@@ -44,7 +44,7 @@ describe("product validation", () => {
 
   it("rejects a missing student email", () => {
     expect(() =>
-      supportCaseInputSchema.parse({
+      supportIssueInputSchema.parse({
         studentName: "Rahim Uddin",
         studentEmail: "not-an-email",
         title: "React image problem",
@@ -55,7 +55,7 @@ describe("product validation", () => {
 
   it("accepts replies with external file/video links", () => {
     const parsed = supportReplyInputSchema.parse({
-      caseId: objectId,
+      issueId: objectId,
       body: "Use the public folder and start the src with a slash.",
       fileLinks: [{ title: "Screenshot", url: "https://example.com/screenshot.png" }],
       videoLinks: [{ title: "Walkthrough", url: "https://youtu.be/demo", timestamp: "01:20" }],

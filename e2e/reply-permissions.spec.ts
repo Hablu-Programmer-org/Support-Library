@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 /**
  * Reply mutation is author-scoped, with ADMIN as an override. This needs two
- * signed-in identities against the same case, so the mentor gets its own context
+ * signed-in identities against the same issue, so the mentor gets its own context
  * instead of a per-describe `test.use`.
  */
 test.describe("Reply edit/delete permissions", () => {
@@ -11,16 +11,16 @@ test.describe("Reply edit/delete permissions", () => {
   test("only the author or an admin sees edit and delete", async ({ page, browser }) => {
     const baseURL = test.info().project.use.baseURL as string;
 
-    await page.goto("/dashboard/cases/new");
+    await page.goto("/dashboard/issues/new");
     await page.fill('input[name="studentName"]', "E2E Perm Student");
     await page.fill('input[name="studentEmail"]', `e2e.perm.${Date.now().toString()}@test.com`);
-    await page.fill('input[name="title"]', "E2E permission case");
+    await page.fill('input[name="title"]', "E2E permission issue");
     await page.fill('textarea[name="question"]', "Who may edit this reply?");
     await Promise.all([
-      page.waitForURL(/\/dashboard\/cases\/[a-f0-9]{24}$/),
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
       page.click('button[type="submit"]'),
     ]);
-    const casePath = new URL(page.url()).pathname;
+    const issuePath = new URL(page.url()).pathname;
 
     // Admin authors a reply.
     const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
@@ -38,7 +38,7 @@ test.describe("Reply edit/delete permissions", () => {
       baseURL,
     });
     const mentorPage = await mentorContext.newPage();
-    await mentorPage.goto(casePath);
+    await mentorPage.goto(issuePath);
 
     const mentorReply = mentorPage.locator("article").filter({ hasText: "Admin authored reply" });
     await expect(mentorReply).toBeVisible();

@@ -3,9 +3,9 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { buildCaseSearchText, buildSearchRegex } from "@/lib/search";
-import { supportCaseInputSchema, type SupportCaseFilter, type SupportCaseInput } from "@/lib/validation";
-import { CASE_PRIORITIES, SupportCaseModel, type CaseStatus } from "@/models";
+import { buildIssueSearchText, buildSearchRegex } from "@/lib/search";
+import { supportIssueInputSchema, type SupportIssueFilter, type SupportIssueInput } from "@/lib/validation";
+import { CASE_PRIORITIES, SupportIssueModel, type CaseStatus } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
 
@@ -14,7 +14,7 @@ const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
   CASE_PRIORITIES.map((priority, index) => [priority, index + 1]),
 );
 
-export type SupportCaseListItem = {
+export type SupportIssueListItem = {
   id: string;
   studentName: string;
   studentEmail: string | null;
@@ -25,17 +25,19 @@ export type SupportCaseListItem = {
   priority?: string | null;
   courseSlug?: string | null;
   batchNo?: number | null;
+  moduleSlug?: string | null;
+  contentSlug?: string | null;
   tags: string[];
   createdAt?: Date;
   updatedAt?: Date;
 };
 
-export type CaseListParams = SupportCaseFilter & {
+export type IssueListParams = SupportIssueFilter & {
   page?: number;
   limit?: number;
 };
 
-const toCaseListItem = (item: LeanDoc): SupportCaseListItem => ({
+const toIssueListItem = (item: LeanDoc): SupportIssueListItem => ({
   id: String(item._id),
   studentName: String(item.studentName ?? ""),
   studentEmail: (item.studentEmail as string | null) ?? null,
@@ -46,12 +48,14 @@ const toCaseListItem = (item: LeanDoc): SupportCaseListItem => ({
   priority: item.priority as string | null | undefined,
   courseSlug: item.courseSlug as string | null | undefined,
   batchNo: item.batchNo as number | null | undefined,
+  moduleSlug: item.moduleSlug as string | null | undefined,
+  contentSlug: item.contentSlug as string | null | undefined,
   tags: Array.isArray(item.tags) ? item.tags as string[] : [],
   createdAt: item.createdAt as Date | undefined,
   updatedAt: item.updatedAt as Date | undefined,
 });
 
-function buildCaseFilter(params: CaseListParams = {}) {
+function buildIssueFilter(params: IssueListParams = {}) {
   const filter: Record<string, unknown> = { deletedAt: null };
 
   if (params.status) filter.status = params.status;
@@ -71,58 +75,58 @@ function buildCaseFilter(params: CaseListParams = {}) {
   return filter;
 }
 
-export async function createCase(input: SupportCaseInput, actorId: string) {
-  const parsed = supportCaseInputSchema.parse(input);
+export async function createIssue(input: SupportIssueInput, actorId: string) {
+  const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
-  const supportCase = await SupportCaseModel.create({
+  const supportIssue = await SupportIssueModel.create({
     ...parsed,
-    searchText: buildCaseSearchText(parsed),
+    searchText: buildIssueSearchText(parsed),
     mentorId: parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : new mongoose.Types.ObjectId(actorId),
     createdBy: new mongoose.Types.ObjectId(actorId),
     updatedBy: new mongoose.Types.ObjectId(actorId),
   });
 
-  return toCaseListItem(supportCase.toObject());
+  return toIssueListItem(supportIssue.toObject());
 }
 
-export async function updateCase(id: string, input: SupportCaseInput, actorId: string) {
+export async function updateIssue(id: string, input: SupportIssueInput, actorId: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
-  const parsed = supportCaseInputSchema.parse(input);
+  const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
-  const supportCase = await SupportCaseModel.findOneAndUpdate(
+  const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: id, deletedAt: null },
     {
       ...parsed,
-      searchText: buildCaseSearchText(parsed),
+      searchText: buildIssueSearchText(parsed),
       updatedBy: new mongoose.Types.ObjectId(actorId),
     },
     { new: true, runValidators: true },
   ).lean();
 
-  return supportCase ? toCaseListItem(supportCase) : null;
+  return supportIssue ? toIssueListItem(supportIssue) : null;
 }
 
-export async function changeCaseStatus(id: string, status: CaseStatus, actorId: string) {
+export async function changeIssueStatus(id: string, status: CaseStatus, actorId: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportCase = await SupportCaseModel.findOneAndUpdate(
+  const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: id, deletedAt: null },
     { status, updatedBy: new mongoose.Types.ObjectId(actorId) },
     { new: true, runValidators: true },
   ).lean();
 
-  return supportCase ? toCaseListItem(supportCase) : null;
+  return supportIssue ? toIssueListItem(supportIssue) : null;
 }
 
-export async function softDeleteCase(id: string, actorId: string) {
+export async function softDeleteIssue(id: string, actorId: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportCase = await SupportCaseModel.findOneAndUpdate(
+  const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: id, deletedAt: null },
     {
       deletedAt: new Date(),
@@ -132,22 +136,22 @@ export async function softDeleteCase(id: string, actorId: string) {
     { new: true },
   ).lean();
 
-  return supportCase ? toCaseListItem(supportCase) : null;
+  return supportIssue ? toIssueListItem(supportIssue) : null;
 }
 
-export async function listCases(params: CaseListParams = {}) {
+export async function listIssues(params: IssueListParams = {}) {
   await dbConnect();
 
   const page = Math.max(1, params.page ?? 1);
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
-  const filter = buildCaseFilter(params);
+  const filter = buildIssueFilter(params);
   const skip = (page - 1) * limit;
 
   // `priority` needs a computed rank (URGENT highest), which a plain field
   // sort can't express; other modes sort on `updatedAt` directly.
   const itemsQuery =
     params.sort === "priority"
-      ? SupportCaseModel.aggregate([
+      ? SupportIssueModel.aggregate([
           { $match: filter },
           {
             $addFields: {
@@ -166,16 +170,16 @@ export async function listCases(params: CaseListParams = {}) {
           { $skip: skip },
           { $limit: limit },
         ])
-      : SupportCaseModel.find(filter)
+      : SupportIssueModel.find(filter)
           .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
           .skip(skip)
           .limit(limit)
           .lean();
 
-  const [items, total] = await Promise.all([itemsQuery, SupportCaseModel.countDocuments(filter)]);
+  const [items, total] = await Promise.all([itemsQuery, SupportIssueModel.countDocuments(filter)]);
 
   return {
-    items: (items as LeanDoc[]).map(toCaseListItem),
+    items: (items as LeanDoc[]).map(toIssueListItem),
     page,
     limit,
     total,
@@ -184,19 +188,19 @@ export async function listCases(params: CaseListParams = {}) {
 }
 
 /**
- * Distinct course slugs and batch numbers that actually exist on live cases, for
+ * Distinct course slugs and batch numbers that actually exist on live issues, for
  * populating the filter dropdowns. Reading them from the data keeps the dropdowns
  * from offering combinations that can never match.
  */
-export async function listCaseFilterOptions() {
+export async function listIssueFilterOptions() {
   await dbConnect();
 
   const [courseSlugs, batchNos] = await Promise.all([
-    SupportCaseModel.distinct("courseSlug", {
+    SupportIssueModel.distinct("courseSlug", {
       deletedAt: null,
       courseSlug: { $nin: [null, ""] },
     }) as Promise<unknown[]>,
-    SupportCaseModel.distinct("batchNo", {
+    SupportIssueModel.distinct("batchNo", {
       deletedAt: null,
       batchNo: { $nin: [null] },
     }) as Promise<unknown[]>,
@@ -208,12 +212,12 @@ export async function listCaseFilterOptions() {
   };
 }
 
-export async function getCaseDetail(id: string) {
+export async function getIssueDetail(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportCase = await SupportCaseModel.findOne({ _id: id, deletedAt: null }).lean();
-  if (!supportCase) return null;
+  const supportIssue = await SupportIssueModel.findOne({ _id: id, deletedAt: null }).lean();
+  if (!supportIssue) return null;
 
-  return toCaseListItem(supportCase as LeanDoc);
+  return toIssueListItem(supportIssue as LeanDoc);
 }

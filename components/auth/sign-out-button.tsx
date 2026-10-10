@@ -1,15 +1,17 @@
 "use client";
 
 import { signOut } from "next-auth/react";
+import { LogOutIcon } from "@/components/icons";
 
 export function SignOutButton() {
   return (
     <button
       onClick={() => signOut({ callbackUrl: "/login" })}
-      className="rounded-xl bg-danger-100 px-3 py-2 text-sm font-semibold text-danger-700 transition hover:bg-danger-200 dark:bg-danger-950/50 dark:text-danger-200 dark:hover:bg-danger-900/60"
+      className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-danger-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-danger-400"
       type="button"
+      aria-label="Sign out"
     >
-      Sign Out
+      <LogOutIcon size={20} />
     </button>
   );
 }

@@ -35,12 +35,12 @@ const parseVideoLinks = (value?: string) =>
     summary: summary || undefined,
   }));
 
-export async function addReplyAction(caseId: string, formData: FormData) {
+export async function addReplyAction(issueId: string, formData: FormData) {
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) redirect("/unauthorized");
 
   const parsed = supportReplyInputSchema.parse({
-    caseId,
+    issueId,
     body: formValue(formData, "body"),
     isInternalNote: formData.get("isInternalNote") === "true",
     fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
@@ -48,22 +48,22 @@ export async function addReplyAction(caseId: string, formData: FormData) {
   });
 
   await addReply(parsed, guard.session.user.id);
-  revalidatePath(`/dashboard/cases/${caseId}`);
+  revalidatePath(`/dashboard/issues/${issueId}`);
 }
 
-export async function editReplyAction(caseId: string, replyId: string, formData: FormData) {
+export async function editReplyAction(issueId: string, replyId: string, formData: FormData) {
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) redirect("/unauthorized");
 
   const body = formValue(formData, "body");
   if (body) await editReply(replyId, body, guard.session.user.id, guard.session.user.role);
-  revalidatePath(`/dashboard/cases/${caseId}`);
+  revalidatePath(`/dashboard/issues/${issueId}`);
 }
 
-export async function deleteReplyAction(caseId: string, replyId: string) {
+export async function deleteReplyAction(issueId: string, replyId: string) {
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) redirect("/unauthorized");
 
   await softDeleteReply(replyId, guard.session.user.id, guard.session.user.role);
-  revalidatePath(`/dashboard/cases/${caseId}`);
+  revalidatePath(`/dashboard/issues/${issueId}`);
 }

@@ -1,5 +1,5 @@
 /**
- * Search benchmark: measures how the case search scales as the collection
+ * Search benchmark: measures how the issue search scales as the collection
  * grows, and compares the strategies we could actually ship on plain MongoDB.
  *
  * Production today uses a plain B-tree index on `searchText` plus a

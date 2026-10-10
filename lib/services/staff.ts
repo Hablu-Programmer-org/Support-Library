@@ -3,7 +3,8 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { UserModel, USER_ROLES, type UserRole } from "@/models";
+import { UserModel, type UserRole } from "@/models";
+import { USER_ROLES } from "@/lib/constants";
 
 type LeanDoc = Record<string, unknown>;
 

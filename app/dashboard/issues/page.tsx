@@ -1,21 +1,23 @@
 import Link from "next/link";
+import { deleteIssueActionSimple } from "@/actions/issues";
+import { DeleteButton } from "@/components/issues/delete-button";
 
-import { CaseFilterPanel } from "@/components/cases/case-filter-panel";
-import { StatusBadge } from "@/components/cases/status-badge";
+import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
+import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canMutate } from "@/lib/roles";
-import { listCaseFilterOptions, listCases } from "@/lib/services/cases";
+import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listStaff } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 
 export const dynamic = "force-dynamic";
 
-const CASE_SORTS = ["newest", "oldest", "priority"] as const;
-type CaseSort = (typeof CASE_SORTS)[number];
+const ISSUE_SORTS = ["newest", "oldest", "priority"] as const;
+type IssueSort = (typeof ISSUE_SORTS)[number];
 
-export default async function CasesPage({
+export default async function IssuesPage({
   searchParams,
 }: {
   searchParams?: Promise<{
@@ -34,8 +36,8 @@ export default async function CasesPage({
   const resolvedSearchParams = await searchParams;
   const session = await requireSession();
   const page = Number(resolvedSearchParams?.page ?? "1");
-  const sort: CaseSort = CASE_SORTS.includes(resolvedSearchParams?.sort as CaseSort)
-    ? (resolvedSearchParams?.sort as CaseSort)
+  const sort: IssueSort = ISSUE_SORTS.includes(resolvedSearchParams?.sort as IssueSort)
+    ? (resolvedSearchParams?.sort as IssueSort)
     : "newest";
 
   // The filter schema expects ISO datetimes, but a date input yields YYYY-MM-DD.
@@ -43,7 +45,7 @@ export default async function CasesPage({
   const from = resolvedSearchParams?.from ? `${resolvedSearchParams.from}T00:00:00.000Z` : undefined;
   const to = resolvedSearchParams?.to ? `${resolvedSearchParams.to}T23:59:59.999Z` : undefined;
 
-  const cases = await listCases({
+  const issues = await listIssues({
     q: resolvedSearchParams?.q,
     status: CASE_STATUSES.includes(resolvedSearchParams?.status as never) ? resolvedSearchParams?.status as never : undefined,
     tag: resolvedSearchParams?.tag,
@@ -58,12 +60,13 @@ export default async function CasesPage({
   });
 
   const [{ courseSlugs, batchNos }, staff] = await Promise.all([
-    listCaseFilterOptions(),
+    listIssueFilterOptions(),
     listStaff(),
   ]);
   const mentors = staff.filter((member) => member.isActive && (member.role === "MENTOR" || member.role === "ADMIN"));
 
   const canCreate = Boolean(session.user.role && canMutate(session.user.role));
+  const canDelete = canCreate; // Same roles can delete
   const q = resolvedSearchParams?.q ?? "";
   const tag = resolvedSearchParams?.tag ?? "";
   const status = resolvedSearchParams?.status ?? "";
@@ -85,7 +88,7 @@ export default async function CasesPage({
     if (dateTo) params.set("to", dateTo);
     if (sort !== "newest") params.set("sort", sort);
     params.set("page", String(nextPage));
-    return `/dashboard/cases?${params.toString()}`;
+    return `/dashboard/issues?${params.toString()}`;
   };
 
   return (
@@ -94,18 +97,18 @@ export default async function CasesPage({
         action={
           canCreate && (
             <Link
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
-              href="/dashboard/cases/new"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
+              href="/dashboard/issues/new"
             >
-              New Case
+              New Issue
             </Link>
           )
         }
-        description="Find support cases by problem, tag, status or keyword."
-        title="Support Cases"
+        description="Find support issues by problem, tag, status or keyword."
+        title="Support Issues"
       />
 
-      <CaseFilterPanel
+      <IssueFilterPanel
         batchNos={batchNos}
         courseSlugs={courseSlugs}
         defaults={{ q, tag, status, courseSlug, batchNo, mentorId, dateFrom, dateTo, sort }}
@@ -115,39 +118,44 @@ export default async function CasesPage({
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <div className="p-0">
-          {cases.items.length === 0 ? (
-            <EmptyState>No cases found.</EmptyState>
+          {issues.items.length === 0 ? (
+            <EmptyState>No issues found.</EmptyState>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-800">
-              {cases.items.map((supportCase) => (
-                <Link
-                  key={supportCase.id}
-                  href={`/dashboard/cases/${supportCase.id}`}
-                  className="block p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+              {issues.items.map((supportIssue) => (
+                <div
+                  key={supportIssue.id}
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <Link
+                    href={`/dashboard/issues/${supportIssue.id}`}
+                    className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
+                  >
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-semibold">{supportCase.title}</h2>
-                        <StatusBadge status={supportCase.status} />
+                        <h2 className="font-semibold">{supportIssue.title}</h2>
+                        <StatusBadge status={supportIssue.status} />
                       </div>
-                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportCase.question}</p>
+                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportIssue.question}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {supportCase.studentName || "Unknown student"}
-                        {supportCase.studentEmail ? ` · ${supportCase.studentEmail}` : ""}
+                        {supportIssue.studentName || "Unknown student"}
+                        {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}
                       </p>
                     </div>
-                    {supportCase.tags.length > 0 && (
+                    {supportIssue.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
-                        {supportCase.tags.map((item) => (
+                        {supportIssue.tags.map((item) => (
                           <span key={item} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
                             {item}
                           </span>
                         ))}
                       </div>
                     )}
-                  </div>
-                </Link>
+                  </Link>
+                  {canDelete && (
+                    <DeleteButton action={deleteIssueActionSimple.bind(null, supportIssue.id)} className="flex-shrink-0" />
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -156,21 +164,21 @@ export default async function CasesPage({
 
       <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
-          Page {cases.page} of {cases.totalPages} · Total {cases.total}
+          Page {issues.page} of {issues.totalPages} · Total {issues.total}
         </span>
         <div className="flex gap-2">
-          {cases.page > 1 && (
+          {issues.page > 1 && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={pageHref(cases.page - 1)}
+              href={pageHref(issues.page - 1)}
             >
               Previous
             </Link>
           )}
-          {cases.page < cases.totalPages && (
+          {issues.page < issues.totalPages && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={pageHref(cases.page + 1)}
+              href={pageHref(issues.page + 1)}
             >
               Next
             </Link>

@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 import { dbConnect } from "../lib/db";
-import { buildCaseSearchText } from "../lib/search";
-import { SupportCaseModel, UserModel } from "../models";
+import { buildIssueSearchText } from "../lib/search";
+import { SupportIssueModel, UserModel } from "../models";
 
 const adminEmail = (process.env.SEED_ADMIN_EMAIL || "").toLowerCase().trim();
 const adminName = process.env.SEED_ADMIN_NAME || "Hablu Admin";
@@ -28,7 +28,7 @@ async function seedAdmin() {
   return user._id as mongoose.Types.ObjectId;
 }
 
-const demoCase = {
+const demoIssue = {
   studentName: "Demo Student",
   studentEmail: "demo.student@example.com",
   lmsUserId: null,
@@ -40,12 +40,12 @@ const demoCase = {
 };
 
 async function seedDemo(actorId: mongoose.Types.ObjectId) {
-  await SupportCaseModel.findOneAndUpdate(
-    { title: demoCase.title, studentEmail: demoCase.studentEmail },
+  await SupportIssueModel.findOneAndUpdate(
+    { title: demoIssue.title, studentEmail: demoIssue.studentEmail },
     {
       $set: {
-        ...demoCase,
-        searchText: buildCaseSearchText(demoCase),
+        ...demoIssue,
+        searchText: buildIssueSearchText(demoIssue),
         mentorId: actorId,
         createdBy: actorId,
         updatedBy: actorId,

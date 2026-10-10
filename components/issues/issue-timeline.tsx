@@ -1,14 +1,14 @@
-import { ReplyItem } from "@/components/cases/reply-item";
+import { ReplyItem } from "@/components/issues/reply-item";
 import { canMutate, isAdmin, type UserRole } from "@/lib/roles";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
-export function CaseTimeline({
-  caseId,
+export function IssueTimeline({
+  issueId,
   replies,
   viewerId,
   viewerRole,
 }: {
-  caseId: string;
+  issueId: string;
   replies: SupportReplyListItem[];
   viewerId: string;
   viewerRole?: UserRole | null;
@@ -33,7 +33,7 @@ export function CaseTimeline({
         const canEdit = mayMutateAny && (isOwner || isAdmin(viewerRole!));
 
         return (
-          <ReplyItem key={reply.id} caseId={caseId} reply={reply} canEdit={canEdit} />
+          <ReplyItem key={reply.id} issueId={issueId} reply={reply} canEdit={canEdit} />
         );
       })}
     </div>
