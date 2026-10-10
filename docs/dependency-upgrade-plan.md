@@ -2,7 +2,7 @@
 
 Status legend: `pending` · `in-progress` · `done` · `blocked`
 
-Overall status: **in-progress (Step 7)**
+Overall status: **in-progress (Step 8)**
 
 ## Goal
 
@@ -167,13 +167,17 @@ Gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e �
 
 ## Step 7 — Zod 3 → 4
 
-Status: **pending**
+Status: **done**
 
-- [ ] `zod` → `4.6.5`; migrate `lib/validation/*` and consumers.
-- [ ] Preserve `.strict()`, defaults, preprocess/coercion.
-- [ ] Re-test validation edge cases (optionals, filters, HTTPS links, answer variants).
+- [x] `zod` → `4.6.5`; migrated `lib/validation/*` and all consumers.
+- [x] Replaced `z.object().strict()` → `z.strictObject()` across all schemas.
+- [x] Replaced `z.string().email()` → `z.string().trim().email()` and `z.string().url()` → `z.url()`.
+- [x] Migrated `z.preprocess()` → `z.transform().pipe()` for `optionalSlugSchema`.
+- [x] Preserved `.strict()`, defaults, coercion, preprocess, HTTPS link refinement, tag normalization.
+- [x] Verified `z.coerce.number()` fields with explicit `.default()` where missing keys are expected (filter schemas).
+- [x] Re-tested validation edge cases: optionals, filters, HTTPS links, answer variants, tag deduplication.
 
-Gate: validation tests + full gate.
+Gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e ✓ (29/29).
 
 ## Step 8 — Clean install + final acceptance
 
@@ -189,7 +193,7 @@ Status: **pending**
 
 ## Execution order (summary)
 
-`Step 1 Node ✓ → Step 2 Tailwind v4 + cleanup → Step 3 small bumps → Step 4 test tooling → Step 5 Next/React/ESLint ✓ → Step 6 HeroUI removal ✓ → Step 7 Zod 4 → Step 8 final`
+`Step 1 Node ✓ → Step 2 Tailwind v4 + cleanup → Step 3 small bumps → Step 4 test tooling → Step 5 Next/React/ESLint ✓ → Step 6 HeroUI removal ✓ → Step 7 Zod 4 ✓ → Step 8 final`
 
 ## Checkpoint policy
 
