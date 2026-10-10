@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 import { resolveE2EDatabase } from "./e2e/fixtures/test-db";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3100";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:12000";
 process.env.AUTH_URL = baseURL;
 process.env.NEXTAUTH_URL = baseURL;
 
@@ -27,7 +27,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run dev -- -p 3100",
+    command: "npm run dev",
     url: baseURL,
     // A reused server would keep the database it booted with, which would break
     // the isolation guarantee above. Always boot a fresh one.

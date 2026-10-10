@@ -5,9 +5,9 @@
     "node": "^24.15.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 12000",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 12000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

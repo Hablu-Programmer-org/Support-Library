@@ -28,7 +28,7 @@ Fill `.env.local`:
 - `AUTH_SECRET`
 - `AUTH_GOOGLE_ID`
 - `AUTH_GOOGLE_SECRET`
-- `AUTH_URL=http://localhost:3000`
+- `AUTH_URL=http://localhost:12000`
 - `AUTH_TRUST_HOST=true`
 
 Run locally:
@@ -81,7 +81,7 @@ cmd /c "npm run test:e2e"
 - A reachable MongoDB (it upserts test staff users).
 - `.env.local` present — `AUTH_SECRET` and `MONGODB_URI` are read.
 - Runs against a dedicated test database (`MONGODB_TEST_DB`) and starts its own
-  dev server on port `3100` so it never touches a dev server on `3000`.
+  dev server on port `12000` so it never touches the main frontend on `11000`.
 
 ## Core Flows
 
