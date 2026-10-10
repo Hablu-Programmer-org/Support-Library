@@ -14,7 +14,6 @@ test.describe("Issue CRUD (mentor)", () => {
       await page.fill('input[name="studentEmail"]', `e2e.answer.${Date.now()}@test.com`);
       await page.fill('input[name="title"]', `E2E ${scenario.label}`);
       await page.fill('textarea[name="question"]', "How do I fix the broken image path?");
-      await page.locator("summary").filter({ hasText: "Answer (Optional)" }).click();
       await page.fill('textarea[name="solutionBody"]', scenario.body);
       await page.fill('textarea[name="solutionFileLinks"]', "Guide|https://example.com/fix.pdf|pdf\nScreenshot|https://example.com/fix.png|image");
       await page.fill('textarea[name="solutionVideoLinks"]', "Walkthrough|https://example.com/fix.mp4|01:20");
@@ -91,6 +90,13 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.getByText("Found in LMS")).toBeVisible();
     await expect(studentName).toBeVisible();
     await expect(studentName).toBeDisabled();
+    await expect
+      .poll(() =>
+        page.locator("form").evaluate((form) =>
+          new FormData(form as HTMLFormElement).get("studentName"),
+        ),
+      )
+      .toBe("E2E LMS Student");
 
     await page.fill('input[name="title"]', "E2E LMS autofill submission");
     await page.fill('textarea[name="question"]', "Does the disabled LMS name submit correctly?");

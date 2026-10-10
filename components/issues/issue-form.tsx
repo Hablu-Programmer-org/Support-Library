@@ -573,7 +573,10 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
                 ? "Save Issue"
                 : "Create Issue"}
           </span>
-          <kbd className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex">
+          <kbd
+            aria-hidden="true"
+            className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex"
+          >
             ⌘Enter
           </kbd>
         </button>
