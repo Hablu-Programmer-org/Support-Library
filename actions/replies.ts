@@ -47,7 +47,10 @@ export async function addReplyAction(issueId: string, formData: FormData) {
     videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });
 
-  await addReply(parsed, guard.session.user.id);
+  const reply = await addReply(parsed, guard.session.user.id);
+  if (!reply) throw new Error("Issue not found");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${issueId}`);
 }
 
@@ -56,7 +59,18 @@ export async function editReplyAction(issueId: string, replyId: string, formData
   if (!guard.ok) redirect("/unauthorized");
 
   const body = formValue(formData, "body");
-  if (body) await editReply(replyId, body, guard.session.user.id, guard.session.user.role);
+  if (body) {
+    const reply = await editReply(
+      issueId,
+      replyId,
+      body,
+      guard.session.user.id,
+      guard.session.user.role,
+    );
+    if (!reply) throw new Error("Reply not found");
+  }
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${issueId}`);
 }
 
@@ -64,6 +78,14 @@ export async function deleteReplyAction(issueId: string, replyId: string) {
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) redirect("/unauthorized");
 
-  await softDeleteReply(replyId, guard.session.user.id, guard.session.user.role);
+  const reply = await softDeleteReply(
+    issueId,
+    replyId,
+    guard.session.user.id,
+    guard.session.user.role,
+  );
+  if (!reply) throw new Error("Reply not found");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${issueId}`);
 }

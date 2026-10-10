@@ -23,9 +23,9 @@ test.describe("Reply edit/delete permissions", () => {
     const issuePath = new URL(page.url()).pathname;
 
     // Admin authors a reply.
-    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
+    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
     await replyForm.locator('textarea[name="body"]').fill("Admin authored reply");
-    await replyForm.getByRole("button", { name: "Add Reply" }).click();
+    await replyForm.getByRole("button", { name: "Add response" }).click();
 
     const adminReply = page.locator("article").filter({ hasText: "Admin authored reply" });
     await expect(adminReply).toBeVisible();

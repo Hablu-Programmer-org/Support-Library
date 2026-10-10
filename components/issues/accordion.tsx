@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronDownIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 
@@ -46,20 +46,9 @@ export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
           </motion.div>
         </summary>
 
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              ref={contentRef}
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={cn("overflow-hidden", contentClassName)}
-            >
-              <div className="px-4 pb-4 pt-0">{children}</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div ref={contentRef} hidden={!isOpen} className={cn("overflow-hidden", contentClassName)}>
+          <div className="px-4 pb-4 pt-0">{children}</div>
+        </div>
       </details>
     );
   }

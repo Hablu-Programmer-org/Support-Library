@@ -35,6 +35,8 @@ export default async function IssuesPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const session = await requireSession();
+  const canCreate = Boolean(session.user.role && canMutate(session.user.role));
+  const publicOnly = !canCreate;
   const page = Number(resolvedSearchParams?.page ?? "1");
   const sort: IssueSort = ISSUE_SORTS.includes(resolvedSearchParams?.sort as IssueSort)
     ? (resolvedSearchParams?.sort as IssueSort)
@@ -45,34 +47,38 @@ export default async function IssuesPage({
   const from = resolvedSearchParams?.from ? `${resolvedSearchParams.from}T00:00:00.000Z` : undefined;
   const to = resolvedSearchParams?.to ? `${resolvedSearchParams.to}T23:59:59.999Z` : undefined;
 
-  const issues = await listIssues({
-    q: resolvedSearchParams?.q,
-    status: CASE_STATUSES.includes(resolvedSearchParams?.status as never) ? resolvedSearchParams?.status as never : undefined,
-    tag: resolvedSearchParams?.tag,
-    courseSlug: resolvedSearchParams?.courseSlug || undefined,
-    batchNo: resolvedSearchParams?.batchNo ? Number(resolvedSearchParams.batchNo) : undefined,
-    mentorId: resolvedSearchParams?.mentorId || undefined,
-    from,
-    to,
-    sort,
-    page,
-    limit: 20,
-  });
+  const issues = await listIssues(
+    {
+      q: resolvedSearchParams?.q,
+      status: CASE_STATUSES.includes(resolvedSearchParams?.status as never)
+        ? resolvedSearchParams?.status as never
+        : undefined,
+      tag: resolvedSearchParams?.tag,
+      courseSlug: resolvedSearchParams?.courseSlug || undefined,
+      batchNo: resolvedSearchParams?.batchNo ? Number(resolvedSearchParams.batchNo) : undefined,
+      mentorId: canCreate ? resolvedSearchParams?.mentorId || undefined : undefined,
+      from,
+      to,
+      sort,
+      page,
+      limit: 20,
+    },
+    { publicOnly },
+  );
 
   const [{ courseSlugs, batchNos }, staff] = await Promise.all([
-    listIssueFilterOptions(),
-    listStaff(),
+    listIssueFilterOptions(publicOnly),
+    canCreate ? listStaff() : Promise.resolve([]),
   ]);
   const mentors = staff.filter((member) => member.isActive && (member.role === "MENTOR" || member.role === "ADMIN"));
 
-  const canCreate = Boolean(session.user.role && canMutate(session.user.role));
   const canDelete = canCreate; // Same roles can delete
   const q = resolvedSearchParams?.q ?? "";
   const tag = resolvedSearchParams?.tag ?? "";
   const status = resolvedSearchParams?.status ?? "";
   const courseSlug = resolvedSearchParams?.courseSlug ?? "";
   const batchNo = resolvedSearchParams?.batchNo ?? "";
-  const mentorId = resolvedSearchParams?.mentorId ?? "";
+  const mentorId = canCreate ? resolvedSearchParams?.mentorId ?? "" : "";
   const dateFrom = resolvedSearchParams?.from ?? "";
   const dateTo = resolvedSearchParams?.to ?? "";
 
@@ -105,7 +111,7 @@ export default async function IssuesPage({
           )
         }
         description="Find support issues by problem, tag, status or keyword."
-        title="Support Issues"
+        title={canCreate ? "Support Issues" : "Student Support Library"}
       />
 
       <IssueFilterPanel
@@ -113,6 +119,7 @@ export default async function IssuesPage({
         courseSlugs={courseSlugs}
         defaults={{ q, tag, status, courseSlug, batchNo, mentorId, dateFrom, dateTo, sort }}
         mentors={mentors}
+        showMentor={canCreate}
         statuses={CASE_STATUSES}
       />
 
@@ -137,10 +144,12 @@ export default async function IssuesPage({
                         <StatusBadge status={supportIssue.status} />
                       </div>
                       <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportIssue.question}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {supportIssue.studentName || "Unknown student"}
-                        {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}
-                      </p>
+                      {canCreate && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {supportIssue.studentName || "Unknown student"}
+                          {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}
+                        </p>
+                      )}
                     </div>
                     {supportIssue.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">

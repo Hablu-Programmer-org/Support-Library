@@ -1,15 +1,31 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { changeIssueStatusActionSimple, deleteIssueActionSimple } from "@/actions/issues";
-import { IssueForm } from "@/components/issues/issue-form";
+import {
+  changeIssueStatusActionSimple,
+  deleteIssueActionSimple,
+  publishIssueAction,
+  unpublishIssueAction,
+} from "@/actions/issues";
+import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
+import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
+import {
+  ArrowLeftIcon,
+  FileTextIcon,
+  MessageSquareIcon,
+  SettingsIcon,
+  UserIcon,
+} from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
 import { nativeSelectClass } from "@/lib/config/fields";
-import { canMutate } from "@/lib/roles";
-import { getIssueDetail } from "@/lib/services/issues";
+import { canMutate, isAdmin } from "@/lib/roles";
+import {
+  getIssueDetail,
+  getPublishedIssueDetail,
+} from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
 
@@ -23,127 +39,222 @@ const statusLabels = {
   ARCHIVED: "Archived",
 };
 
-export default async function IssueDetailPage({ params }: { params: Promise<{ id: string }> }) {
+const priorityLabels: Record<string, string> = {
+  LOW: "Low priority",
+  NORMAL: "Normal priority",
+  HIGH: "High priority",
+  URGENT: "Urgent",
+};
+
+const formatDate = (date?: Date | null) =>
+  date
+    ? new Intl.DateTimeFormat("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(date))
+    : "Not available";
+
+export default async function IssueDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const session = await requireSession();
-  const supportIssue = await getIssueDetail(id);
+  const canEdit = Boolean(session.user.role && canMutate(session.user.role));
+  const canPublish = isAdmin(session.user.role ?? "VIEWER");
+  const staffIssue = canEdit ? await getIssueDetail(id) : null;
+  const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  // VIEWER (students) must not see staff-only content: internal notes.
-  // Staff (ADMIN/MENTOR) get everything.
-  const canEdit = Boolean(session.user.role && canMutate(session.user.role));
-  const replies = await listReplies(supportIssue.id, canEdit);
+  const replies = await listReplies(supportIssue.id, canEdit, !canEdit);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <Link href="/dashboard/issues" className="text-sm text-primary hover:underline">
-            ← Back to Issues
-          </Link>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold">{supportIssue.title}</h1>
-            <StatusBadge status={supportIssue.status} />
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {supportIssue.studentName}
-            {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}
-          </p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <Link
+        href="/dashboard/issues"
+        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
+      >
+        <ArrowLeftIcon size={18} />
+        Back to Issues
+      </Link>
+
+      <header className="mb-8 border-b border-slate-200 pb-8 dark:border-slate-800">
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <StatusBadge status={supportIssue.status} />
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            {priorityLabels[supportIssue.priority ?? "NORMAL"] ?? supportIssue.priority}
+          </span>
+          {supportIssue.visibility === "PUBLISHED" && (
+            <span className="rounded-full bg-success-100 px-2.5 py-1 font-medium text-success-700 dark:bg-success-950/50 dark:text-success-200">
+              Student Library
+            </span>
+          )}
         </div>
-      </div>
+        <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+          {supportIssue.title}
+        </h1>
+        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+          Updated <time dateTime={supportIssue.updatedAt?.toISOString()}>{formatDate(supportIssue.updatedAt)}</time>
+        </p>
+      </header>
 
-      <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-        <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Problem Description</div>
-        <div className="space-y-4 p-6">
-          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{supportIssue.question}</p>
-          <div className="flex flex-wrap gap-2">
-            {supportIssue.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="grid gap-3 text-sm sm:grid-cols-3">
-            <Info label="Course" value={supportIssue.courseSlug} />
-            <Info label="Batch" value={supportIssue.batchNo?.toString()} />
-            <Info label="Priority" value={supportIssue.priority} />
-          </div>
-        </div>
-      </section>
-
-      {canEdit && (
-        <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-          <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Status Update</div>
-          <div className="p-6">
-            <form action={changeIssueStatusActionSimple.bind(null, supportIssue.id)} className="flex flex-col gap-3 sm:flex-row">
-              <select
-                name="status"
-                defaultValue={supportIssue.status}
-                className={nativeSelectClass}
-              >
-                {CASE_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabels[status]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
-              >
-                Update
-              </button>
-            </form>
-          </div>
-        </section>
-      )}
-
-      {canEdit && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Edit Issue</h2>
-          <IssueForm
-            supportIssue={{
-              id: supportIssue.id,
-              title: supportIssue.title,
-              question: supportIssue.question,
-              status: supportIssue.status,
-              priority: supportIssue.priority ?? "NORMAL",
-              courseSlug: supportIssue.courseSlug ?? undefined,
-              batchNo: supportIssue.batchNo ?? undefined,
-              moduleSlug: supportIssue.moduleSlug ?? undefined,
-              contentSlug: supportIssue.contentSlug ?? undefined,
-              tags: supportIssue.tags,
-              studentName: supportIssue.studentName,
-              studentEmail: supportIssue.studentEmail ?? undefined,
-              lmsUserId: supportIssue.lmsUserId ?? undefined,
-            }}
-          />
-        </section>
-      )}
-
-      <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-        <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Replies & Internal Notes</div>
-        <div className="space-y-4 p-6">
-          {canEdit && <ReplyComposer issueId={supportIssue.id} />}
-          <IssueTimeline
-            issueId={supportIssue.id}
-            replies={replies}
-            viewerId={session.user.id}
-            viewerRole={session.user.role}
-          />
-        </div>
-      </section>
-
-      {canEdit && (
-        <form action={deleteIssueActionSimple.bind(null, supportIssue.id)}>
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center rounded-xl bg-danger-100 px-4 py-2 text-sm font-semibold text-danger-700 transition hover:bg-danger-200 dark:bg-danger-950/50 dark:text-danger-200 dark:hover:bg-danger-900/60"
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <main className="min-w-0 space-y-8">
+          <article
+            aria-labelledby="problem-heading"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
           >
-            Archive Issue
-          </button>
-        </form>
-      )}
+            <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-7">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
+                <FileTextIcon size={19} />
+              </span>
+              <h2 id="problem-heading" className="text-lg font-semibold text-slate-950 dark:text-white">
+                The problem
+              </h2>
+            </div>
+            <div className="px-5 py-6 sm:px-7 sm:py-8">
+              <p className="whitespace-pre-wrap break-words text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
+                {supportIssue.question}
+              </p>
+              {supportIssue.tags.length > 0 && (
+                <div className="mt-7 flex flex-wrap gap-2" aria-label="Issue tags">
+                  {supportIssue.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </article>
+
+          <section aria-labelledby="responses-heading" className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
+                <MessageSquareIcon size={19} />
+              </span>
+              <div>
+                <h2 id="responses-heading" className="text-xl font-semibold text-slate-950 dark:text-white">
+                  {canEdit ? "Responses and staff notes" : "Answers and updates"}
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {canEdit
+                    ? "Public answers and private team context in chronological order."
+                    : "Guidance reviewed by the Hablu Programmer support team."}
+                </p>
+              </div>
+            </div>
+
+            <IssueTimeline
+              issueId={supportIssue.id}
+              replies={replies}
+              viewerId={session.user.id}
+              viewerRole={session.user.role}
+            />
+
+            {canEdit && <ReplyComposer issueId={supportIssue.id} />}
+          </section>
+        </main>
+
+        <aside className="space-y-4 lg:sticky lg:top-20">
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <div className="mb-4 flex items-center gap-2">
+              <SettingsIcon className="text-slate-500" size={18} />
+              <h2 className="font-semibold text-slate-950 dark:text-white">Issue context</h2>
+            </div>
+            <dl className="space-y-4 text-sm">
+              <Info label="Course" value={supportIssue.courseSlug} />
+              <Info label="Batch" value={supportIssue.batchNo?.toString()} />
+              <Info label="Published" value={formatDate(supportIssue.publishedAt)} />
+              <Info label="Created" value={formatDate(supportIssue.createdAt)} />
+            </dl>
+          </section>
+
+          {staffIssue && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-4 flex items-center gap-2">
+                <UserIcon className="text-slate-500" size={18} />
+                <h2 className="font-semibold text-slate-950 dark:text-white">Student snapshot</h2>
+              </div>
+              <p className="break-words font-medium text-slate-900 dark:text-white">
+                {staffIssue.studentName}
+              </p>
+              <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
+                {staffIssue.studentEmail ?? "No email recorded"}
+              </p>
+            </section>
+          )}
+
+          {canEdit && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="font-semibold text-slate-950 dark:text-white">Manage issue</h2>
+              <form
+                action={changeIssueStatusActionSimple.bind(null, supportIssue.id)}
+                className="mt-4 space-y-3"
+              >
+                <label htmlFor="issue-status" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Status
+                </label>
+                <select
+                  id="issue-status"
+                  name="status"
+                  defaultValue={supportIssue.status}
+                  className={nativeSelectClass}
+                >
+                  {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
+                    <option key={status} value={status}>
+                      {statusLabels[status]}
+                    </option>
+                  ))}
+                </select>
+                <PendingSubmitButton label="Update status" pendingLabel="Updating..." />
+              </form>
+
+              <Link
+                href={`/dashboard/issues/${supportIssue.id}/edit`}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                Edit issue details
+              </Link>
+
+              {canPublish && (
+                <form
+                  action={
+                    supportIssue.visibility === "PUBLISHED"
+                      ? unpublishIssueAction.bind(null, supportIssue.id)
+                      : publishIssueAction.bind(
+                          null,
+                          supportIssue.id,
+                          supportIssue.updatedAt?.toISOString() ?? "",
+                        )
+                  }
+                  className="mt-3"
+                >
+                  <PendingSubmitButton
+                    label={supportIssue.visibility === "PUBLISHED" ? "Remove from library" : "Publish to library"}
+                    pendingLabel={supportIssue.visibility === "PUBLISHED" ? "Removing..." : "Publishing..."}
+                    variant="secondary"
+                  />
+                </form>
+              )}
+            </section>
+          )}
+
+          {canEdit && (
+            <section className="rounded-2xl border border-danger-200 bg-danger-50/60 p-5 dark:border-danger-900/50 dark:bg-danger-950/20">
+              <h2 className="font-semibold text-danger-800 dark:text-danger-200">Danger zone</h2>
+              <p className="mt-1 text-xs leading-5 text-danger-700/80 dark:text-danger-300/80">
+                Archiving removes this issue from the active library and staff lists.
+              </p>
+              <ArchiveIssueButton action={deleteIssueActionSimple.bind(null, supportIssue.id)} />
+            </section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
@@ -151,8 +262,12 @@ export default async function IssueDetailPage({ params }: { params: Promise<{ id
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <div className="text-slate-500 dark:text-slate-400">{label}</div>
-      <div className="font-medium">{value || "—"}</div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {label}
+      </dt>
+      <dd className="mt-1 break-words font-medium text-slate-800 dark:text-slate-200">
+        {value || "Not specified"}
+      </dd>
     </div>
   );
 }

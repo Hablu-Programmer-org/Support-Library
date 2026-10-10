@@ -12,25 +12,32 @@ export type DashboardStats = {
 
 export type TagCount = { tag: string; count: number };
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+export async function getDashboardStats(publicOnly = false): Promise<DashboardStats> {
   await dbConnect();
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - 7);
+  const baseFilter = publicOnly ? { deletedAt: null, visibility: "PUBLISHED" } : { deletedAt: null };
 
   const [totalIssues, unresolvedIssues, staffCount, weeklyIssues] = await Promise.all([
-    SupportIssueModel.countDocuments({ deletedAt: null }),
-    SupportIssueModel.countDocuments({ deletedAt: null, status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] } }),
+    SupportIssueModel.countDocuments(baseFilter),
+    SupportIssueModel.countDocuments({ ...baseFilter, status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] } }),
     UserModel.countDocuments({}),
-    SupportIssueModel.countDocuments({ deletedAt: null, createdAt: { $gte: weekStart } }),
+    SupportIssueModel.countDocuments({ ...baseFilter, createdAt: { $gte: weekStart } }),
   ]);
 
   return { totalIssues, unresolvedIssues, staffCount, weeklyIssues };
 }
 
-export async function getTopTags(limit = 12): Promise<TagCount[]> {
+export async function getTopTags(limit = 12, publicOnly = false): Promise<TagCount[]> {
   await dbConnect();
   const rows = await SupportIssueModel.aggregate<{ _id: string; count: number }>([
-    { $match: { deletedAt: null, tags: { $exists: true, $ne: [] } } },
+    {
+      $match: {
+        deletedAt: null,
+        ...(publicOnly ? { visibility: "PUBLISHED" } : {}),
+        tags: { $exists: true, $ne: [] },
+      },
+    },
     { $unwind: "$tags" },
     { $group: { _id: "$tags", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
@@ -39,10 +46,11 @@ export async function getTopTags(limit = 12): Promise<TagCount[]> {
   return rows.map((row) => ({ tag: row._id, count: row.count }));
 }
 
-export async function getRecentUnresolvedIssues(limit = 8) {
+export async function getRecentUnresolvedIssues(limit = 8, publicOnly = false) {
   await dbConnect();
   const issues = await SupportIssueModel.find({
     deletedAt: null,
+    ...(publicOnly ? { visibility: "PUBLISHED" } : {}),
     status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] },
   })
     .sort({ updatedAt: -1 })

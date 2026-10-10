@@ -6,7 +6,14 @@ import { z } from "zod";
 
 import { assertRole } from "@/lib/auth-guard";
 import { addReply } from "@/lib/services/replies";
-import { changeIssueStatus, createIssue, softDeleteIssue, updateIssue } from "@/lib/services/issues";
+import {
+  changeIssueStatus,
+  createIssue,
+  publishIssue,
+  softDeleteIssue,
+  unpublishIssue,
+  updateIssue,
+} from "@/lib/services/issues";
 import { supportIssueInputSchema, supportReplyInputSchema } from "@/lib/validation";
 import { CASE_STATUSES, type CaseStatus } from "@/models";
 
@@ -165,7 +172,11 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
   if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
   const status = z.enum(CASE_STATUSES).parse(formData.get("status")) as CaseStatus;
-  await changeIssueStatus(id, status, guard.session.user.id);
+  if (status === "ARCHIVED") {
+    return { fieldErrors: { status: ["Use the Archive issue action instead"] } };
+  }
+  const supportIssue = await changeIssueStatus(id, status, guard.session.user.id);
+  if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
   revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${id}`);
   return { message: "Status updated" };
@@ -184,7 +195,8 @@ export async function deleteIssueAction(_prevState: FormState | undefined, id: s
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
-  await softDeleteIssue(id, guard.session.user.id);
+  const supportIssue = await softDeleteIssue(id, guard.session.user.id);
+  if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
   revalidatePath("/dashboard/issues");
   redirect("/dashboard/issues");
 }
@@ -195,4 +207,32 @@ export async function deleteIssueActionSimple(id: string) {
   if (result.fieldErrors) {
     throw new Error(result.fieldErrors._form?.[0] ?? "Failed to delete issue");
   }
+}
+
+export async function publishIssueAction(id: string, reviewedAt: string) {
+  const guard = await assertRole("ADMIN");
+  if (!guard.ok) redirect("/unauthorized");
+
+  const parsedReviewedAt = z.string().datetime().safeParse(reviewedAt);
+  if (!parsedReviewedAt.success) throw new Error("Invalid issue revision");
+  const supportIssue = await publishIssue(
+    id,
+    guard.session.user.id,
+    new Date(parsedReviewedAt.data),
+  );
+  if (!supportIssue) throw new Error("Issue changed since review. Refresh and review it again.");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
+  revalidatePath(`/dashboard/issues/${id}`);
+}
+
+export async function unpublishIssueAction(id: string) {
+  const guard = await assertRole("ADMIN");
+  if (!guard.ok) redirect("/unauthorized");
+
+  const supportIssue = await unpublishIssue(id, guard.session.user.id);
+  if (!supportIssue) throw new Error("Issue not found");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
+  revalidatePath(`/dashboard/issues/${id}`);
 }

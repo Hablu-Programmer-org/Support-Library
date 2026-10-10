@@ -6,14 +6,18 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Panel } from "@/components/shared/panel";
 import { StatCard } from "@/components/shared/stat-card";
 import { getDashboardStats, getRecentUnresolvedIssues, getTopTags } from "@/lib/services/analytics";
+import { requireSession } from "@/lib/auth-guard";
+import { canMutate } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const session = await requireSession();
+  const publicOnly = !session.user.role || !canMutate(session.user.role);
   const [stats, recentIssues, topTags] = await Promise.all([
-    getDashboardStats(),
-    getRecentUnresolvedIssues(),
-    getTopTags(10),
+    getDashboardStats(publicOnly),
+    getRecentUnresolvedIssues(8, publicOnly),
+    getTopTags(10, publicOnly),
   ]);
 
   return (

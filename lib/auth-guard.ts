@@ -12,6 +12,9 @@ export async function requireSession() {
   if (!session?.user) {
     redirect("/login");
   }
+  if (session.user.isActive === false) {
+    redirect("/unauthorized");
+  }
   return session;
 }
 

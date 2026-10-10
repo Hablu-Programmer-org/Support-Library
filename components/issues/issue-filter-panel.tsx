@@ -42,6 +42,7 @@ type IssueFilterPanelProps = {
   courseSlugs: string[];
   batchNos: number[];
   mentors: { id: string; name: string }[];
+  showMentor?: boolean;
 };
 
 function FilterFields({
@@ -50,6 +51,7 @@ function FilterFields({
   courseSlugs,
   batchNos,
   mentors,
+  showMentor = true,
 }: IssueFilterPanelProps) {
   const activeCount = [
     defaults.q,
@@ -119,17 +121,19 @@ function FilterFields({
           </select>
         </label>
 
-        <label className={nativeLabelClass}>
-          Mentor
-          <select className={nativeSelectClass} defaultValue={defaults.mentorId} name="mentorId">
-            <option value="">All</option>
-            {mentors.map((mentor) => (
-              <option key={mentor.id} value={mentor.id}>
-                {mentor.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showMentor && (
+          <label className={nativeLabelClass}>
+            Mentor
+            <select className={nativeSelectClass} defaultValue={defaults.mentorId} name="mentorId">
+              <option value="">All</option>
+              {mentors.map((mentor) => (
+                <option key={mentor.id} value={mentor.id}>
+                  {mentor.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className={nativeLabelClass}>
           From date
@@ -174,7 +178,7 @@ function PanelHeader({ defaults, open, onToggle }: { defaults: IssueFilterDefaul
         className={`${nativeFieldClass} px-10`}
         defaultValue={defaults.q}
         name="q"
-        placeholder="Search by problem, student or keyword"
+        placeholder="Search by problem or keyword"
       />
       <button
         aria-expanded={open}
@@ -202,7 +206,14 @@ function PanelSkeleton() {
   );
 }
 
-export function IssueFilterPanel({ defaults, statuses, courseSlugs, batchNos, mentors }: IssueFilterPanelProps) {
+export function IssueFilterPanel({
+  defaults,
+  statuses,
+  courseSlugs,
+  batchNos,
+  mentors,
+  showMentor,
+}: IssueFilterPanelProps) {
   const [mounted, setMounted] = useState(false);
   const activeCount = [
     defaults.q,
@@ -241,6 +252,7 @@ export function IssueFilterPanel({ defaults, statuses, courseSlugs, batchNos, me
             courseSlugs={courseSlugs}
             batchNos={batchNos}
             mentors={mentors}
+            showMentor={showMentor}
           />
         )}
       </form>

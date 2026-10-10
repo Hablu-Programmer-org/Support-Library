@@ -47,7 +47,7 @@ async function buildAuthorMap(replies: LeanDoc[]) {
   const ids = [...new Set(replies.map((reply) => String(reply.authorId)).filter(Boolean))];
   if (!ids.length) return new Map<string, LeanDoc>();
 
-  const authors = await UserModel.find({ _id: { $in: ids } }).select("name email").lean();
+  const authors = await UserModel.find({ _id: { $in: ids } }).select("name").lean();
   return new Map(authors.map((author) => [String(author._id), author as LeanDoc]));
 }
 
@@ -92,9 +92,45 @@ async function refreshIssueReplySearchText(issueId: string) {
   );
 }
 
+async function requireLiveIssue(issueId: string) {
+  if (!mongoose.Types.ObjectId.isValid(issueId)) return null;
+  return SupportIssueModel.findOne({ _id: issueId, deletedAt: null })
+    .select("_id")
+    .lean();
+}
+
+async function requirePublicationReview(issueId: string, actorId: string) {
+  const supportIssue = await SupportIssueModel.findOneAndUpdate(
+    { _id: issueId, deletedAt: null },
+    {
+      $set: {
+        visibility: "INTERNAL",
+        publishedAt: null,
+        publishedBy: null,
+        updatedBy: new mongoose.Types.ObjectId(actorId),
+      },
+      $push: {
+        publicationHistory: {
+          action: "PUBLIC_REPLY_CHANGED",
+          actorId: new mongoose.Types.ObjectId(actorId),
+          at: new Date(),
+        },
+      },
+    },
+    { new: true, runValidators: true },
+  ).lean();
+  if (!supportIssue) throw new Error("Issue not found");
+}
+
 export async function addReply(input: SupportReplyInput, authorId: string) {
   const parsed = supportReplyInputSchema.parse(input);
   await dbConnect();
+
+  const supportIssue = await requireLiveIssue(parsed.issueId);
+  if (!supportIssue) return null;
+  if (!parsed.isInternalNote) {
+    await requirePublicationReview(parsed.issueId, authorId);
+  }
 
   const reply = await SupportReplyModel.create({
     ...parsed,
@@ -105,7 +141,11 @@ export async function addReply(input: SupportReplyInput, authorId: string) {
   return toReplyListItem(reply.toObject());
 }
 
-export async function listReplies(issueId: string, includeInternal = true) {
+export async function listReplies(
+  issueId: string,
+  includeInternal = true,
+  redactActorIds = false,
+) {
   if (!mongoose.Types.ObjectId.isValid(issueId)) return [];
   await dbConnect();
 
@@ -114,7 +154,10 @@ export async function listReplies(issueId: string, includeInternal = true) {
 
   const replies = await SupportReplyModel.find(filter).sort({ createdAt: 1 }).lean();
   const authors = await buildAuthorMap(replies as LeanDoc[]);
-  return (replies as LeanDoc[]).map((reply) => toReplyListItem(reply, authors));
+  return (replies as LeanDoc[]).map((reply) => {
+    const mapped = toReplyListItem(reply, authors);
+    return redactActorIds ? { ...mapped, authorId: "" } : mapped;
+  });
 }
 
 /**
@@ -123,49 +166,74 @@ export async function listReplies(issueId: string, includeInternal = true) {
  * Both edit and delete must use this, otherwise the UI shows a control that
  * silently does nothing for a mentor acting on someone else's reply.
  */
-function replyMutationFilter(replyId: string, actorId: string, actorRole?: UserRole | null) {
-  const base: Record<string, unknown> = { _id: replyId, deletedAt: null };
+function replyMutationFilter(
+  issueId: string,
+  replyId: string,
+  actorId: string,
+  actorRole?: UserRole | null,
+) {
+  const base: Record<string, unknown> = { _id: replyId, issueId, deletedAt: null };
   if (isAdmin(actorRole ?? "VIEWER")) return base;
   return { ...base, authorId: actorId };
 }
 
 export async function editReply(
+  issueId: string,
   replyId: string,
   body: string,
   actorId: string,
   actorRole?: UserRole | null,
 ) {
-  if (!mongoose.Types.ObjectId.isValid(replyId)) return null;
+  if (!mongoose.Types.ObjectId.isValid(issueId) || !mongoose.Types.ObjectId.isValid(replyId)) {
+    return null;
+  }
   await dbConnect();
 
+  const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
+  const existingReply = await SupportReplyModel.findOne(filter).select("isInternalNote").lean();
+  if (!existingReply) return null;
+  if (!existingReply.isInternalNote) await requirePublicationReview(issueId, actorId);
+
   const reply = await SupportReplyModel.findOneAndUpdate(
-    replyMutationFilter(replyId, actorId, actorRole),
+    filter,
     { body: body.trim(), editedAt: new Date() },
     { new: true, runValidators: true },
   ).lean();
 
-  if (reply) await refreshIssueReplySearchText(String(reply.issueId));
+  if (reply) {
+    await refreshIssueReplySearchText(issueId);
+  }
   return reply ? toReplyListItem(reply) : null;
 }
 
 export async function softDeleteReply(
+  issueId: string,
   replyId: string,
   actorId: string,
   actorRole?: UserRole | null,
 ) {
-  if (!mongoose.Types.ObjectId.isValid(replyId)) return null;
+  if (!mongoose.Types.ObjectId.isValid(issueId) || !mongoose.Types.ObjectId.isValid(replyId)) {
+    return null;
+  }
   await dbConnect();
 
+  const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
+  const existingReply = await SupportReplyModel.findOne(filter).select("isInternalNote").lean();
+  if (!existingReply) return null;
+  if (!existingReply.isInternalNote) await requirePublicationReview(issueId, actorId);
+
   const reply = await SupportReplyModel.findOneAndUpdate(
-    replyMutationFilter(replyId, actorId, actorRole),
+    filter,
     { deletedAt: new Date() },
     { new: true },
   ).lean();
 
-  if (reply) await refreshIssueReplySearchText(String(reply.issueId));
+  if (reply) {
+    await refreshIssueReplySearchText(issueId);
+  }
   return reply ? toReplyListItem(reply) : null;
 }
 
 export async function getPublicReplies(issueId: string) {
-  return listReplies(issueId, false);
+  return listReplies(issueId, false, true);
 }

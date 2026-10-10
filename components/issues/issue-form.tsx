@@ -332,7 +332,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
                 onChange={handleChange("status")}
                 error={state.fieldErrors?.status?.[0]}
               >
-                {CASE_STATUSES.map((status) => (
+                {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
                   <option key={status} value={status}>
                     {statusLabels[status]}
                   </option>

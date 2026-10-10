@@ -23,8 +23,8 @@ test.describe("Issue CRUD (mentor)", () => {
         page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
         page.getByRole("button", { name: "Create Issue", exact: true }).click(),
       ]);
-      await expect(page.locator("article")).toHaveCount(1);
-      const reply = page.locator("article");
+      const reply = page.locator('[data-testid^="reply-"]');
+      await expect(reply).toHaveCount(1);
       if (scenario.body) await expect(reply).toContainText(scenario.body);
       await expect(reply.locator('a[href="https://example.com/fix.pdf"]')).toBeVisible();
       await expect(reply.locator('a[href="https://example.com/fix.png"]')).toBeVisible();
@@ -48,20 +48,21 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.locator("span").filter({ hasText: /^Open$/ }).first()).toBeVisible();
     await expect(page.locator("p").filter({ hasText: "Image show hocche na in React component" }).first()).toBeVisible();
 
-    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Reply" }) });
+    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
     await replyForm.locator('textarea[name="body"]').fill("Use public folder with /image.png");
-    await replyForm.getByRole("button", { name: "Add Reply" }).click();
+    await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toBeVisible();
 
-    const noteForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Internal Note" }) });
+    await page.getByText("Add a private staff note").click();
+    const noteForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add internal note" }) });
     await noteForm.locator('textarea[name="body"]').fill("Internal: student needs follow-up");
-    await noteForm.getByRole("button", { name: "Add Internal Note" }).click();
+    await noteForm.getByRole("button", { name: "Add internal note" }).click();
     await expect(page.locator("article").filter({ hasText: "Internal: student needs follow-up" })).toBeVisible();
     await expect(page.locator("article").filter({ hasText: "Internal Note" })).toBeVisible();
 
-    const statusForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Update", exact: true }) }).first();
+    const statusForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Update status", exact: true }) }).first();
     await statusForm.locator('select[name="status"]').selectOption("SOLVED");
-    await statusForm.getByRole("button", { name: "Update", exact: true }).click();
+    await statusForm.getByRole("button", { name: "Update status", exact: true }).click();
     await expect(page.locator("span").filter({ hasText: /^Solved$/ }).first()).toBeVisible();
 
     // Edit controls are author-scoped: this mentor owns the reply added above.
@@ -118,5 +119,30 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
     await expect(page.getByText("Found in LMS")).toBeVisible();
     await expect(page.locator('input[name="studentName"]')).toHaveValue("Manual Name");
+  });
+
+  test("renders the issue article without horizontal overflow on mobile", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Mobile Student");
+    await page.fill('input[name="studentEmail"]', `e2e.mobile.${Date.now()}@test.com`);
+    await page.fill('input[name="title"]', "E2E mobile issue article");
+    await page.fill(
+      'textarea[name="question"]',
+      "A long support question should remain readable without creating horizontal scrolling on a phone.",
+    );
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+
+    await expect(page.getByRole("heading", { name: "E2E mobile issue article" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "The problem" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Responses and staff notes" })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
   });
 });

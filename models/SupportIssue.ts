@@ -1,6 +1,19 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-import { CASE_PRIORITIES, CASE_STATUSES } from "./shared";
+import { CASE_PRIORITIES, CASE_STATUSES, ISSUE_VISIBILITIES } from "./shared";
+
+const publicationEventSchema = new mongoose.Schema(
+  {
+    action: {
+      type: String,
+      enum: ["PUBLISHED", "UNPUBLISHED", "CONTENT_CHANGED", "PUBLIC_REPLY_CHANGED", "ARCHIVED"],
+      required: true,
+    },
+    actorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    at: { type: Date, required: true },
+  },
+  { _id: false },
+);
 
 const supportIssueSchema = new mongoose.Schema(
   {
@@ -16,6 +29,15 @@ const supportIssueSchema = new mongoose.Schema(
     status: { type: String, enum: CASE_STATUSES, default: "OPEN", index: true },
     priority: { type: String, enum: CASE_PRIORITIES, default: "NORMAL", index: true },
     tags: { type: [String], default: [], index: true },
+    visibility: {
+      type: String,
+      enum: ISSUE_VISIBILITIES,
+      default: "INTERNAL",
+      index: true,
+    },
+    publishedAt: { type: Date, default: null },
+    publishedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    publicationHistory: { type: [publicationEventSchema], default: [] },
     mentorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
     searchText: { type: String, required: true, trim: true, index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -30,6 +52,7 @@ const supportIssueSchema = new mongoose.Schema(
 );
 
 supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
+supportIssueSchema.index({ visibility: 1, updatedAt: -1 });
 supportIssueSchema.index({ createdAt: -1 });
 supportIssueSchema.index({ deletedAt: 1 }, { partialFilterExpression: { deletedAt: { $exists: true } } });
 

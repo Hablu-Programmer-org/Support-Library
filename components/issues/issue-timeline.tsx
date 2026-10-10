@@ -15,9 +15,12 @@ export function IssueTimeline({
 }) {
   if (replies.length === 0) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No replies or internal notes yet.
+      <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+        <p className="font-medium text-slate-700 dark:text-slate-200">
+          No responses yet
+        </p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          A support team response will appear here.
         </p>
       </section>
     );
@@ -27,15 +30,17 @@ export function IssueTimeline({
   const mayMutateAny = Boolean(viewerRole && canMutate(viewerRole));
 
   return (
-    <div className="space-y-3">
+    <ol className="space-y-4" aria-label="Issue responses">
       {replies.map((reply) => {
         const isOwner = reply.authorId === viewerId;
         const canEdit = mayMutateAny && (isOwner || isAdmin(viewerRole!));
 
         return (
-          <ReplyItem key={reply.id} issueId={issueId} reply={reply} canEdit={canEdit} />
+          <li key={reply.id}>
+            <ReplyItem issueId={issueId} reply={reply} canEdit={canEdit} />
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-import { CASE_STATUSES, CASE_PRIORITIES } from "@/lib/constants";
+import { CASE_STATUSES, CASE_PRIORITIES, ISSUE_VISIBILITIES } from "@/lib/constants";
 
-export { CASE_STATUSES, CASE_PRIORITIES };
-export type { CaseStatus, CasePriority } from "@/lib/constants";
+export { CASE_STATUSES, CASE_PRIORITIES, ISSUE_VISIBILITIES };
+export type { CaseStatus, CasePriority, IssueVisibility } from "@/lib/constants";
 
 export const externalFileLinkSchema = new mongoose.Schema(
   {
