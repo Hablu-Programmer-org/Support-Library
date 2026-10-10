@@ -86,10 +86,26 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.goto("/dashboard/issues/new");
 
     await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
-    await expect(page.locator('input[name="studentName"]')).toHaveValue("E2E LMS Student");
+    const studentName = page.locator('input[name="studentName"]:not([type="hidden"])');
+    await expect(studentName).toHaveValue("E2E LMS Student");
     await expect(page.getByText("Found in LMS")).toBeVisible();
+    await expect(studentName).toBeVisible();
+    await expect(studentName).toBeDisabled();
 
-    await expect(page.locator('input[name="studentName"]')).toBeHidden();
+    await page.fill('input[name="title"]', "E2E LMS autofill submission");
+    await page.fill('textarea[name="question"]', "Does the disabled LMS name submit correctly?");
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+    await expect(page.getByText("E2E LMS autofill submission")).toBeVisible();
+  });
+
+  test("allows a manual student name after an LMS lookup miss", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+
+    await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
+    await expect(page.getByText("Found in LMS")).toBeVisible();
     await page.fill('input[name="studentEmail"]', "some.other.member@test.com");
     await expect(page.getByText("No matching LMS user found.", { exact: false })).toBeVisible();
     await page.fill('input[name="studentName"]', "Manual Name");

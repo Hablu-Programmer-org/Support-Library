@@ -1,9 +1,12 @@
 "use client";
 
+import { useActionState, useCallback, useState } from "react";
 import { cn } from "@/lib/cn";
-import { useActionState } from "react";
 
 import { createIssueAction, updateIssueAction } from "@/actions/issues";
+import { StudentFields } from "@/components/issues/student-fields";
+import { Accordion } from "@/components/issues/accordion";
+import { SectionCard } from "@/components/issues/section-card";
 import {
   CheckCircleIcon,
   FileTextIcon,
@@ -11,9 +14,6 @@ import {
   SettingsIcon,
   UserIcon,
 } from "@/components/icons";
-import { Accordion } from "@/components/issues/accordion";
-import { SectionCard } from "@/components/issues/section-card";
-import { StudentFields } from "@/components/issues/student-fields";
 import {
   nativeFieldClass,
   nativeSelectClass,
@@ -53,6 +53,25 @@ type IssueFormProps = {
     lmsUserId?: string | null;
   };
   minimal?: boolean;
+};
+
+type FormData = {
+  studentName: string;
+  studentEmail: string;
+  lmsUserId: string;
+  title: string;
+  question: string;
+  status: string;
+  priority: string;
+  courseSlug: string;
+  batchNo: string;
+  moduleSlug: string;
+  contentSlug: string;
+  tags: string;
+  solutionBody: string;
+  solutionFileLinks: string;
+  solutionVideoLinks: string;
+  solveIssue: boolean;
 };
 
 function ErrorMessage({ error }: { error?: string }) {
@@ -110,14 +129,178 @@ function FieldWrapper({
   );
 }
 
+function ControlledInput({
+  name,
+  value,
+  onChange,
+  error,
+  className,
+  ...props
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  className?: string;
+} & Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "onChange" | "value" | "name"
+>) {
+  return (
+    <input
+      name={name}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(className || nativeFieldClass)}
+      aria-invalid={error ? "true" : "false"}
+      {...props}
+    />
+  );
+}
+
+function ControlledTextarea({
+  name,
+  value,
+  onChange,
+  error,
+  className,
+  ...props
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  className?: string;
+} & Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "onChange" | "value" | "name"
+>) {
+  return (
+    <textarea
+      name={name}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(className || nativeTextareaClass)}
+      aria-invalid={error ? "true" : "false"}
+      {...props}
+    />
+  );
+}
+
+function ControlledSelect({
+  name,
+  value,
+  onChange,
+  error,
+  children,
+  className,
+}: {
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <select
+      name={name}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(className || nativeSelectClass)}
+      aria-invalid={error ? "true" : "false"}
+    >
+      {children}
+    </select>
+  );
+}
+
+function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
+  return {
+    studentName: supportIssue?.studentName ?? "",
+    studentEmail: supportIssue?.studentEmail ?? "",
+    lmsUserId: supportIssue?.lmsUserId ?? "",
+    title: supportIssue?.title ?? "",
+    question: supportIssue?.question ?? "",
+    status: supportIssue?.status ?? "OPEN",
+    priority: supportIssue?.priority ?? "NORMAL",
+    courseSlug: supportIssue?.courseSlug ?? "",
+    batchNo: supportIssue?.batchNo?.toString() ?? "",
+    moduleSlug: supportIssue?.moduleSlug ?? "",
+    contentSlug: supportIssue?.contentSlug ?? "",
+    tags: supportIssue?.tags.join(", ") ?? "",
+    solutionBody: "",
+    solutionFileLinks: "",
+    solutionVideoLinks: "",
+    solveIssue: true,
+  };
+}
+
 export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
   const action = supportIssue
     ? updateIssueAction.bind(null, supportIssue.id)
     : createIssueAction;
-  const [state, formAction] = useActionState(action, { fieldErrors: {} });
+  const [state, formAction, pending] = useActionState(action, {
+    fieldErrors: {},
+  });
+
+  const [formData, setFormData] = useState<FormData>(() =>
+    initFormData(supportIssue),
+  );
+
+  // Sync formData with supportIssue when it changes (for edit mode)
+  // Using key prop on form to reset instead of useEffect to avoid lint warning
+  const formKey = supportIssue?.id ?? "new";
+
+  const updateField = useCallback((field: keyof FormData, value: string) => {
+    setFormData((prev) =>
+      prev[field] === value ? prev : { ...prev, [field]: value },
+    );
+  }, []);
+
+  const handleChange = (field: keyof FormData) => (value: string) => {
+    updateField(field, value);
+  };
+
+  const handleStudentNameChange = useCallback(
+    (value: string) => updateField("studentName", value),
+    [updateField],
+  );
+  const handleStudentEmailChange = useCallback(
+    (value: string) => updateField("studentEmail", value),
+    [updateField],
+  );
+  const handleLmsUserIdChange = useCallback(
+    (value: string) => updateField("lmsUserId", value),
+    [updateField],
+  );
+
+  const handleSolveIssueChange = (checked: boolean) => {
+    setFormData((prev) => ({ ...prev, solveIssue: checked }));
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      event.preventDefault();
+      if (!pending) event.currentTarget.requestSubmit();
+    }
+  };
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form
+      key={formKey}
+      action={formAction}
+      className="space-y-5"
+      onKeyDown={handleKeyDown}
+    >
+      {state.fieldErrors?._form?.[0] && (
+        <p
+          className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"
+          role="alert"
+        >
+          {state.fieldErrors._form[0]}
+        </p>
+      )}
       {/* Section 1: Student Identity */}
       <SectionCard
         title="Student Identity"
@@ -127,10 +310,14 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
       >
         <div className="grid gap-4 md:grid-cols-2">
           <StudentFields
-            initialName={supportIssue?.studentName}
-            initialEmail={supportIssue?.studentEmail ?? undefined}
-            initialLmsUserId={supportIssue?.lmsUserId}
-            hideWhenFound={minimal}
+            name={formData.studentName}
+            email={formData.studentEmail}
+            lmsUserId={formData.lmsUserId}
+            nameError={state.fieldErrors?.studentName?.[0]}
+            emailError={state.fieldErrors?.studentEmail?.[0]}
+            onNameChange={handleStudentNameChange}
+            onEmailChange={handleStudentEmailChange}
+            onLmsUserIdChange={handleLmsUserIdChange}
           />
 
           {!minimal && (
@@ -139,19 +326,18 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
               required
               error={state.fieldErrors?.status?.[0]}
             >
-              <select
+              <ControlledSelect
                 name="status"
-                defaultValue={supportIssue?.status ?? "OPEN"}
-                required
-                className={nativeSelectClass}
-                aria-invalid={!!state.fieldErrors?.status?.[0]}
+                value={formData.status}
+                onChange={handleChange("status")}
+                error={state.fieldErrors?.status?.[0]}
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {statusLabels[status]}
                   </option>
                 ))}
-              </select>
+              </ControlledSelect>
             </FieldWrapper>
           )}
         </div>
@@ -170,14 +356,14 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             required
             error={state.fieldErrors?.title?.[0]}
           >
-            <input
+            <ControlledInput
               name="title"
-              defaultValue={supportIssue?.title}
+              value={formData.title}
+              onChange={handleChange("title")}
               required
               minLength={5}
               maxLength={200}
-              className={nativeFieldClass}
-              aria-invalid={state.fieldErrors?.title?.[0] ? "true" : "false"}
+              error={state.fieldErrors?.title?.[0]}
               placeholder="e.g., React image not rendering in production build"
             />
           </FieldWrapper>
@@ -187,14 +373,14 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             required
             error={state.fieldErrors?.question?.[0]}
           >
-            <textarea
+            <ControlledTextarea
               name="question"
-              defaultValue={supportIssue?.question}
+              value={formData.question}
+              onChange={handleChange("question")}
               required
               rows={5}
               maxLength={20_000}
-              className={nativeTextareaClass}
-              aria-invalid={state.fieldErrors?.question?.[0] ? "true" : "false"}
+              error={state.fieldErrors?.question?.[0]}
               placeholder="Describe the issue in detail. Include steps to reproduce, expected behavior, and actual behavior."
             />
           </FieldWrapper>
@@ -213,63 +399,60 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             Provide an answer now to resolve this issue immediately. It will be
             saved as the first reply.
           </p>
-          <FieldWrapper
-            label="Answer"
-            className="pt-2.5"
-            error={state.fieldErrors?.solutionBody?.[0]}
-          >
-            <textarea
-              name="solutionBody"
-              rows={4}
-              maxLength={20_000}
-              className={nativeTextareaClass}
-              aria-invalid={
-                state.fieldErrors?.solutionBody?.[0] ? "true" : "false"
-              }
-              placeholder="Write your solution here..."
-            />
-          </FieldWrapper>
+          <div className="space-y-4">
+            <FieldWrapper
+              label="Answer"
+              className="pt-2.5"
+              error={state.fieldErrors?.solutionBody?.[0]}
+            >
+              <ControlledTextarea
+                name="solutionBody"
+                value={formData.solutionBody}
+                onChange={handleChange("solutionBody")}
+                rows={4}
+                maxLength={20_000}
+                error={state.fieldErrors?.solutionBody?.[0]}
+                placeholder="Write your solution here..."
+              />
+            </FieldWrapper>
 
-          <FieldWrapper
-            className="pt-2.5"
-            label="File Links (PDF/Images)"
-            description="One per line: title|https://url|type|note"
-            error={state.fieldErrors?.solutionFileLinks?.[0]}
-          >
-            <textarea
-              name="solutionFileLinks"
-              rows={2}
-              className={nativeTextareaClass}
-              aria-invalid={
-                state.fieldErrors?.solutionFileLinks?.[0] ? "true" : "false"
-              }
-              placeholder="Screenshot|https://example.com/fix.png|image|Annotated screenshot"
-            />
-          </FieldWrapper>
+            <FieldWrapper
+              label="File Links (PDF/Images)"
+              description="One per line: title|https://url|type|note"
+              error={state.fieldErrors?.solutionFileLinks?.[0]}
+            >
+              <ControlledTextarea
+                name="solutionFileLinks"
+                value={formData.solutionFileLinks}
+                onChange={handleChange("solutionFileLinks")}
+                rows={2}
+                error={state.fieldErrors?.solutionFileLinks?.[0]}
+                placeholder="Screenshot|https://example.com/fix.png|image|Annotated screenshot"
+              />
+            </FieldWrapper>
 
-          <FieldWrapper
-            className="pt-2.5"
-            label="Video Links"
-            description="One per line: title|https://url|timestamp|summary"
-            error={state.fieldErrors?.solutionVideoLinks?.[0]}
-          >
-            <textarea
-              name="solutionVideoLinks"
-              rows={2}
-              className={nativeTextareaClass}
-              aria-invalid={
-                state.fieldErrors?.solutionVideoLinks?.[0] ? "true" : "false"
-              }
-              placeholder="Walkthrough|https://youtu.be/abc123|01:30|Fix demonstration"
-            />
-          </FieldWrapper>
-
+            <FieldWrapper
+              label="Video Links"
+              description="One per line: title|https://url|timestamp|summary"
+              error={state.fieldErrors?.solutionVideoLinks?.[0]}
+            >
+              <ControlledTextarea
+                name="solutionVideoLinks"
+                value={formData.solutionVideoLinks}
+                onChange={handleChange("solutionVideoLinks")}
+                rows={2}
+                error={state.fieldErrors?.solutionVideoLinks?.[0]}
+                placeholder="Walkthrough|https://youtu.be/abc123|01:30|Fix demonstration"
+              />
+            </FieldWrapper>
+          </div>
           <div className="flex items-center gap-2 pt-2">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
                 name="solveIssue"
-                defaultChecked
+                checked={formData.solveIssue}
+                onChange={(e) => handleSolveIssueChange(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500 accent-primary"
               />
               <span className="text-slate-700 dark:text-slate-300">
@@ -292,13 +475,11 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             label="Course Slug"
             error={state.fieldErrors?.courseSlug?.[0]}
           >
-            <input
+            <ControlledInput
               name="courseSlug"
-              defaultValue={supportIssue?.courseSlug ?? undefined}
-              className={nativeFieldClass}
-              aria-invalid={
-                state.fieldErrors?.courseSlug?.[0] ? "true" : "false"
-              }
+              value={formData.courseSlug}
+              onChange={handleChange("courseSlug")}
+              error={state.fieldErrors?.courseSlug?.[0]}
               placeholder="e.g., react-beginner"
             />
           </FieldWrapper>
@@ -307,12 +488,12 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             label="Batch No"
             error={state.fieldErrors?.batchNo?.[0]}
           >
-            <input
+            <ControlledInput
               name="batchNo"
+              value={formData.batchNo}
+              onChange={handleChange("batchNo")}
               type="number"
-              defaultValue={supportIssue?.batchNo?.toString()}
-              className={nativeFieldClass}
-              aria-invalid={state.fieldErrors?.batchNo?.[0] ? "true" : "false"}
+              error={state.fieldErrors?.batchNo?.[0]}
               placeholder="e.g., 1"
             />
           </FieldWrapper>
@@ -321,13 +502,11 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             label="Module Slug"
             error={state.fieldErrors?.moduleSlug?.[0]}
           >
-            <input
+            <ControlledInput
               name="moduleSlug"
-              defaultValue={supportIssue?.moduleSlug ?? undefined}
-              className={nativeFieldClass}
-              aria-invalid={
-                state.fieldErrors?.moduleSlug?.[0] ? "true" : "false"
-              }
+              value={formData.moduleSlug}
+              onChange={handleChange("moduleSlug")}
+              error={state.fieldErrors?.moduleSlug?.[0]}
               placeholder="e.g., assets"
             />
           </FieldWrapper>
@@ -336,13 +515,11 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             label="Content/Lesson Slug"
             error={state.fieldErrors?.contentSlug?.[0]}
           >
-            <input
+            <ControlledInput
               name="contentSlug"
-              defaultValue={supportIssue?.contentSlug ?? undefined}
-              className={nativeFieldClass}
-              aria-invalid={
-                state.fieldErrors?.contentSlug?.[0] ? "true" : "false"
-              }
+              value={formData.contentSlug}
+              onChange={handleChange("contentSlug")}
+              error={state.fieldErrors?.contentSlug?.[0]}
               placeholder="e.g., images-lecture"
             />
           </FieldWrapper>
@@ -352,11 +529,11 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             description="Separate with commas: react, image, api"
             error={state.fieldErrors?.tags?.[0]}
           >
-            <input
+            <ControlledInput
               name="tags"
-              defaultValue={supportIssue?.tags.join(", ")}
-              className={nativeFieldClass}
-              aria-invalid={state.fieldErrors?.tags?.[0] ? "true" : "false"}
+              value={formData.tags}
+              onChange={handleChange("tags")}
+              error={state.fieldErrors?.tags?.[0]}
               placeholder="react, image, rendering"
             />
           </FieldWrapper>
@@ -365,24 +542,48 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             label="Priority"
             error={state.fieldErrors?.priority?.[0]}
           >
-            <select
+            <ControlledSelect
               name="priority"
-              defaultValue={supportIssue?.priority ?? "NORMAL"}
-              className={nativeSelectClass}
-              aria-invalid={state.fieldErrors?.priority?.[0] ? "true" : "false"}
+              value={formData.priority}
+              onChange={handleChange("priority")}
+              error={state.fieldErrors?.priority?.[0]}
             >
               {CASE_PRIORITIES.map((priority) => (
                 <option key={priority} value={priority}>
                   {priorityLabels[priority]}
                 </option>
               ))}
-            </select>
+            </ControlledSelect>
           </FieldWrapper>
         </div>
       </Accordion>
 
-      {/* Submit is handled by StickyActionBar on the page */}
-      <div className="pb-8" />
+      <div className="flex justify-center flex-col pt-4">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950 w-full"
+        >
+          <span>
+            {pending
+              ? supportIssue
+                ? "Saving..."
+                : "Creating..."
+              : supportIssue
+                ? "Save Issue"
+                : "Create Issue"}
+          </span>
+          <kbd className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex">
+            ⌘Enter
+          </kbd>
+        </button>
+
+        <div className="w-full  flex items-center justify-center pt-2">
+          <span className="text-xs text-slate-500/80 dark:text-slate-400/80">
+            Press Cmd+Enter to submit
+          </span>
+        </div>
+      </div>
     </form>
   );
 }

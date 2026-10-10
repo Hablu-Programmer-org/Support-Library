@@ -49,6 +49,21 @@ const parseVideoLinks = (value?: string) =>
     summary: summary || undefined,
   }));
 
+const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
+
+const zodFieldErrors = (
+  error: z.ZodError,
+  fieldNames: Record<string, string> = {},
+) => {
+  const fieldErrors: Record<string, string[]> = {};
+  error.issues.forEach((issue) => {
+    const root = String(issue.path[0] ?? "_form");
+    const path = fieldNames[root] ?? root;
+    fieldErrors[path] = [...(fieldErrors[path] ?? []), issue.message];
+  });
+  return fieldErrors;
+};
+
 const parseIssueForm = (formData: FormData) =>
   supportIssueInputSchema.parse({
     studentName: formValue(formData, "studentName"),
@@ -74,12 +89,7 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     issueData = parseIssueForm(formData);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      const fieldErrors: Record<string, string[]> = {};
-      err.issues.forEach((e) => {
-        const path = e.path.join(".");
-        fieldErrors[path] = [...(fieldErrors[path] ?? []), e.message];
-      });
-      return { fieldErrors };
+      return { fieldErrors: zodFieldErrors(err) };
     }
     return { fieldErrors: { _form: ["Invalid form data"] } };
   }
@@ -90,14 +100,28 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
   const solveIssue = formData.get("solveIssue") === "on";
 
   const hasSolution = Boolean(solutionBody || solutionFileLinks.length || solutionVideoLinks.length);
-  const solution = hasSolution
-    ? supportReplyInputSchema.omit({ issueId: true }).parse({
-        body: solutionBody ?? "See the attached file or video links for the answer.",
-        isInternalNote: false,
-        fileLinks: solutionFileLinks,
-        videoLinks: solutionVideoLinks,
-      })
-    : null;
+  let solution: z.infer<typeof initialReplySchema> | null;
+  try {
+    solution = hasSolution
+      ? initialReplySchema.parse({
+          body: solutionBody ?? "See the attached file or video links for the answer.",
+          isInternalNote: false,
+          fileLinks: solutionFileLinks,
+          videoLinks: solutionVideoLinks,
+        })
+      : null;
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return {
+        fieldErrors: zodFieldErrors(err, {
+          body: "solutionBody",
+          fileLinks: "solutionFileLinks",
+          videoLinks: "solutionVideoLinks",
+        }),
+      };
+    }
+    return { fieldErrors: { _form: ["Invalid answer data"] } };
+  }
 
   const supportIssue = await createIssue({ ...issueData, status: "OPEN" }, guard.session.user.id);
 
@@ -123,12 +147,7 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
     issueData = parseIssueForm(formData);
   } catch (err) {
     if (err instanceof z.ZodError) {
-      const fieldErrors: Record<string, string[]> = {};
-      err.issues.forEach((e) => {
-        const path = e.path.join(".");
-        fieldErrors[path] = [...(fieldErrors[path] ?? []), e.message];
-      });
-      return { fieldErrors };
+      return { fieldErrors: zodFieldErrors(err) };
     }
     return { fieldErrors: { _form: ["Invalid form data"] } };
   }

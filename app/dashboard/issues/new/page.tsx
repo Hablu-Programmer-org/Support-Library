@@ -4,7 +4,6 @@ import {
   SparklesIcon,
 } from "@/components/icons";
 import { IssueForm } from "@/components/issues/issue-form";
-import { StickyActionBar } from "@/components/issues/sticky-action-bar";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
 import Link from "next/link";
 
@@ -16,7 +15,7 @@ export default async function NewIssuePage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-20 w-full border-0 border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 dark:border-slate-800 dark:bg-slate-950/95">
+      <header className="sticky top-0 z-20 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 dark:border-slate-800 dark:bg-slate-950/95">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <Link
             href="/dashboard/issues"
@@ -96,21 +95,6 @@ export default async function NewIssuePage() {
 
           {/* Form */}
           <IssueForm minimal />
-
-          {/* Sticky Action Bar */}
-          <StickyActionBar>
-            <form action="/dashboard/issues/new" className="w-full">
-              <button
-                type="submit"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-              >
-                <span>Create Issue</span>
-                <kbd className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex">
-                  ⌘Enter
-                </kbd>
-              </button>
-            </form>
-          </StickyActionBar>
         </div>
       </main>
     </div>
