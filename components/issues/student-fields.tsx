@@ -101,7 +101,9 @@ export function StudentFields({
     <>
       {showNameInput ? (
         <label className={nativeLabelClass}>
-          Student Name <span className="text-danger">*</span>
+          <span className="flex items-center gap-1">
+            Student Name <span className="text-danger" aria-hidden="true">*</span>
+          </span>
           <input
             className={nativeFieldClass}
             name="studentName"
@@ -122,7 +124,9 @@ export function StudentFields({
       )}
       <div className="flex flex-col gap-1">
         <label className={nativeLabelClass}>
-          Student Email <span className="text-danger">*</span>
+          <span className="flex items-center gap-1">
+            Student Email <span className="text-danger" aria-hidden="true">*</span>
+          </span>
           <input
             className={nativeFieldClass}
             name="studentEmail"
