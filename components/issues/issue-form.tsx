@@ -1,12 +1,15 @@
 "use client";
 
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { useActionState, useId } from "react";
+import { useActionState } from "react";
+import { cn } from "@/lib/cn";
 
 import { createIssueAction, updateIssueAction } from "@/actions/issues";
 import { StudentFields } from "@/components/issues/student-fields";
-import { nativeFieldClass, nativeLabelClass, nativeSelectClass, nativeTextareaClass } from "@/lib/config/fields";
+import { nativeFieldClass, nativeSelectClass, nativeTextareaClass } from "@/lib/config/fields";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/lib/constants";
+import { Accordion } from "@/components/issues/accordion";
+import { SectionCard } from "@/components/issues/section-card";
+import { UserIcon, FileTextIcon, MessageSquareIcon, SettingsIcon, CheckCircleIcon } from "@/components/icons";
 
 const statusLabels = {
   OPEN: "Open",
@@ -28,31 +31,49 @@ type IssueFormProps = {
   minimal?: boolean;
 };
 
-function SubmitButton({ isCreate, pending }: { isCreate: boolean; pending: boolean }) {
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {pending ? (isCreate ? "Creating..." : "Updating...") : isCreate ? "Create Issue" : "Update Issue"}
-    </button>
-  );
-}
-
 function ErrorMessage({ error }: { error?: string }) {
   if (!error) return null;
-  return <p className="mt-1 text-sm text-danger-600 dark:text-danger-400" role="alert">{error}</p>;
+  return <p className="mt-1.5 text-sm text-danger-600 dark:text-danger-400 flex items-center gap-1" role="alert"><CheckCircleIcon size={12} />{error}</p>;
+}
+
+function RequiredIndicator() {
+  return <span className="text-danger" aria-hidden="true">*</span>;
+}
+
+function FieldWrapper({ label, required, description, error, children, className }: { 
+  label: string; 
+  required?: boolean; 
+  description?: string; 
+  error?: string; 
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={cn("flex flex-col gap-1.5", className)}>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
+        {required && <RequiredIndicator />}
+      </div>
+      {children}
+      {description && !error && <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>}
+      <ErrorMessage error={error} />
+    </label>
+  );
 }
 
 export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
   const action = supportIssue ? updateIssueAction.bind(null, supportIssue.id) : createIssueAction;
-  const isCreate = !supportIssue;
-  const [state, formAction, pending] = useActionState(action, { fieldErrors: {} });
+  const [state, formAction] = useActionState(action, { fieldErrors: {} });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-      <form action={formAction} className="space-y-5">
+    <form action={formAction} className="space-y-5">
+      {/* Section 1: Student Identity */}
+      <SectionCard
+        title="Student Identity"
+        icon={<UserIcon size={20} />}
+        description="Enter the student's email to auto-fill their name from the LMS database."
+        required
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <StudentFields
             initialName={supportIssue?.studentName}
@@ -62,13 +83,13 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
           />
 
           {!minimal && (
-            <label className="flex flex-col gap-2 text-sm font-medium">
-              Status <span className="text-danger">*</span>
+            <FieldWrapper label="Status" required error={state.fieldErrors?.status?.[0]}>
               <select
                 name="status"
                 defaultValue={supportIssue?.status ?? "OPEN"}
                 required
                 className={nativeSelectClass}
+                aria-invalid={!!state.fieldErrors?.status?.[0]}
               >
                 {CASE_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -76,124 +97,175 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
                   </option>
                 ))}
               </select>
-              <ErrorMessage error={state.fieldErrors?.status?.[0]} />
-            </label>
+            </FieldWrapper>
           )}
         </div>
+      </SectionCard>
 
-        <TextField
-          name="title"
-          label="Issue Title"
-          defaultValue={supportIssue?.title}
-          required
-          minLength={5}
-          maxLength={200}
-          error={state.fieldErrors?.title?.[0]}
-        />
-        <TextAreaField
-          name="question"
-          label="Problem Description"
-          defaultValue={supportIssue?.question}
-          required
-          rows={6}
-          maxLength={20_000}
-          error={state.fieldErrors?.question?.[0]}
-        />
+      {/* Section 2: Issue Details */}
+      <SectionCard
+        title="Issue Details"
+        icon={<FileTextIcon size={20} />}
+        description="Describe the issue clearly. A good title helps with search and categorization."
+        required
+      >
+        <div className="space-y-4">
+          <FieldWrapper label="Issue Title" required error={state.fieldErrors?.title?.[0]}>
+            <input
+              name="title"
+              defaultValue={supportIssue?.title}
+              required
+              minLength={5}
+              maxLength={200}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.title?.[0] ? "true" : "false"}
+              placeholder="e.g., React image not rendering in production build"
+            />
+          </FieldWrapper>
 
-        {/* Solution section — only on create (minimal) */}
-        {!supportIssue && minimal && (
-          <details className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-            <summary className="cursor-pointer text-sm font-semibold">Answer (Optional)</summary>
-            <div className="mt-4 space-y-4">
-              <TextAreaField name="solutionBody" label="Answer" rows={4} maxLength={20_000} description="Add an answer if you have one. It will be saved as the first reply." />
-              <TextAreaField name="solutionFileLinks" label="File Links (PDF/Images)" description="One per line: title|https://url|type|note" rows={2} />
-              <TextAreaField name="solutionVideoLinks" label="Video links" description="One per line: title|https://url|timestamp|summary" rows={2} />
-            </div>
-          </details>
-        )}
+          <FieldWrapper label="Problem Description" required error={state.fieldErrors?.question?.[0]}>
+            <textarea
+              name="question"
+              defaultValue={supportIssue?.question}
+              required
+              rows={5}
+              maxLength={20_000}
+              className={nativeTextareaClass}
+              aria-invalid={state.fieldErrors?.question?.[0] ? "true" : "false"}
+              placeholder="Describe the issue in detail. Include steps to reproduce, expected behavior, and actual behavior."
+            />
+          </FieldWrapper>
+        </div>
+      </SectionCard>
 
-        {/* Solved checkbox — only on create (minimal) */}
-        {!supportIssue && minimal && (
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="solveIssue" defaultChecked className="accent-cyan-500" />
-              Mark as solved when an answer is provided
+      {/* Section 3: Answer (Optional) - only on create/minimal */}
+      {!supportIssue && minimal && (
+        <Accordion
+          title="Answer (Optional)"
+          icon={<MessageSquareIcon size={20} />}
+          defaultOpen
+          contentClassName="space-y-4"
+        >
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Provide an answer now to resolve this issue immediately. It will be saved as the first reply.
+          </p>
+          <FieldWrapper label="Answer" error={state.fieldErrors?.solutionBody?.[0]}>
+            <textarea
+              name="solutionBody"
+              rows={4}
+              maxLength={20_000}
+              className={nativeTextareaClass}
+              aria-invalid={state.fieldErrors?.solutionBody?.[0] ? "true" : "false"}
+              placeholder="Write your solution here..."
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="File Links (PDF/Images)" description="One per line: title|https://url|type|note" error={state.fieldErrors?.solutionFileLinks?.[0]}>
+            <textarea
+              name="solutionFileLinks"
+              rows={2}
+              className={nativeTextareaClass}
+              aria-invalid={state.fieldErrors?.solutionFileLinks?.[0] ? "true" : "false"}
+              placeholder="Screenshot|https://example.com/fix.png|image|Annotated screenshot"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Video Links" description="One per line: title|https://url|timestamp|summary" error={state.fieldErrors?.solutionVideoLinks?.[0]}>
+            <textarea
+              name="solutionVideoLinks"
+              rows={2}
+              className={nativeTextareaClass}
+              aria-invalid={state.fieldErrors?.solutionVideoLinks?.[0] ? "true" : "false"}
+              placeholder="Walkthrough|https://youtu.be/abc123|01:30|Fix demonstration"
+            />
+          </FieldWrapper>
+
+          <div className="flex items-center gap-2 pt-2">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" name="solveIssue" defaultChecked className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500 accent-primary" />
+              <span className="text-slate-700 dark:text-slate-300">Mark as solved when an answer is provided</span>
             </label>
           </div>
-        )}
+        </Accordion>
+      )}
 
-        {(
-          <details className="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
-            <summary className="cursor-pointer text-sm font-semibold">Additional Details</summary>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <TextField name="courseSlug" label="Course Slug" defaultValue={supportIssue?.courseSlug ?? undefined} error={state.fieldErrors?.courseSlug?.[0]} />
-              <TextField name="batchNo" label="Batch No" type="number" defaultValue={supportIssue?.batchNo?.toString()} error={state.fieldErrors?.batchNo?.[0]} />
-              <TextField name="moduleSlug" label="Module Slug" error={state.fieldErrors?.moduleSlug?.[0]} />
-              <TextField name="contentSlug" label="Content/Lesson Slug" error={state.fieldErrors?.contentSlug?.[0]} />
-              <TextField name="tags" label="Tags" defaultValue={supportIssue?.tags.join(", ")} description="Separate with commas: react, image, api" error={state.fieldErrors?.tags?.[0]} />
-              <label className="flex flex-col gap-2 text-sm font-medium">
-                Priority
-                <select
-                  name="priority"
-                  defaultValue={supportIssue?.priority ?? "NORMAL"}
-                  className={nativeSelectClass}
-                >
-                  {CASE_PRIORITIES.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priorityLabels[priority]}
-                    </option>
-                  ))}
-                </select>
-                <ErrorMessage error={state.fieldErrors?.priority?.[0]} />
-              </label>
-            </div>
-          </details>
-        )}
+      {/* Section 4: Additional Details (Metadata) */}
+      <Accordion
+        title="Additional Details"
+        icon={<SettingsIcon size={20} />}
+        defaultOpen={!minimal}
+        contentClassName="space-y-4"
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <FieldWrapper label="Course Slug" error={state.fieldErrors?.courseSlug?.[0]}>
+            <input
+              name="courseSlug"
+              defaultValue={supportIssue?.courseSlug ?? undefined}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.courseSlug?.[0] ? "true" : "false"}
+              placeholder="e.g., react-beginner"
+            />
+          </FieldWrapper>
 
-        <div className="flex justify-end">
-          <SubmitButton isCreate={isCreate} pending={pending} />
+          <FieldWrapper label="Batch No" error={state.fieldErrors?.batchNo?.[0]}>
+            <input
+              name="batchNo"
+              type="number"
+              defaultValue={supportIssue?.batchNo?.toString()}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.batchNo?.[0] ? "true" : "false"}
+              placeholder="e.g., 1"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Module Slug" error={state.fieldErrors?.moduleSlug?.[0]}>
+            <input
+              name="moduleSlug"
+              defaultValue={supportIssue?.moduleSlug ?? undefined}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.moduleSlug?.[0] ? "true" : "false"}
+              placeholder="e.g., assets"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Content/Lesson Slug" error={state.fieldErrors?.contentSlug?.[0]}>
+            <input
+              name="contentSlug"
+              defaultValue={supportIssue?.contentSlug ?? undefined}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.contentSlug?.[0] ? "true" : "false"}
+              placeholder="e.g., images-lecture"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Tags" description="Separate with commas: react, image, api" error={state.fieldErrors?.tags?.[0]}>
+            <input
+              name="tags"
+              defaultValue={supportIssue?.tags.join(", ")}
+              className={nativeFieldClass}
+              aria-invalid={state.fieldErrors?.tags?.[0] ? "true" : "false"}
+              placeholder="react, image, rendering"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper label="Priority" error={state.fieldErrors?.priority?.[0]}>
+            <select
+              name="priority"
+              defaultValue={supportIssue?.priority ?? "NORMAL"}
+              className={nativeSelectClass}
+              aria-invalid={state.fieldErrors?.priority?.[0] ? "true" : "false"}
+            >
+              {CASE_PRIORITIES.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priorityLabels[priority]}
+                </option>
+              ))}
+            </select>
+          </FieldWrapper>
         </div>
-      </form>
-    </section>
-  );
-}
+      </Accordion>
 
-function TextField({ label, description, error, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string; description?: string; error?: string }) {
-  const id = useId();
-  const inputId = `${props.name}-${id}`;
-  const errorId = error ? `${inputId}-error` : undefined;
-  return (
-    <label className={nativeLabelClass}>
-      {label} {props.required && <span className="text-danger">*</span>}
-      <input
-        {...props}
-        id={inputId}
-        aria-invalid={error ? "true" : "false"}
-        aria-describedby={errorId}
-        className={nativeFieldClass}
-      />
-      {description && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{description}</span>}
-      <ErrorMessage error={error} />
-    </label>
-  );
-}
-
-function TextAreaField({ label, description, error, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; description?: string; error?: string }) {
-  const id = useId();
-  const textareaId = `${props.name}-${id}`;
-  const errorId = error ? `${textareaId}-error` : undefined;
-  return (
-    <label className={nativeLabelClass}>
-      {label} {props.required && <span className="text-danger">*</span>}
-      <textarea
-        {...props}
-        id={textareaId}
-        aria-invalid={error ? "true" : "false"}
-        aria-describedby={errorId}
-        className={nativeTextareaClass}
-      />
-      {description && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{description}</span>}
-      <ErrorMessage error={error} />
-    </label>
+      {/* Submit is handled by StickyActionBar on the page */}
+    </form>
   );
 }

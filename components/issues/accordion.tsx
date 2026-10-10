@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useState, useRef, useEffect } from "react";
+import { forwardRef, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDownIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
