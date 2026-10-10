@@ -1,4 +1,3 @@
-import { Button, Card, CardBody } from "@heroui/react";
 import Link from "next/link";
 
 import { CaseFilterPanel } from "@/components/cases/case-filter-panel";
@@ -19,7 +18,7 @@ type CaseSort = (typeof CASE_SORTS)[number];
 export default async function CasesPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     q?: string;
     status?: string;
     tag?: string;
@@ -30,26 +29,27 @@ export default async function CasesPage({
     to?: string;
     sort?: string;
     page?: string;
-  };
+  }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const session = await requireSession();
-  const page = Number(searchParams?.page ?? "1");
-  const sort: CaseSort = CASE_SORTS.includes(searchParams?.sort as CaseSort)
-    ? (searchParams?.sort as CaseSort)
+  const page = Number(resolvedSearchParams?.page ?? "1");
+  const sort: CaseSort = CASE_SORTS.includes(resolvedSearchParams?.sort as CaseSort)
+    ? (resolvedSearchParams?.sort as CaseSort)
     : "newest";
 
   // The filter schema expects ISO datetimes, but a date input yields YYYY-MM-DD.
   // `from` starts at midnight, `to` ends at end-of-day, both in UTC.
-  const from = searchParams?.from ? `${searchParams.from}T00:00:00.000Z` : undefined;
-  const to = searchParams?.to ? `${searchParams.to}T23:59:59.999Z` : undefined;
+  const from = resolvedSearchParams?.from ? `${resolvedSearchParams.from}T00:00:00.000Z` : undefined;
+  const to = resolvedSearchParams?.to ? `${resolvedSearchParams.to}T23:59:59.999Z` : undefined;
 
   const cases = await listCases({
-    q: searchParams?.q,
-    status: CASE_STATUSES.includes(searchParams?.status as never) ? searchParams?.status as never : undefined,
-    tag: searchParams?.tag,
-    courseSlug: searchParams?.courseSlug || undefined,
-    batchNo: searchParams?.batchNo ? Number(searchParams.batchNo) : undefined,
-    mentorId: searchParams?.mentorId || undefined,
+    q: resolvedSearchParams?.q,
+    status: CASE_STATUSES.includes(resolvedSearchParams?.status as never) ? resolvedSearchParams?.status as never : undefined,
+    tag: resolvedSearchParams?.tag,
+    courseSlug: resolvedSearchParams?.courseSlug || undefined,
+    batchNo: resolvedSearchParams?.batchNo ? Number(resolvedSearchParams.batchNo) : undefined,
+    mentorId: resolvedSearchParams?.mentorId || undefined,
     from,
     to,
     sort,
@@ -64,14 +64,14 @@ export default async function CasesPage({
   const mentors = staff.filter((member) => member.isActive && (member.role === "MENTOR" || member.role === "ADMIN"));
 
   const canCreate = Boolean(session.user.role && canMutate(session.user.role));
-  const q = searchParams?.q ?? "";
-  const tag = searchParams?.tag ?? "";
-  const status = searchParams?.status ?? "";
-  const courseSlug = searchParams?.courseSlug ?? "";
-  const batchNo = searchParams?.batchNo ?? "";
-  const mentorId = searchParams?.mentorId ?? "";
-  const dateFrom = searchParams?.from ?? "";
-  const dateTo = searchParams?.to ?? "";
+  const q = resolvedSearchParams?.q ?? "";
+  const tag = resolvedSearchParams?.tag ?? "";
+  const status = resolvedSearchParams?.status ?? "";
+  const courseSlug = resolvedSearchParams?.courseSlug ?? "";
+  const batchNo = resolvedSearchParams?.batchNo ?? "";
+  const mentorId = resolvedSearchParams?.mentorId ?? "";
+  const dateFrom = resolvedSearchParams?.from ?? "";
+  const dateTo = resolvedSearchParams?.to ?? "";
 
   const pageHref = (nextPage: number) => {
     const params = new URLSearchParams();
@@ -93,9 +93,12 @@ export default async function CasesPage({
       <PageHeader
         action={
           canCreate && (
-            <Button as={Link} color="primary" href="/dashboard/cases/new">
+            <Link
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+              href="/dashboard/cases/new"
+            >
               New Case
-            </Button>
+            </Link>
           )
         }
         description="Find support cases by problem, tag, status or keyword."
@@ -110,8 +113,8 @@ export default async function CasesPage({
         statuses={CASE_STATUSES}
       />
 
-      <Card className="border border-slate-200 dark:border-slate-800">
-        <CardBody className="p-0">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="p-0">
           {cases.items.length === 0 ? (
             <EmptyState>No cases found.</EmptyState>
           ) : (
@@ -148,8 +151,8 @@ export default async function CasesPage({
               ))}
             </div>
           )}
-        </CardBody>
-      </Card>
+        </div>
+      </section>
 
       <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
@@ -157,14 +160,20 @@ export default async function CasesPage({
         </span>
         <div className="flex gap-2">
           {cases.page > 1 && (
-            <Button as={Link} href={pageHref(cases.page - 1)} size="sm" variant="flat">
+            <Link
+              className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              href={pageHref(cases.page - 1)}
+            >
               Previous
-            </Button>
+            </Link>
           )}
           {cases.page < cases.totalPages && (
-            <Button as={Link} href={pageHref(cases.page + 1)} size="sm" variant="flat">
+            <Link
+              className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              href={pageHref(cases.page + 1)}
+            >
               Next
-            </Button>
+            </Link>
           )}
         </div>
       </div>

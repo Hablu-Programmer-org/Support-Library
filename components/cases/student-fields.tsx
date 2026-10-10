@@ -1,9 +1,9 @@
 "use client";
 
-import { Chip, Input } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 
 import { lookupLmsStudentAction } from "@/actions/lms";
+import { nativeFieldClass, nativeLabelClass } from "@/lib/config/fields";
 
 type LookupState = "idle" | "checking" | "found" | "notFound";
 
@@ -33,18 +33,30 @@ export function StudentFields({
   const [email, setEmail] = useState(initialEmail ?? "");
   const [lmsUserId, setLmsUserId] = useState(initialLmsUserId ?? "");
   const [lookup, setLookup] = useState<LookupState>("idle");
+  const [nameTouched, setNameTouched] = useState(false);
   const nameTouchedRef = useRef(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const hydratedEmail = emailRef.current?.value ?? "";
+    if (!hydratedEmail || hydratedEmail === email) return;
+
+    const timer = setTimeout(() => {
+      setEmail(hydratedEmail);
+      setLmsUserId("");
+      setLookup(hydratedEmail.trim().length < 5 ? "idle" : "checking");
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [email]);
 
   useEffect(() => {
     let cancelled = false;
     const normalized = email.trim().toLowerCase();
-    setLmsUserId("");
     if (normalized.length < 5) {
-      setLookup("idle");
       return;
     }
 
-    setLookup("checking");
     const timer = setTimeout(() => {
       void lookupLmsStudentAction(normalized).then((match) => {
         if (cancelled) return;
@@ -72,9 +84,9 @@ export function StudentFields({
     lookup === "checking" ? (
       <span className="text-slate-500 dark:text-slate-400">Searching the LMS…</span>
     ) : lookup === "found" ? (
-      <Chip size="sm" variant="flat" color="success">
+      <span className="inline-flex w-fit rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-950/50 dark:text-success-200">
         Found in LMS
-      </Chip>
+      </span>
     ) : lookup === "notFound" ? (
       <span className="text-amber-600 dark:text-amber-400">
         No matching LMS user found. Enter the name manually.
@@ -83,38 +95,53 @@ export function StudentFields({
 
   // In minimal create form, hide the name input once LMS match is found
   // (unless the user manually edited it first — then keep it visible).
-  const showNameInput = !hideWhenFound || lookup !== "found" || nameTouchedRef.current || name.trim().length < 2;
+  const showNameInput = !hideWhenFound || lookup !== "found" || nameTouched || name.trim().length < 2;
 
   return (
     <>
       {showNameInput ? (
-        <Input
-          name="studentName"
-          label="Student Name"
-          value={name}
-          onValueChange={(value) => {
-            setName(value);
-            nameTouchedRef.current = true;
-          }}
-          isRequired
-          minLength={2}
-          maxLength={120}
-        />
+        <label className={nativeLabelClass}>
+          Student Name <span className="text-danger">*</span>
+          <input
+            className={nativeFieldClass}
+            name="studentName"
+            value={name}
+            onChange={(event) => {
+              setName(event.target.value);
+              nameTouchedRef.current = true;
+              setNameTouched(true);
+            }}
+            required
+            minLength={2}
+            maxLength={120}
+          />
+        </label>
       ) : (
         // Hidden input preserves the snapshot value when name field is hidden
         <input type="hidden" name="studentName" value={name} />
       )}
       <div className="flex flex-col gap-1">
-        <Input
-          name="studentEmail"
-          label="Student Email"
-          type="email"
-          value={email}
-          onValueChange={setEmail}
-          isRequired
-          maxLength={160}
-          description="Enter an LMS email to fill in the name automatically."
-        />
+        <label className={nativeLabelClass}>
+          Student Email <span className="text-danger">*</span>
+          <input
+            className={nativeFieldClass}
+            name="studentEmail"
+            type="email"
+            defaultValue={email}
+            ref={emailRef}
+            onInput={(event) => {
+              const value = event.currentTarget.value;
+              setEmail(value);
+              setLmsUserId("");
+              setLookup(value.trim().length < 5 ? "idle" : "checking");
+            }}
+            required
+            maxLength={160}
+          />
+          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+            Enter an LMS email to fill in the name automatically.
+          </span>
+        </label>
         <div className="min-h-5 text-xs">{lookupHint}</div>
       </div>
       <input type="hidden" name="lmsUserId" value={lmsUserId} />

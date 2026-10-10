@@ -1,5 +1,6 @@
-import { cn } from "@heroui/theme";
 import type { ReactNode } from "react";
+
+import { cn } from "@/lib/cn";
 
 type PanelProps = {
   children: ReactNode;

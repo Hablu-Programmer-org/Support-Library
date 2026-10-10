@@ -20,12 +20,14 @@ const submit = async (page: Page, url: RegExp) => {
 };
 
 // The cases filter panel is collapsed by default; the arrow toggle reveals it.
+// Locators are scoped to the visible panel: dev client-side navigation can leave
+// a hidden duplicate of the previous route in the DOM while the router swaps it.
 async function openFilters(page: Page) {
-  const toggle = page.getByRole("button", { name: "Advanced filters" });
+  const toggle = page.getByRole("button", { name: "Advanced filters" }).first();
   if ((await toggle.getAttribute("aria-expanded")) !== "true") {
     await toggle.click();
   }
-  await expect(page.locator('select[name="status"]')).toBeVisible();
+  await expect(page.locator('main select[name="status"]:visible')).toBeVisible();
 }
 
 // A filter navigation re-renders the panel, and React hydration can reset a
@@ -83,13 +85,13 @@ test.describe("Case list filters (mentor)", () => {
     await expect(page.locator('select[name="batchNo"] option[value="7"]')).toHaveCount(1);
 
     await filterWith(page, /courseSlug=react-beginner/, () =>
-      page.selectOption('select[name="courseSlug"]', "react-beginner"),
+      page.selectOption('main select[name="courseSlug"]:visible', "react-beginner"),
     );
     await expect(caseHeading(page, "E2E filter react case")).toBeVisible();
     await expect(caseHeading(page, "E2E filter python case")).toHaveCount(0);
 
     // Adding a batch that belongs to the other course must yield nothing.
-    await filterWith(page, /batchNo=9/, () => page.selectOption('select[name="batchNo"]', "9"));
+    await filterWith(page, /batchNo=9/, () => page.selectOption('main select[name="batchNo"]:visible', "9"));
     await expect(caseHeading(page, "E2E filter react case")).toHaveCount(0);
     await expect(caseHeading(page, "E2E filter python case")).toHaveCount(0);
 
@@ -113,7 +115,7 @@ test.describe("Case list filters (mentor)", () => {
       page,
       /mentorId=[a-f0-9]{24}&from=2000-01-01&to=2999-12-31/,
       async () => {
-        await page.selectOption('select[name="mentorId"]', { label: "Mentor User" });
+        await page.selectOption('main select[name="mentorId"]:visible', { label: "Mentor User" });
         await page.fill('input[name="from"]', "2000-01-01");
         await page.fill('input[name="to"]', "2999-12-31");
       },
@@ -132,7 +134,7 @@ test.describe("Case list filters (mentor)", () => {
     await page.goto("/dashboard/cases");
     await openFilters(page);
 
-    await filterWith(page, /sort=oldest/, () => page.selectOption('select[name="sort"]', "oldest"));
-    await filterWith(page, /sort=priority/, () => page.selectOption('select[name="sort"]', "priority"));
+    await filterWith(page, /sort=oldest/, () => page.selectOption('main select[name="sort"]:visible', "oldest"));
+    await filterWith(page, /sort=priority/, () => page.selectOption('main select[name="sort"]:visible', "priority"));
   });
 });

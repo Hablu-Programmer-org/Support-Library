@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 
 /**
  * Shared body for the two not-found boundaries (root and dashboard).
@@ -10,24 +9,25 @@ import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 export function NotFoundContent() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <Card className="w-full max-w-md border border-slate-200 text-center dark:border-slate-700">
-        <CardHeader className="flex flex-col items-center">
+      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="mb-6 flex flex-col items-center">
           <h1 className="text-2xl font-bold">404</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             This page could not be found.
           </p>
-        </CardHeader>
-        <CardBody className="space-y-3">
+        </div>
+        <div className="space-y-3">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             The link may be incorrect, or the record may have been archived.
           </p>
-          <Link href="/dashboard" className="block">
-            <Button color="primary" className="w-full">
-              Go to Dashboard
-            </Button>
+          <Link
+            href="/dashboard"
+            className="block w-full rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+          >
+            Go to Dashboard
           </Link>
-        </CardBody>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }

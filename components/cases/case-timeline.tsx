@@ -1,5 +1,3 @@
-import { Card, CardBody } from "@heroui/react";
-
 import { ReplyItem } from "@/components/cases/reply-item";
 import { canMutate, isAdmin, type UserRole } from "@/lib/roles";
 import type { SupportReplyListItem } from "@/lib/services/replies";
@@ -17,11 +15,11 @@ export function CaseTimeline({
 }) {
   if (replies.length === 0) {
     return (
-      <Card className="border border-slate-200 dark:border-slate-700">
-        <CardBody className="text-sm text-slate-500 dark:text-slate-400">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           No replies or internal notes yet.
-        </CardBody>
-      </Card>
+        </p>
+      </section>
     );
   }
 

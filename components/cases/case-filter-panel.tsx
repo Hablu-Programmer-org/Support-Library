@@ -1,6 +1,5 @@
 "use client";
 
-import { Button, Input } from "@heroui/react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -63,14 +62,19 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
   return (
     <Panel>
       <form action="/dashboard/cases" method="get" className="space-y-4">
-        <Input
-          defaultValue={defaults.q}
-          endContent={
+        <div className="relative">
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            className={`${nativeFieldClass} px-10`}
+            defaultValue={defaults.q}
+            name="q"
+            placeholder="Search by problem, student or keyword"
+          />
             <button
               aria-expanded={open}
               aria-label="Advanced filters"
-              className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              onClick={() => setOpen((value) => !value)}
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              onClick={() => setOpen(true)}
               type="button"
             >
               <ChevronDownIcon
@@ -78,14 +82,9 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
                 size={18}
               />
             </button>
-          }
-          name="q"
-          placeholder="Search by problem, student or keyword"
-          startContent={<SearchIcon className="text-slate-400" size={18} />}
-        />
+        </div>
 
-        {open && (
-          <div className="space-y-4">
+        <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <label className={nativeLabelClass}>
                 Tag
@@ -169,16 +168,15 @@ export function CaseFilterPanel({ defaults, statuses, courseSlugs, batchNos, men
                 {activeCount > 0 ? `Active filters: ${activeCount}` : ""}
               </span>
               <div className="flex gap-2">
-                <Button as={Link} href="/dashboard/cases" size="sm" variant="light">
+                <Link className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" href="/dashboard/cases" role="button">
                   Reset
-                </Button>
-                <Button color="primary" size="sm" type="submit" variant="flat">
+                </Link>
+                <button className="inline-flex items-center justify-center rounded-lg bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-200 dark:bg-primary-950/50 dark:text-primary-200 dark:hover:bg-primary-900/60" type="submit">
                   Filter
-                </Button>
+                </button>
               </div>
             </div>
-          </div>
-        )}
+        </div>
       </form>
     </Panel>
   );

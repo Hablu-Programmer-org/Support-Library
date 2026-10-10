@@ -1,10 +1,10 @@
 "use client";
 
-import { cn } from "@heroui/theme";
 import Image from "next/image";
 import { useEffect } from "react";
 
 import { SidebarItem } from "@/components/layout/sidebar-item";
+import { cn } from "@/lib/cn";
 import type { ShellUser } from "@/components/layout/shell";
 import type { NavItem } from "@/lib/config/nav";
 import { ROLE_LABELS } from "@/lib/roles";

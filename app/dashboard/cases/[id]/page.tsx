@@ -1,4 +1,3 @@
-import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -24,9 +23,10 @@ const statusLabels = {
   ARCHIVED: "Archived",
 };
 
-export default async function CaseDetailPage({ params }: { params: { id: string } }) {
+export default async function CaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await requireSession();
-  const supportCase = await getCaseDetail(params.id);
+  const supportCase = await getCaseDetail(id);
   if (!supportCase) notFound();
 
   // VIEWER (students) must not see staff-only content: internal notes.
@@ -52,9 +52,9 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         </div>
       </div>
 
-      <Card className="border border-slate-200 dark:border-slate-700">
-        <CardHeader className="font-semibold">Problem Description</CardHeader>
-        <CardBody className="space-y-4">
+      <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Problem Description</div>
+        <div className="space-y-4 p-6">
           <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">{supportCase.question}</p>
           <div className="flex flex-wrap gap-2">
             {supportCase.tags.map((tag) => (
@@ -68,13 +68,13 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             <Info label="Batch" value={supportCase.batchNo?.toString()} />
             <Info label="Priority" value={supportCase.priority} />
           </div>
-        </CardBody>
-      </Card>
+        </div>
+      </section>
 
       {canEdit && (
-        <Card className="border border-slate-200 dark:border-slate-700">
-          <CardHeader className="font-semibold">Status Update</CardHeader>
-          <CardBody>
+        <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+          <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Status Update</div>
+          <div className="p-6">
             <form action={changeCaseStatusAction.bind(null, supportCase.id)} className="flex flex-col gap-3 sm:flex-row">
               <select
                 name="status"
@@ -87,12 +87,15 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
                   </option>
                 ))}
               </select>
-              <Button type="submit" color="primary" variant="flat">
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+              >
                 Update
-              </Button>
+              </button>
             </form>
-          </CardBody>
-        </Card>
+          </div>
+        </section>
       )}
 
       {canEdit && (
@@ -102,9 +105,9 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
         </section>
       )}
 
-      <Card className="border border-slate-200 dark:border-slate-700">
-        <CardHeader className="font-semibold">Replies & Internal Notes</CardHeader>
-        <CardBody className="space-y-4">
+      <section className="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+        <div className="border-b border-slate-200 px-6 py-4 font-semibold dark:border-slate-700">Replies & Internal Notes</div>
+        <div className="space-y-4 p-6">
           {canEdit && <ReplyComposer caseId={supportCase.id} />}
           <CaseTimeline
             caseId={supportCase.id}
@@ -112,14 +115,17 @@ export default async function CaseDetailPage({ params }: { params: { id: string 
             viewerId={session.user.id}
             viewerRole={session.user.role}
           />
-        </CardBody>
-      </Card>
+        </div>
+      </section>
 
       {canEdit && (
         <form action={deleteCaseAction.bind(null, supportCase.id)}>
-          <Button type="submit" color="danger" variant="flat">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-xl bg-danger-100 px-4 py-2 text-sm font-semibold text-danger-700 transition hover:bg-danger-200 dark:bg-danger-950/50 dark:text-danger-200 dark:hover:bg-danger-900/60"
+          >
             Archive Case
-          </Button>
+          </button>
         </form>
       )}
     </div>

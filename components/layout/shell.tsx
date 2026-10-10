@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { Sidebar } from "@/components/layout/sidebar";
@@ -31,12 +30,6 @@ type DashboardShellProps = {
 export function DashboardShell({ user, children }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
-
-  // Navigate → close the mobile drawer so it never covers the new page.
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   const handleToggle = () => {
     const isMobile = window.matchMedia("(max-width: 767px)").matches;

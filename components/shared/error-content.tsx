@@ -1,6 +1,5 @@
 "use client";
 
-import { Button, Card, CardBody, CardHeader } from "@heroui/react";
 import { useEffect } from "react";
 
 type ErrorContentProps = {
@@ -20,16 +19,16 @@ export function ErrorContent({ error, reset, message }: ErrorContentProps) {
   }, [error]);
 
   return (
-    <Card className="w-full max-w-md border border-slate-200 text-center dark:border-slate-700">
-      <CardHeader className="flex flex-col items-center">
+    <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex flex-col items-center">
         <h1 className="text-2xl font-bold text-danger">Something Went Wrong</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">{message}</p>
-      </CardHeader>
-      <CardBody className="pt-0">
-        <Button onClick={reset} color="primary" className="w-full">
+      </div>
+      <div className="mt-6">
+        <button onClick={reset} type="button" className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600">
           Try Again
-        </Button>
-      </CardBody>
-    </Card>
+        </button>
+      </div>
+    </section>
   );
 }

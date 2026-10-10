@@ -70,8 +70,8 @@ test.describe("Case CRUD (mentor)", () => {
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
 
     // While editing, the body paragraph is replaced by the editor, so anchor the
-    // editor on its own label rather than on the old body text.
-    const editor = page.locator("article").filter({ hasText: "Edit Reply" });
+    // editor on the reply article itself rather than on the old body text.
+    const editor = reply;
     await editor.locator('textarea[name="body"]').fill("Edited: use /public/image.png");
     await editor.getByRole("button", { name: "Save" }).click();
 

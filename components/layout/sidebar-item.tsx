@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@heroui/theme";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { cn } from "@/lib/cn";
 import type { NavItem } from "@/lib/config/nav";
 
 type SidebarItemProps = {

@@ -7,7 +7,7 @@ const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = new Set(["/", "/login", "/unauthorized", "/api/health"]);
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const { nextUrl } = req;
   const { pathname, search } = nextUrl;
 

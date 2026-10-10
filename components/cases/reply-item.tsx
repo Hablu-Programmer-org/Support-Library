@@ -1,10 +1,8 @@
 "use client";
 
-import { Button, Textarea } from "@heroui/react";
-import { useState } from "react";
-
 import { deleteReplyAction, editReplyAction } from "@/actions/replies";
 import { LinkList } from "@/components/shared/link-list";
+import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
 export function ReplyItem({
@@ -16,8 +14,6 @@ export function ReplyItem({
   reply: SupportReplyListItem;
   canEdit: boolean;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-
   return (
     <article
       data-testid={`reply-${reply.id}`}
@@ -45,51 +41,36 @@ export function ReplyItem({
 
         {canEdit && (
           <div className="flex flex-wrap items-center gap-2">
-            {!isEditing && (
-              <Button
-                type="button"
-                size="sm"
-                variant="light"
-                onPress={() => setIsEditing(true)}
-              >
-                Edit
-              </Button>
-            )}
             <form action={deleteReplyAction.bind(null, caseId, reply.id)}>
-              <Button type="submit" size="sm" color="danger" variant="light">
+              <button type="submit" className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-danger-600 transition hover:bg-danger-50 dark:text-danger-300 dark:hover:bg-danger-950/40">
                 Delete
-              </Button>
+              </button>
             </form>
           </div>
         )}
       </div>
 
-      {isEditing ? (
-        <form action={editReplyAction.bind(null, caseId, reply.id)} className="space-y-3">
-          <Textarea
-            name="body"
-            label="Edit Reply"
-            defaultValue={reply.body}
-            minRows={4}
-            isRequired
-            maxLength={20_000}
-          />
-          <div className="flex justify-end gap-2">
-            <Button type="button" size="sm" variant="light" onPress={() => setIsEditing(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" color="primary">
-              Save
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <>
-          <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
-            {reply.body}
-          </p>
-          <LinkList fileLinks={reply.fileLinks} videoLinks={reply.videoLinks} />
-        </>
+      <p className="whitespace-pre-wrap text-sm leading-7 text-slate-700 dark:text-slate-200">
+        {reply.body}
+      </p>
+      <LinkList fileLinks={reply.fileLinks} videoLinks={reply.videoLinks} />
+      {canEdit && (
+        <details className="mt-3">
+          <summary className="inline-flex cursor-pointer items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" role="button">
+            Edit
+          </summary>
+          <form action={editReplyAction.bind(null, caseId, reply.id)} className="mt-3 space-y-3">
+            <label className={nativeLabelClass}>
+              Edit Reply <span className="text-danger">*</span>
+              <textarea name="body" defaultValue={reply.body} rows={4} required maxLength={20_000} className={nativeTextareaClass} />
+            </label>
+            <div className="flex justify-end">
+              <button type="submit" className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-600">
+                Save
+              </button>
+            </div>
+          </form>
+        </details>
       )}
     </article>
   );

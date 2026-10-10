@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { Button } from "@heroui/react";
+
+const subscribe = () => () => undefined;
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   const { theme, setTheme } = useTheme();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     // Avoid hydration mismatch: don't render anything until client-side
@@ -18,12 +17,11 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
-      className="rounded-full p-2"
+      className="rounded-full p-2 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:text-white dark:hover:bg-slate-800"
+      type="button"
     >
       {theme === "dark" ? (
         <svg
@@ -56,6 +54,6 @@ export function ThemeToggle() {
           />
         </svg>
       )}
-    </Button>
+    </button>
   );
 }
