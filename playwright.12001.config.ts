@@ -23,7 +23,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npx next dev -p 12001",
+    command: "npx next start -p 12001",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
