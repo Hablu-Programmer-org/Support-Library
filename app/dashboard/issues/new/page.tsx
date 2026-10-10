@@ -1,8 +1,12 @@
-import Link from "next/link";
-import { ArrowLeftIcon, HelpCircleIcon, SparklesIcon } from "@/components/icons";
+import {
+  ArrowLeftIcon,
+  HelpCircleIcon,
+  SparklesIcon,
+} from "@/components/icons";
 import { IssueForm } from "@/components/issues/issue-form";
 import { StickyActionBar } from "@/components/issues/sticky-action-bar";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -32,27 +36,61 @@ export default async function NewIssuePage() {
           {/* Page Title & Description */}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400" aria-hidden="true">
+              <span
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
+                aria-hidden="true"
+              >
                 <SparklesIcon size={20} />
               </span>
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">New Support Issue</h1>
-                <p className="text-slate-600 dark:text-slate-400">Create a new support issue for a student. Fill in the required fields and add an optional answer.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  New Support Issue
+                </h1>
+                <p className="text-slate-600 dark:text-slate-400">
+                  Create a new support issue for a student. Fill in the required
+                  fields and add an optional answer.
+                </p>
               </div>
             </div>
           </div>
 
           {/* Quick Tips */}
-          <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50" aria-labelledby="tips-heading">
-            <h2 id="tips-heading" className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+          <section
+            className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
+            aria-labelledby="tips-heading"
+          >
+            <h2
+              id="tips-heading"
+              className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+            >
               <HelpCircleIcon size={16} />
               Quick Tips
             </h2>
             <ul className="mt-2 grid gap-2 text-sm text-slate-600 dark:text-slate-400 sm:grid-cols-2">
-              <li className="flex items-center gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">1</span>Enter student email first to auto-fill name from LMS</li>
-              <li className="flex items-center gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">2</span>Title must be at least 5 characters</li>
-              <li className="flex items-center gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">3</span>Add an answer to resolve the issue immediately</li>
-              <li className="flex items-center gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">4</span>Use Cmd+Enter to submit quickly</li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                  1
+                </span>
+                Enter student email first to auto-fill name from LMS
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                  2
+                </span>
+                Title must be at least 5 characters
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                  3
+                </span>
+                Add an answer to resolve the issue immediately
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                  4
+                </span>
+                Use Cmd+Enter to submit quickly
+              </li>
             </ul>
           </section>
 
@@ -67,7 +105,9 @@ export default async function NewIssuePage() {
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
               >
                 <span>Create Issue</span>
-                <kbd className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex">⌘Enter</kbd>
+                <kbd className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex">
+                  ⌘Enter
+                </kbd>
               </button>
             </form>
           </StickyActionBar>
