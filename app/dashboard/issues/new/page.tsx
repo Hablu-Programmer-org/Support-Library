@@ -16,7 +16,7 @@ export default async function NewIssuePage() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-950">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-20 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 dark:border-slate-800 dark:bg-slate-950/95">
+      <header className="sticky top-0 z-20 w-full border-0 border-slate-200 bg-white/95 backdrop-blur-sm px-4 py-3 dark:border-slate-800 dark:bg-slate-950/95">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <Link
             href="/dashboard/issues"

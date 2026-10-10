@@ -382,6 +382,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
       </Accordion>
 
       {/* Submit is handled by StickyActionBar on the page */}
+      <div className="pb-8" />
     </form>
   );
 }
