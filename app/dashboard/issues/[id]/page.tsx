@@ -4,11 +4,10 @@ import { notFound } from "next/navigation";
 import {
   changeIssueStatusActionSimple,
   deleteIssueActionSimple,
-  publishIssueAction,
-  unpublishIssueAction,
 } from "@/actions/issues";
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
+import { PublishIssueForm } from "@/components/issues/publish-issue-form";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
@@ -222,24 +221,11 @@ export default async function IssueDetailPage({
               </Link>
 
               {canPublish && (
-                <form
-                  action={
-                    supportIssue.visibility === "PUBLISHED"
-                      ? unpublishIssueAction.bind(null, supportIssue.id)
-                      : publishIssueAction.bind(
-                          null,
-                          supportIssue.id,
-                          supportIssue.updatedAt?.toISOString() ?? "",
-                        )
-                  }
-                  className="mt-3"
-                >
-                  <PendingSubmitButton
-                    label={supportIssue.visibility === "PUBLISHED" ? "Remove from library" : "Publish to library"}
-                    pendingLabel={supportIssue.visibility === "PUBLISHED" ? "Removing..." : "Publishing..."}
-                    variant="secondary"
-                  />
-                </form>
+                <PublishIssueForm
+                  issueId={supportIssue.id}
+                  reviewedAt={supportIssue.updatedAt?.toISOString() ?? ""}
+                  isPublished={supportIssue.visibility === "PUBLISHED"}
+                />
               )}
             </section>
           )}

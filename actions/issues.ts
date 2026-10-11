@@ -17,7 +17,7 @@ import {
 import { supportIssueInputSchema, supportReplyInputSchema } from "@/lib/validation";
 import { CASE_STATUSES, type CaseStatus } from "@/models";
 
-type FormState = {
+export type FormState = {
   fieldErrors?: Record<string, string[]>;
   message?: string;
 };
@@ -209,21 +209,35 @@ export async function deleteIssueActionSimple(id: string) {
   }
 }
 
-export async function publishIssueAction(id: string, reviewedAt: string) {
+export async function publishIssueAction(
+  id: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const guard = await assertRole("ADMIN");
-  if (!guard.ok) redirect("/unauthorized");
+  if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
+
+  const reviewedAt = formData.get("reviewedAt");
+  const reviewConfirmed = formData.get("reviewConfirmed");
+
+  if (reviewConfirmed !== "true") {
+    return { fieldErrors: { reviewConfirmed: ["Please confirm you have reviewed the issue for student personal information"] } };
+  }
 
   const parsedReviewedAt = z.string().datetime().safeParse(reviewedAt);
-  if (!parsedReviewedAt.success) throw new Error("Invalid issue revision");
+  if (!parsedReviewedAt.success) return { fieldErrors: { _form: ["Invalid issue revision"] } };
+
   const supportIssue = await publishIssue(
     id,
     guard.session.user.id,
     new Date(parsedReviewedAt.data),
   );
-  if (!supportIssue) throw new Error("Issue changed since review. Refresh and review it again.");
+  if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since review. Refresh and review it again."] } };
+
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${id}`);
+  redirect(`/dashboard/issues/${id}`);
 }
 
 export async function unpublishIssueAction(id: string) {
@@ -235,4 +249,5 @@ export async function unpublishIssueAction(id: string) {
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${id}`);
+  redirect(`/dashboard/issues/${id}`);
 }

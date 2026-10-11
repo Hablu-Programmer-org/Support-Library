@@ -8,6 +8,9 @@ test.describe("VIEWER content gating", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
   test("hides internal notes from students", async ({ page, browser }) => {
+    const pageErrors: Error[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error));
+
     const baseURL = test.info().project.use.baseURL as string;
 
     const publicReply = "E2E public step follows";
@@ -45,7 +48,17 @@ test.describe("VIEWER content gating", () => {
     await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
 
     await page.getByRole("button", { name: "Publish to library" }).click();
-    await expect(page.getByText("Student Library", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("alert").filter({
+        hasText: "Please confirm you have reviewed the issue for student personal information",
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
+
+    await page.getByRole("checkbox", { name: /reviewed this issue/ }).check();
+    await page.getByRole("button", { name: "Publish to library" }).click();
+    await expect(page).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
 
     // The viewer sees the issue and its public reply, but never the internal note.
     await viewerPage.goto(issuePath);
@@ -61,11 +74,21 @@ test.describe("VIEWER content gating", () => {
     await expect(viewerPage.getByText("E2E Gating Student")).toHaveCount(0);
     await expect(viewerPage.getByText(studentEmail)).toHaveCount(0);
 
+    await page.getByRole("button", { name: "Remove from library" }).click();
+    await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
+    await viewerPage.goto(issuePath);
+    await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
+
+    await page.getByRole("checkbox", { name: /reviewed this issue/ }).check();
+    await page.getByRole("button", { name: "Publish to library" }).click();
+    await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
+
     await replyForm.locator('textarea[name="body"]').fill("E2E changed after publication");
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
     await viewerPage.goto(issuePath);
     await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
+    expect(pageErrors).toEqual([]);
 
     await viewerContext.close();
   });

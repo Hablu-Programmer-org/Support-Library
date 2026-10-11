@@ -55,7 +55,13 @@ export function Topbar({ user, open, mobileOpen, onToggle }: TopbarProps) {
           </button>
 
           <Link className="flex w-fit items-center gap-2.5" href="/dashboard">
-            <Image alt="Hablu Support Library" height={40} src="/logo.png" width={40} />
+            <Image
+              alt="Hablu Support Library"
+              className="h-10 w-auto"
+              height={339}
+              src="/logo.png"
+              width={499}
+            />
             <span className="hidden text-lg font-semibold text-slate-900 sm:block lg:text-xl dark:text-white">
               Hablu Support Library
             </span>
