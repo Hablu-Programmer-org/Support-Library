@@ -69,7 +69,7 @@ services:
     command: ["sh", "-c", "exit 0"]
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000,mode=1770
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
     cap_drop:
       - ALL
     security_opt:

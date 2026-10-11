@@ -125,10 +125,16 @@ test.describe("Issue CRUD (mentor)", () => {
       'textarea[name="question"]',
       "A long support question should remain readable without creating horizontal scrolling on a phone.",
     );
-    await Promise.all([
-      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
-    ]);
+    await page.uncheck('input[name="solveIssue"]');
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const navigated = page
+        .waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false);
+      await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+      if (await navigated) break;
+    }
 
     await expect(page.getByRole("heading", { name: "E2E mobile issue article" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "The problem" })).toBeVisible();

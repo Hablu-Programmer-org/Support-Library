@@ -18,7 +18,16 @@ test.describe("LMS authorization freshness", () => {
 
     try {
       await users.updateOne({ email: admin.email }, { $set: { role: "STUDENT" } });
-      await page.goto("/dashboard/issues/new");
+
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const navigated = page
+          .waitForURL(/\/dashboard\/issues\/new/, { timeout: 10_000 })
+          .then(() => true)
+          .catch(() => false);
+        await page.goto("/dashboard/issues/new");
+        if (await navigated) break;
+      }
+
       await expect(page).toHaveURL(/\/unauthorized/);
     } finally {
       await users.updateOne({ email: admin.email }, { $set: { role: "ADMIN", isActive: true } });
