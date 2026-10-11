@@ -12,7 +12,7 @@ You can use it to:
 
 - Browse published support issues.
 - Search for a known problem or keyword.
-- Filter solutions by status, tag, course, batch, and date.
+- Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached file links or video walkthrough links.
 
@@ -54,7 +54,7 @@ Before sign-in, the home page shows a sign-in path only. Guests do not see the l
 
 After sign-in, students can see:
 
-- A search box for published solutions.
+- A search box for published answers.
 - A `Browse issues` button.
 - Feature cards explaining the support library.
 - Top navigation and account controls.

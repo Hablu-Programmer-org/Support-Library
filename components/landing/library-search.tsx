@@ -23,10 +23,10 @@ export function LibrarySearch() {
       onSubmit={submit}
     >
       <input
-        aria-label="Search published solutions"
+        aria-label="Search published answers"
         className={nativeFieldClass}
         onChange={(event) => setTerm(event.target.value)}
-        placeholder="Search published solutions..."
+        placeholder="Search published answers..."
         type="search"
         value={term}
       />

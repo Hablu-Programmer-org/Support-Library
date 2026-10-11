@@ -11,7 +11,7 @@ test.describe("Landing", () => {
     ).toHaveCount(0);
     await expect(page.getByRole("search")).toHaveCount(0);
     await expect(
-      page.getByRole("link", { name: "Students: browse published solutions" }),
+      page.getByRole("link", { name: "Students: browse published answers" }),
     ).toHaveCount(0);
   });
 });

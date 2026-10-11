@@ -14,7 +14,7 @@ const primaryCtaClass =
 const features = [
   {
     icon: FileTextIcon,
-    title: "Published solutions",
+    title: "Published answers",
     body: "Browse curated fixes and walkthroughs your team has already published for learners.",
   },
   {
@@ -25,7 +25,7 @@ const features = [
   {
     icon: CheckCircleIcon,
     title: "Curated answers",
-    body: "Internal notes stay private while published solutions reach the people who need them.",
+    body: "Internal notes stay private while published answers reach the people who need them.",
   },
 ];
 
