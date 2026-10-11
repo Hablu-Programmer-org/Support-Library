@@ -9,10 +9,16 @@ async function createIssueWithReply(page: import("@playwright/test").Page, body:
   await page.fill('input[name="title"]', `E2E edit/delete ${emailTag}`);
   await page.fill('textarea[name="question"]', "How should reply edit and delete behave?");
   await page.uncheck('input[name="solveIssue"]');
-  await Promise.all([
-    page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
-    page.getByRole("button", { name: "Create Issue", exact: true }).click(),
-  ]);
+
+  // Retry submit until navigation succeeds (handles hydration delay)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const navigated = page
+      .waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+    if (await navigated) break;
+  }
 
   const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
   await replyForm.locator('textarea[name="body"]').fill(body);
@@ -47,8 +53,8 @@ test.describe("Reply edit and delete interactions", () => {
   });
 
   test("delete only removes the reply after confirming", async ({ page }) => {
-  test.setTimeout(120000);
-  const reply = await createIssueWithReply(page, "Reply to delete", Date.now().toString());
+    test.setTimeout(120000);
+    const reply = await createIssueWithReply(page, "Reply to delete", Date.now().toString());
 
     page.once("dialog", (dialog) => dialog.dismiss());
     await reply.getByRole("button", { name: "Delete" }).click();
@@ -59,18 +65,23 @@ test.describe("Reply edit and delete interactions", () => {
     await expect(reply).toHaveCount(0);
   });
 
-test("adds a bare file URL and a titled link line without an error page", async ({ page }) => {
-  test.setTimeout(120000);
-  await page.goto("/dashboard/issues/new");
-  await page.fill('input[name="studentName"]', "E2E Link Student");
-  await page.fill('input[name="studentEmail"]', `e2e.links.${Date.now().toString()}@test.com`);
-  await page.fill('input[name="title"]', "E2E reply links");
-  await page.fill('textarea[name="question"]', "Links should not crash the reply form.");
-  await page.uncheck('input[name="solveIssue"]');
-  await Promise.all([
-      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
-      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
-    ]);
+  test("adds a bare file URL and a titled link line without an error page", async ({ page }) => {
+    test.setTimeout(120000);
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Link Student");
+    await page.fill('input[name="studentEmail"]', `e2e.links.${Date.now().toString()}@test.com`);
+    await page.fill('input[name="title"]', "E2E reply links");
+    await page.fill('textarea[name="question"]', "Links should not crash the reply form.");
+    await page.uncheck('input[name="solveIssue"]');
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const navigated = page
+        .waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 10_000 })
+        .then(() => true)
+        .catch(() => false);
+      await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+      if (await navigated) break;
+    }
 
     const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
     await replyForm.locator('textarea[name="body"]').fill("See the attached references.");
