@@ -93,7 +93,9 @@ cmd /c "npm run test:e2e"
 - Mentor adds replies, external file links and video links
 - VIEWER (students) can read published cases but never unpublished ones
 - Cases list filters by course, batch, mentor and date range
-- Dashboard shows real DB counts and recent unresolved cases
+- Dashboard shows real DB counts and recent unresolved cases for staff; VIEWER/students hitting `/dashboard` are redirected to the published library
+- Chrome is a single fixed topbar with inline Dashboard/Issues navigation (Dashboard is staff-only in the nav)
+- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; students browse published solutions directly without the staff dashboard
 
 ## Deploy Notes
 

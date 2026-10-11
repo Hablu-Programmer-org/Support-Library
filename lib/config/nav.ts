@@ -16,7 +16,7 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", exact: true, icon: DashboardIcon },
+  { label: "Dashboard", href: "/dashboard", exact: true, minRole: "MENTOR", icon: DashboardIcon },
   { label: "Issues", href: "/dashboard/issues", icon: CaseIcon },
 ];
 

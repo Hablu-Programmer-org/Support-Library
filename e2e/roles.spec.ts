@@ -14,7 +14,12 @@ for (const role of roles) {
 
     test("can access dashboard", async ({ page }) => {
       await page.goto("/dashboard");
-      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      if (role === "viewer") {
+        await expect(page).toHaveURL(/\/dashboard\/issues/);
+        await expect(page.getByRole("heading", { name: "Student Support Library" })).toBeVisible();
+      } else {
+        await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      }
     });
 
     test("can access issues list", async ({ page }) => {

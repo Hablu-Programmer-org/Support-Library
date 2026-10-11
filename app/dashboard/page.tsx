@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -13,11 +14,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  const publicOnly = !session.user.role || !canMutate(session.user.role);
+  if (!canMutate(session.user.role ?? "VIEWER")) redirect("/dashboard/issues");
   const [stats, recentIssues, topTags] = await Promise.all([
-    getDashboardStats(publicOnly),
-    getRecentUnresolvedIssues(8, publicOnly),
-    getTopTags(10, publicOnly),
+    getDashboardStats(false),
+    getRecentUnresolvedIssues(8, false),
+    getTopTags(10, false),
   ]);
 
   return (

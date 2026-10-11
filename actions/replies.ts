@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { assertRole } from "@/lib/auth-guard";
+import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 import { addReply, editReply, softDeleteReply } from "@/lib/services/replies";
 import { supportReplyInputSchema } from "@/lib/validation";
 
@@ -11,29 +12,6 @@ const formValue = (formData: FormData, key: string) => {
   const value = formData.get(key);
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
-
-const parseLinkLines = (value?: string) =>
-  value
-    ?.split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.split("|").map((part) => part.trim())) ?? [];
-
-const parseFileLinks = (value?: string) =>
-  parseLinkLines(value).map(([title, url, type, note]) => ({
-    title,
-    url,
-    type: type || undefined,
-    note: note || undefined,
-  }));
-
-const parseVideoLinks = (value?: string) =>
-  parseLinkLines(value).map(([title, url, timestamp, summary]) => ({
-    title,
-    url,
-    timestamp: timestamp || undefined,
-    summary: summary || undefined,
-  }));
 
 export async function addReplyAction(issueId: string, formData: FormData) {
   const guard = await assertRole("ADMIN", "MENTOR");

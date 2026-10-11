@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { assertRole } from "@/lib/auth-guard";
+import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 import { addReply } from "@/lib/services/replies";
 import {
   changeIssueStatus,
@@ -32,29 +33,6 @@ const parseTags = (value?: string) =>
     ?.split(",")
     .map((tag) => tag.trim())
     .filter(Boolean) ?? [];
-
-const parseLinkLines = (value?: string) =>
-  value
-    ?.split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.split("|").map((part) => part.trim())) ?? [];
-
-const parseFileLinks = (value?: string) =>
-  parseLinkLines(value).map(([title, url, type, note]) => ({
-    title,
-    url,
-    type: type || undefined,
-    note: note || undefined,
-  }));
-
-const parseVideoLinks = (value?: string) =>
-  parseLinkLines(value).map(([title, url, timestamp, summary]) => ({
-    title,
-    url,
-    timestamp: timestamp || undefined,
-    summary: summary || undefined,
-  }));
 
 const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
 

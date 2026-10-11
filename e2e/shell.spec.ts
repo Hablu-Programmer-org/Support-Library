@@ -13,7 +13,7 @@ const cyan500 = ["rgb(6, 182, 212)", "oklch(0.715 0.143 215.221)", "lab(67.805 -
 test.describe("Shell: dashboard chrome", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
-  test("topbar + collapsible sidebar match the frontend design", async ({ page }) => {
+  test("topbar with inline nav matches the frontend design", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
@@ -37,28 +37,25 @@ test.describe("Shell: dashboard chrome", () => {
       .poll(async () => slate950Alpha80.includes(await header.evaluate((el) => getComputedStyle(el).backgroundColor)))
       .toBe(true);
 
-    const aside = page.locator("aside").first();
-    const w1 = (await aside.boundingBox())?.width ?? 0;
-    expect(Math.abs(w1 - 70)).toBeLessThan(3);
+    // Inline nav: the two staff links, the active one highlighted and marked.
+    const nav = page.locator('header nav[aria-label="Primary"]');
+    await expect(nav.getByRole("link")).toHaveCount(2);
+    await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: "Issues" })).not.toHaveAttribute("aria-current", "page");
 
-    // exactly one active nav item, label in cyan
-    const active = page.locator('aside a[aria-current="page"]');
-    await expect(active).toHaveCount(1);
-    expect(
-      cyan500,
-    ).toContain(await active.first().locator("span").first().evaluate((el) => getComputedStyle(el).color));
+    const activeColor = await nav
+      .getByRole("link", { name: "Dashboard" })
+      .evaluate((el) => getComputedStyle(el).color);
+    const inactiveColor = await nav
+      .getByRole("link", { name: "Issues" })
+      .evaluate((el) => getComputedStyle(el).color);
+    expect(activeColor).not.toBe(inactiveColor);
 
-    // expand
-    await page.locator("header button:visible").first().click();
-    await expect
-      .poll(async () => (await aside.boundingBox())?.width ?? 0)
-      .toBeGreaterThanOrEqual(318);
-
-    // collapse
-    await page.locator("header button:visible").first().click();
-    await expect
-      .poll(async () => (await aside.boundingBox())?.width ?? 999)
-      .toBeLessThanOrEqual(72);
+    // Navigation keeps the active link in sync on the client.
+    await nav.getByRole("link", { name: "Issues" }).click();
+    await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Issues" })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current", "page");
   });
 
   test("issues list keeps native filter selects", async ({ page }) => {
@@ -76,28 +73,19 @@ test.describe("Shell: dashboard chrome", () => {
   });
 });
 
-test.describe("Shell: mobile drawer", () => {
+test.describe("Shell: mobile navbar", () => {
   test.use({ storageState: "e2e/.auth/admin.json", viewport: { width: 390, height: 844 } });
 
-  test("sidebar is off-canvas and opens as a drawer", async ({ page }) => {
+  test("nav links and brand stay visible on mobile and navigate", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-    const aside = page.locator("aside").first();
-    const b1 = await aside.boundingBox();
-    expect((b1?.x ?? 0) + (b1?.width ?? 0)).toBeLessThanOrEqual(1);
+    const nav = page.locator('header nav[aria-label="Primary"]');
+    await expect(nav.getByRole("link", { name: "Dashboard" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Issues" })).toBeVisible();
 
-    await page.locator("header button:visible").first().click();
-    await expect.poll(async () => (await aside.boundingBox())?.x ?? -1).toBe(0);
-    await expect(page.locator("div.fixed.inset-0").first()).toBeVisible();
-
-    await page.keyboard.press("Escape");
-    await expect
-      .poll(async () => {
-        const b = await aside.boundingBox();
-        return (b?.x ?? 0) + (b?.width ?? 0);
-      })
-      .toBeLessThanOrEqual(1);
+    await nav.getByRole("link", { name: "Issues" }).click();
+    await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
   });
 });
 
