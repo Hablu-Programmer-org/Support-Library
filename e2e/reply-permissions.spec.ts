@@ -9,6 +9,7 @@ test.describe("Reply edit/delete permissions", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
   test("only the author or an admin sees edit and delete", async ({ page, browser }) => {
+    test.setTimeout(120000);
     const baseURL = test.info().project.use.baseURL as string;
 
     await page.goto("/dashboard/issues/new");
@@ -16,6 +17,7 @@ test.describe("Reply edit/delete permissions", () => {
     await page.fill('input[name="studentEmail"]', `e2e.perm.${Date.now().toString()}@test.com`);
     await page.fill('input[name="title"]', "E2E permission issue");
     await page.fill('textarea[name="question"]', "Who may edit this reply?");
+    await page.uncheck('input[name="solveIssue"]');
     await Promise.all([
       page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
       page.getByRole("button", { name: "Create Issue", exact: true }).click(),

@@ -40,9 +40,10 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.fill('input[name="title"]', "E2E React image not rendering");
     await page.fill('textarea[name="question"]', "Image show hocche na in React component");
     await expect(page.locator('select[name="status"]')).toHaveCount(0);
+    await page.uncheck('input[name="solveIssue"]');
     await Promise.all([
       page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
     ]);
     await expect(page.getByText("E2E React image not rendering")).toBeVisible();
     await expect(page.locator("span").filter({ hasText: /^Open$/ }).first()).toBeVisible();

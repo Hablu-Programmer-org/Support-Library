@@ -13,7 +13,7 @@ const submit = async (page: Page, url: RegExp) => {
       .waitForURL(url, { timeout: 10_000 })
       .then(() => true)
       .catch(() => false);
-    await page.click('button[type="submit"]');
+    await page.getByRole("button", { name: "Create Issue", exact: true }).click();
     if (await navigated) return;
   }
   throw new Error(`Submit never navigated to ${url}`);
@@ -65,6 +65,7 @@ async function createIssue(
   await page.fill('input[name="courseSlug"]', courseSlug);
   await page.fill('input[name="batchNo"]', batchNo);
 
+  await page.uncheck('input[name="solveIssue"]');
   await submit(page, /\/dashboard\/issues\/[a-f0-9]{24}$/);
 }
 

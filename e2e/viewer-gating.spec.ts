@@ -23,9 +23,10 @@ test.describe("VIEWER content gating", () => {
     await page.fill('input[name="studentEmail"]', studentEmail);
     await page.fill('input[name="title"]', issueTitle);
     await page.fill('textarea[name="question"]', "Which content may students see?");
+    await page.uncheck('input[name="solveIssue"]');
     await Promise.all([
       page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
     ]);
     const issuePath = new URL(page.url()).pathname;
 

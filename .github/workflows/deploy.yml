@@ -54,6 +54,14 @@ jobs:
             -e "ssh -i ~/.ssh/id_deploy" \
             ./ "$VPS_USER@$VPS_HOST:/opt/hablu-support-library/"
 
+      - name: Pre-deploy environment check
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+            'test -f /opt/hablu-support-library/shared/.env.production || { echo "ERROR: /opt/hablu-support-library/shared/.env.production missing on VPS"; exit 1; }'
+
       - name: Build and restart
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -68,11 +76,15 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only'
+            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --verify && docker compose --env-file .env.production run --rm ops npm run db:preflight'
+
+      - name: Cleanup old Docker images
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --verify'
-          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:preflight'
+            'docker image prune -f'
 
       - name: Health check
         run: |

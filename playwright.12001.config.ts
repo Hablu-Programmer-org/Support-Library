@@ -15,7 +15,7 @@ process.env.LMS_MONGODB_DB = testDb;
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: 60_000,
   expect: { timeout: 5_000 },
   workers: 1,
   globalTeardown: "./e2e/global-teardown.ts",

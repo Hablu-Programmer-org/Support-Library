@@ -67,6 +67,17 @@ services:
     env_file:
       - /opt/hablu-support-library/shared/.env.production
     command: ["sh", "-c", "exit 0"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000,mode=1770
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    cpus: 0.5
+    mem_limit: 512m
+    stop_grace_period: 10s
 
 networks:
   root_default:
