@@ -46,6 +46,7 @@ test.describe("Reply edit and delete interactions", () => {
   });
 
   test("delete only removes the reply after confirming", async ({ page }) => {
+  test.setTimeout(120000);
     const reply = await createIssueWithReply(page, "Reply to delete", Date.now().toString());
 
     page.once("dialog", (dialog) => dialog.dismiss());

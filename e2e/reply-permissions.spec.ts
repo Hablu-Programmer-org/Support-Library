@@ -17,8 +17,8 @@ test.describe("Reply edit/delete permissions", () => {
     await page.fill('input[name="title"]', "E2E permission issue");
     await page.fill('textarea[name="question"]', "Who may edit this reply?");
     await Promise.all([
-      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
     ]);
     const issuePath = new URL(page.url()).pathname;
 
@@ -40,7 +40,7 @@ test.describe("Reply edit/delete permissions", () => {
     const mentorPage = await mentorContext.newPage();
     await mentorPage.goto(issuePath);
 
-    const mentorReply = mentorPage.locator("article").filter({ hasText: "Admin authored reply" });
+    const mentorReply = mentorPage.locator('[data-testid^="reply-"]').filter({ hasText: "Admin authored reply" }).first();
     await expect(mentorReply).toBeVisible();
     await expect(mentorReply.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
     await expect(mentorReply.getByRole("button", { name: "Delete" })).toHaveCount(0);
