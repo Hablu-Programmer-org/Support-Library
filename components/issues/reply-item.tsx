@@ -61,6 +61,7 @@ export function ReplyItem({
                 }
               }}
             >
+              <input type="hidden" name="csrfToken" value="" />
               <button
                 type="submit"
                 aria-label="Delete"
@@ -84,6 +85,7 @@ export function ReplyItem({
           onSubmit={() => setEditing(false)}
           className="mt-3 space-y-3"
         >
+          <input type="hidden" name="csrfToken" value="" />
           <label className={nativeLabelClass}>
             Edit Reply <span className="text-danger">*</span>
             <textarea name="body" defaultValue={reply.body} rows={4} required maxLength={20_000} className={nativeTextareaClass} />

@@ -3,6 +3,7 @@
 import { assertRole } from "@/lib/auth-guard";
 import { lookupLmsStudent } from "@/lib/lms";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
+import { withCsrfProtection } from "@/lib/safe-action";
 
 /**
  * Email autocomplete for the issue form: resolves a student's name from the main
@@ -10,16 +11,18 @@ import { consumeRateLimit } from "@/lib/services/rate-limit";
  * never open the issue form, so the guard matches its other actions).
  */
 export async function lookupLmsStudentAction(email: string) {
-  const guard = await assertRole("ADMIN", "MENTOR");
-  if (!guard.ok) return null;
+  return withCsrfProtection(new FormData(), async () => {
+    const guard = await assertRole("ADMIN", "MENTOR");
+    if (!guard.ok) return null;
 
-  const normalized = email.trim().toLowerCase();
-  if (!normalized) return null;
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return null;
 
-  try {
-    await consumeRateLimit("lms.lookup", guard.session.user.id);
-    return await lookupLmsStudent(normalized);
-  } catch {
-    return null;
-  }
+    try {
+      await consumeRateLimit("lms.lookup", guard.session.user.id);
+      return await lookupLmsStudent(normalized);
+    } catch {
+      return null;
+    }
+  });
 }

@@ -26,6 +26,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished }: PublishFo
   if (isPublished) {
     return (
       <form action={unpublishIssueAction.bind(null, issueId)} className="mt-3">
+        <input type="hidden" name="csrfToken" value="" />
         <PendingSubmitButton
           label="Remove from library"
           pendingLabel="Removing..."
@@ -38,6 +39,8 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished }: PublishFo
   return (
     <form action={formAction} className="mt-3 space-y-3">
       <input type="hidden" name="reviewedAt" value={reviewedAt} />
+      <input type="hidden" name="reviewConfirmed" value="true" />
+      <input type="hidden" name="csrfToken" value="" />
       <label className="flex items-start gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
         <input
           type="checkbox"

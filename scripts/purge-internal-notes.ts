@@ -97,7 +97,6 @@ async function main() {
             {
               title: supportIssue.title,
               studentName: supportIssue.studentName,
-              studentEmail: supportIssue.studentEmail,
               question: supportIssue.question,
               courseSlug: supportIssue.courseSlug,
               moduleSlug: supportIssue.moduleSlug,

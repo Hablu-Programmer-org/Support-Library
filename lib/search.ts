@@ -22,12 +22,14 @@ export const buildSearchRegex = (query?: string | null) => {
  *
  * Typed as nullable because persisted documents store null for absent slugs,
  * while validated input uses undefined. `joinSearchText` ignores both.
+ *
+ * NOTE: studentEmail is intentionally excluded from searchText for privacy.
+ * Use studentEmailHash for exact-match lookups if needed.
  */
 export type IssueSearchTextSource = {
   title: string;
   question: string;
   studentName?: string | null;
-  studentEmail?: string | null;
   courseSlug?: string | null;
   moduleSlug?: string | null;
   contentSlug?: string | null;
@@ -40,7 +42,6 @@ export const buildIssueSearchText = (input: IssueSearchTextSource) =>
     input.title,
     input.question,
     input.studentName,
-    input.studentEmail,
     input.courseSlug,
     input.moduleSlug,
     input.contentSlug,

@@ -48,10 +48,7 @@ export const httpsUrlSchema = z
   .max(2048)
   .refine((url) => {
     const parsed = parseUrl(url);
-    return parsed?.protocol === "https:" ||
-      (process.env.NODE_ENV !== "production" &&
-        process.env.ALLOW_INSECURE_LINKS === "true" &&
-        parsed?.protocol === "http:");
+    return parsed?.protocol === "https:";
   }, "Use an HTTPS link")
   .refine((url) => {
     const hosts = allowedLinkHosts();

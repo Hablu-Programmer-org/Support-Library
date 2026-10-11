@@ -10,6 +10,7 @@ import { consumeRateLimit } from "@/lib/services/rate-limit";
 import { addReply, editReply, softDeleteReply } from "@/lib/services/replies";
 import { supportReplyInputSchema } from "@/lib/validation";
 import { z } from "zod";
+import { withCsrfProtection } from "@/lib/safe-action";
 
 const formValue = (formData: FormData, key: string) => {
   const value = formData.get(key);
@@ -17,82 +18,88 @@ const formValue = (formData: FormData, key: string) => {
 };
 
 export async function addReplyAction(issueId: string, formData: FormData) {
-  const guard = await assertRole("ADMIN", "MENTOR");
-  if (!guard.ok) redirect("/unauthorized");
+  return withCsrfProtection(formData, async (formData) => {
+    const guard = await assertRole("ADMIN", "MENTOR");
+    if (!guard.ok) redirect("/unauthorized");
 
-  let reply: Awaited<ReturnType<typeof addReply>>;
-  try {
-    const parsed = supportReplyInputSchema.parse({
-      issueId,
-      body: formValue(formData, "body"),
-      fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
-      videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
-    });
-    const operationId = operationIdSchema.parse(formData.get("operationId"));
-    await consumeRateLimit("reply.add", guard.session.user.id, {
-      action: "REPLY_CREATE",
-      resourceType: "SupportIssue",
-      resourceId: issueId,
-    });
-    reply = await addReply(parsed, guard.session.user.id, operationId);
-  } catch {
-    throw new Error("Unable to add the response. Please try again later.");
-  }
-  if (!reply) throw new Error("Issue not found");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
-  redirect(`/dashboard/issues/${issueId}`);
+    let reply: Awaited<ReturnType<typeof addReply>>;
+    try {
+      const parsed = supportReplyInputSchema.parse({
+        issueId,
+        body: formValue(formData, "body"),
+        fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
+        videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
+      });
+      const operationId = operationIdSchema.parse(formData.get("operationId"));
+      await consumeRateLimit("reply.add", guard.session.user.id, {
+        action: "REPLY_CREATE",
+        resourceType: "SupportIssue",
+        resourceId: issueId,
+      });
+      reply = await addReply(parsed, guard.session.user.id, operationId);
+    } catch {
+      throw new Error("Unable to add the response. Please try again later.");
+    }
+    if (!reply) throw new Error("Issue not found");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/issues");
+    revalidatePath(`/dashboard/issues/${issueId}`);
+    redirect(`/dashboard/issues/${issueId}`);
+  });
 }
 
 export async function editReplyAction(issueId: string, replyId: string, formData: FormData) {
-  const guard = await assertRole("ADMIN", "MENTOR");
-  if (!guard.ok) redirect("/unauthorized");
+  return withCsrfProtection(formData, async (formData) => {
+    const guard = await assertRole("ADMIN", "MENTOR");
+    if (!guard.ok) redirect("/unauthorized");
 
-  try {
-    const body = z.string().trim().min(1).max(20_000).parse(formValue(formData, "body"));
-    await consumeRateLimit("reply.edit", guard.session.user.id, {
-      action: "REPLY_EDIT",
-      resourceType: "SupportReply",
-      resourceId: replyId,
-    });
-    const reply = await editReply(
-      issueId,
-      replyId,
-      body,
-      guard.session.user.id,
-      guard.session.user.role,
-    );
-    if (!reply) throw new Error("Denied");
-  } catch {
-    throw new Error("Unable to edit the response. Please try again later.");
-  }
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
+    try {
+      const body = z.string().trim().min(1).max(20_000).parse(formValue(formData, "body"));
+      await consumeRateLimit("reply.edit", guard.session.user.id, {
+        action: "REPLY_EDIT",
+        resourceType: "SupportReply",
+        resourceId: replyId,
+      });
+      const reply = await editReply(
+        issueId,
+        replyId,
+        body,
+        guard.session.user.id,
+        guard.session.user.role,
+      );
+      if (!reply) throw new Error("Denied");
+    } catch {
+      throw new Error("Unable to edit the response. Please try again later.");
+    }
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/issues");
+    revalidatePath(`/dashboard/issues/${issueId}`);
+  });
 }
 
 export async function deleteReplyAction(issueId: string, replyId: string) {
-  const guard = await assertRole("ADMIN", "MENTOR");
-  if (!guard.ok) redirect("/unauthorized");
+  return withCsrfProtection(new FormData(), async () => {
+    const guard = await assertRole("ADMIN", "MENTOR");
+    if (!guard.ok) redirect("/unauthorized");
 
-  try {
-    await consumeRateLimit("reply.delete", guard.session.user.id, {
-      action: "REPLY_DELETE",
-      resourceType: "SupportReply",
-      resourceId: replyId,
-    });
-    const reply = await softDeleteReply(
-      issueId,
-      replyId,
-      guard.session.user.id,
-      guard.session.user.role,
-    );
-    if (!reply) throw new Error("Denied");
-  } catch {
-    throw new Error("Unable to delete the response. Please try again later.");
-  }
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
+    try {
+      await consumeRateLimit("reply.delete", guard.session.user.id, {
+        action: "REPLY_DELETE",
+        resourceType: "SupportReply",
+        resourceId: replyId,
+      });
+      const reply = await softDeleteReply(
+        issueId,
+        replyId,
+        guard.session.user.id,
+        guard.session.user.role,
+      );
+      if (!reply) throw new Error("Denied");
+    } catch {
+      throw new Error("Unable to delete the response. Please try again later.");
+    }
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/issues");
+    revalidatePath(`/dashboard/issues/${issueId}`);
+  });
 }

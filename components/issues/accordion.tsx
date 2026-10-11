@@ -16,29 +16,56 @@ type AccordionProps = {
 };
 
 export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
-  ({ title, children, defaultOpen = false, icon, className, titleClassName, contentClassName }, ref) => {
+  (
+    {
+      title,
+      children,
+      defaultOpen = false,
+      icon,
+      className,
+      titleClassName,
+      contentClassName,
+    },
+    ref,
+  ) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
     const contentRef = useRef<HTMLDivElement>(null);
 
     const toggle = () => setIsOpen((prev) => !prev);
 
     return (
-      <details ref={ref} className={cn("group rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900", className)} open={isOpen}>
+      <details
+        ref={ref}
+        className={cn(
+          "group rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
+          className,
+        )}
+        open={isOpen}
+      >
         <summary
           className={cn(
             "flex items-center gap-3 p-4 cursor-pointer list-none select-none transition-colors",
             "hover:bg-slate-50 dark:hover:bg-slate-800/50",
-            titleClassName
+            titleClassName,
           )}
           onClick={(e) => {
             e.preventDefault();
             toggle();
           }}
         >
-          {icon && <span className="flex-shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true">{icon}</span>}
-          <span className="font-semibold text-slate-900 dark:text-white flex-1">{title}</span>
+          {icon && (
+            <span
+              className="shrink-0 text-slate-500 dark:text-slate-400"
+              aria-hidden="true"
+            >
+              {icon}
+            </span>
+          )}
+          <span className="font-semibold text-slate-900 dark:text-white flex-1">
+            {title}
+          </span>
           <motion.div
-            className="flex-shrink-0 text-slate-400 transition-transform duration-200"
+            className="shrink-0 text-slate-400 transition-transform duration-200"
             animate={{ rotate: isOpen ? 180 : 0 }}
             style={{ transformOrigin: "center" }}
           >
@@ -46,12 +73,16 @@ export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
           </motion.div>
         </summary>
 
-        <div ref={contentRef} hidden={!isOpen} className={cn("overflow-hidden", contentClassName)}>
+        <div
+          ref={contentRef}
+          hidden={!isOpen}
+          className={cn("overflow-hidden", contentClassName)}
+        >
           <div className="px-4 pb-4 pt-0">{children}</div>
         </div>
       </details>
     );
-  }
+  },
 );
 
 Accordion.displayName = "Accordion";

@@ -10,6 +10,38 @@ export default {
     signIn: "/login",
     error: "/login",
   },
+  cookies: {
+    sessionToken: {
+      name: "support-library.session-token",
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 8, // 8 hours
+      },
+    },
+    callbackUrl: {
+      name: "support-library.callback-url",
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 8, // 8 hours
+      },
+    },
+    csrfToken: {
+      name: "support-library.csrf-token",
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 8, // 8 hours
+      },
+    },
+  },
   callbacks: {
     async session({ session, token }) {
       if (session.user) {

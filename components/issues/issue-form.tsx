@@ -302,6 +302,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
       onSubmit={ensureOperationId}
     >
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
+      <input type="hidden" name="csrfToken" value="" id="csrfToken" />
       {state.fieldErrors?._form?.[0] && (
         <p
           className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"

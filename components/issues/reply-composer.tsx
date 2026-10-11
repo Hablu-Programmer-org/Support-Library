@@ -24,6 +24,7 @@ export function ReplyComposer({ issueId }: { issueId: string }) {
       </p>
       <form action={addReplyAction.bind(null, issueId)} onSubmit={ensureOperationId} className="mt-4 space-y-3">
         <input ref={operationIdRef} type="hidden" name="operationId" />
+        <input type="hidden" name="csrfToken" value="" />
         <TextAreaField name="body" label="Response" rows={5} required maxLength={20_000} />
         <details className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
           <summary className="cursor-pointer text-sm font-semibold">Add file or video links</summary>

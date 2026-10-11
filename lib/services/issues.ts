@@ -1,6 +1,7 @@
 import "server-only";
 
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 
 import { dbConnect } from "@/lib/db";
 import {
@@ -147,6 +148,9 @@ export async function createIssue(
   await dbConnect();
   const actorObjectId = new mongoose.Types.ObjectId(actorId);
 
+  // Hash the student email for privacy
+  const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
+
   const existing = await SupportIssueModel.findOne({
     createdBy: actorObjectId,
     createOperationId: parsedOperationId,
@@ -164,6 +168,7 @@ export async function createIssue(
         : buildIssueSearchText(parsed);
       const [createdIssue] = await SupportIssueModel.create([{
         ...parsed,
+        studentEmailHash,
         status: finalStatus,
         searchText,
         mentorId: parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : actorObjectId,
@@ -210,11 +215,15 @@ export async function updateIssue(id: string, input: SupportIssueInput, actorId:
   const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
+  // Hash the student email if it's being updated
+  const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
+
   const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: id, deletedAt: null },
     {
       $set: {
         ...parsed,
+        studentEmailHash,
         searchText: buildIssueSearchText(parsed),
         visibility: "INTERNAL",
         publishedAt: null,

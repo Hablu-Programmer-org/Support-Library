@@ -43,11 +43,11 @@ describe("issue search text", () => {
     tags: ["react", "image"],
   };
 
-  it("includes the student name and email", () => {
+  it("includes the student name but not email (for privacy)", () => {
     const text = buildIssueSearchText(supportIssue);
 
     expect(text).toContain("rahim uddin");
-    expect(text).toContain("rahim@example.com");
+    expect(text).not.toContain("rahim@example.com");
   });
 
   it("includes course, module and content slugs", () => {

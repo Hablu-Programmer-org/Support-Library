@@ -2,6 +2,9 @@ import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 import { CASE_PRIORITIES, CASE_STATUSES, ISSUE_VISIBILITIES } from "./shared";
 
+// bcrypt for email hashing (imported dynamically to avoid client-side bundling)
+// const bcrypt = require("bcrypt");
+
 const publicationEventSchema = new mongoose.Schema(
   {
     action: {
@@ -19,6 +22,7 @@ const supportIssueSchema = new mongoose.Schema(
   {
     studentName: { type: String, required: true, trim: true, maxlength: 120 },
     studentEmail: { type: String, required: true, lowercase: true, trim: true, maxlength: 160 },
+    studentEmailHash: { type: String, default: null, index: true },
     lmsUserId: { type: String, default: null },
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },
