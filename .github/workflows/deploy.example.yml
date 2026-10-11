@@ -1,0 +1,122 @@
+# Generic Deploy Workflow Example
+#
+# This is an example deployment workflow. Copy to deploy.yml and customize for your target.
+# Supported targets: VPS (SSH), Vercel, Railway, Render, Coolify, etc.
+#
+# Required GitHub Secrets (adjust for your target):
+#   For VPS: VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_SSH_KNOWN_HOSTS
+#   For Vercel: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+#   For Railway: RAILWAY_TOKEN
+#   For Render: RENDER_API_KEY, RENDER_SERVICE_ID
+#
+# The workflow runs after CI passes and requires manual approval (environment protection).
+
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: support-library-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # ============================================================
+      # DEPLOYMENT TARGET: Choose ONE section below and customize
+      # ============================================================
+
+      # --- Option A: VPS via SSH (example) ---
+      # - name: Configure SSH
+      #   env:
+      #     VPS_HOST: ${{ secrets.VPS_HOST }}
+      #     VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+      #     chmod 600 ~/.ssh/id_deploy
+      #     ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null
+      #     printf '%s\n' "${{ secrets.VPS_SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+      #
+      # - name: Sync files to VPS
+      #   env:
+      #     VPS_HOST: ${{ secrets.VPS_HOST }}
+      #     VPS_USER: ${{ secrets.VPS_USER }}
+      #   run: |
+      #     rsync -az \
+      #       --exclude='.git' \
+      #       --exclude='.github' \
+      #       --exclude='node_modules' \
+      #       --exclude='.next' \
+      #       --exclude='logs' \
+      #       --exclude='.env' \
+      #       --exclude='.env.*' \
+      #       -e "ssh -i ~/.ssh/id_deploy" \
+      #       ./ "$VPS_USER@$VPS_HOST:/opt/support-library/"
+      #
+      # - name: Build and restart on VPS
+      #   env:
+      #     VPS_HOST: ${{ secrets.VPS_HOST }}
+      #     VPS_USER: ${{ secrets.VPS_USER }}
+      #   run: |
+      #     ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+      #       'cd /opt/support-library && docker compose -f compose.yml --env-file .env.production up -d --build --force-recreate'
+
+      # --- Option B: Vercel ---
+      # - name: Deploy to Vercel
+      #   uses: amondnet/vercel-action@v25
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     vercel-args: '--prod'
+
+      # --- Option C: Railway ---
+      # - name: Deploy to Railway
+      #   uses: railway-actions/deploy@v1
+      #   with:
+      #     token: ${{ secrets.RAILWAY_TOKEN }}
+      #     service: 'support-library'
+
+      # --- Option D: Render ---
+      # - name: Deploy to Render
+      #   uses: render-actions/deploy@v1
+      #   with:
+      #     api-key: ${{ secrets.RENDER_API_KEY }}
+      #     service-id: ${{ secrets.RENDER_SERVICE_ID }}
+
+      # ============================================================
+      # POST-DEPLOYMENT VERIFICATION (customize for your domain)
+      # ============================================================
+      - name: Health check
+        run: |
+          DOMAIN="${{ vars.PRODUCTION_DOMAIN || 'your-domain.com' }}"
+          for i in $(seq 1 40); do
+            code=$(curl -fsS -o /dev/null -w "%{http_code}" "https://$DOMAIN/api/health/ready" || true)
+            if [ "$code" = "200" ]; then
+              echo "Deploy healthy (HTTP $code)"
+              exit 0
+            fi
+            echo "Waiting for health... (HTTP $code)"
+            sleep 5
+          done
+          echo "Health check failed after 40 attempts (last HTTP $code)"
+          exit 1

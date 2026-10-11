@@ -1,0 +1,240 @@
+# Self-Hosted Deployment Guide
+
+This guide covers deploying Support Library to various platforms using Docker Compose.
+
+## Prerequisites
+
+- Docker 24+ and Docker Compose v2+
+- MongoDB 7+ (replica set required for transactions)
+- Google Cloud Console OAuth credentials
+- Domain name with DNS control (for production TLS)
+
+## Quick Start (Development)
+
+```bash
+# 1. Clone and configure
+git clone https://github.com/your-org/support-library.git
+cd support-library
+cp .env.example .env.local
+# Edit .env.local with your values
+
+# 2. Start MongoDB replica set (required for transactions)
+docker run -d --name mongo-rs \
+  -p 27017:27017 \
+  mongo:8.0 --replSet rs0 --bind_ip_all
+
+docker exec mongo-rs mongosh --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+
+# 3. Build and start
+docker compose -f compose.yml up -d --build
+
+# 4. Verify
+curl http://localhost:12000/api/health/live
+curl http://localhost:12000/api/health/ready
+```
+
+## Production Deployment
+
+### 1. Prepare Environment
+
+```bash
+# Copy example configs
+cp compose.example.yml compose.yml
+cp compose.traefik.yml compose.traefik.yml  # if using Traefik
+cp .env.example .env.production
+```
+
+### 2. Configure `.env.production`
+
+Required variables:
+```env
+# MongoDB
+MONGODB_URI=mongodb://user:pass@host1:27017,host2:27017,host3:27017/?replicaSet=rs0
+MONGODB_DB=support_library
+LMS_MONGODB_URI=mongodb://readonly_user:pass@host1:27017,host2:27017,host3:27017/?replicaSet=rs0
+LMS_MONGODB_DB=hp-v2
+
+# Auth.js v5
+AUTH_SECRET=<generate with: npx auth secret>
+AUTH_GOOGLE_ID=<from Google Cloud Console>
+AUTH_GOOGLE_SECRET=<from Google Cloud Console>
+AUTH_URL=https://support.your-domain.com
+AUTH_TRUST_HOST=true
+
+# App
+NEXT_PUBLIC_APP_URL=https://support.your-domain.com
+NODE_ENV=production
+
+# External links
+ALLOW_INSECURE_LINKS=false
+ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
+MAX_LINKS_PER_ITEM=10
+```
+
+### 3. Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Create OAuth 2.0 Client ID (Web application)
+3. Authorized redirect URI: `https://support.your-domain.com/api/auth/callback/google`
+4. Authorized JavaScript origins: `https://support.your-domain.com`
+5. Copy Client ID and Secret to `.env.production`
+
+### 4. Deploy with Traefik (Recommended)
+
+```bash
+# Create external network for Traefik
+docker network create proxy
+
+# Deploy
+docker compose -f compose.yml -f compose.traefik.yml up -d --build
+
+# Verify
+curl https://support.your-domain.com/api/health/ready
+```
+
+### 5. Deploy without Traefik (Direct Port)
+
+```bash
+# Edit compose.yml: uncomment networks section, change expose to ports
+# ports:
+#   - "12000:12000"
+
+docker compose up -d --build
+
+# Configure your reverse proxy (nginx, Caddy, etc.) to proxy to localhost:12000
+```
+
+## Platform-Specific Guides
+
+### Vercel
+
+1. Connect GitHub repository to Vercel
+2. Add environment variables in Vercel dashboard
+3. Set build command: `npm run build`
+4. Set output directory: `.next`
+5. Deploy
+
+**Note:** Vercel doesn't support Docker. Use the Node.js build output.
+
+### Railway
+
+1. Create new project from GitHub repo
+2. Add MongoDB plugin
+3. Add environment variables
+4. Set Dockerfile path: `./Dockerfile`
+5. Deploy
+
+### Render
+
+1. Create new Web Service from GitHub
+2. Runtime: Docker
+3. Add environment variables
+4. Add persistent disk for `/tmp` if needed
+5. Deploy
+
+### Coolify
+
+1. Add new application from GitHub
+2. Set compose file: `compose.yml`
+3. Add environment variables
+4. Enable Traefik integration
+5. Deploy
+
+### Docker Compose (Standalone VPS)
+
+```bash
+# On your VPS
+mkdir -p /opt/support-library
+cd /opt/support-library
+
+# Copy compose.yml, compose.traefik.yml, .env.production
+# (Use rsync, scp, or git clone)
+
+docker compose -f compose.yml -f compose.traefik.yml up -d --build
+```
+
+## Database Setup
+
+### MongoDB Replica Set (Required)
+
+```javascript
+// Initialize replica set
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo1:27017" },
+    { _id: 1, host: "mongo2:27017" },
+    { _id: 2, host: "mongo3:27017" }
+  ]
+})
+
+// Create database user
+use admin
+db.createUser({
+  user: "support_app",
+  pwd: "secure_password",
+  roles: [
+    { role: "readWrite", db: "support_library" }
+  ]
+})
+
+// Create read-only user for LMS (hp-v2)
+use hp-v2
+db.createUser({
+  user: "lms_readonly",
+  pwd: "secure_password",
+  roles: [
+    { role: "read", db: "hp-v2" }
+  ]
+})
+```
+
+### Indexes
+
+After first deploy, run:
+```bash
+docker compose run --rm ops npm run db:indexes -- --apply --create-only
+docker compose run --rm ops npm run db:preflight
+```
+
+## Health Checks
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/api/health/live` | Process liveness (kubernetes livenessProbe) |
+| `/api/health/ready` | Database readiness (kubernetes readinessProbe) |
+
+## Backup & Recovery
+
+```bash
+# Backup support database
+mongodump --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support_library --out=/backups/$(date +%F)
+
+# Restore
+mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support_library /backups/2026-01-15/support_library
+```
+
+## Monitoring
+
+- Health endpoints: `/api/health/live`, `/api/health/ready`
+- Logs: `docker compose logs -f support-library`
+- Metrics: Traefik dashboard (if using Traefik)
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `MONGODB_URI` connection timeout | Check replica set status, network/firewall |
+| `AUTH_SECRET` invalid | Regenerate with `npx auth secret` (32+ chars) |
+| Google OAuth redirect mismatch | Verify exact URI in Google Console |
+| Health check fails | Check MongoDB connectivity, `docker compose logs` |
+| Rate limited | Check `rate_limit_buckets` collection, adjust limits |
+
+## Security Checklist
+
+- [ ] MongoDB: Auth enabled, TLS, replica set
+- [ ] Network: VPC/firewall restricts MongoDB to app servers only
+- [ ] Secrets: `AUTH_SECRET`, OAuth secrets, DB passwords in secure vault
+- [ ] TLS: Traefik/Let's Encrypt or custom certs
+- [ ] Rate limits: Traefik middleware + app-level limits
+- [ ] Updates: Watch GitHub releases for security patches

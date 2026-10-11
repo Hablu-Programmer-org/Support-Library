@@ -1,0 +1,33 @@
+# Traefik Labels Override for Support Library
+#
+# Usage:
+#   docker compose -f compose.yml -f compose.traefik.yml up -d
+#
+# Requires Traefik v3+ with:
+#   - Entry points: web (port 80), websecure (port 443)
+#   - TLS certificate resolver named "mytlschallenge" (or change below)
+#   - Docker provider enabled with access to Docker socket
+#
+# Customize the following for your domain:
+#   - traefik.http.routers.support-library.rule: Host(`your-domain.com`)
+#   - traefik.http.routers.support-library.tls.certresolver: your-resolver
+
+services:
+  support-library:
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.support-library.rule=Host(`support.your-domain.com`)
+      - traefik.http.routers.support-library.entrypoints=websecure
+      - traefik.http.routers.support-library.tls=true
+      - traefik.http.routers.support-library.tls.certresolver=mytlschallenge
+      - traefik.http.routers.support-library.middlewares=support-library-rate-limit
+      - traefik.http.middlewares.support-library-rate-limit.ratelimit.average=60
+      - traefik.http.middlewares.support-library-rate-limit.ratelimit.period=1s
+      - traefik.http.middlewares.support-library-rate-limit.ratelimit.burst=120
+      - traefik.http.services.support-library.loadbalancer.server.port=12000
+
+networks:
+  proxy:
+    external: true
+    name: proxy
