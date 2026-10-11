@@ -17,6 +17,7 @@ import {
   MessageSquareIcon,
   SettingsIcon,
   UserIcon,
+  WarningTriangleIcon,
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
 import { nativeSelectClass } from "@/lib/config/fields";
@@ -231,10 +232,22 @@ export default async function IssueDetailPage({
           )}
 
           {canEdit && (
-            <section className="rounded-2xl border border-danger-200 bg-danger-50/60 p-5 dark:border-danger-900/50 dark:bg-danger-950/20">
-              <h2 className="font-semibold text-danger-800 dark:text-danger-200">Danger zone</h2>
-              <p className="mt-1 text-xs leading-5 text-danger-700/80 dark:text-danger-300/80">
-                Archiving removes this issue from the active library and staff lists.
+            <section className="rounded-2xl border border-l-4 border-danger-300 border-l-danger-500 bg-danger-50 p-5 shadow-[0_16px_36px_-24px_rgba(225,29,72,0.75)] dark:border-danger-300/70 dark:border-l-danger-500 dark:bg-slate-900 dark:shadow-[0_18px_40px_-28px_rgba(244,63,94,0.38)]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-danger-600 text-white shadow-md shadow-danger-600/25 dark:bg-danger-300 dark:text-danger-900 dark:shadow-[0_8px_20px_-12px_rgba(244,63,94,0.7)]">
+                  <WarningTriangleIcon size={21} />
+                </span>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-danger-600 dark:text-danger-700">
+                    Danger zone
+                  </p>
+                  <h2 className="mt-0.5 text-base font-bold text-danger-900 dark:text-slate-50">
+                    Archive this issue
+                  </h2>
+                </div>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-danger-900/80 dark:text-slate-300">
+                Remove this issue from active staff lists and the student library. Archive it only when no further action is needed.
               </p>
               <ArchiveIssueButton action={deleteIssueActionSimple.bind(null, supportIssue.id)} />
             </section>

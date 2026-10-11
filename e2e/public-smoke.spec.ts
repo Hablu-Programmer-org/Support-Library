@@ -4,6 +4,7 @@ test("public landing loads", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Staff Sign In" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator('meta[name="darkreader-lock"]')).toHaveAttribute("content", "true");
 });
 
 test("dashboard redirects unauthenticated users to login", async ({ page }) => {

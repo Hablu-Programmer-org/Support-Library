@@ -17,6 +17,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Hablu Support Library",
   description: "Staff support knowledge system for Hablu Programmer",
+  other: {
+    "darkreader-lock": "true",
+  },
 };
 
 export default function RootLayout({

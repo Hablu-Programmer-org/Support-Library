@@ -123,3 +123,11 @@ export const HelpCircleIcon: FC<IconSvgProps> = ({ size, ...props }) => (
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
+
+export const WarningTriangleIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M10.3 3.7 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+  </svg>
+);

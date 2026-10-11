@@ -139,6 +139,10 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.getByRole("heading", { name: "E2E mobile issue article" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "The problem" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Responses and staff notes" })).toBeVisible();
+    const archiveHeading = page.getByRole("heading", { name: "Archive this issue" });
+    const dangerZone = page.locator("section").filter({ has: archiveHeading });
+    await expect(dangerZone).toHaveClass(/dark:bg-slate-900/);
+    await expect(archiveHeading).toHaveClass(/dark:text-slate-50/);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
