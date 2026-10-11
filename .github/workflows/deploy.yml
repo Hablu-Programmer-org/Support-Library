@@ -68,7 +68,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production up -d --build --force-recreate'
+            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose -f compose.production.yml --env-file .env.production up -d --build --force-recreate'
 
       - name: Apply indexes and preflight
         env:
@@ -76,7 +76,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --verify && docker compose --env-file .env.production run --rm ops npm run db:preflight'
+            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:indexes -- --verify && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:preflight'
 
       - name: Cleanup old Docker images
         env:
