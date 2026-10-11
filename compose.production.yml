@@ -1,0 +1,62 @@
+name: hablu-support-library
+
+services:
+  support-library:
+    image: ${SUPPORT_LIBRARY_IMAGE:?Set SUPPORT_LIBRARY_IMAGE to an immutable GHCR SHA tag or digest}
+    container_name: hablu-support-library
+    restart: unless-stopped
+    init: true
+    env_file:
+      - /opt/hablu-support-library/shared/.env.production
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "12000"
+    expose:
+      - "12000"
+    networks:
+      - root_default
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:12000/api/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000,mode=1770
+      - /app/.next/cache:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000,mode=0750
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    cpus: 1.0
+    mem_limit: 1g
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: root_default
+      traefik.http.routers.support-library.rule: Host(`support.hablu-programmer.com`)
+      traefik.http.routers.support-library.entrypoints: websecure
+      traefik.http.routers.support-library.tls: "true"
+      traefik.http.routers.support-library.tls.certresolver: mytlschallenge
+      traefik.http.routers.support-library.middlewares: support-library-rate-limit
+      traefik.http.middlewares.support-library-rate-limit.ratelimit.average: "60"
+      traefik.http.middlewares.support-library-rate-limit.ratelimit.period: 1s
+      traefik.http.middlewares.support-library-rate-limit.ratelimit.burst: "120"
+      traefik.http.services.support-library.loadbalancer.server.port: "12000"
+
+networks:
+  root_default:
+    external: true
+    name: root_default

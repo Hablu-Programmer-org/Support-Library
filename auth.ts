@@ -1,21 +1,12 @@
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 
 import authConfig from "@/auth.config";
-import { dbConnect, getMongoClient } from "@/lib/db";
+import { dbConnect } from "@/lib/db";
 import { normalizeEmail } from "@/lib/email";
 import { findLmsUserByEmail } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { UserModel, type UserRole } from "@/models/User";
-
-const adapter = MongoDBAdapter(
-  async () => {
-    await dbConnect();
-    return getMongoClient();
-  },
-  { databaseName: process.env.MONGODB_DB },
-);
 
 /**
  * Local cache row for a logged-in hp-v2 user. Name/image keep the Google
@@ -29,6 +20,7 @@ export const ensureStaffUser = async (user: {
   image?: string | null;
   role: UserRole;
   isActive: boolean;
+  recordLogin?: boolean;
 }) => {
   const email = normalizeEmail(user.email);
   await dbConnect();
@@ -40,8 +32,8 @@ export const ensureStaffUser = async (user: {
     if (user.image) existing.image = user.image;
     existing.role = user.role;
     existing.isActive = user.isActive;
-    existing.lastLoginAt = new Date();
-    await existing.save();
+    if (user.recordLogin) existing.lastLoginAt = new Date();
+    if (existing.isModified()) await existing.save();
     return existing;
   }
 
@@ -51,7 +43,7 @@ export const ensureStaffUser = async (user: {
     image: user.image ?? null,
     role: user.role,
     isActive: user.isActive,
-    lastLoginAt: new Date(),
+    lastLoginAt: user.recordLogin ? new Date() : null,
   });
 };
 
@@ -68,7 +60,6 @@ const markStaffInactive = async (email: string) => {
 };
 
 const config = {
-  adapter,
   session: { strategy: "jwt" as const, maxAge: 8 * 60 * 60 },
   pages: { signIn: "/login", error: "/login" },
   providers: [Google],
@@ -94,6 +85,7 @@ const config = {
         image: lmsUser.image || user.image,
         role: mapLmsRole(lmsUser.role),
         isActive: true,
+        recordLogin: true,
       });
 
       return true;
@@ -102,15 +94,29 @@ const config = {
       if (user?.id) token.id = user.id;
 
       const email = normalizeEmail(token.email ?? "");
-      if (!email) return token;
-
-      await dbConnect();
-      const profile = await UserModel.findOne({ email }).lean();
-      if (!profile || !profile.isActive) {
+      if (!email) {
         token.role = undefined;
         token.isActive = false;
         return token;
       }
+
+      const lmsUser = await findLmsUserByEmail(email);
+      if (!lmsUser || lmsUser.isActive === false) {
+        await markStaffInactive(email);
+        token.role = undefined;
+        token.isActive = false;
+        return token;
+      }
+
+      const profile = await ensureStaffUser({
+        id: token.id ?? token.sub ?? email,
+        email,
+        name: lmsUser.name || token.name,
+        image: lmsUser.image || token.picture,
+        role: mapLmsRole(lmsUser.role),
+        isActive: true,
+        recordLogin: false,
+      });
 
       token.id = profile._id.toString();
       token.role = profile.role as UserRole;

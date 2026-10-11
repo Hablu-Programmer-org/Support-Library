@@ -22,6 +22,10 @@ export type E2EDatabase = {
 export function resolveE2EDatabase(): E2EDatabase {
   dotenv.config({ path: envPath });
 
+  if (process.env.E2E_ALLOW_DATABASE_RESET !== "true") {
+    throw new Error("Refusing to run E2E without E2E_ALLOW_DATABASE_RESET=true");
+  }
+
   const pinnedDevDb = process.env.MONGODB_DEV_DB;
   const devDb =
     (pinnedDevDb === undefined ? process.env.MONGODB_DB : pinnedDevDb)?.trim() || undefined;
@@ -38,6 +42,22 @@ export function resolveE2EDatabase(): E2EDatabase {
     throw new Error(
       `Refusing to run E2E: MONGODB_TEST_DB ("${testDb}") must not equal MONGODB_DB ("${devDb}").`,
     );
+  }
+
+  const normalized = testDb.toLowerCase();
+  const deniedNames = new Set(["hp-v2", "hablu_support_library", "support_library"]);
+  if (!normalized.endsWith("_e2e") && !normalized.startsWith("support_library_ci_e2e")) {
+    throw new Error(`Refusing to reset database without an E2E name: "${testDb}"`);
+  }
+  if (deniedNames.has(normalized)) {
+    throw new Error(`Refusing to reset protected database: "${testDb}"`);
+  }
+
+  if (process.env.CI === "true") {
+    const uri = process.env.MONGODB_URI ?? "";
+    if (!/^mongodb:\/\/(127\.0\.0\.1|localhost)(:\d+)?(?:\/|$)/.test(uri)) {
+      throw new Error("CI E2E must use a localhost MongoDB URI");
+    }
   }
 
   return { devDb, testDb };

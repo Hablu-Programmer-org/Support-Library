@@ -1,10 +1,16 @@
 import "server-only";
 
-import mongoose from "mongoose";
+import mongoose, { type ClientSession } from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import {
+  assertOperationPayload,
+  mutationRequestHash,
+  operationIdSchema,
+} from "@/lib/mutation-security";
 import { isAdmin, type UserRole } from "@/lib/roles";
 import { buildIssueSearchTextWithReplies } from "@/lib/search";
+import { recordAuditEvent } from "@/lib/services/audit";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
 
@@ -59,11 +65,12 @@ async function buildAuthorMap(replies: LeanDoc[]) {
  * courseSlug/moduleSlug/contentSlug as soon as a reply existed, and left stale
  * reply text behind once the last public reply was removed.
  */
-async function refreshIssueReplySearchText(issueId: string) {
+async function refreshIssueReplySearchText(issueId: string, session: ClientSession) {
   const [supportIssue, replies] = await Promise.all([
-    SupportIssueModel.findById(issueId).lean(),
+    SupportIssueModel.findById(issueId).session(session).lean(),
     SupportReplyModel.find({ issueId, deletedAt: null })
       .select("body")
+      .session(session)
       .lean(),
   ]);
   if (!supportIssue) return;
@@ -87,17 +94,18 @@ async function refreshIssueReplySearchText(issueId: string) {
         ),
       },
     },
-  );
+  ).session(session);
 }
 
-async function requireLiveIssue(issueId: string) {
+async function requireLiveIssue(issueId: string, session: ClientSession) {
   if (!mongoose.Types.ObjectId.isValid(issueId)) return null;
   return SupportIssueModel.findOne({ _id: issueId, deletedAt: null })
     .select("_id")
+    .session(session)
     .lean();
 }
 
-async function requirePublicationReview(issueId: string, actorId: string) {
+async function requirePublicationReview(issueId: string, actorId: string, session: ClientSession) {
   const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: issueId, deletedAt: null },
     {
@@ -115,26 +123,63 @@ async function requirePublicationReview(issueId: string, actorId: string) {
         },
       },
     },
-    { new: true, runValidators: true },
+    { new: true, runValidators: true, session },
   ).lean();
   if (!supportIssue) throw new Error("Issue not found");
 }
 
-export async function addReply(input: SupportReplyInput, authorId: string) {
+function isDuplicateKeyError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
+}
+
+export async function addReply(input: SupportReplyInput, authorId: string, operationId: string) {
   const parsed = supportReplyInputSchema.parse(input);
+  const parsedOperationId = operationIdSchema.parse(operationId);
+  const requestHash = mutationRequestHash({ input: parsed });
   await dbConnect();
+  const authorObjectId = new mongoose.Types.ObjectId(authorId);
 
-  const supportIssue = await requireLiveIssue(parsed.issueId);
-  if (!supportIssue) return null;
-  await requirePublicationReview(parsed.issueId, authorId);
+  const existing = await SupportReplyModel.findOne({
+    authorId: authorObjectId,
+    createOperationId: parsedOperationId,
+  }).lean();
+  if (existing) {
+    assertOperationPayload(existing.createOperationHash, requestHash);
+    return toReplyListItem(existing);
+  }
 
-  const reply = await SupportReplyModel.create({
-    ...parsed,
-    authorId: new mongoose.Types.ObjectId(authorId),
-  });
+  try {
+    return await mongoose.connection.transaction(async (session) => {
+      const supportIssue = await requireLiveIssue(parsed.issueId, session);
+      if (!supportIssue) return null;
 
-  await refreshIssueReplySearchText(parsed.issueId);
-  return toReplyListItem(reply.toObject());
+      const [reply] = await SupportReplyModel.create([{
+        ...parsed,
+        authorId: authorObjectId,
+        createOperationId: parsedOperationId,
+        createOperationHash: requestHash,
+      }], { session });
+      await requirePublicationReview(parsed.issueId, authorId, session);
+      await refreshIssueReplySearchText(parsed.issueId, session);
+      await recordAuditEvent({
+        actorId: authorId,
+        action: "REPLY_CREATE",
+        resourceType: "SupportReply",
+        resourceId: String(reply._id),
+        result: "SUCCEEDED",
+      }, session);
+      return toReplyListItem(reply.toObject());
+    });
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error;
+    const duplicate = await SupportReplyModel.findOne({
+      authorId: authorObjectId,
+      createOperationId: parsedOperationId,
+    }).lean();
+    if (!duplicate) throw error;
+    assertOperationPayload(duplicate.createOperationHash, requestHash);
+    return toReplyListItem(duplicate);
+  }
 }
 
 export async function listReplies(issueId: string, redactActorIds = false) {
@@ -180,21 +225,37 @@ export async function editReply(
   }
   await dbConnect();
 
-  const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
-  const existingReply = await SupportReplyModel.findOne(filter).select("_id").lean();
-  if (!existingReply) return null;
-  await requirePublicationReview(issueId, actorId);
+  return mongoose.connection.transaction(async (session) => {
+    const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
+    const existingReply = await SupportReplyModel.findOne(filter).select("_id").session(session).lean();
+    if (!existingReply) {
+      await recordAuditEvent({
+        actorId,
+        action: "REPLY_EDIT",
+        resourceType: "SupportReply",
+        resourceId: replyId,
+        result: "DENIED",
+      }, session);
+      return null;
+    }
 
-  const reply = await SupportReplyModel.findOneAndUpdate(
-    filter,
-    { body: body.trim(), editedAt: new Date() },
-    { new: true, runValidators: true },
-  ).lean();
-
-  if (reply) {
-    await refreshIssueReplySearchText(issueId);
-  }
-  return reply ? toReplyListItem(reply) : null;
+    const reply = await SupportReplyModel.findOneAndUpdate(
+      filter,
+      { body: body.trim(), editedAt: new Date() },
+      { new: true, runValidators: true, session },
+    ).lean();
+    if (!reply) return null;
+    await requirePublicationReview(issueId, actorId, session);
+    await refreshIssueReplySearchText(issueId, session);
+    await recordAuditEvent({
+      actorId,
+      action: "REPLY_EDIT",
+      resourceType: "SupportReply",
+      resourceId: replyId,
+      result: "SUCCEEDED",
+    }, session);
+    return toReplyListItem(reply);
+  });
 }
 
 export async function softDeleteReply(
@@ -208,19 +269,35 @@ export async function softDeleteReply(
   }
   await dbConnect();
 
-  const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
-  const existingReply = await SupportReplyModel.findOne(filter).select("_id").lean();
-  if (!existingReply) return null;
-  await requirePublicationReview(issueId, actorId);
+  return mongoose.connection.transaction(async (session) => {
+    const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
+    const existingReply = await SupportReplyModel.findOne(filter).select("_id").session(session).lean();
+    if (!existingReply) {
+      await recordAuditEvent({
+        actorId,
+        action: "REPLY_DELETE",
+        resourceType: "SupportReply",
+        resourceId: replyId,
+        result: "DENIED",
+      }, session);
+      return null;
+    }
 
-  const reply = await SupportReplyModel.findOneAndUpdate(
-    filter,
-    { deletedAt: new Date() },
-    { new: true },
-  ).lean();
-
-  if (reply) {
-    await refreshIssueReplySearchText(issueId);
-  }
-  return reply ? toReplyListItem(reply) : null;
+    const reply = await SupportReplyModel.findOneAndUpdate(
+      filter,
+      { deletedAt: new Date() },
+      { new: true, session },
+    ).lean();
+    if (!reply) return null;
+    await requirePublicationReview(issueId, actorId, session);
+    await refreshIssueReplySearchText(issueId, session);
+    await recordAuditEvent({
+      actorId,
+      action: "REPLY_DELETE",
+      resourceType: "SupportReply",
+      resourceId: replyId,
+      result: "SUCCEEDED",
+    }, session);
+    return toReplyListItem(reply);
+  });
 }

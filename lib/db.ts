@@ -1,4 +1,3 @@
-import type { MongoClient } from "mongodb";
 import mongoose from "mongoose";
 
 const getMongoUri = () => {
@@ -35,6 +34,7 @@ export const dbConnect = async (): Promise<typeof mongoose> => {
   cache.promise ??= mongoose.connect(getMongoUri(), {
     dbName: getMongoDbName(),
     bufferCommands: false,
+    autoIndex: process.env.NODE_ENV !== "production",
     serverSelectionTimeoutMS: 10_000,
   });
 
@@ -42,24 +42,16 @@ export const dbConnect = async (): Promise<typeof mongoose> => {
     cache.conn = await cache.promise;
   } catch (error) {
     cache.promise = null;
-    cachedClient = null;
     throw error;
   }
 
   return cache.conn;
 };
 
-let cachedClient: MongoClient | null = null;
-
-export const getMongoClient = async (): Promise<MongoClient> => {
-  if (cachedClient) return cachedClient;
-
+export const checkSupportReadiness = async () => {
   await dbConnect();
-  cachedClient = mongoose.connection.getClient() as unknown as MongoClient;
-
-  if (!cachedClient) {
-    throw new Error("MongoDB client not available after connection.");
-  }
-
-  return cachedClient;
+  const db = mongoose.connection.db;
+  if (!db) throw new Error("Support database is unavailable");
+  await db.admin().ping();
+  await db.collection("staff_users").findOne({}, { projection: { _id: 1 }, maxTimeMS: 2_000 });
 };

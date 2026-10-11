@@ -3,10 +3,22 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { buildIssueSearchText, buildSearchRegex } from "@/lib/search";
-import { supportIssueInputSchema, type SupportIssueFilter, type SupportIssueInput } from "@/lib/validation";
+import {
+  assertOperationPayload,
+  mutationRequestHash,
+  operationIdSchema,
+} from "@/lib/mutation-security";
+import { buildIssueSearchText, buildIssueSearchTextWithReplies, buildSearchRegex } from "@/lib/search";
+import {
+  supportIssueInputSchema,
+  type SupportIssueFilter,
+  type SupportIssueInput,
+  type SupportReplyInput,
+} from "@/lib/validation";
+import { recordAuditEvent } from "@/lib/services/audit";
 import {
   CASE_PRIORITIES,
+  SupportReplyModel,
   SupportIssueModel,
   type CaseStatus,
   type IssueVisibility,
@@ -116,19 +128,80 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   return filter;
 }
 
-export async function createIssue(input: SupportIssueInput, actorId: string) {
+type InitialReplyInput = Omit<SupportReplyInput, "issueId">;
+
+function isDuplicateKeyError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
+}
+
+export async function createIssue(
+  input: SupportIssueInput,
+  actorId: string,
+  operationId: string,
+  initialReply: InitialReplyInput | null = null,
+  solveIssue = false,
+) {
   const parsed = supportIssueInputSchema.parse(input);
+  const parsedOperationId = operationIdSchema.parse(operationId);
+  const requestHash = mutationRequestHash({ input: parsed, initialReply, solveIssue });
   await dbConnect();
+  const actorObjectId = new mongoose.Types.ObjectId(actorId);
 
-  const supportIssue = await SupportIssueModel.create({
-    ...parsed,
-    searchText: buildIssueSearchText(parsed),
-    mentorId: parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : new mongoose.Types.ObjectId(actorId),
-    createdBy: new mongoose.Types.ObjectId(actorId),
-    updatedBy: new mongoose.Types.ObjectId(actorId),
-  });
+  const existing = await SupportIssueModel.findOne({
+    createdBy: actorObjectId,
+    createOperationId: parsedOperationId,
+  }).lean();
+  if (existing) {
+    assertOperationPayload(existing.createOperationHash, requestHash);
+    return toIssueListItem(existing);
+  }
 
-  return toIssueListItem(supportIssue.toObject());
+  try {
+    const supportIssue = await mongoose.connection.transaction(async (session) => {
+      const finalStatus = initialReply && solveIssue ? "SOLVED" : "OPEN";
+      const searchText = initialReply
+        ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
+        : buildIssueSearchText(parsed);
+      const [createdIssue] = await SupportIssueModel.create([{
+        ...parsed,
+        status: finalStatus,
+        searchText,
+        mentorId: parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : actorObjectId,
+        createdBy: actorObjectId,
+        updatedBy: actorObjectId,
+        createOperationId: parsedOperationId,
+        createOperationHash: requestHash,
+      }], { session });
+
+      if (initialReply) {
+        const [reply] = await SupportReplyModel.create([{
+          ...initialReply,
+          issueId: createdIssue._id,
+          authorId: actorObjectId,
+        }], { session });
+        await recordAuditEvent({
+          actorId,
+          action: "REPLY_CREATE",
+          resourceType: "SupportReply",
+          resourceId: String(reply._id),
+          result: "SUCCEEDED",
+        }, session);
+      }
+
+      return createdIssue.toObject();
+    });
+
+    return toIssueListItem(supportIssue);
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error;
+    const duplicate = await SupportIssueModel.findOne({
+      createdBy: actorObjectId,
+      createOperationId: parsedOperationId,
+    }).lean();
+    if (!duplicate) throw error;
+    assertOperationPayload(duplicate.createOperationHash, requestHash);
+    return toIssueListItem(duplicate);
+  }
 }
 
 export async function updateIssue(id: string, input: SupportIssueInput, actorId: string) {
@@ -179,27 +252,37 @@ export async function softDeleteIssue(id: string, actorId: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportIssue = await SupportIssueModel.findOneAndUpdate(
-    { _id: id, deletedAt: null },
-    {
-      $set: {
-        deletedAt: new Date(),
-        visibility: "INTERNAL",
-        publishedAt: null,
-        publishedBy: null,
-        deletedBy: new mongoose.Types.ObjectId(actorId),
-        updatedBy: new mongoose.Types.ObjectId(actorId),
-      },
-      $push: {
-        publicationHistory: {
-          action: "ARCHIVED",
-          actorId: new mongoose.Types.ObjectId(actorId),
-          at: new Date(),
+  const supportIssue = await mongoose.connection.transaction(async (session) => {
+    const updated = await SupportIssueModel.findOneAndUpdate(
+      { _id: id, deletedAt: null },
+      {
+        $set: {
+          deletedAt: new Date(),
+          visibility: "INTERNAL",
+          publishedAt: null,
+          publishedBy: null,
+          deletedBy: new mongoose.Types.ObjectId(actorId),
+          updatedBy: new mongoose.Types.ObjectId(actorId),
+        },
+        $push: {
+          publicationHistory: {
+            action: "ARCHIVED",
+            actorId: new mongoose.Types.ObjectId(actorId),
+            at: new Date(),
+          },
         },
       },
-    },
-    { new: true },
-  ).lean();
+      { new: true, session },
+    ).lean();
+    await recordAuditEvent({
+      actorId,
+      action: "ISSUE_ARCHIVE",
+      resourceType: "SupportIssue",
+      resourceId: id,
+      result: updated ? "SUCCEEDED" : "DENIED",
+    }, session);
+    return updated;
+  });
 
   return supportIssue ? toIssueListItem(supportIssue) : null;
 }
@@ -351,48 +434,68 @@ export async function publishIssue(id: string, actorId: string, reviewedAt: Date
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  return SupportIssueModel.findOneAndUpdate(
-    { _id: id, deletedAt: null, status: { $ne: "ARCHIVED" }, updatedAt: reviewedAt },
-    {
-      $set: {
-        visibility: "PUBLISHED",
-        publishedAt: new Date(),
-        publishedBy: new mongoose.Types.ObjectId(actorId),
-        updatedBy: new mongoose.Types.ObjectId(actorId),
-      },
-      $push: {
-        publicationHistory: {
-          action: "PUBLISHED",
-          actorId: new mongoose.Types.ObjectId(actorId),
-          at: new Date(),
+  return mongoose.connection.transaction(async (session) => {
+    const supportIssue = await SupportIssueModel.findOneAndUpdate(
+      { _id: id, deletedAt: null, status: { $ne: "ARCHIVED" }, updatedAt: reviewedAt },
+      {
+        $set: {
+          visibility: "PUBLISHED",
+          publishedAt: new Date(),
+          publishedBy: new mongoose.Types.ObjectId(actorId),
+          updatedBy: new mongoose.Types.ObjectId(actorId),
+        },
+        $push: {
+          publicationHistory: {
+            action: "PUBLISHED",
+            actorId: new mongoose.Types.ObjectId(actorId),
+            at: new Date(),
+          },
         },
       },
-    },
-    { new: true, runValidators: true },
-  ).lean();
+      { new: true, runValidators: true, session },
+    ).lean();
+    await recordAuditEvent({
+      actorId,
+      action: "ISSUE_PUBLISH",
+      resourceType: "SupportIssue",
+      resourceId: id,
+      result: supportIssue ? "SUCCEEDED" : "DENIED",
+    }, session);
+    return supportIssue;
+  });
 }
 
 export async function unpublishIssue(id: string, actorId: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  return SupportIssueModel.findOneAndUpdate(
-    { _id: id, deletedAt: null },
-    {
-      $set: {
-        visibility: "INTERNAL",
-        publishedAt: null,
-        publishedBy: null,
-        updatedBy: new mongoose.Types.ObjectId(actorId),
-      },
-      $push: {
-        publicationHistory: {
-          action: "UNPUBLISHED",
-          actorId: new mongoose.Types.ObjectId(actorId),
-          at: new Date(),
+  return mongoose.connection.transaction(async (session) => {
+    const supportIssue = await SupportIssueModel.findOneAndUpdate(
+      { _id: id, deletedAt: null },
+      {
+        $set: {
+          visibility: "INTERNAL",
+          publishedAt: null,
+          publishedBy: null,
+          updatedBy: new mongoose.Types.ObjectId(actorId),
+        },
+        $push: {
+          publicationHistory: {
+            action: "UNPUBLISHED",
+            actorId: new mongoose.Types.ObjectId(actorId),
+            at: new Date(),
+          },
         },
       },
-    },
-    { new: true, runValidators: true },
-  ).lean();
+      { new: true, runValidators: true, session },
+    ).lean();
+    await recordAuditEvent({
+      actorId,
+      action: "ISSUE_UNPUBLISH",
+      resourceType: "SupportIssue",
+      resourceId: id,
+      result: supportIssue ? "SUCCEEDED" : "DENIED",
+    }, session);
+    return supportIssue;
+  });
 }

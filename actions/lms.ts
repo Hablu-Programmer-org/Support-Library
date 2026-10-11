@@ -2,6 +2,7 @@
 
 import { assertRole } from "@/lib/auth-guard";
 import { lookupLmsStudent } from "@/lib/lms";
+import { consumeRateLimit } from "@/lib/services/rate-limit";
 
 /**
  * Email autocomplete for the case form: resolves a student's name from the main
@@ -15,5 +16,10 @@ export async function lookupLmsStudentAction(email: string) {
   const normalized = email.trim().toLowerCase();
   if (!normalized) return null;
 
-  return lookupLmsStudent(normalized);
+  try {
+    await consumeRateLimit("lms.lookup", guard.session.user.id);
+    return await lookupLmsStudent(normalized);
+  } catch {
+    return null;
+  }
 }

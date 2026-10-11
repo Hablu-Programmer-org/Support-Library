@@ -27,13 +27,39 @@ export const tagsSchema = z
   .default([])
   .transform((tags) => [...new Set(tags)]);
 
+const allowedLinkHosts = () =>
+  new Set(
+    (process.env.ALLOWED_LINK_HOSTS ?? "")
+      .split(",")
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean),
+  );
+
+const parseUrl = (value: string) => {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+};
+
 export const httpsUrlSchema = z
-  .url()
+  .url({ protocol: /^https?$/ })
   .max(2048)
   .refine((url) => {
-    if (process.env.ALLOW_INSECURE_LINKS === "true") return true;
-    return url.startsWith("https://");
-  }, "Use an HTTPS link");
+    const parsed = parseUrl(url);
+    return parsed?.protocol === "https:" ||
+      (process.env.NODE_ENV !== "production" &&
+        process.env.ALLOW_INSECURE_LINKS === "true" &&
+        parsed?.protocol === "http:");
+  }, "Use an HTTPS link")
+  .refine((url) => {
+    const hosts = allowedLinkHosts();
+    if (hosts.size === 0) return true;
+    const hostname = parseUrl(url)?.hostname.toLowerCase();
+    if (!hostname) return false;
+    return [...hosts].some((host) => hostname === host || hostname.endsWith(`.${host}`));
+  }, "Link host is not allowed");
 
 export const externalFileLinkSchema = z.strictObject({
   title: z.string().trim().min(1).max(120),

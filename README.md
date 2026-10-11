@@ -6,23 +6,24 @@ The interface is English throughout, with Inter typography and English date form
 
 ## Stack
 
-- Next.js 14 App Router
+- Next.js 16 App Router and React 19
 - TypeScript strict
 - Auth.js v5 with Google OAuth only
 - MongoDB + Mongoose
-- HeroUI v2 + Tailwind CSS
+- Tailwind CSS 4
 - Vitest and Playwright
 
 ## Setup
 
 ```powershell
-cmd /c "npm install --legacy-peer-deps"
+cmd /c "npm ci"
 copy .env.example .env.local
 ```
 
 Fill `.env.local`:
 
 - `MONGODB_URI`
+- `LMS_MONGODB_URI` (separate read-only hp-v2 credential in production)
 - `MONGODB_DB`
 - `LMS_MONGODB_DB` (hp-v2 database name; default `hp-v2`)
 - `AUTH_SECRET`
@@ -40,12 +41,13 @@ cmd /c "npm run dev"
 ## Database Scripts
 
 ```powershell
-cmd /c "npm run db:indexes"
+cmd /c "npm run db:indexes"                         # dry-run index diff
+cmd /c "npm run db:indexes -- --apply --create-only" # create missing indexes only
 cmd /c "npm run db:seed"
 cmd /c "npm run db:seed -- --demo"
 ```
 
-`db:seed` promotes `SEED_ADMIN_EMAIL` to `ADMIN` idempotently.
+Production roles remain authoritative in hp-v2; do not run demo seeds in production.
 
 Cleanup and diagnostics:
 
@@ -114,18 +116,17 @@ shadows so the computed colors asserted by `e2e/shell.spec.ts` stay intact.
 
 ## Deploy Notes
 
-Deployment target is **undecided (VPS vs Vercel)**. Until it is picked, keep
-configuration provider-agnostic.
-
-If Vercel is chosen: set all env vars in project settings, use MongoDB Atlas, and
-allow Vercel outbound access. Auth callback URL:
+Production uses a standalone Next.js Docker image from GHCR behind the existing
+VPS Traefik instance. The complete preparation, deployment, smoke-test, backup,
+and rollback runbook is in `docs/vps-deployment.md`. Auth callback URL:
 
 ```text
-https://YOUR_DOMAIN/api/auth/callback/google
+https://support.hablu-programmer.com/api/auth/callback/google
 ```
 
-DB-backed routes use Node.js runtime. Direct uploads are not implemented; MVP
-stores external links only.
+DB-backed routes use Node.js runtime. `/api/health/live` checks the process and
+`/api/health/ready` verifies both support and LMS database access. Direct uploads
+are not implemented; the application stores validated external links only.
 
 ## Deferred
 

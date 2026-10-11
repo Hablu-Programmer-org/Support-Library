@@ -1,7 +1,7 @@
 import { test as setup } from "@playwright/test";
 import mongoose from "mongoose";
 
-import { getMongoClient } from "../../lib/db";
+import { getLmsMongoClient } from "../../lib/lms-db";
 
 /**
  * Seeds the hp-v2 `User` collection inside the dedicated e2e database.
@@ -23,7 +23,7 @@ setup("seed hp-v2 style user for LMS lookups", async () => {
   const dbName = process.env.MONGODB_DB;
   if (!dbName) throw new Error("MONGODB_DB is missing; cannot target the e2e database");
 
-  const client = await getMongoClient();
+  const client = await getLmsMongoClient();
   // Always name the db explicitly: a nameless client.db() falls back to the
   // database in the MONGODB_URI path, which is not the e2e database.
   await client.db(dbName).collection("User").updateOne(

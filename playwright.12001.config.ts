@@ -10,6 +10,7 @@ const { devDb, testDb } = resolveE2EDatabase();
 process.env.MONGODB_DEV_DB = devDb ?? "";
 process.env.MONGODB_TEST_DB = testDb;
 process.env.MONGODB_DB = testDb;
+process.env.LMS_MONGODB_URI = process.env.MONGODB_URI;
 process.env.LMS_MONGODB_DB = testDb;
 
 export default defineConfig({
@@ -23,15 +24,19 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npx next start -p 12001",
+    command: "npm run start:standalone",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
       MONGODB_DB: testDb,
+      LMS_MONGODB_URI: process.env.MONGODB_URI ?? "",
       MONGODB_TEST_DB: testDb,
       MONGODB_DEV_DB: devDb ?? "",
       LMS_MONGODB_DB: testDb,
+      NODE_ENV: "production",
+      HOSTNAME: "127.0.0.1",
+      PORT: "12001",
     },
   },
   projects: [

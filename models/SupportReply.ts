@@ -16,6 +16,8 @@ const supportReplySchema = new mongoose.Schema(
     videoLinks: { type: [videoLinkSchema], default: [] },
     editedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null, index: true },
+    createOperationId: { type: String, default: null },
+    createOperationHash: { type: String, default: null },
   },
   {
     timestamps: true,
@@ -24,6 +26,13 @@ const supportReplySchema = new mongoose.Schema(
 );
 
 supportReplySchema.index({ issueId: 1, createdAt: 1 });
+supportReplySchema.index(
+  { authorId: 1, createOperationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { createOperationId: { $type: "string" } },
+  },
+);
 
 export type SupportReplyDocument = InferSchemaType<typeof supportReplySchema> & {
   _id: mongoose.Types.ObjectId;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useState } from "react";
+import { useActionState, useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 import { createIssueAction, updateIssueAction } from "@/actions/issues";
@@ -247,6 +247,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
   const [formData, setFormData] = useState<FormData>(() =>
     initFormData(supportIssue),
   );
+  const operationIdRef = useRef<HTMLInputElement>(null);
 
   // Sync formData with supportIssue when it changes (for edit mode)
   // Using key prop on form to reset instead of useEffect to avoid lint warning
@@ -286,13 +287,21 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
     }
   };
 
+  const ensureOperationId = () => {
+    if (operationIdRef.current && !operationIdRef.current.value) {
+      operationIdRef.current.value = crypto.randomUUID();
+    }
+  };
+
   return (
     <form
       key={formKey}
       action={formAction}
       className="space-y-5"
       onKeyDown={handleKeyDown}
+      onSubmit={ensureOperationId}
     >
+      {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
       {state.fieldErrors?._form?.[0] && (
         <p
           className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"

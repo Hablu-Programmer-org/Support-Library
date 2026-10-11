@@ -1,7 +1,7 @@
 import "server-only";
 
-import { getMongoClient } from "@/lib/db";
 import { normalizeEmail } from "@/lib/email";
+import { getLmsMongoClient } from "@/lib/lms-db";
 import { escapeRegex } from "@/lib/search";
 
 const getLmsDbName = () => process.env.LMS_MONGODB_DB || "hp-v2";
@@ -37,7 +37,7 @@ export const findLmsUserByEmail = async (email?: string | null): Promise<LmsUser
   const normalized = normalizeEmail(email);
   if (!normalized) return null;
 
-  const client = await getMongoClient();
+  const client = await getLmsMongoClient();
   const users = client.db(getLmsDbName()).collection("User");
 
   const exact = await users.findOne(

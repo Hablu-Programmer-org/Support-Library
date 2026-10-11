@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { assertRole } from "@/lib/auth-guard";
+import { operationIdSchema } from "@/lib/mutation-security";
 import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
-import { addReply } from "@/lib/services/replies";
+import { consumeRateLimit } from "@/lib/services/rate-limit";
 import {
   changeIssueStatus,
   createIssue,
@@ -70,8 +71,10 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
   if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
   let issueData;
+  let operationId: string;
   try {
     issueData = parseIssueForm(formData);
+    operationId = operationIdSchema.parse(formData.get("operationId"));
   } catch (err) {
     if (err instanceof z.ZodError) {
       return { fieldErrors: zodFieldErrors(err) };
@@ -107,14 +110,18 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     return { fieldErrors: { _form: ["Invalid answer data"] } };
   }
 
-  const supportIssue = await createIssue({ ...issueData, status: "OPEN" }, guard.session.user.id);
-
-  if (solution) {
-    await addReply({ ...solution, issueId: supportIssue.id }, guard.session.user.id);
-  }
-
-  if (solution && solveIssue) {
-    await changeIssueStatus(supportIssue.id, "SOLVED", guard.session.user.id);
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.create", guard.session.user.id);
+    supportIssue = await createIssue(
+      { ...issueData, status: "OPEN" },
+      guard.session.user.id,
+      operationId,
+      solution,
+      solveIssue,
+    );
+  } catch {
+    return { fieldErrors: { _form: ["Unable to create the issue. Please try again later."] } };
   }
 
   revalidatePath("/dashboard/issues");
@@ -136,7 +143,13 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
     return { fieldErrors: { _form: ["Invalid form data"] } };
   }
 
-  const supportIssue = await updateIssue(id, issueData, guard.session.user.id);
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.update", guard.session.user.id);
+    supportIssue = await updateIssue(id, issueData, guard.session.user.id);
+  } catch {
+    return { fieldErrors: { _form: ["Unable to update the issue. Please try again later."] } };
+  }
   if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
 
   revalidatePath("/dashboard/issues");
@@ -152,7 +165,13 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
   if (status === "ARCHIVED") {
     return { fieldErrors: { status: ["Use the Archive issue action instead"] } };
   }
-  const supportIssue = await changeIssueStatus(id, status, guard.session.user.id);
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.status", guard.session.user.id);
+    supportIssue = await changeIssueStatus(id, status, guard.session.user.id);
+  } catch {
+    return { fieldErrors: { _form: ["Unable to update the status. Please try again later."] } };
+  }
   if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
   revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${id}`);
@@ -172,7 +191,17 @@ export async function deleteIssueAction(_prevState: FormState | undefined, id: s
   const guard = await assertRole("ADMIN", "MENTOR");
   if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
-  const supportIssue = await softDeleteIssue(id, guard.session.user.id);
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.archive", guard.session.user.id, {
+      action: "ISSUE_ARCHIVE",
+      resourceType: "SupportIssue",
+      resourceId: id,
+    });
+    supportIssue = await softDeleteIssue(id, guard.session.user.id);
+  } catch {
+    return { fieldErrors: { _form: ["Unable to archive the issue. Please try again later."] } };
+  }
   if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
   revalidatePath("/dashboard/issues");
   redirect("/dashboard/issues");
@@ -204,11 +233,21 @@ export async function publishIssueAction(
   const parsedReviewedAt = z.string().datetime().safeParse(reviewedAt);
   if (!parsedReviewedAt.success) return { fieldErrors: { _form: ["Invalid issue revision"] } };
 
-  const supportIssue = await publishIssue(
-    id,
-    guard.session.user.id,
-    new Date(parsedReviewedAt.data),
-  );
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.publish", guard.session.user.id, {
+      action: "ISSUE_PUBLISH",
+      resourceType: "SupportIssue",
+      resourceId: id,
+    });
+    supportIssue = await publishIssue(
+      id,
+      guard.session.user.id,
+      new Date(parsedReviewedAt.data),
+    );
+  } catch {
+    return { fieldErrors: { _form: ["Unable to publish the issue. Please try again later."] } };
+  }
   if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since review. Refresh and review it again."] } };
 
   revalidatePath("/dashboard");
@@ -221,7 +260,17 @@ export async function unpublishIssueAction(id: string) {
   const guard = await assertRole("ADMIN");
   if (!guard.ok) redirect("/unauthorized");
 
-  const supportIssue = await unpublishIssue(id, guard.session.user.id);
+  let supportIssue;
+  try {
+    await consumeRateLimit("issue.unpublish", guard.session.user.id, {
+      action: "ISSUE_UNPUBLISH",
+      resourceType: "SupportIssue",
+      resourceId: id,
+    });
+    supportIssue = await unpublishIssue(id, guard.session.user.id);
+  } catch {
+    throw new Error("Unable to unpublish the issue. Please try again later.");
+  }
   if (!supportIssue) throw new Error("Issue not found");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");

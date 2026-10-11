@@ -5,6 +5,7 @@ import path from "path";
 import dotenv from "dotenv";
 
 import { dbConnect } from "../../lib/db";
+import { getLmsMongoClient } from "../../lib/lms-db";
 import { UserModel } from "../../models/User";
 import { STAFF_USERS, staffDisplayName } from "./staff-users";
 
@@ -19,19 +20,40 @@ const sessionTokenCookieName = "authjs.session-token";
 
 async function upsertStaffUser(user: (typeof STAFF_USERS)[number]) {
   await dbConnect();
-  await UserModel.updateOne(
-    { _id: new mongoose.Types.ObjectId(user.id) },
-    {
-      $set: {
-        name: staffDisplayName(user.name),
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-        lastLoginAt: new Date(),
+  const lmsClient = await getLmsMongoClient();
+  const lmsDb = process.env.LMS_MONGODB_DB;
+  if (!lmsDb) throw new Error("LMS_MONGODB_DB is missing for E2E setup");
+
+  await Promise.all([
+    UserModel.updateOne(
+      { _id: new mongoose.Types.ObjectId(user.id) },
+      {
+        $set: {
+          name: staffDisplayName(user.name),
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          lastLoginAt: new Date(),
+        },
       },
-    },
-    { upsert: true },
-  );
+      { upsert: true },
+    ),
+    lmsClient.db(lmsDb).collection("User").updateOne(
+      { email: user.email },
+      {
+        $set: {
+          userId: user.id,
+          email: user.email,
+          name: staffDisplayName(user.name),
+          role: user.role === "ADMIN" ? "ADMIN" : user.role === "MENTOR" ? "INSTRUCTOR" : "STUDENT",
+          image: null,
+          isActive: user.isActive,
+        },
+        $setOnInsert: { _id: new mongoose.Types.ObjectId() },
+      },
+      { upsert: true },
+    ),
+  ]);
 }
 
 async function createSessionToken(user: (typeof STAFF_USERS)[number]) {

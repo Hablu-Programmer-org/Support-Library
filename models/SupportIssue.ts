@@ -44,6 +44,8 @@ const supportIssueSchema = new mongoose.Schema(
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    createOperationId: { type: String, default: null },
+    createOperationHash: { type: String, default: null },
   },
   {
     timestamps: true,
@@ -54,7 +56,17 @@ const supportIssueSchema = new mongoose.Schema(
 supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
 supportIssueSchema.index({ visibility: 1, updatedAt: -1 });
 supportIssueSchema.index({ createdAt: -1 });
-supportIssueSchema.index({ deletedAt: 1 }, { partialFilterExpression: { deletedAt: { $exists: true } } });
+supportIssueSchema.index(
+  { deletedAt: 1 },
+  { name: "deletedAt_date_partial", partialFilterExpression: { deletedAt: { $type: "date" } } },
+);
+supportIssueSchema.index(
+  { createdBy: 1, createOperationId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { createOperationId: { $type: "string" } },
+  },
+);
 
 export type SupportIssueDocument = InferSchemaType<typeof supportIssueSchema> & {
   _id: mongoose.Types.ObjectId;

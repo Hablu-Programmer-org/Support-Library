@@ -8,6 +8,7 @@
     "dev": "next dev -p 12000",
     "build": "next build",
     "start": "next start -p 12000",
+    "start:standalone": "node scripts/prepare-standalone.mjs && node .next/standalone/server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -15,6 +16,7 @@
     "test:e2e": "playwright test",
     "test:watch:e2e": "playwright test --ui",
     "db:indexes": "tsx scripts/sync-indexes.ts",
+    "db:preflight": "tsx scripts/production-db-preflight.ts",
     "db:migrate-issue-visibility": "tsx scripts/migrate-issue-visibility.ts",
     "db:purge-internal-notes": "tsx scripts/purge-internal-notes.ts",
     "db:seed": "tsx scripts/seed.ts",
@@ -24,7 +26,6 @@
     "verify:full": "npm run verify && npm run test:e2e"
   },
   "dependencies": {
-    "@auth/mongodb-adapter": "^3.11.3",
     "dotenv": "18.0.7",
     "framer-motion": "^14.1.0",
     "mongodb": "^6.21.0",

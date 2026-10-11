@@ -5,7 +5,14 @@ import authConfig from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/unauthorized", "/api/health"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/login",
+  "/unauthorized",
+  "/api/health",
+  "/api/health/live",
+  "/api/health/ready",
+]);
 
 export const proxy = auth((req) => {
   const { nextUrl } = req;
