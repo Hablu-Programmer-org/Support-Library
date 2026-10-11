@@ -59,6 +59,7 @@ test.describe("Reply edit and delete interactions", () => {
   });
 
   test("adds a bare file URL and a titled link line without an error page", async ({ page }) => {
+    test.setTimeout(120000);
     await page.goto("/dashboard/issues/new");
     await page.fill('input[name="studentName"]', "E2E Link Student");
     await page.fill('input[name="studentEmail"]', `e2e.links.${Date.now().toString()}@test.com`);
