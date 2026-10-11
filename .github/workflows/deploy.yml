@@ -60,7 +60,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cd /opt/hablu-support-library && docker compose --env-file .env.production up -d --build --force-recreate'
+            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production up -d --build --force-recreate'
 
       - name: Apply indexes and preflight
         env:
@@ -68,7 +68,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only'
+            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only'
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
             'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --verify'
           ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
