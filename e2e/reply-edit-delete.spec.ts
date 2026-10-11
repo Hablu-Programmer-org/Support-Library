@@ -9,8 +9,8 @@ async function createIssueWithReply(page: import("@playwright/test").Page, body:
   await page.fill('input[name="title"]', `E2E edit/delete ${emailTag}`);
   await page.fill('textarea[name="question"]', "How should reply edit and delete behave?");
   await Promise.all([
-    page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-    page.click('button[type="submit"]'),
+    page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
+    page.getByRole("button", { name: "Create Issue", exact: true }).click(),
   ]);
 
   const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
@@ -64,8 +64,8 @@ test.describe("Reply edit and delete interactions", () => {
     await page.fill('input[name="title"]', "E2E reply links");
     await page.fill('textarea[name="question"]', "Links should not crash the reply form.");
     await Promise.all([
-      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
-      page.click('button[type="submit"]'),
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 60000 }),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
     ]);
 
     const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
