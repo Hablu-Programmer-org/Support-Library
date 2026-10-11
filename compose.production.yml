@@ -2,7 +2,10 @@ name: hablu-support-library
 
 services:
   support-library:
-    image: ${SUPPORT_LIBRARY_IMAGE:?Set SUPPORT_LIBRARY_IMAGE to an immutable GHCR SHA tag or digest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
     container_name: hablu-support-library
     restart: unless-stopped
     init: true
@@ -55,6 +58,15 @@ services:
       traefik.http.middlewares.support-library-rate-limit.ratelimit.period: 1s
       traefik.http.middlewares.support-library-rate-limit.ratelimit.burst: "120"
       traefik.http.services.support-library.loadbalancer.server.port: "12000"
+
+  ops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ops
+    env_file:
+      - /opt/hablu-support-library/shared/.env.production
+    command: ["sh", "-c", "exit 0"]
 
 networks:
   root_default:

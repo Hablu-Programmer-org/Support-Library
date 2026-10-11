@@ -2,25 +2,13 @@ name: Deploy production
 
 on:
   workflow_run:
-    workflows: [Publish GHCR image]
+    workflows: [CI]
     types: [completed]
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      action:
-        description: Deploy an exact commit SHA or roll back to the saved previous release
-        required: true
-        type: choice
-        options:
-          - deploy
-          - rollback
-      sha:
-        description: Optional full 40-character commit SHA to redeploy; leave blank to deploy the latest published release on main
-        required: false
-        type: string
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: support-library-production
@@ -28,234 +16,74 @@ concurrency:
 
 jobs:
   deploy:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'workflow_run' &&
-      github.event.workflow_run.head_branch == 'main')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    environment:
-      name: production
-      url: https://support.hablu-programmer.com
-    env:
-      SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
-      DEPLOY_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'deploy' }}
+    name: Deploy to VPS
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
     steps:
-      - name: Resolve release run
-        if: env.DEPLOY_ACTION == 'deploy'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          INPUT_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
-        run: |
-          set -Eeuo pipefail
-          run_id=""
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            run_id="${{ github.event.workflow_run.id }}"
-          elif [[ -z "$INPUT_SHA" ]]; then
-            run_id="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/publish.yml/runs?branch=main&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')"
-            [[ -n "$run_id" ]] || { echo "No successful Publish GHCR image run was found on main." >&2; exit 1; }
-          fi
-          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
-
-      - name: Download verified release metadata
-        if: env.DEPLOY_ACTION == 'deploy' && env.SOURCE_RUN_ID != ''
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: release-metadata
-          run-id: ${{ env.SOURCE_RUN_ID }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Resolve release identity
-        if: env.DEPLOY_ACTION == 'deploy'
-        shell: bash
+      - name: Configure SSH
         env:
-          INPUT_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
-          set -Eeuo pipefail
-          sha=""
-          digest=""
-          ops_digest=""
-          if [[ -f release.env ]]; then
-            sha="$(sed -n 's/^sha=//p' release.env)"
-            digest="$(sed -n 's/^digest=//p' release.env)"
-            ops_digest="$(sed -n 's/^opsdigest=//p' release.env)"
-          else
-            sha="$INPUT_SHA"
-          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character lowercase commit SHA is required." >&2; exit 1; }
-          if [[ -n "${SOURCE_RUN_ID:-}" ]]; then
-            [[ "$digest" == sha256:* ]] || { echo "The published runtime image digest is required to deploy." >&2; exit 1; }
-            [[ "$ops_digest" == sha256:* ]] || { echo "The published ops image digest is required to deploy." >&2; exit 1; }
-          fi
-
-          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/hablu-support-library" >> "$GITHUB_ENV"
-          echo "SOURCE_SHA=$sha" >> "$GITHUB_ENV"
-          echo "EXPECTED_DIGEST=$digest" >> "$GITHUB_ENV"
-          echo "OPS_EXPECTED_DIGEST=$ops_digest" >> "$GITHUB_ENV"
-
-      - name: Check out deployment definition
-        if: env.DEPLOY_ACTION == 'deploy'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ env.SOURCE_SHA }}
-          persist-credentials: false
-
-      - name: Configure pinned SSH trust
-        shell: bash
+      - name: Sync files to VPS
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          rsync -az \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='logs' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            -e "ssh -i ~/.ssh/id_deploy" \
+            ./ "$VPS_USER@$VPS_HOST:/opt/hablu-support-library/"
 
-      - name: Stage compose definition
-        if: env.DEPLOY_ACTION == 'deploy'
-        shell: bash
+      - name: Build and restart
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          ssh -p "$SSH_PORT" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "install -d -m 750 /opt/hablu-support-library/releases/$SOURCE_SHA"
-          scp -P "$SSH_PORT" compose.production.yml \
-            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/hablu-support-library/releases/$SOURCE_SHA/compose.production.yml"
+          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+            'cd /opt/hablu-support-library && docker compose --env-file .env.production up -d --build --force-recreate'
 
-      - name: Deploy with automatic rollback
-        shell: bash
+      - name: Apply indexes and preflight
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          image="$IMAGE_NAME:sha-$SOURCE_SHA"
-          ops_image="$IMAGE_NAME:sha-$SOURCE_SHA-ops"
-          ssh -p "$SSH_PORT" "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            bash -s -- "$DEPLOY_ACTION" "$SOURCE_SHA" "$image" "$ops_image" "$EXPECTED_DIGEST" "$OPS_EXPECTED_DIGEST" <<'REMOTE'
-          set -Eeuo pipefail
+          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only'
+          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:indexes -- --verify'
+          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
+            'cd /opt/hablu-support-library && docker compose --env-file .env.production run --rm ops npm run db:preflight'
 
-          action="$1"
-          sha="$2"
-          requested_image="$3"
-          ops_image="$4"
-          expected_digest="${5:-}"
-          ops_expected_digest="${6:-}"
-          base=/opt/hablu-support-library
-          state="$base/state"
-          project=hablu-support-library
-          shared_env="$base/shared/.env.production"
-          mkdir -p "$state" "$base/releases"
-          chmod 750 "$base" "$state"
-
-          [[ -f "$shared_env" ]] || { echo "Missing runtime env file at $shared_env." >&2; exit 1; }
-
-          write_state() {
-            tmp="$(mktemp "$state/.$1.XXXXXX")"
-            printf '%s\n' "$2" > "$tmp"
-            chmod 600 "$tmp"
-            mv -f "$tmp" "$state/$1"
-          }
-          read_state() { cat "$state/$1" 2>/dev/null || true; }
-
-          compose_up() {
-            release="$1"
-            image="$2"
-            deploy_env="$release/.env.deploy"
-            printf 'SUPPORT_LIBRARY_IMAGE=%s\n' "$image" > "$deploy_env"
-            chmod 600 "$deploy_env"
-            docker compose --project-name "$project" \
-              --env-file "$shared_env" --env-file "$deploy_env" \
-              -f "$release/compose.production.yml" config --quiet
-            docker compose --project-name "$project" \
-              --env-file "$shared_env" --env-file "$deploy_env" \
-              -f "$release/compose.production.yml" up -d --remove-orphans --wait --wait-timeout 120
-          }
-
-          smoke() {
-            curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-              https://support.hablu-programmer.com/api/health/live >/dev/null
-            curl --fail --silent --show-error --retry 18 --retry-delay 5 --retry-all-errors \
-              https://support.hablu-programmer.com/api/health/ready >/dev/null
-          }
-
-          current_release="$(read_state current-release)"
-          current_image="$(read_state current-image)"
-          if [[ -z "$current_image" ]]; then
-            current_image="$(docker inspect --format '{{.Config.Image}}' "$project" 2>/dev/null || true)"
-          fi
-
-          if [[ "$action" == rollback ]]; then
-            target_release="$(read_state previous-release)"
-            target_image="$(read_state previous-image)"
-            [[ -n "$target_release" && -n "$target_image" ]] || { echo "No rollback release is recorded." >&2; exit 1; }
-            [[ -f "$target_release/compose.production.yml" ]] || { echo "Rollback compose file is missing." >&2; exit 1; }
-            compose_up "$target_release" "$target_image"
-            smoke
-            write_state previous-release "$current_release"
-            write_state previous-image "$current_image"
-            write_state current-release "$target_release"
-            write_state current-image "$target_image"
-            exit 0
-          fi
-
-          release="$base/releases/$sha"
-          [[ -f "$release/compose.production.yml" ]] || { echo "Staged compose file is missing." >&2; exit 1; }
-
-          # The compose definition is stable across releases, so a pre-existing
-          # container without recorded state can still be rolled back with it.
-          rollback_release="${current_release:-$release}"
-          rollback_image="$current_image"
-
-          rollback() {
-            status=$?
-            trap - ERR
-            if [[ -n "$rollback_image" && -f "$rollback_release/compose.production.yml" ]]; then
-              echo "Deployment failed; restoring the previous release." >&2
-              if compose_up "$rollback_release" "$rollback_image"; then
-                smoke || echo "Rollback health check failed." >&2
-              else
-                echo "Rollback could not restore the previous release." >&2
-              fi
-            else
-              echo "Deployment failed and no previous release is available to restore." >&2
+      - name: Health check
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -fsS -o /dev/null -w "%{http_code}" https://support.hablu-programmer.com/api/health/ready || true)
+            if [ "$code" = "200" ]; then
+              echo "Deploy healthy (HTTP $code)"
+              exit 0
             fi
-            exit "$status"
-          }
-          trap rollback ERR
-
-          # Apply additive indexes and prove write plus transaction ability before rollout.
-          docker pull "$ops_image"
-          ops_immutable="$(docker image inspect --format '{{index .RepoDigests 0}}' "$ops_image")"
-          [[ "$ops_immutable" == *@sha256:* ]] || { echo "Could not resolve the ops image digest." >&2; exit 1; }
-          if [[ -n "$ops_expected_digest" ]]; then
-            [[ "$ops_immutable" == *"$ops_expected_digest" ]] || { echo "Pulled ops image digest does not match the published digest." >&2; exit 1; }
-          fi
-          docker run --rm --env-file "$shared_env" "$ops_immutable" \
-            npm run db:indexes -- --apply --create-only
-          docker run --rm --env-file "$shared_env" "$ops_immutable" \
-            npm run db:indexes -- --verify
-          docker run --rm --env-file "$shared_env" "$ops_immutable" \
-            npm run db:preflight
-
-          docker pull "$requested_image"
-          immutable_image="$(docker image inspect --format '{{index .RepoDigests 0}}' "$requested_image")"
-          [[ "$immutable_image" == *@sha256:* ]] || { echo "Could not resolve the GHCR image digest." >&2; exit 1; }
-          if [[ -n "$expected_digest" ]]; then
-            [[ "$immutable_image" == *"$expected_digest" ]] || { echo "Pulled image digest does not match the published digest." >&2; exit 1; }
-          fi
-
-          compose_up "$release" "$immutable_image"
-          smoke
-          trap - ERR
-
-          write_state previous-release "$current_release"
-          write_state previous-image "$current_image"
-          write_state current-release "$release"
-          write_state current-image "$immutable_image"
-          REMOTE
-
-      - name: Public smoke test
-        shell: bash
-        run: |
-          curl --fail --silent --show-error --retry 6 --retry-delay 5 --retry-all-errors \
-            https://support.hablu-programmer.com/api/health/live
-          curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
-            https://support.hablu-programmer.com/api/health/ready
+            echo "Waiting for health... (HTTP $code)"
+            sleep 5
+          done
+          echo "Health check failed after 40 attempts (last HTTP $code)"
+          exit 1
