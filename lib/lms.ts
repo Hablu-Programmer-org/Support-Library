@@ -56,7 +56,7 @@ export const findLmsUserByEmail = async (email?: string | null): Promise<LmsUser
 export type LmsStudentLookup = { userId: string; name: string };
 
 /**
- * Email autocomplete lookup for the case form. hp-v2 only: a matched email
+ * Email autocomplete lookup for the issue form. hp-v2 only: a matched email
  * lets the form prefill the student's name.
  */
 export const lookupLmsStudent = async (email: string): Promise<LmsStudentLookup | null> => {

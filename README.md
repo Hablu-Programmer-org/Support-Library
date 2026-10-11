@@ -1,8 +1,8 @@
 # Hablu Support Library
 
-Staff-first support library for Hablu Programmer. Mentors can record student support cases, add answers, external file/video links, and close cases when solved.
+Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, external file/video links, and close issues when solved.
 
-The interface is English throughout, with Inter typography and English date formatting. Case and reply content can still be written and searched in any language.
+The interface is English throughout, with Inter typography and English date formatting. Issue and reply content can still be written and searched in any language.
 
 ## Stack
 
@@ -85,19 +85,25 @@ cmd /c "npm run test:e2e"
 - Runs against a dedicated test database (`MONGODB_TEST_DB`) and starts its own
   dev server on port `12000` so it never touches the main frontend on `11000`.
 
+## User Guides
+
+- [Student Guide](docs/student-guide.md) — How students browse and search the Student Support Library.
+- [Mentor Guide](docs/mentor-guide.md) — How mentors create and maintain support issues, write answers, and prepare content for publishing.
+- [Admin Guide](docs/admin-guide.md) — How admins review, publish, unpublish, and manage reply overrides.
+
 ## Core Flows
 
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
 - hp-v2 roles map to `ADMIN` / `MENTOR` / `VIEWER`; an unknown or inactive account is denied
-- Case forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
-- Mentor creates support cases with optional solution (text, file links, video links)
-- If solution provided, it becomes the first reply and case can auto-close as SOLVED
+- Issue forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
+- Mentor creates support issues with an optional first answer (text, file links, video links)
+- If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
 - Mentor adds replies, external file links and video links
-- VIEWER (students) can read published cases but never unpublished ones
-- Cases list filters by course, batch, mentor and date range
-- Dashboard shows real DB counts and recent unresolved cases for staff; VIEWER/students hitting `/dashboard` are redirected to the published library
+- VIEWER (students) can read published issues but never unpublished ones
+- Issues list filters by course, batch, mentor and date range
+- Dashboard shows real DB counts and recent unresolved issues for staff; VIEWER/students hitting `/dashboard` are redirected to the published library
 - Chrome is a single fixed topbar with inline Dashboard/Issues navigation (Dashboard is staff-only in the nav); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
-- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; students browse published solutions directly without the staff dashboard
+- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; students browse published answers directly without the staff dashboard
 
 ## Design System
 

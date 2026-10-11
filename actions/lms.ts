@@ -5,9 +5,9 @@ import { lookupLmsStudent } from "@/lib/lms";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 
 /**
- * Email autocomplete for the case form: resolves a student's name from the main
+ * Email autocomplete for the issue form: resolves a student's name from the main
  * hp-v2 database when an email is typed. Read-only and staff-only (VIEWER can
- * never open the case form, so the guard matches its other actions).
+ * never open the issue form, so the guard matches its other actions).
  */
 export async function lookupLmsStudentAction(email: string) {
   const guard = await assertRole("ADMIN", "MENTOR");
