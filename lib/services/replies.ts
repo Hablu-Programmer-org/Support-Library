@@ -11,6 +11,7 @@ import {
 import { isAdmin, type UserRole } from "@/lib/roles";
 import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { getRequestContext } from "@/lib/request-context";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
 
@@ -160,13 +161,14 @@ export async function addReply(input: SupportReplyInput, authorId: string, opera
       }], { session });
       await requirePublicationReview(parsed.issueId, authorId, session);
       await refreshIssueReplySearchText(parsed.issueId, session);
+      const context = await getRequestContext();
       await recordAuditEvent({
         actorId: authorId,
         action: "REPLY_CREATE",
         resourceType: "SupportReply",
         resourceId: String(reply._id),
         result: "SUCCEEDED",
-      }, session);
+      }, context, session);
       return toReplyListItem(reply.toObject());
     });
   } catch (error) {
@@ -228,13 +230,14 @@ export async function editReply(
     const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
     const existingReply = await SupportReplyModel.findOne(filter).select("_id").session(session).lean();
     if (!existingReply) {
+      const context = await getRequestContext();
       await recordAuditEvent({
         actorId,
         action: "REPLY_EDIT",
         resourceType: "SupportReply",
         resourceId: replyId,
         result: "DENIED",
-      }, session);
+      }, context, session);
       return null;
     }
 
@@ -246,13 +249,14 @@ export async function editReply(
     if (!reply) return null;
     await requirePublicationReview(issueId, actorId, session);
     await refreshIssueReplySearchText(issueId, session);
+    const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
       action: "REPLY_EDIT",
       resourceType: "SupportReply",
       resourceId: replyId,
       result: "SUCCEEDED",
-    }, session);
+    }, context, session);
     return toReplyListItem(reply);
   });
 }
@@ -272,13 +276,14 @@ export async function softDeleteReply(
     const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
     const existingReply = await SupportReplyModel.findOne(filter).select("_id").session(session).lean();
     if (!existingReply) {
+      const context = await getRequestContext();
       await recordAuditEvent({
         actorId,
         action: "REPLY_DELETE",
         resourceType: "SupportReply",
         resourceId: replyId,
         result: "DENIED",
-      }, session);
+      }, context, session);
       return null;
     }
 
@@ -290,13 +295,14 @@ export async function softDeleteReply(
     if (!reply) return null;
     await requirePublicationReview(issueId, actorId, session);
     await refreshIssueReplySearchText(issueId, session);
+    const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
       action: "REPLY_DELETE",
       resourceType: "SupportReply",
       resourceId: replyId,
       result: "SUCCEEDED",
-    }, session);
+    }, context, session);
     return toReplyListItem(reply);
   });
 }

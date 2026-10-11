@@ -118,6 +118,7 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
       supportIssue = await createIssue(
         { ...issueData, status: "OPEN" },
         guard.session.user.id,
+        guard.session.user.role as "ADMIN" | "MENTOR",
         operationId,
         solution,
         solveIssue,
@@ -150,7 +151,7 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
     let supportIssue;
     try {
       await consumeRateLimit("issue.update", guard.session.user.id);
-      supportIssue = await updateIssue(id, issueData, guard.session.user.id);
+      supportIssue = await updateIssue(id, issueData, guard.session.user.id, guard.session.user.role as "ADMIN" | "MENTOR");
     } catch {
       return { fieldErrors: { _form: ["Unable to update the issue. Please try again later."] } };
     }

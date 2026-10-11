@@ -48,8 +48,8 @@ const supportIssueSchema = new mongoose.Schema(
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     deletedAt: { type: Date, default: null },
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-    createOperationId: { type: String, default: null },
-    createOperationHash: { type: String, default: null },
+createOperationId: { type: String, default: "__none__" },
+  createOperationHash: { type: String, default: null },
   },
   {
     timestamps: true,
@@ -68,7 +68,7 @@ supportIssueSchema.index(
   { createdBy: 1, createOperationId: 1 },
   {
     unique: true,
-    partialFilterExpression: { createOperationId: { $type: "string" } },
+    partialFilterExpression: { createOperationId: { $ne: "__none__" } },
   },
 );
 

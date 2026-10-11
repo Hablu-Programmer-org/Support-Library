@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { fixedWindow, rateLimitBucketKey } from "@/lib/mutation-security";
 import { RateLimitBucketModel } from "@/models";
 import { recordAuditEvent, type AuditAction, type AuditResourceType } from "./audit";
+import { getRequestContext } from "@/lib/request-context";
 
 export type RateLimitScope =
   | "lms.lookup"
@@ -66,11 +67,12 @@ export async function consumeRateLimit(
 
     if (!bucket || bucket.count > config.limit) {
       if (deniedAudit) {
+        const context = await getRequestContext();
         await recordAuditEvent({
           actorId,
           ...deniedAudit,
           result: "DENIED",
-        });
+        }, context);
       }
       throw new MutationRateLimitError();
     }

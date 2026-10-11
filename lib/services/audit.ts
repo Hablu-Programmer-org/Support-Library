@@ -12,7 +12,13 @@ import {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditResult = (typeof AUDIT_RESULTS)[number];
-export type AuditResourceType = "SupportIssue" | "SupportReply";
+export type AuditResourceType = "SupportIssue" | "SupportReply" | "OAuthCallback";
+
+export interface AuditEventContext {
+  ip?: string;
+  userAgent?: string;
+  requestId?: string;
+}
 
 export async function recordAuditEvent(
   event: {
@@ -22,6 +28,7 @@ export async function recordAuditEvent(
     resourceId: string;
     result: AuditResult;
   },
+  context: AuditEventContext = {},
   session?: ClientSession,
 ) {
   const document = {
@@ -31,6 +38,9 @@ export async function recordAuditEvent(
     resourceId: event.resourceId.slice(0, 64),
     result: event.result,
     timestamp: new Date(),
+    ip: context.ip?.slice(0, 45),
+    userAgent: context.userAgent?.slice(0, 512),
+    requestId: context.requestId?.slice(0, 64),
   };
 
   if (session) {

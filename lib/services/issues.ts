@@ -17,6 +17,7 @@ import {
   type SupportReplyInput,
 } from "@/lib/validation";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { getRequestContext } from "@/lib/request-context";
 import {
   CASE_PRIORITIES,
   SupportReplyModel,
@@ -138,6 +139,7 @@ function isDuplicateKeyError(error: unknown) {
 export async function createIssue(
   input: SupportIssueInput,
   actorId: string,
+  actorRole: "ADMIN" | "MENTOR",
   operationId: string,
   initialReply: InitialReplyInput | null = null,
   solveIssue = false,
@@ -150,6 +152,12 @@ export async function createIssue(
 
   // Hash the student email for privacy
   const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
+
+  // For MENTOR role, enforce mentorId = actorId (ignore input)
+  // For ADMIN role, allow custom mentorId or default to actorId
+  const effectiveMentorId = actorRole === "MENTOR" 
+    ? actorObjectId 
+    : (parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : actorObjectId);
 
   const existing = await SupportIssueModel.findOne({
     createdBy: actorObjectId,
@@ -171,7 +179,7 @@ export async function createIssue(
         studentEmailHash,
         status: finalStatus,
         searchText,
-        mentorId: parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : actorObjectId,
+        mentorId: effectiveMentorId,
         createdBy: actorObjectId,
         updatedBy: actorObjectId,
         createOperationId: parsedOperationId,
@@ -184,13 +192,14 @@ export async function createIssue(
           issueId: createdIssue._id,
           authorId: actorObjectId,
         }], { session });
+        const context = await getRequestContext();
         await recordAuditEvent({
           actorId,
           action: "REPLY_CREATE",
           resourceType: "SupportReply",
           resourceId: String(reply._id),
           result: "SUCCEEDED",
-        }, session);
+        }, context, session);
       }
 
       return createdIssue.toObject();
@@ -209,7 +218,7 @@ export async function createIssue(
   }
 }
 
-export async function updateIssue(id: string, input: SupportIssueInput, actorId: string) {
+export async function updateIssue(id: string, input: SupportIssueInput, actorId: string, actorRole: "ADMIN" | "MENTOR") {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
   const parsed = supportIssueInputSchema.parse(input);
@@ -218,18 +227,34 @@ export async function updateIssue(id: string, input: SupportIssueInput, actorId:
   // Hash the student email if it's being updated
   const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
 
+  // For MENTOR role, enforce mentorId = actorId (ignore input)
+  // For ADMIN role, allow custom mentorId
+  const effectiveMentorId = actorRole === "MENTOR"
+    ? new mongoose.Types.ObjectId(actorId)
+    : (parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : undefined);
+
+  const updateData: Record<string, unknown> = {
+    ...parsed,
+    studentEmailHash,
+    searchText: buildIssueSearchText(parsed),
+    visibility: "INTERNAL",
+    publishedAt: null,
+    publishedBy: null,
+    updatedBy: new mongoose.Types.ObjectId(actorId),
+  };
+
+  // Only set mentorId if it's defined (for ADMIN with custom mentorId)
+  if (effectiveMentorId) {
+    updateData.mentorId = effectiveMentorId;
+  } else if (actorRole === "MENTOR") {
+    // For MENTOR, explicitly set to actorId
+    updateData.mentorId = new mongoose.Types.ObjectId(actorId);
+  }
+
   const supportIssue = await SupportIssueModel.findOneAndUpdate(
     { _id: id, deletedAt: null },
     {
-      $set: {
-        ...parsed,
-        studentEmailHash,
-        searchText: buildIssueSearchText(parsed),
-        visibility: "INTERNAL",
-        publishedAt: null,
-        publishedBy: null,
-        updatedBy: new mongoose.Types.ObjectId(actorId),
-      },
+      $set: updateData,
       $push: {
         publicationHistory: {
           action: "CONTENT_CHANGED",
@@ -283,13 +308,14 @@ export async function softDeleteIssue(id: string, actorId: string) {
       },
       { new: true, session },
     ).lean();
+    const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
       action: "ISSUE_ARCHIVE",
       resourceType: "SupportIssue",
       resourceId: id,
       result: updated ? "SUCCEEDED" : "DENIED",
-    }, session);
+    }, context, session);
     return updated;
   });
 
@@ -306,6 +332,8 @@ export async function listIssues(
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const filter = buildIssueFilter(params, options.publicOnly === true);
   const skip = (page - 1) * limit;
+
+  const queryOptions = { maxTimeMS: 5000 }; // 5 second timeout for search queries
 
   // `priority` needs a computed rank (URGENT highest), which a plain field
   // sort can't express; other modes sort on `updatedAt` directly.
@@ -346,15 +374,18 @@ export async function listIssues(
                 },
               }]
             : []),
-        ])
-      : SupportIssueModel.find(filter)
+        ], { maxTimeMS: 5000 })
+      : SupportIssueModel.find(filter, null, queryOptions)
           .select(options.publicOnly ? PUBLIC_ISSUE_FIELDS : "")
           .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
           .skip(skip)
           .limit(limit)
           .lean();
 
-  const [items, total] = await Promise.all([itemsQuery, SupportIssueModel.countDocuments(filter)]);
+  const [items, total] = await Promise.all([
+    itemsQuery,
+    SupportIssueModel.countDocuments(filter).maxTimeMS(5000),
+  ]);
 
   return {
     items: (items as LeanDoc[]).map((item) => {
@@ -463,13 +494,14 @@ export async function publishIssue(id: string, actorId: string, reviewedAt: Date
       },
       { new: true, runValidators: true, session },
     ).lean();
+    const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
       action: "ISSUE_PUBLISH",
       resourceType: "SupportIssue",
       resourceId: id,
       result: supportIssue ? "SUCCEEDED" : "DENIED",
-    }, session);
+    }, context, session);
     return supportIssue;
   });
 }
@@ -498,13 +530,14 @@ export async function unpublishIssue(id: string, actorId: string) {
       },
       { new: true, runValidators: true, session },
     ).lean();
+    const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
       action: "ISSUE_UNPUBLISH",
       resourceType: "SupportIssue",
       resourceId: id,
       result: supportIssue ? "SUCCEEDED" : "DENIED",
-    }, session);
+    }, context, session);
     return supportIssue;
   });
 }
