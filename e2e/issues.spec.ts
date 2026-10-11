@@ -79,7 +79,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.goto("/dashboard/issues/new");
 
     await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
-    const studentName = page.locator('input[name="studentName"]:not([type="hidden"])');
+    const studentName = page.getByLabel("Student Name *");
     await expect(studentName).toHaveValue("E2E LMS Student");
     await expect(page.getByText("Found in LMS")).toBeVisible();
     await expect(studentName).toBeVisible();
