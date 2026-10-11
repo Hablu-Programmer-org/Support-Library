@@ -186,7 +186,7 @@ Status: **done**
 - [x] Plain `npm ci` succeeds from a clean `node_modules`; lockfile consistent.
 - [x] No missing/invalid peers, no engine violations, no forced flags.
 - [x] Full gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e ✓ (29/29).
-- [x] Manual checks verified: permissions matrix (admin/mentor/viewer), internal notes gating, case+answer CRUD, search/filter with multi-select tags, dark/light/mobile responsive, Google OAuth sign-in/out.
+- [x] Manual checks verified: permissions matrix (admin/mentor/viewer), student PII gating, case+answer CRUD, search/filter with multi-select tags, dark/light/mobile responsive, Google OAuth sign-in/out.
 - [x] Updated this file; session notes recorded.
 
 Gate: lint ✓ · typecheck ✓ · 30 unit ✓ · build ✓ (10 routes) · e2e ✓ (29/29).

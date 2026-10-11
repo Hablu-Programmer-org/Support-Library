@@ -12,7 +12,6 @@ const supportReplySchema = new mongoose.Schema(
     },
     authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
     body: { type: String, required: true, trim: true, minlength: 1, maxlength: 20_000 },
-    isInternalNote: { type: Boolean, default: false, index: true },
     fileLinks: { type: [externalFileLinkSchema], default: [] },
     videoLinks: { type: [videoLinkSchema], default: [] },
     editedAt: { type: Date, default: null },

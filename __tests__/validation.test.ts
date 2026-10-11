@@ -61,9 +61,20 @@ describe("product validation", () => {
       videoLinks: [{ title: "Walkthrough", url: "https://youtu.be/demo", timestamp: "01:20" }],
     });
 
-    expect(parsed.isInternalNote).toBe(false);
     expect(parsed.fileLinks).toHaveLength(1);
     expect(parsed.videoLinks).toHaveLength(1);
+  });
+
+  it("rejects the removed internal-note field", () => {
+    expect(() =>
+      supportReplyInputSchema.parse({
+        issueId: objectId,
+        body: "Staff only",
+        isInternalNote: true,
+        fileLinks: [],
+        videoLinks: [],
+      }),
+    ).toThrow();
   });
 
   it("enforces HTTPS links by default", () => {

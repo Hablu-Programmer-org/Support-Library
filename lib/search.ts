@@ -48,12 +48,12 @@ export const buildIssueSearchText = (input: IssueSearchTextSource) =>
   ]);
 
 /**
- * Full searchable text for an issue: its own fields plus the bodies of its public
- * replies.
+ * Full searchable text for an issue: its own fields plus the bodies of its
+ * non-deleted replies.
  *
  * Always rebuilds from the issue's fields rather than appending to whatever is
  * stored, so course/module/content slugs can never be dropped and reply text can
- * never go stale when the last public reply is removed.
+ * never go stale when the last reply is removed.
  */
 export const buildIssueSearchTextWithReplies = (
   input: IssueSearchTextSource,

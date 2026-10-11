@@ -16,7 +16,6 @@ export type SupportReplyListItem = {
   authorId: string;
   authorName?: string;
   body: string;
-  isInternalNote: boolean;
   fileLinks: Array<{ title: string; url: string; type?: string | null; note?: string | null }>;
   videoLinks: Array<{ title: string; url: string; timestamp?: string | null; summary?: string | null }>;
   createdAt?: Date;
@@ -34,7 +33,6 @@ const toReplyListItem = (reply: LeanDoc, authors: Map<string, LeanDoc> = new Map
     authorId,
     authorName: author?.name as string | undefined,
     body: String(reply.body),
-    isInternalNote: reply.isInternalNote === true,
     fileLinks: Array.isArray(reply.fileLinks) ? reply.fileLinks as SupportReplyListItem["fileLinks"] : [],
     videoLinks: Array.isArray(reply.videoLinks) ? reply.videoLinks as SupportReplyListItem["videoLinks"] : [],
     createdAt: reply.createdAt as Date | undefined,
@@ -53,7 +51,7 @@ async function buildAuthorMap(replies: LeanDoc[]) {
 
 /**
  * Rebuilds an issue's denormalized `searchText` from its own fields plus every
- * non-internal, non-deleted reply body.
+ * non-deleted reply body.
  *
  * This recomputes from the issue's fields instead of appending to the stored value
  * with an aggregation pipeline. The earlier pipeline concatenated only
@@ -64,7 +62,7 @@ async function buildAuthorMap(replies: LeanDoc[]) {
 async function refreshIssueReplySearchText(issueId: string) {
   const [supportIssue, replies] = await Promise.all([
     SupportIssueModel.findById(issueId).lean(),
-    SupportReplyModel.find({ issueId, deletedAt: null, isInternalNote: false })
+    SupportReplyModel.find({ issueId, deletedAt: null })
       .select("body")
       .lean(),
   ]);
@@ -128,9 +126,7 @@ export async function addReply(input: SupportReplyInput, authorId: string) {
 
   const supportIssue = await requireLiveIssue(parsed.issueId);
   if (!supportIssue) return null;
-  if (!parsed.isInternalNote) {
-    await requirePublicationReview(parsed.issueId, authorId);
-  }
+  await requirePublicationReview(parsed.issueId, authorId);
 
   const reply = await SupportReplyModel.create({
     ...parsed,
@@ -141,16 +137,11 @@ export async function addReply(input: SupportReplyInput, authorId: string) {
   return toReplyListItem(reply.toObject());
 }
 
-export async function listReplies(
-  issueId: string,
-  includeInternal = true,
-  redactActorIds = false,
-) {
+export async function listReplies(issueId: string, redactActorIds = false) {
   if (!mongoose.Types.ObjectId.isValid(issueId)) return [];
   await dbConnect();
 
   const filter: Record<string, unknown> = { issueId, deletedAt: null };
-  if (!includeInternal) filter.isInternalNote = false;
 
   const replies = await SupportReplyModel.find(filter).sort({ createdAt: 1 }).lean();
   const authors = await buildAuthorMap(replies as LeanDoc[]);
@@ -190,9 +181,9 @@ export async function editReply(
   await dbConnect();
 
   const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
-  const existingReply = await SupportReplyModel.findOne(filter).select("isInternalNote").lean();
+  const existingReply = await SupportReplyModel.findOne(filter).select("_id").lean();
   if (!existingReply) return null;
-  if (!existingReply.isInternalNote) await requirePublicationReview(issueId, actorId);
+  await requirePublicationReview(issueId, actorId);
 
   const reply = await SupportReplyModel.findOneAndUpdate(
     filter,
@@ -218,9 +209,9 @@ export async function softDeleteReply(
   await dbConnect();
 
   const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
-  const existingReply = await SupportReplyModel.findOne(filter).select("isInternalNote").lean();
+  const existingReply = await SupportReplyModel.findOne(filter).select("_id").lean();
   if (!existingReply) return null;
-  if (!existingReply.isInternalNote) await requirePublicationReview(issueId, actorId);
+  await requirePublicationReview(issueId, actorId);
 
   const reply = await SupportReplyModel.findOneAndUpdate(
     filter,
@@ -232,8 +223,4 @@ export async function softDeleteReply(
     await refreshIssueReplySearchText(issueId);
   }
   return reply ? toReplyListItem(reply) : null;
-}
-
-export async function getPublicReplies(issueId: string) {
-  return listReplies(issueId, false, true);
 }

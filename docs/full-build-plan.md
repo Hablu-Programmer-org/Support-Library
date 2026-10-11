@@ -38,7 +38,7 @@ Support Library data is flexible:
 
 - Some students will have LMS user IDs, some only names.
 - Some cases will include course/batch/module, some will not.
-- Replies can include text, external file links, video links, internal notes, and metadata.
+- Replies can include text, external file links, video links, and metadata.
 - Solution articles need tags, visibility, links, and linked support cases.
 
 MongoDB handles this shape well if we still enforce application-level validation and indexes.
@@ -149,7 +149,7 @@ Included:
 - Staff login and roles.
 - Student reference create/search.
 - Support case create/list/detail.
-- Replies and internal notes.
+- Replies.
 - Status updates.
 - External file links.
 - External video links.
@@ -311,7 +311,6 @@ type SupportReply = {
   caseId: ObjectId;
   authorId: ObjectId;
   body: string;
-  isInternalNote: boolean;
   fileLinks: ExternalFileLink[];
   videoLinks: VideoLink[];
   createdAt: Date;
@@ -323,7 +322,6 @@ Indexes:
 
 - `caseId`, `createdAt`
 - `authorId`
-- `isInternalNote`
 
 ### SolutionArticle
 
@@ -431,19 +429,16 @@ Acceptance:
 - Case detail opens correctly.
 - Filters by status, course, batch, and tag work.
 
-### Phase 4 - Replies And Internal Notes
+### Phase 4 - Replies
 
 Build:
 
 - Add reply/answer.
-- Add internal note.
 - Timeline view.
 - Edit/delete policy for own replies if needed.
 
 Acceptance:
 
-- Public answer and internal note are visually distinct.
-- Internal note never appears in future public/student output.
 - Case timeline is ordered correctly.
 
 ### Phase 5 - External Links
@@ -571,20 +566,19 @@ Critical smoke flows:
 2. Create student.
 3. Create support case.
 4. Add reply.
-5. Add internal note.
-6. Add external file link.
-7. Add video link.
-8. Create solution article.
-9. Link solution to case.
-10. Search case.
-11. Search solution.
+5. Add external file link.
+6. Add video link.
+7. Create solution article.
+8. Link solution to case.
+9. Search case.
+10. Search solution.
 
 ## Security And Privacy Requirements
 
 - All dashboard routes must require authentication.
 - All mutations must enforce role checks server-side.
 - Student-specific support cases are internal by default.
-- Public solution articles must not automatically include student identity or private notes.
+- Public solution articles must not automatically include student identity.
 - External links should use HTTPS unless explicitly allowed by admin.
 - Do not expose raw MongoDB IDs unnecessarily in public URLs if student portal is later added.
 - Add audit fields: `createdBy`, `updatedBy`, timestamps.

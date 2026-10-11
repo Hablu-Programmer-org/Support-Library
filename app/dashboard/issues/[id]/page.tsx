@@ -67,7 +67,7 @@ export default async function IssueDetailPage({
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  const replies = await listReplies(supportIssue.id, canEdit, !canEdit);
+  const replies = await listReplies(supportIssue.id, !canEdit);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -139,11 +139,11 @@ export default async function IssueDetailPage({
               </span>
               <div>
                 <h2 id="responses-heading" className="text-xl font-semibold text-slate-950 dark:text-white">
-                  {canEdit ? "Responses and staff notes" : "Answers and updates"}
+                  {canEdit ? "Responses" : "Answers and updates"}
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   {canEdit
-                    ? "Public answers and private team context in chronological order."
+                    ? "Reviewed answers and updates in chronological order."
                     : "Guidance reviewed by the Hablu Programmer support team."}
                 </p>
               </div>

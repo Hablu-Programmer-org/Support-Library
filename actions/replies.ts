@@ -42,7 +42,6 @@ export async function addReplyAction(issueId: string, formData: FormData) {
   const parsed = supportReplyInputSchema.parse({
     issueId,
     body: formValue(formData, "body"),
-    isInternalNote: formData.get("isInternalNote") === "true",
     fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
     videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });

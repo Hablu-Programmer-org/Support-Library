@@ -38,7 +38,7 @@ Status: Solved
 Solved by: Mentor A
 ```
 
-Support cases preserve the real support history, including follow-ups, files, and mentor notes.
+Support cases preserve the real support history, including follow-ups and files.
 
 ### 2. Solution Article
 
@@ -119,7 +119,6 @@ Content:
 - Attachments
 - Video links
 - Linked solution articles
-- Internal mentor notes
 
 ### Student History
 
@@ -191,7 +190,6 @@ Fields:
 - `caseId`
 - `authorId`
 - `body`
-- `isInternalNote`
 - `fileLinks` optional
 - `videoLinks` optional
 - `createdAt`

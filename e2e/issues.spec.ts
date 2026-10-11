@@ -53,13 +53,6 @@ test.describe("Issue CRUD (mentor)", () => {
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toBeVisible();
 
-    await page.getByText("Add a private staff note").click();
-    const noteForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add internal note" }) });
-    await noteForm.locator('textarea[name="body"]').fill("Internal: student needs follow-up");
-    await noteForm.getByRole("button", { name: "Add internal note" }).click();
-    await expect(page.locator("article").filter({ hasText: "Internal: student needs follow-up" })).toBeVisible();
-    await expect(page.locator("article").filter({ hasText: "Internal Note" })).toBeVisible();
-
     const statusForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Update status", exact: true }) }).first();
     await statusForm.locator('select[name="status"]').selectOption("SOLVED");
     await statusForm.getByRole("button", { name: "Update status", exact: true }).click();
@@ -138,7 +131,7 @@ test.describe("Issue CRUD (mentor)", () => {
 
     await expect(page.getByRole("heading", { name: "E2E mobile issue article" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "The problem" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Responses and staff notes" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Responses" })).toBeVisible();
     const archiveHeading = page.getByRole("heading", { name: "Archive this issue" });
     const dangerZone = page.locator("section").filter({ has: archiveHeading });
     await expect(dangerZone).toHaveClass(/dark:bg-slate-900/);

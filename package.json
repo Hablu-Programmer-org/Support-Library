@@ -16,6 +16,7 @@
     "test:watch:e2e": "playwright test --ui",
     "db:indexes": "tsx scripts/sync-indexes.ts",
     "db:migrate-issue-visibility": "tsx scripts/migrate-issue-visibility.ts",
+    "db:purge-internal-notes": "tsx scripts/purge-internal-notes.ts",
     "db:seed": "tsx scripts/seed.ts",
     "clean:e2e-artifacts": "tsx scripts/clean-e2e-artifacts.ts",
     "bench:search": "tsx scripts/bench-search.ts",

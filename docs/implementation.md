@@ -8,7 +8,7 @@
 - Roles and route guards
 - Students: service, actions, list/new/detail UI
 - Cases: service, actions, quick add, list, detail, soft delete
-- Replies/internal notes with external file/video links
+- Replies with external file/video links
 - Solution library with slug routes and internal/public visibility
 - Case-solution linking through `case_solution_links`
 - Global search for cases and solutions
@@ -18,14 +18,14 @@
 - Public-output serializer guard for future public/student output
 - Playwright public/unauth smoke tests
 - Authenticated Playwright role matrix (ADMIN/MENTOR/VIEWER read + mutation guards)
-- Authenticated Playwright CRUD flows (student -> case -> reply -> internal note -> status, solution create)
+- Authenticated Playwright CRUD flows (student -> case -> reply -> status, solution create)
 - Isolated E2E database: dedicated `MONGODB_TEST_DB`, safety guard, per-collection teardown
 - `clean:e2e-artifacts` script to purge E2E leftovers from the dev database
 - Reply edit/delete: inline edit UI plus author-or-ADMIN guard in the service layer
-- Reply-body search: `searchText` is rebuilt from case fields + every public reply (no stale/dropped slugs)
+- Reply-body search: `searchText` is rebuilt from case fields + every non-deleted reply (no stale/dropped slugs)
 - Cases list filters: course, batch, mentor, date range, preserving filters across pagination
 - Analytics: course and batch breakdowns, mentor activity table, weekly case count, ADMIN/MENTOR-only access
-- Create-solution-from-case: prefilled draft from the case and its latest public reply, INTERNAL by default
+- Create-solution-from-case: prefilled draft from the case and its latest reply, INTERNAL by default
 - `bench:search` benchmark script and the recorded findings below
 
 ## Search Performance Findings

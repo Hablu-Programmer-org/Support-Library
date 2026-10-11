@@ -112,7 +112,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     solution = hasSolution
       ? initialReplySchema.parse({
           body: solutionBody ?? "See the attached file or video links for the answer.",
-          isInternalNote: false,
           fileLinks: solutionFileLinks,
           videoLinks: solutionVideoLinks,
         })
