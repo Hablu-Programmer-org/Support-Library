@@ -6,11 +6,13 @@ import {
 import { IssueForm } from "@/components/issues/issue-form";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
 import Link from "next/link";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewIssuePage() {
   await requireMentorOrAdmin();
+  const csrfToken = await generateCsrfToken();
 
   return (
     <div className="flex flex-col">
@@ -94,7 +96,7 @@ export default async function NewIssuePage() {
           </section>
 
           {/* Form */}
-          <IssueForm minimal />
+          <IssueForm minimal csrfToken={csrfToken} />
         </div>
       </main>
     </div>

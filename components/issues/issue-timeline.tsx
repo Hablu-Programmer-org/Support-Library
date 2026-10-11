@@ -7,11 +7,13 @@ export function IssueTimeline({
   replies,
   viewerId,
   viewerRole,
+  csrfToken = "",
 }: {
   issueId: string;
   replies: SupportReplyListItem[];
   viewerId: string;
   viewerRole?: UserRole | null;
+  csrfToken?: string;
 }) {
   if (replies.length === 0) {
     return (
@@ -37,7 +39,7 @@ export function IssueTimeline({
 
         return (
           <li key={reply.id}>
-            <ReplyItem issueId={issueId} reply={reply} canEdit={canEdit} />
+            <ReplyItem issueId={issueId} reply={reply} canEdit={canEdit} csrfToken={csrfToken} />
           </li>
         );
       })}

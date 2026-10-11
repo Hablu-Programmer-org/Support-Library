@@ -13,20 +13,21 @@ interface PublishFormProps {
   issueId: string;
   reviewedAt: string;
   isPublished: boolean;
+  csrfToken?: string;
 }
 
 const initialState: FormState = {
   fieldErrors: {},
 };
 
-export function PublishIssueForm({ issueId, reviewedAt, isPublished }: PublishFormProps) {
+export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken = "" }: PublishFormProps) {
   const publishAction = publishIssueAction.bind(null, issueId);
   const [state, formAction] = useActionState(publishAction, initialState);
 
   if (isPublished) {
     return (
       <form action={unpublishIssueAction.bind(null, issueId)} className="mt-3">
-        <input type="hidden" name="csrfToken" value="" />
+        <input type="hidden" name="csrfToken" value={csrfToken} />
         <PendingSubmitButton
           label="Remove from library"
           pendingLabel="Removing..."
@@ -40,7 +41,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished }: PublishFo
     <form action={formAction} className="mt-3 space-y-3">
       <input type="hidden" name="reviewedAt" value={reviewedAt} />
       <input type="hidden" name="reviewConfirmed" value="true" />
-      <input type="hidden" name="csrfToken" value="" />
+      <input type="hidden" name="csrfToken" value={csrfToken} />
       <label className="flex items-start gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
         <input
           type="checkbox"

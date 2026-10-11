@@ -10,13 +10,29 @@ updates:
         update-types:
           - minor
           - patch
+    # Auto-merge security patches
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+    assignees:
+      - "maintainer-username"
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+    assignees:
+      - "maintainer-username"
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "direct"
+        update-type: "security"
+    assignees:
+      - "maintainer-username"

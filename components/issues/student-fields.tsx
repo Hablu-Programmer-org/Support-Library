@@ -25,6 +25,7 @@ export function StudentFields({
   onNameChange,
   onEmailChange,
   onLmsUserIdChange,
+  csrfToken = "",
 }: {
   name: string;
   email: string;
@@ -34,6 +35,7 @@ export function StudentFields({
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onLmsUserIdChange: (value: string) => void;
+  csrfToken?: string;
 }) {
   const [lookup, setLookup] = useState<LookupState>("idle");
   const [nameTouched, setNameTouched] = useState(false);
@@ -61,7 +63,7 @@ export function StudentFields({
     }
 
     const timer = setTimeout(() => {
-      void lookupLmsStudentAction(normalized).then((match) => {
+      void lookupLmsStudentAction(normalized, csrfToken).then((match) => {
         if (cancelled) return;
         if (!match) {
           setLookup("notFound");
@@ -81,7 +83,7 @@ export function StudentFields({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [email, onNameChange, onLmsUserIdChange]);
+  }, [email, onNameChange, onLmsUserIdChange, csrfToken]);
 
   const lookupHint =
     lookup === "checking" ? (

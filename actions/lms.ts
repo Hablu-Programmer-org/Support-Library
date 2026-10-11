@@ -10,19 +10,26 @@ import { withCsrfProtection } from "@/lib/safe-action";
  * hp-v2 database when an email is typed. Read-only and staff-only (VIEWER can
  * never open the issue form, so the guard matches its other actions).
  */
-export async function lookupLmsStudentAction(email: string) {
-  return withCsrfProtection(new FormData(), async () => {
-    const guard = await assertRole("ADMIN", "MENTOR");
-    if (!guard.ok) return null;
+export async function lookupLmsStudentAction(email: string, csrfToken: string) {
+  return withCsrfProtection(
+    (() => {
+      const fd = new FormData();
+      fd.append("csrfToken", csrfToken);
+      return fd;
+    })(),
+    async () => {
+      const guard = await assertRole("ADMIN", "MENTOR");
+      if (!guard.ok) return null;
 
-    const normalized = email.trim().toLowerCase();
-    if (!normalized) return null;
+      const normalized = email.trim().toLowerCase();
+      if (!normalized) return null;
 
-    try {
-      await consumeRateLimit("lms.lookup", guard.session.user.id);
-      return await lookupLmsStudent(normalized);
-    } catch {
-      return null;
+      try {
+        await consumeRateLimit("lms.lookup", guard.session.user.id);
+        return await lookupLmsStudent(normalized);
+      } catch {
+        return null;
+      }
     }
-  });
+  );
 }

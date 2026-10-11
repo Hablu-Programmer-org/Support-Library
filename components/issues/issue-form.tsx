@@ -53,6 +53,7 @@ type IssueFormProps = {
     lmsUserId?: string | null;
   };
   minimal?: boolean;
+  csrfToken?: string;
 };
 
 type FormData = {
@@ -236,7 +237,7 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
   };
 }
 
-export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
+export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: IssueFormProps) {
   const action = supportIssue
     ? updateIssueAction.bind(null, supportIssue.id)
     : createIssueAction;
@@ -302,7 +303,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
       onSubmit={ensureOperationId}
     >
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
-      <input type="hidden" name="csrfToken" value="" id="csrfToken" />
+      <input type="hidden" name="csrfToken" value={csrfToken} id="csrfToken" />
       {state.fieldErrors?._form?.[0] && (
         <p
           className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"
@@ -328,6 +329,7 @@ export function IssueForm({ supportIssue, minimal = false }: IssueFormProps) {
             onNameChange={handleStudentNameChange}
             onEmailChange={handleStudentEmailChange}
             onLmsUserIdChange={handleLmsUserIdChange}
+            csrfToken={csrfToken}
           />
 
           {!minimal && (

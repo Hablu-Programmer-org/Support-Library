@@ -61,11 +61,14 @@ const nextConfig = {
   // React strict mode
   reactStrictMode: true,
 
+  // Allow cross-origin access in development (for Playwright tests)
+  allowedDevOrigins: ["127.0.0.1"],
+
   // Experimental features
   experimental: {
     // Enable server actions
     serverActions: {
-      allowedOrigins: ["localhost:12000", "support.hablu-programmer.com"],
+      allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") ?? ["localhost:12000"],
     },
   },
 };

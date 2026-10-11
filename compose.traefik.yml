@@ -21,10 +21,20 @@ services:
       - traefik.http.routers.support-library.entrypoints=websecure
       - traefik.http.routers.support-library.tls=true
       - traefik.http.routers.support-library.tls.certresolver=mytlschallenge
-      - traefik.http.routers.support-library.middlewares=support-library-rate-limit
+      - traefik.http.routers.support-library.middlewares=support-library-rate-limit,support-library-health-rate-limit
       - traefik.http.middlewares.support-library-rate-limit.ratelimit.average=60
       - traefik.http.middlewares.support-library-rate-limit.ratelimit.period=1s
       - traefik.http.middlewares.support-library-rate-limit.ratelimit.burst=120
+      # Health check rate limiting (stricter: 10 req/min per IP)
+      - traefik.http.middlewares.support-library-health-rate-limit.ratelimit.average=10
+      - traefik.http.middlewares.support-library-health-rate-limit.ratelimit.period=1m
+      - traefik.http.middlewares.support-library-health-rate-limit.ratelimit.burst=20
+      - traefik.http.routers.support-library-health.rule=Host(`support.your-domain.com`) && PathPrefix(`/api/health`)
+      - traefik.http.routers.support-library-health.entrypoints=websecure
+      - traefik.http.routers.support-library-health.tls=true
+      - traefik.http.routers.support-library-health.tls.certresolver=mytlschallenge
+      - traefik.http.routers.support-library-health.middlewares=support-library-health-rate-limit
+      - traefik.http.routers.support-library-health.service=support-library
       - traefik.http.services.support-library.loadbalancer.server.port=12000
 
 networks:

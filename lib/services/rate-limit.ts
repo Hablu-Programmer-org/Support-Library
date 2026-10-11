@@ -17,7 +17,8 @@ export type RateLimitScope =
   | "reply.add"
   | "reply.edit"
   | "reply.delete"
-  | "oauth.callback";
+  | "oauth.callback"
+  | "health.check";
 
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
@@ -31,6 +32,7 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "reply.edit": { limit: 30, windowMs: 60_000 },
   "reply.delete": { limit: 30, windowMs: 60_000 },
   "oauth.callback": { limit: 10, windowMs: 60_000 },
+  "health.check": { limit: 60, windowMs: 60_000 },
 };
 
 export class MutationRateLimitError extends Error {

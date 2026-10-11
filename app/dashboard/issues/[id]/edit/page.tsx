@@ -5,6 +5,7 @@ import { ArrowLeftIcon, SettingsIcon } from "@/components/icons";
 import { IssueForm } from "@/components/issues/issue-form";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
 import { getIssueDetail } from "@/lib/services/issues";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function EditIssuePage({
   await requireMentorOrAdmin();
   const supportIssue = await getIssueDetail(id);
   if (!supportIssue) notFound();
+  const csrfToken = await generateCsrfToken();
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
@@ -56,6 +58,7 @@ export default async function EditIssuePage({
           studentEmail: supportIssue.studentEmail ?? undefined,
           lmsUserId: supportIssue.lmsUserId ?? undefined,
         }}
+        csrfToken={csrfToken}
       />
     </div>
   );

@@ -15,10 +15,12 @@ export function ReplyItem({
   issueId,
   reply,
   canEdit,
+  csrfToken = "",
 }: {
   issueId: string;
   reply: SupportReplyListItem;
   canEdit: boolean;
+  csrfToken?: string;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -61,7 +63,7 @@ export function ReplyItem({
                 }
               }}
             >
-              <input type="hidden" name="csrfToken" value="" />
+              <input type="hidden" name="csrfToken" value={csrfToken} />
               <button
                 type="submit"
                 aria-label="Delete"
@@ -85,7 +87,7 @@ export function ReplyItem({
           onSubmit={() => setEditing(false)}
           className="mt-3 space-y-3"
         >
-          <input type="hidden" name="csrfToken" value="" />
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className={nativeLabelClass}>
             Edit Reply <span className="text-danger">*</span>
             <textarea name="body" defaultValue={reply.body} rows={4} required maxLength={20_000} className={nativeTextareaClass} />

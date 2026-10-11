@@ -28,6 +28,7 @@ import {
 } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function IssueDetailPage({
   if (!supportIssue) notFound();
 
   const replies = await listReplies(supportIssue.id, !canEdit);
+  const csrfToken = await generateCsrfToken();
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -154,9 +156,10 @@ export default async function IssueDetailPage({
               replies={replies}
               viewerId={session.user.id}
               viewerRole={session.user.role}
+              csrfToken={csrfToken}
             />
 
-            {canEdit && <ReplyComposer issueId={supportIssue.id} />}
+            {canEdit && <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />}
           </section>
         </main>
 
@@ -226,6 +229,7 @@ export default async function IssueDetailPage({
                   issueId={supportIssue.id}
                   reviewedAt={supportIssue.updatedAt?.toISOString() ?? ""}
                   isPublished={supportIssue.visibility === "PUBLISHED"}
+                  csrfToken={csrfToken}
                 />
               )}
             </section>
