@@ -29,13 +29,13 @@ export function Topbar({ user }: TopbarProps) {
       {/* Decorative brand wash; background-color stays untouched for the shell E2E. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-violet-500/10"
+        className="pointer-events-none absolute inset-0 bg-linear-to-r from-cyan-500/10 via-transparent to-violet-500/10"
       />
 
       <div className="relative z-10 flex w-full items-center justify-between gap-2 px-4">
         <div className="flex min-w-fit items-center gap-2.5">
           <Link
-            className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+            className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-cyan-500"
             href="/"
           >
             <span className="brand-bg flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 transition group-hover:brightness-110 group-hover:ring-white/50 dark:ring-white/20">
@@ -54,7 +54,10 @@ export function Topbar({ user }: TopbarProps) {
           </Link>
         </div>
 
-        <nav aria-label="Primary" className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5">
+        <nav
+          aria-label="Primary"
+          className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5"
+        >
           {navItems.map((item) => {
             const active = isActive(pathname, item);
             const Icon = item.icon;
@@ -62,7 +65,7 @@ export function Topbar({ user }: TopbarProps) {
               <Link
                 key={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 ${
+                className={`group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
                   active
                     ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
                     : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"

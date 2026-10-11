@@ -64,7 +64,7 @@ export function AccountSheet({ user }: AccountSheetProps) {
         aria-label="Account menu"
         aria-expanded={open}
         aria-controls="account-sheet"
-        className="rounded-full p-2 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 sm:hidden dark:text-white dark:hover:bg-slate-800"
+        className="rounded-full p-2 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-cyan-500 sm:hidden dark:text-white dark:hover:bg-slate-800"
       >
         <MenuIcon size={20} />
       </button>
@@ -72,7 +72,7 @@ export function AccountSheet({ user }: AccountSheetProps) {
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-[60] sm:hidden"
+            className="fixed inset-0 z-60 sm:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -94,7 +94,9 @@ export function AccountSheet({ user }: AccountSheetProps) {
               animate={panelMotion.animate}
               exit={panelMotion.exit}
               transition={
-                reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 340, damping: 34 }
+                reduceMotion
+                  ? { duration: 0 }
+                  : { type: "spring", stiffness: 340, damping: 34 }
               }
               className="glass absolute right-0 top-0 flex h-full w-[85%] max-w-xs flex-col gap-4 rounded-l-3xl p-5"
             >
@@ -125,7 +127,11 @@ export function AccountSheet({ user }: AccountSheetProps) {
 
               <div className="brand-ring flex items-center gap-3 rounded-2xl border border-white/60 bg-white/60 p-3 dark:border-white/10 dark:bg-slate-900/50">
                 <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-sm font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
-                  {user.image ? <Image alt="" fill sizes="44px" src={user.image} /> : initials}
+                  {user.image ? (
+                    <Image alt="" fill sizes="44px" src={user.image} />
+                  ) : (
+                    initials
+                  )}
                 </span>
                 <span className="flex min-w-0 flex-col leading-tight">
                   <span className="truncate text-sm font-semibold text-slate-900 dark:text-white">
