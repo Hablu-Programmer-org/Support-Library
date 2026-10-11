@@ -27,7 +27,9 @@ Create `/opt/hablu-support-library/shared/.env.production` owned by the deploy u
 
 Create a protected `production` environment with required reviewers and deployment-branch restrictions. Add environment secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_PRIVATE_KEY`, and `VPS_SSH_KNOWN_HOSTS`; the known-host value must be obtained through a trusted out-of-band channel, not `ssh-keyscan` in CI. Optionally set `VPS_SSH_PORT` as an environment variable.
 
-The workflows run in order: `CI` -> `Publish GHCR image` -> approval-gated `Deploy production`. Publish builds both the runtime and `-ops` images for the verified commit and uploads a `release-metadata` artifact containing the commit SHA and runtime image digest; deploy downloads that artifact rather than trusting `workflow_run` metadata, and refuses to run if the pulled image digest differs. CI uses an ephemeral MongoDB and runs the production build before Playwright. It automatically adopts `playwright.ci.config.ts` when that future config is added; until then it uses `playwright.12001.config.ts`.
+The workflows run in order: `CI` -> `Publish GHCR image` -> approval-gated `Deploy production`. Publish builds both the runtime and `-ops` images for the verified commit and uploads a `release-metadata` artifact containing the commit SHA and both image digests; deploy downloads that artifact rather than trusting `workflow_run` metadata, and refuses to run if the pulled image digests differ.
+
+A manual `Deploy production` run needs no SHA. Leaving `sha` blank resolves the latest successful `Publish GHCR image` run on `main`, downloads its `release-metadata` artifact, and verifies the SHA and both image digests. Supplying a full 40-character SHA redeploys that exact published `sha-<sha>` tag (tag-pinned, without an artifact lookup). CI uses an ephemeral MongoDB and runs the production build before Playwright. It automatically adopts `playwright.ci.config.ts` when that future config is added; until then it uses `playwright.12001.config.ts`.
 
 ## Initial deploy and checks
 

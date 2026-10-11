@@ -14,7 +14,7 @@ on:
           - deploy
           - rollback
       sha:
-        description: Full 40-character commit SHA (required for deploy)
+        description: Optional full 40-character commit SHA to redeploy; leave blank to deploy the latest published release on main
         required: false
         type: string
 
@@ -41,36 +41,52 @@ jobs:
     env:
       SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
       DEPLOY_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'deploy' }}
-      DISPATCH_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
     steps:
+      - name: Resolve release run
+        if: env.DEPLOY_ACTION == 'deploy'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
+        run: |
+          set -Eeuo pipefail
+          run_id=""
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            run_id="${{ github.event.workflow_run.id }}"
+          elif [[ -z "$INPUT_SHA" ]]; then
+            run_id="$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/publish.yml/runs?branch=main&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')"
+            [[ -n "$run_id" ]] || { echo "No successful Publish GHCR image run was found on main." >&2; exit 1; }
+          fi
+          echo "SOURCE_RUN_ID=$run_id" >> "$GITHUB_ENV"
+
       - name: Download verified release metadata
-        if: github.event_name == 'workflow_run'
+        if: env.DEPLOY_ACTION == 'deploy' && env.SOURCE_RUN_ID != ''
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: release-metadata
-          run-id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Resolve release identity
+        if: env.DEPLOY_ACTION == 'deploy'
         shell: bash
+        env:
+          INPUT_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.sha || '' }}
         run: |
           set -Eeuo pipefail
           sha=""
           digest=""
           ops_digest=""
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            [[ -f release.env ]] || { echo "release-metadata artifact is missing release.env." >&2; exit 1; }
+          if [[ -f release.env ]]; then
             sha="$(sed -n 's/^sha=//p' release.env)"
             digest="$(sed -n 's/^digest=//p' release.env)"
             ops_digest="$(sed -n 's/^opsdigest=//p' release.env)"
           else
-            sha="$DISPATCH_SHA"
+            sha="$INPUT_SHA"
           fi
 
-          if [[ "$DEPLOY_ACTION" == deploy ]]; then
-            [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character lowercase commit SHA is required." >&2; exit 1; }
-          fi
-          if [[ "${{ github.event_name }}" == "workflow_run" && "$DEPLOY_ACTION" == deploy ]]; then
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character lowercase commit SHA is required." >&2; exit 1; }
+          if [[ -n "${SOURCE_RUN_ID:-}" ]]; then
             [[ "$digest" == sha256:* ]] || { echo "The published runtime image digest is required to deploy." >&2; exit 1; }
             [[ "$ops_digest" == sha256:* ]] || { echo "The published ops image digest is required to deploy." >&2; exit 1; }
           fi
