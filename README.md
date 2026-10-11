@@ -94,8 +94,23 @@ cmd /c "npm run test:e2e"
 - VIEWER (students) can read published cases but never unpublished ones
 - Cases list filters by course, batch, mentor and date range
 - Dashboard shows real DB counts and recent unresolved cases for staff; VIEWER/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline Dashboard/Issues navigation (Dashboard is staff-only in the nav)
+- Chrome is a single fixed topbar with inline Dashboard/Issues navigation (Dashboard is staff-only in the nav); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
 - Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; students browse published solutions directly without the staff dashboard
+
+## Design System
+
+Support-library chrome uses a light "glass + gradient" language on top of the
+shared Tailwind tokens (`app/globals.css`):
+
+- **Brand gradient** cyan `#06b6d4` → violet `#8b5cf6` (`brand-text`, `brand-bg`).
+- **Glass surfaces** (`.glass`): translucent white/slate with `backdrop-blur`, used on the topbar actions, account sheet, landing cards and the login/unauthorized cards.
+- **Aurora backdrop** (`.aurora-blob`): slow drifting gradient blobs on public pages and the dashboard shell; disabled under `prefers-reduced-motion`.
+- **Motion**: `framer-motion` for the mobile account sheet; also reduced-motion aware.
+
+Theme-restricted pages keep their exact base `background-color` utilities
+(`header` `white/80` → `slate-950/80`, landing `main` `slate-950`, cards
+`slate-900`) — glass/gradient is layered via `background-image`, borders and
+shadows so the computed colors asserted by `e2e/shell.spec.ts` stay intact.
 
 ## Deploy Notes
 

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserMenu } from "@/components/auth/user-menu";
+import { AccountSheet } from "@/components/layout/account-sheet";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { ShellUser } from "@/components/layout/shell";
 import { navItemsForRole, type NavItem } from "@/lib/config/nav";
@@ -24,37 +25,58 @@ export function Topbar({ user }: TopbarProps) {
   const navItems = user ? navItemsForRole(user.role) : [];
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
-      <div className="flex w-full items-center justify-between px-4">
+    <header className="brand-hairline fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
+      {/* Decorative brand wash; background-color stays untouched for the shell E2E. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-transparent to-violet-500/10"
+      />
+
+      <div className="relative z-10 flex w-full items-center justify-between gap-2 px-4">
         <div className="flex min-w-fit items-center gap-2.5">
-          <Link className="flex w-fit items-center gap-2.5" href="/dashboard">
-            <Image
-              alt="Hablu Support Library"
-              className="h-10 w-auto"
-              height={339}
-              src="/logo.png"
-              width={499}
-            />
-            <span className="hidden text-lg font-semibold text-slate-900 sm:block lg:text-xl dark:text-white">
-              Hablu Support Library
+          <Link
+            className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+            href="/"
+          >
+            <span className="brand-bg flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 transition group-hover:brightness-110 group-hover:ring-white/50 dark:ring-white/20">
+              <Image
+                alt="Hablu Support Library"
+                className="h-8 w-auto"
+                height={339}
+                src="/logo.png"
+                width={499}
+              />
+            </span>
+            <span className="hidden text-lg font-semibold sm:block lg:text-xl">
+              <span className="text-slate-900 dark:text-white">Hablu</span>{" "}
+              <span className="brand-text">Support Library</span>
             </span>
           </Link>
         </div>
 
-        <nav aria-label="Primary" className="flex flex-1 items-center justify-center gap-1 sm:gap-2">
+        <nav aria-label="Primary" className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5">
           {navItems.map((item) => {
             const active = isActive(pathname, item);
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 dark:hover:bg-slate-800 ${
+                className={`group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500 ${
                   active
-                    ? "text-cyan-600 dark:text-cyan-400"
-                    : "text-slate-700 dark:text-slate-200"
+                    ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
+                    : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"
                 }`}
                 href={item.href}
               >
+                <Icon
+                  size={18}
+                  className={
+                    active
+                      ? "text-cyan-500"
+                      : "text-slate-400 transition group-hover:text-slate-500 dark:group-hover:text-slate-300"
+                  }
+                />
                 {item.label}
               </Link>
             );
@@ -63,19 +85,25 @@ export function Topbar({ user }: TopbarProps) {
 
         {/* The bar follows the active theme, so ThemeToggle/UserMenu inherit it. */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <ThemeToggle />
           {user ? (
             <>
-              <UserMenu user={user} />
-              <SignOutButton />
+              <div className="hidden items-center gap-2 sm:flex">
+                <ThemeToggle />
+                <UserMenu user={user} />
+                <SignOutButton />
+              </div>
+              <AccountSheet user={user} />
             </>
           ) : (
-            <Link
-              href="/login"
-              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
-            >
-              Sign in
-            </Link>
+            <>
+              <ThemeToggle />
+              <Link
+                href="/login"
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+              >
+                Sign in
+              </Link>
+            </>
           )}
         </div>
       </div>

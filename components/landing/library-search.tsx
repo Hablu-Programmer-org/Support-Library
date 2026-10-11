@@ -17,7 +17,11 @@ export function LibrarySearch() {
   };
 
   return (
-    <form role="search" className="flex w-full max-w-xl flex-col gap-2 sm:flex-row" onSubmit={submit}>
+    <form
+      role="search"
+      className="glass flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row"
+      onSubmit={submit}
+    >
       <input
         aria-label="Search published solutions"
         className={nativeFieldClass}
@@ -27,7 +31,7 @@ export function LibrarySearch() {
         value={term}
       />
       <button
-        className="rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-cyan-500"
+        className="brand-bg rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
         type="submit"
       >
         Search

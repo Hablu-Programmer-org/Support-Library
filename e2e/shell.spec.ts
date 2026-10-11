@@ -87,6 +87,19 @@ test.describe("Shell: mobile navbar", () => {
     await nav.getByRole("link", { name: "Issues" }).click();
     await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
   });
+
+  test("account sheet opens with identity, appearance and sign out", async ({ page }) => {
+    await page.goto("/dashboard");
+    await page.getByRole("button", { name: "Account menu" }).click();
+
+    const sheet = page.getByRole("dialog", { name: "Account menu" });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByText("Appearance")).toBeVisible();
+    await expect(sheet.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+  });
 });
 
 test.describe("Shell: public pages", () => {

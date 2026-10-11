@@ -137,3 +137,18 @@ export const WarningTriangleIcon: FC<IconSvgProps> = ({ size, ...props }) => (
     <path d="M12 17h.01" />
   </svg>
 );
+
+export const MenuIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <line x1="4" y1="7" x2="20" y2="7" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <line x1="4" y1="17" x2="20" y2="17" />
+  </svg>
+);
+
+export const CloseIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <line x1="6" y1="6" x2="18" y2="18" />
+    <line x1="18" y1="6" x2="6" y2="18" />
+  </svg>
+);

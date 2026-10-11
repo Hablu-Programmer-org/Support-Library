@@ -20,7 +20,7 @@ export function UserMenu({ user }: UserMenuProps) {
     .toUpperCase();
 
   return (
-    <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-2 py-1 dark:border-slate-800 dark:bg-slate-900/70 sm:flex">
+    <div className="glass hidden items-center gap-2 rounded-full px-2 py-1 sm:flex">
       <span className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-100 text-xs font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
         {user.image ? <Image alt="" fill sizes="32px" src={user.image} /> : initials}
       </span>
