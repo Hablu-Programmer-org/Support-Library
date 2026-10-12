@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 
 import "./globals.css";
 import { Providers } from "./providers";
 
-// next/font downloads and self-hosts the file, so there is no runtime request to
-// Google and no layout shift. Weights cover the font-normal/medium/semibold/bold
-// utilities used across the app.
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Self-hosted variable font (committed under app/fonts). next/font/local inlines
+// the file at build time with no network dependency, so production and Docker
+// builds are hermetic. The weight axis covers the font-normal/medium/semibold/
+// bold utilities used across the app.
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-sans",
+  weight: "100 900",
   display: "swap",
 });
 
@@ -33,7 +34,7 @@ export default async function RootLayout({
   return (
     // suppressHydrationWarning is required: next-themes sets the `dark` class on
     // <html> before React hydrates, so the server and client markup differ.
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html lang="en" suppressHydrationWarning className={geistSans.variable}>
       <body>
         <Providers nonce={nonce}>{children}</Providers>
       </body>
