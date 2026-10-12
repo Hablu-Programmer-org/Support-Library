@@ -69,7 +69,7 @@ export default async function IssueDetailPage({
   if (!supportIssue) notFound();
 
   const replies = await listReplies(supportIssue.id, !canEdit);
-  const csrfToken = await generateCsrfToken();
+  const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -199,6 +199,8 @@ export default async function IssueDetailPage({
                 action={changeIssueStatusActionSimple.bind(null, supportIssue.id)}
                 className="mt-4 space-y-3"
               >
+                <input type="hidden" name="csrfToken" value={csrfToken} />
+                <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt?.toISOString() ?? ""} />
                 <label htmlFor="issue-status" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Status
                 </label>
@@ -253,7 +255,10 @@ export default async function IssueDetailPage({
               <p className="mt-3 text-sm leading-6 text-danger-900/80 dark:text-slate-300">
                 Remove this issue from active staff lists and the student library. Archive it only when no further action is needed.
               </p>
-              <ArchiveIssueButton action={deleteIssueActionSimple.bind(null, supportIssue.id)} />
+              <ArchiveIssueButton
+                action={deleteIssueActionSimple.bind(null, supportIssue.id)}
+                csrfToken={csrfToken}
+              />
             </section>
           )}
         </aside>

@@ -2,12 +2,26 @@ name: Deploy production
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: [Publish GHCR image]
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      action:
+        description: Deploy a published artifact or roll back to the recorded previous image
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - rollback
+      publish_run_id:
+        description: Successful Publish GHCR image run ID (required for deploy)
+        required: false
+        type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -16,86 +30,213 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy to VPS
+    name: Approval-gated digest deployment
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Configure SSH
+      - name: Resolve trusted publish run
+        id: release
+        shell: bash
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          EVENT_ACTION: ${{ inputs.action }}
+          INPUT_RUN_ID: ${{ inputs.publish_run_id }}
         run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          set -euo pipefail
+          action="deploy"
+          run_id="$EVENT_RUN_ID"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            action="$EVENT_ACTION"
+            run_id="$INPUT_RUN_ID"
+          fi
+          echo "action=$action" >> "$GITHUB_OUTPUT"
+          if [[ "$action" == "rollback" ]]; then
+            [[ -z "$run_id" ]] || echo "publish_run_id is ignored for rollback"
+            exit 0
+          fi
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo "publish_run_id is required for deploy"; exit 1; }
+          conclusion=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .conclusion)
+          workflow_path=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .path)
+          branch=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq .head_branch)
+          [[ "$conclusion" == "success" && "$workflow_path" == ".github/workflows/publish.yml" && "$branch" == "main" ]] || {
+            echo "Run must be a successful publish.yml run on main"
+            exit 1
+          }
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download exact release artifact
+        if: steps.release.outputs.action == 'deploy'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" --name release-metadata --dir release
+          cd release
+          sha256sum --check SHA256SUMS
+          set -a
+          source release.env
+          set +a
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APP_IMAGE" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]
+          [[ "$OPS_IMAGE" =~ ^ghcr\.io/[a-z0-9._/-]+@sha256:[0-9a-f]{64}$ ]]
+
+      - name: Configure trusted SSH host
+        shell: bash
+        env:
+          VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_SSH_KNOWN_HOSTS: ${{ secrets.VPS_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          [[ -n "$VPS_SSH_KNOWN_HOSTS" ]] || { echo "VPS_SSH_KNOWN_HOSTS is required"; exit 1; }
+          printf '%s\n' "$VPS_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
-      - name: Sync files to VPS
+      - name: Copy exact Compose artifact
+        if: steps.release.outputs.action == 'deploy'
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          rsync -az \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='node_modules' \
-            --exclude='.next' \
-            --exclude='logs' \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            -e "ssh -i ~/.ssh/id_deploy" \
-            ./ "$VPS_USER@$VPS_HOST:/opt/hablu-support-library/"
+          VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+        run: scp -P "$VPS_SSH_PORT" -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes release/compose.production.yml "$VPS_USER@$VPS_HOST:/tmp/hablu-support-library-compose.yml"
 
-      - name: Pre-deploy environment check
+      - name: Deploy or roll back on VPS
+        shell: bash
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+          DEPLOY_ACTION: ${{ steps.release.outputs.action }}
         run: |
-          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'test -f /opt/hablu-support-library/shared/.env.production || { echo "ERROR: /opt/hablu-support-library/shared/.env.production missing on VPS"; exit 1; }'
+          set -euo pipefail
+          release_sha=""
+          app_image=""
+          ops_image=""
+          if [[ "$DEPLOY_ACTION" == "deploy" ]]; then
+            set -a
+            source release/release.env
+            set +a
+            release_sha="$RELEASE_SHA"
+            app_image="$APP_IMAGE"
+            ops_image="$OPS_IMAGE"
+          fi
+          ssh -p "$VPS_SSH_PORT" -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" bash -s -- "$DEPLOY_ACTION" "$release_sha" "$app_image" "$ops_image" <<'REMOTE'
+          set -euo pipefail
+          action="$1"
+          release_sha="$2"
+          app_image="$3"
+          ops_image="$4"
+          root=/opt/hablu-support-library
+          shared="$root/shared"
+          state="$root/state"
+          env_file="$shared/.env.production"
+          project=hablu-support-library
 
-      - name: Build and restart
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose -f compose.production.yml --env-file .env.production up -d --build --force-recreate'
+          test -r "$env_file"
+          test "$(stat -c '%a' "$env_file")" = "600"
+          docker network inspect root_default >/dev/null
+          install -d -m 750 "$root/releases" "$state"
 
-      - name: Apply indexes and preflight
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'cp /opt/hablu-support-library/shared/.env.production /opt/hablu-support-library/.env.production && cd /opt/hablu-support-library && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:indexes -- --apply --create-only && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:indexes -- --verify && docker compose -f compose.production.yml --env-file .env.production run --rm ops npm run db:preflight'
+          write_state() {
+            name="$1"
+            value="$2"
+            tmp="$state/.$name.$$"
+            printf '%s\n' "$value" > "$tmp"
+            chmod 600 "$tmp"
+            mv -f "$tmp" "$state/$name"
+          }
 
-      - name: Cleanup old Docker images
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          ssh -i ~/.ssh/id_deploy "$VPS_USER@$VPS_HOST" \
-            'docker image prune -f'
+          wait_healthy() {
+            for attempt in $(seq 1 40); do
+              status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' hablu-support-library 2>/dev/null || true)
+              if [ "$status" = healthy ] && curl --fail --silent https://support.hablu-programmer.com/api/health/ready >/dev/null; then
+                return 0
+              fi
+              sleep 5
+            done
+            docker logs --tail 100 hablu-support-library || true
+            return 1
+          }
 
-      - name: Health check
-        run: |
-          for i in $(seq 1 40); do
-            code=$(curl -fsS -o /dev/null -w "%{http_code}" https://support.hablu-programmer.com/api/health/ready || true)
-            if [ "$code" = "200" ]; then
-              echo "Deploy healthy (HTTP $code)"
-              exit 0
+          run_compose() {
+            compose_file="$1"
+            image="$2"
+            APP_ENV_FILE="$env_file" APP_IMAGE="$image" OPS_IMAGE="${ops_image:-$image}" \
+              docker compose -p "$project" -f "$compose_file" up -d --no-build --force-recreate support-library
+          }
+
+          if [ "$action" = rollback ]; then
+            test -s "$state/previous-image"
+            test -s "$state/previous-release"
+            previous_image=$(cat "$state/previous-image")
+            previous_release=$(cat "$state/previous-release")
+            previous_compose="$root/releases/$previous_release/compose.production.yml"
+            test -f "$previous_compose"
+            docker pull "$previous_image"
+            old_image=$(cat "$state/current-image")
+            old_release=$(cat "$state/current-release")
+            run_compose "$previous_compose" "$previous_image"
+            wait_healthy
+            write_state previous-image "$old_image"
+            write_state previous-release "$old_release"
+            write_state current-image "$previous_image"
+            write_state current-release "$previous_release"
+            exit 0
+          fi
+
+          release_dir="$root/releases/$release_sha"
+          install -d -m 750 "$release_dir"
+          install -m 640 /tmp/hablu-support-library-compose.yml "$release_dir/compose.production.yml"
+          rm -f /tmp/hablu-support-library-compose.yml
+          compose_file="$release_dir/compose.production.yml"
+
+          docker pull "$app_image"
+          docker pull "$ops_image"
+          docker image inspect "$app_image" >/dev/null
+          docker image inspect "$ops_image" >/dev/null
+
+          docker run --rm --env-file "$env_file" --network root_default --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
+            --cap-drop ALL --security-opt no-new-privileges "$ops_image" npm run db:indexes -- --apply --create-only
+          docker run --rm --env-file "$env_file" --network root_default --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
+            --cap-drop ALL --security-opt no-new-privileges "$ops_image" npm run db:indexes -- --verify
+          docker run --rm --env-file "$env_file" --network root_default --read-only --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
+            --cap-drop ALL --security-opt no-new-privileges "$ops_image" npm run db:preflight
+
+          old_image=$(cat "$state/current-image" 2>/dev/null || docker inspect --format '{{.Config.Image}}' hablu-support-library 2>/dev/null || true)
+          old_release=$(cat "$state/current-release" 2>/dev/null || true)
+          rollback_compose="$compose_file"
+          if [ -n "$old_release" ] && [ -f "$root/releases/$old_release/compose.production.yml" ]; then
+            rollback_compose="$root/releases/$old_release/compose.production.yml"
+          fi
+          rollback() {
+            if [ -n "$old_image" ]; then
+              run_compose "$rollback_compose" "$old_image" || true
+              wait_healthy || true
+            else
+              APP_ENV_FILE="$env_file" APP_IMAGE="$app_image" OPS_IMAGE="$ops_image" \
+                docker compose -p "$project" -f "$compose_file" stop support-library || true
             fi
-            echo "Waiting for health... (HTTP $code)"
-            sleep 5
-          done
-          echo "Health check failed after 40 attempts (last HTTP $code)"
-          exit 1
+          }
+          trap rollback ERR
+          run_compose "$compose_file" "$app_image"
+          wait_healthy
+          trap - ERR
+
+          if [ -n "$old_image" ]; then
+            write_state previous-image "$old_image"
+            write_state previous-release "${old_release:-$release_sha}"
+          fi
+          write_state current-image "$app_image"
+          write_state current-release "$release_sha"
+          docker image prune -f >/dev/null
+          REMOTE

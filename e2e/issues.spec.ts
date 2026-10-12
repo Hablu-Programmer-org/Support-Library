@@ -102,6 +102,40 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.getByText("E2E LMS autofill submission")).toBeVisible();
   });
 
+  test("rejects a submitted LMS id that does not belong to the email", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
+    await expect(page.getByText("Found in LMS")).toBeVisible();
+    await page.locator('input[name="lmsUserId"]').evaluate((input) => {
+      (input as HTMLInputElement).value = "another-lms-user";
+    });
+    await page.fill('input[name="title"]', "E2E mismatched LMS identity");
+    await page.fill('textarea[name="question"]', "The server must reject a mismatched LMS identity.");
+    await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "does not match this email" })).toBeVisible();
+    await expect(page).toHaveURL("/dashboard/issues/new");
+  });
+
+  test("rejects a stale issue edit", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Stale Student");
+    await page.fill('input[name="studentEmail"]', `e2e.stale.${Date.now()}@test.com`);
+    await page.fill('input[name="title"]', "E2E stale issue update");
+    await page.fill('textarea[name="question"]', "A stale revision must not overwrite newer data.");
+    await page.uncheck('input[name="solveIssue"]');
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+    await page.getByRole("link", { name: "Edit issue details" }).click();
+    await page.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {
+      (input as HTMLInputElement).value = "2000-01-01T00:00:00.000Z";
+    });
+    await page.fill('input[name="title"]', "E2E stale overwrite attempt");
+    await page.getByRole("button", { name: "Save Issue" }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Issue changed since you opened it" })).toBeVisible();
+  });
+
   test("allows a manual student name after an LMS lookup miss", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
 

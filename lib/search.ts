@@ -24,7 +24,7 @@ export const buildSearchRegex = (query?: string | null) => {
  * while validated input uses undefined. `joinSearchText` ignores both.
  *
  * NOTE: studentEmail is intentionally excluded from searchText for privacy.
- * Use studentEmailHash for exact-match lookups if needed.
+ * Exact email lookup uses the separately keyed `studentEmailLookup` HMAC fields.
  */
 export type IssueSearchTextSource = {
   title: string;

@@ -1,7 +1,6 @@
 import "server-only";
 
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
 
 import { dbConnect } from "@/lib/db";
 import {
@@ -10,6 +9,12 @@ import {
   operationIdSchema,
 } from "@/lib/mutation-security";
 import { buildIssueSearchText, buildIssueSearchTextWithReplies, buildSearchRegex } from "@/lib/search";
+import {
+  createStudentEmailLookupCandidates,
+  normalizeStudentEmail,
+  protectStudentEmail,
+  readStudentEmail,
+} from "@/lib/student-email-crypto";
 import {
   supportIssueInputSchema,
   type SupportIssueFilter,
@@ -72,15 +77,23 @@ export type PublicIssueDetail = Pick<
   | "updatedAt"
 >;
 
+type PublicIssueListItem = PublicIssueDetail & {
+  studentName?: never;
+  studentEmail?: never;
+  lmsUserId?: never;
+};
+
 export type IssueListParams = SupportIssueFilter & {
   page?: number;
   limit?: number;
 };
 
-const toIssueListItem = (item: LeanDoc): SupportIssueListItem => ({
+const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssueListItem => ({
   id: String(item._id),
   studentName: String(item.studentName ?? ""),
-  studentEmail: (item.studentEmail as string | null) ?? null,
+  studentEmail: includeStudentEmail
+    ? readStudentEmail(item.studentEmailEncrypted, item.studentEmail)
+    : null,
   lmsUserId: (item.lmsUserId as string | null) ?? null,
   title: String(item.title),
   question: String(item.question),
@@ -97,6 +110,24 @@ const toIssueListItem = (item: LeanDoc): SupportIssueListItem => ({
   updatedAt: item.updatedAt as Date | undefined,
 });
 
+const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
+  const mapped = toIssueListItem(item, false);
+  return {
+    id: mapped.id,
+    title: mapped.title,
+    question: mapped.question,
+    status: mapped.status,
+    priority: mapped.priority,
+    courseSlug: mapped.courseSlug,
+    batchNo: mapped.batchNo,
+    tags: mapped.tags,
+    visibility: mapped.visibility,
+    publishedAt: mapped.publishedAt,
+    createdAt: mapped.createdAt,
+    updatedAt: mapped.updatedAt,
+  };
+};
+
 function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   const filter: Record<string, unknown> = { deletedAt: null };
 
@@ -107,8 +138,12 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   if (params.batchNo) filter.batchNo = params.batchNo;
   if (params.tag) filter.tags = params.tag.toLowerCase();
   if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) filter.mentorId = params.mentorId;
+  const normalizedQuery = normalizeStudentEmail(params.q ?? "");
+  const isExactEmailQuery = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedQuery);
   const searchRegex = buildSearchRegex(params.q);
-  if (searchRegex) {
+  if (!publicOnly && isExactEmailQuery) {
+    filter.$or = createStudentEmailLookupCandidates(normalizedQuery);
+  } else if (searchRegex) {
     if (publicOnly) {
       filter.$or = [
         { title: searchRegex },
@@ -150,8 +185,8 @@ export async function createIssue(
   await dbConnect();
   const actorObjectId = new mongoose.Types.ObjectId(actorId);
 
-  // Hash the student email for privacy
-  const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
+  const { studentEmail, ...issueFields } = parsed;
+  const protectedEmail = protectStudentEmail(studentEmail);
 
   // For MENTOR role, enforce mentorId = actorId (ignore input)
   // For ADMIN role, allow custom mentorId or default to actorId
@@ -162,7 +197,7 @@ export async function createIssue(
   const existing = await SupportIssueModel.findOne({
     createdBy: actorObjectId,
     createOperationId: parsedOperationId,
-  }).lean();
+  }).select("+studentEmail").lean();
   if (existing) {
     assertOperationPayload(existing.createOperationHash, requestHash);
     return toIssueListItem(existing);
@@ -175,8 +210,9 @@ export async function createIssue(
         ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
         : buildIssueSearchText(parsed);
       const [createdIssue] = await SupportIssueModel.create([{
-        ...parsed,
-        studentEmailHash,
+        ...issueFields,
+        studentEmailEncrypted: protectedEmail.encrypted,
+        studentEmailLookup: protectedEmail.lookup,
         status: finalStatus,
         searchText,
         mentorId: effectiveMentorId,
@@ -202,6 +238,15 @@ export async function createIssue(
         }, context, session);
       }
 
+      const context = await getRequestContext();
+      await recordAuditEvent({
+        actorId,
+        action: "ISSUE_CREATE",
+        resourceType: "SupportIssue",
+        resourceId: String(createdIssue._id),
+        result: "SUCCEEDED",
+      }, context, session);
+
       return createdIssue.toObject();
     });
 
@@ -211,21 +256,27 @@ export async function createIssue(
     const duplicate = await SupportIssueModel.findOne({
       createdBy: actorObjectId,
       createOperationId: parsedOperationId,
-    }).lean();
+    }).select("+studentEmail").lean();
     if (!duplicate) throw error;
     assertOperationPayload(duplicate.createOperationHash, requestHash);
     return toIssueListItem(duplicate);
   }
 }
 
-export async function updateIssue(id: string, input: SupportIssueInput, actorId: string, actorRole: "ADMIN" | "MENTOR") {
+export async function updateIssue(
+  id: string,
+  input: SupportIssueInput,
+  actorId: string,
+  actorRole: "ADMIN" | "MENTOR",
+  expectedUpdatedAt: Date,
+) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
   const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
-  // Hash the student email if it's being updated
-  const studentEmailHash = await bcrypt.hash(parsed.studentEmail.toLowerCase().trim(), 12);
+  const { studentEmail, ...issueFields } = parsed;
+  const protectedEmail = protectStudentEmail(studentEmail);
 
   // For MENTOR role, enforce mentorId = actorId (ignore input)
   // For ADMIN role, allow custom mentorId
@@ -234,9 +285,9 @@ export async function updateIssue(id: string, input: SupportIssueInput, actorId:
     : (parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : undefined);
 
   const updateData: Record<string, unknown> = {
-    ...parsed,
-    studentEmailHash,
-    searchText: buildIssueSearchText(parsed),
+    ...issueFields,
+    studentEmailEncrypted: protectedEmail.encrypted,
+    studentEmailLookup: protectedEmail.lookup,
     visibility: "INTERNAL",
     publishedAt: null,
     publishedBy: null,
@@ -251,33 +302,65 @@ export async function updateIssue(id: string, input: SupportIssueInput, actorId:
     updateData.mentorId = new mongoose.Types.ObjectId(actorId);
   }
 
-  const supportIssue = await SupportIssueModel.findOneAndUpdate(
-    { _id: id, deletedAt: null },
+  return mongoose.connection.transaction(async (session) => {
+    const replies = await SupportReplyModel.find({ issueId: id, deletedAt: null })
+      .select("body")
+      .session(session)
+      .lean();
+    updateData.searchText = buildIssueSearchTextWithReplies(
+      parsed,
+      replies.map((reply) => reply.body),
+    );
+
+    const supportIssue = await SupportIssueModel.findOneAndUpdate(
+      { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
     {
       $set: updateData,
-      $push: {
-        publicationHistory: {
-          action: "CONTENT_CHANGED",
-          actorId: new mongoose.Types.ObjectId(actorId),
-          at: new Date(),
+      $unset: { studentEmail: "", studentEmailHash: "" },
+        $push: {
+          publicationHistory: {
+            action: "CONTENT_CHANGED",
+            actorId: new mongoose.Types.ObjectId(actorId),
+            at: new Date(),
+          },
         },
       },
-    },
-    { new: true, runValidators: true },
-  ).lean();
+      { new: true, runValidators: true, session },
+    ).lean();
 
-  return supportIssue ? toIssueListItem(supportIssue) : null;
+    const context = await getRequestContext();
+    await recordAuditEvent({
+      actorId,
+      action: "ISSUE_UPDATE",
+      resourceType: "SupportIssue",
+      resourceId: id,
+      result: supportIssue ? "SUCCEEDED" : "DENIED",
+    }, context, session);
+
+    return supportIssue ? toIssueListItem(supportIssue) : null;
+  });
 }
 
-export async function changeIssueStatus(id: string, status: CaseStatus, actorId: string) {
+export async function changeIssueStatus(id: string, status: CaseStatus, actorId: string, expectedUpdatedAt: Date) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportIssue = await SupportIssueModel.findOneAndUpdate(
-    { _id: id, deletedAt: null },
-    { status, updatedBy: new mongoose.Types.ObjectId(actorId) },
-    { new: true, runValidators: true },
-  ).lean();
+  const supportIssue = await mongoose.connection.transaction(async (session) => {
+    const updated = await SupportIssueModel.findOneAndUpdate(
+      { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
+      { status, updatedBy: new mongoose.Types.ObjectId(actorId) },
+      { new: true, runValidators: true, session },
+    ).lean();
+    const context = await getRequestContext();
+    await recordAuditEvent({
+      actorId,
+      action: "ISSUE_STATUS_CHANGE",
+      resourceType: "SupportIssue",
+      resourceId: id,
+      result: updated ? "SUCCEEDED" : "DENIED",
+    }, context, session);
+    return updated;
+  });
 
   return supportIssue ? toIssueListItem(supportIssue) : null;
 }
@@ -377,6 +460,7 @@ export async function listIssues(
         ], { maxTimeMS: 5000 })
       : SupportIssueModel.find(filter, null, queryOptions)
           .select(options.publicOnly ? PUBLIC_ISSUE_FIELDS : "")
+          .select(options.publicOnly ? "" : "+studentEmail")
           .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
           .skip(skip)
           .limit(limit)
@@ -388,12 +472,9 @@ export async function listIssues(
   ]);
 
   return {
-    items: (items as LeanDoc[]).map((item) => {
-      const mapped = toIssueListItem(item);
-      return options.publicOnly
-        ? { ...mapped, studentName: "", studentEmail: null, lmsUserId: null }
-        : mapped;
-    }),
+    items: (items as LeanDoc[]).map((item) => options.publicOnly
+      ? toPublicIssueListItem(item)
+      : toIssueListItem(item)),
     page,
     limit,
     total,
@@ -434,7 +515,9 @@ export async function getIssueDetail(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
-  const supportIssue = await SupportIssueModel.findOne({ _id: id, deletedAt: null }).lean();
+  const supportIssue = await SupportIssueModel.findOne({ _id: id, deletedAt: null })
+    .select("+studentEmail")
+    .lean();
   if (!supportIssue) return null;
 
   return toIssueListItem(supportIssue as LeanDoc);
@@ -506,13 +589,13 @@ export async function publishIssue(id: string, actorId: string, reviewedAt: Date
   });
 }
 
-export async function unpublishIssue(id: string, actorId: string) {
+export async function unpublishIssue(id: string, actorId: string, expectedUpdatedAt: Date) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
 
   return mongoose.connection.transaction(async (session) => {
     const supportIssue = await SupportIssueModel.findOneAndUpdate(
-      { _id: id, deletedAt: null },
+      { _id: id, deletedAt: null, visibility: "PUBLISHED", updatedAt: expectedUpdatedAt },
       {
         $set: {
           visibility: "INTERNAL",

@@ -4,7 +4,7 @@ Staff-first support library for Hablu Programmer. Mentors can record student sup
 
 The interface is English throughout, with Inter typography and English date formatting. Issue and reply content can still be written and searched in any language.
 
-**Built by [Hablu Programmer](https://hablu-programmer.com)** — See [BRANDING.md](BRANDING.md) for attribution requirements.
+**Built by [Hablu Programmer](https://hablu-programmer.com)**. The MIT license does not require UI attribution; see [BRANDING.md](BRANDING.md) for separate trademark guidance.
 
 ## Architecture Overview
 
@@ -40,11 +40,11 @@ The interface is English throughout, with Inter typography and English date form
 
 ### Security Features
 
-- **CSRF protection** on all Server Actions (double-submit cookie)
+- **CSRF protection** on all Server Actions (session-bound expiring HMAC tokens, timing-safe validation)
 - **Role-based access**: ADMIN / MENTOR / VIEWER (mapped from LMS roles)
-- **Student email hashing**: Bcrypt (cost 12) at rest, excluded from search
+- **Student email protection**: AES-256-GCM for staff recovery plus separately keyed HMAC-SHA-256 for exact lookup; plaintext is excluded from storage and full-text search
 - **Rate limiting**: Per-scope fixed-window (10-30 req/min)
-- **Audit logging**: All mutations with actor, IP, UA, requestId
+- **Audit logging**: issue/reply mutations and selected denied events, with available request context
 - **Security headers**: CSP, HSTS, X-Frame-Options, etc.
 - **Container hardening**: Non-root, read-only FS, dropped capabilities
 
@@ -55,7 +55,7 @@ The interface is English throughout, with Inter typography and English date form
 | [Self-Hosted Deployment](docs/self-hosted-deployment.md) | Deploy to Docker Compose, Vercel, Railway, Render, Coolify |
 | [LMS Integration](docs/lms-integration.md) | Schema requirements, role mapping, custom adapters |
 | [VPS Deployment](docs/vps-deployment.md) | Production runbook for VPS + Traefik |
-| [Branding Guidelines](BRANDING.md) | Attribution requirements, customization guide |
+| [Branding Guidelines](BRANDING.md) | MIT attribution and separate trademark guidance |
 | [Contributing](CONTRIBUTING.md) | Development setup, code standards, PR process |
 | [Security Policy](SECURITY.md) | Vulnerability reporting, supported versions |
 | [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards and enforcement |
@@ -87,6 +87,9 @@ Fill `.env.local`:
 - `AUTH_GOOGLE_SECRET`
 - `AUTH_URL=http://localhost:12000`
 - `AUTH_TRUST_HOST=true`
+- `STUDENT_EMAIL_KEY_VERSION` (for example `v1`)
+- `STUDENT_EMAIL_ENCRYPTION_KEYS` (`vN:<32-byte-base64>` keyring)
+- `STUDENT_EMAIL_LOOKUP_KEYS` (independent `vN:<32-byte-base64>` keyring)
 
 Run locally:
 
@@ -99,12 +102,16 @@ cmd /c "npm run dev"
 ```powershell
 cmd /c "npm run db:indexes"                         # dry-run index diff
 cmd /c "npm run db:indexes -- --apply --create-only" # create missing indexes only
+cmd /c "npm run db:indexes -- --verify"              # fail if required indexes are missing
 cmd /c "npm run db:seed"
 cmd /c "npm run db:seed -- --demo"
-cmd /c "npm run db:hash-student-emails"              # hash existing student emails (migration)
+cmd /c "npm run db:hash-student-emails"              # dry-run email encryption migration
+cmd /c "npm run db:hash-student-emails -- --apply --confirm=<db>" # apply after backup
 ```
 
 Production roles remain authoritative in LMS; do not run demo seeds in production.
+Production-like migration applies also require `--backup-acknowledged`. Roll back by
+restoring the encrypted pre-migration `mongodump`; the script never exports plaintext.
 
 Cleanup and diagnostics:
 
@@ -178,7 +185,9 @@ Theme-restricted pages keep their exact base `background-color` utilities (`head
 
 ## Deploy Notes
 
-Production uses a standalone Next.js Docker image from GHCR behind a reverse proxy (Traefik/nginx/Caddy). See [Self-Hosted Deployment](docs/self-hosted-deployment.md) for platform-specific guides.
+Production uses standalone Next.js runtime and operations images from GHCR, both selected by immutable digest. `CI` runs indexes against an isolated database, a clean standalone build assertion, production E2E, Compose validation, and a container smoke test. `Publish GHCR image` publishes only a commit with successful CI; `Deploy production` downloads that publish run's metadata artifact and requires approval through the protected `production` environment. There is no manual CI bypass. See [VPS Deployment](docs/vps-deployment.md) for the exact release path and [Self-Hosted Deployment](docs/self-hosted-deployment.md) for generic hosting.
+
+Dependabot opens reviewable npm, Actions, and Docker update pull requests. Updates are not auto-merged.
 
 Auth callback URL:
 ```text

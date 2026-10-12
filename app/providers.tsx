@@ -4,9 +4,9 @@ import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import type { FC, ReactNode } from "react";
 
-type Props = { children: ReactNode };
+type Props = { children: ReactNode; nonce?: string };
 
-export const Providers: FC<Props> = ({ children }) => {
+export const Providers: FC<Props> = ({ children, nonce }) => {
   return (
     <SessionProvider>
       <ThemeProvider
@@ -14,6 +14,7 @@ export const Providers: FC<Props> = ({ children }) => {
         defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
+        nonce={nonce}
       >
         <>{children}</>
       </ThemeProvider>

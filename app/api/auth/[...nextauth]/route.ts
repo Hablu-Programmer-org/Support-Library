@@ -1,45 +1,48 @@
 import { handlers } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { consumeRateLimitByKey } from "@/lib/services/rate-limit";
+import { getAuthRateLimitScope } from "@/lib/auth-rate-limit";
+import { getClientIp } from "@/lib/client-ip";
+import {
+  consumeRateLimitByKey,
+  MutationRateLimitError,
+  RateLimitUnavailableError,
+} from "@/lib/services/rate-limit";
 
 export const runtime = "nodejs";
 
-function getClientIp(request: NextRequest): string {
-  // Check for forwarded IP (behind proxy)
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-  // Check for real IP header
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp;
-  }
-  // Fallback to a default
-  return "unknown";
-}
-
 async function rateLimitCheck(request: NextRequest): Promise<NextResponse | null> {
-  const ip = getClientIp(request);
-  const scope = "oauth.callback";
+  const scope = getAuthRateLimitScope(request.method, request.nextUrl.pathname);
+  if (!scope) return null;
+
+  const ip = getClientIp(request.headers);
+  if (!ip && process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Authentication is temporarily unavailable." }, {
+      status: 503,
+      headers: { "Retry-After": "5" },
+    });
+  }
 
   try {
-    await consumeRateLimitByKey(scope, ip);
+    await consumeRateLimitByKey(scope, ip ?? "local-development");
   } catch (error) {
-    if (error instanceof Error && error.name === "MutationRateLimitError") {
+    if (error instanceof MutationRateLimitError) {
       return NextResponse.json(
         { error: "Too many requests. Please try again later." },
-        { status: 429 },
+        { status: 429, headers: { "Retry-After": "60" } },
       );
     }
-    // For other errors, allow the request through (fail open for auth)
-    console.warn("OAuth callback rate limit check failed:", error);
+    if (error instanceof RateLimitUnavailableError) {
+      return NextResponse.json({ error: "Authentication is temporarily unavailable." }, {
+        status: 503,
+        headers: { "Retry-After": "5" },
+      });
+    }
+    throw error;
   }
 
   return null;
 }
 
-// Wrapper for GET requests (OAuth callback)
 export async function GET(request: NextRequest) {
   const rateLimitResponse = await rateLimitCheck(request);
   if (rateLimitResponse) return rateLimitResponse;
@@ -47,7 +50,6 @@ export async function GET(request: NextRequest) {
   return handlers.GET(request);
 }
 
-// Wrapper for POST requests (if needed)
 export async function POST(request: NextRequest) {
   const rateLimitResponse = await rateLimitCheck(request);
   if (rateLimitResponse) return rateLimitResponse;

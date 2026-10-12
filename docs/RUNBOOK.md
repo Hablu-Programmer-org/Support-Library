@@ -1,50 +1,72 @@
-# Support Library - Operations Runbook
+# Support Library Operations Runbook
 
-## Post-Deploy Monitoring
+## Release identity
 
-### Live Log Monitoring
+Production is managed only through `.github/workflows/deploy.yml`. Do not copy a working tree to the VPS, build there, edit release files in place, or deploy a mutable tag. The authoritative values are:
+
+- GitHub publish run ID and its `release-metadata` artifact
+- `APP_IMAGE` and `OPS_IMAGE` immutable digests in `release.env`
+- `/opt/hablu-support-library/state/current-release`
+- `/opt/hablu-support-library/state/current-image`
+
+Inspect without printing the production environment:
+
 ```bash
-docker logs -f hablu-support-library
+cat /opt/hablu-support-library/state/current-release
+cat /opt/hablu-support-library/state/current-image
+docker inspect --format '{{.Config.Image}} {{.State.Health.Status}}' hablu-support-library
 ```
 
-### Health Check Loop (every 60s)
+## Routine checks
+
 ```bash
-watch -n 60 'curl -s https://support.hablu-programmer.com/api/health/ready | jq .ok'
+curl --fail --silent https://support.hablu-programmer.com/api/health/live | jq .
+curl --fail --silent https://support.hablu-programmer.com/api/health/ready | jq .
+docker logs --tail 100 hablu-support-library
 ```
 
-### Quick Health Check (one-off)
+Readiness verifies production environment configuration plus support/LMS database access. Liveness verifies only the process. Alert on repeated readiness failures, container restarts, OAuth failures, database errors, and failed deployment workflows.
+
+## Deploy
+
+1. Confirm the exact commit has successful `CI` and `Publish GHCR image` runs.
+2. Open `Deploy production` and choose `deploy`.
+3. Enter the successful publish run ID.
+4. Review and approve the protected `production` environment deployment.
+5. The workflow verifies the artifact, trusted SSH host, image digests, additive indexes, index state, and transaction preflight before cutover.
+6. Confirm readiness, release identity, Google login, issue browsing, and an authorized disposable create/read flow.
+
+Deployments are serialized. Do not cancel an in-progress production deployment unless incident response requires it.
+
+## Rollback
+
+1. Open `Deploy production`, choose `rollback`, and leave `publish_run_id` empty.
+2. Review and approve the protected environment deployment.
+3. The workflow restores the exact recorded previous image and release Compose file.
+4. Recheck liveness, readiness, release identity, login, and issue access.
+
+Index creation is additive and is not reversed by application rollback. If rollback state is absent, stop and investigate rather than selecting an arbitrary tag.
+
+## Incident containment
+
+If the application must be stopped immediately:
+
 ```bash
-curl -s https://support.hablu-programmer.com/api/health/ready | jq .
-curl -s https://support.hablu-programmer.com/api/health/live | jq .
+docker stop hablu-support-library
 ```
 
-### Container Logs (last 100 lines)
-```bash
-docker logs hablu-support-library --tail 100
-```
+Preserve container logs and the four state files before cleanup. Rotate affected OAuth, Atlas, GHCR, SSH, or `AUTH_SECRET` credentials after suspected exposure; rotating `AUTH_SECRET` invalidates active sessions. Never paste `.env.production` or credentials into an issue, workflow input, or chat.
 
-### Container Shell Access
-```bash
-docker exec -it hablu-support-library sh
-```
+## Database recovery
 
-## Emergency Procedures
+Use encrypted support-database backups created with a backup-only credential. Restore into a non-production database first and validate indexes plus application behavior. The LMS database is read-only to this service and follows the LMS recovery process. Database restore and destructive index changes require a separate approved procedure; `db:indexes --apply --create-only` never drops indexes.
 
-### Restart App Container
-```bash
-docker restart hablu-support-library
-```
+### Student email migration
 
-### Rollback (Manual)
-```bash
-# On VPS
-cd /opt/hablu-support-library
-docker compose -f compose.production.yml down
-git checkout <previous-sha>
-docker compose -f compose.production.yml up -d --build --force-recreate
-```
-
-## Useful Links
-- Atlas Dashboard: https://cloud.mongodb.com/
-- GitHub Actions: https://github.com/Hablu-Programmer-org/Hablu-Support-Library/actions
-- UptimeRobot: https://uptimerobot.com/
+Run `npm run db:hash-student-emails` first; dry-run is the default. After taking
+and verifying an encrypted `mongodump`, apply with
+`npm run db:hash-student-emails -- --apply --confirm=<database> --backup-acknowledged`.
+The script redacts URI credentials, conditionally updates against source values,
+and exits nonzero on conflicts or invalid data. Rollback is restoration of the
+pre-migration encrypted dump; no plaintext export is produced. Retain old
+encryption key versions through the backup retention window.

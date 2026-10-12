@@ -61,7 +61,7 @@ npm run test:e2e    # Playwright E2E tests (requires MongoDB)
 ### React/Next.js
 - Server Components by default, Client Components only when needed (`"use client"`)
 - Use Server Actions for mutations (`"use server"`)
-- Follow Next.js 15 App Router conventions
+- Follow Next.js 16 App Router conventions
 - Use `next/font` for fonts, `next/image` for images
 
 ### Styling
@@ -81,8 +81,8 @@ npm run test:e2e    # Playwright E2E tests (requires MongoDB)
 - **Never** commit secrets (`.env.local` is gitignored)
 - All Server Actions protected with CSRF + role guards
 - Input validation via Zod on every mutation
-- Rate limiting on all mutations
-- Audit logging for sensitive operations
+- Apply rate limiting where the operation is abuse-prone
+- Add audit events for security-sensitive state changes and authorization failures
 - No PII in logs or search indexes
 
 ## Testing
@@ -133,12 +133,11 @@ test: add unit tests for search utilities
 
 ## Release Process
 
-1. Maintainer creates release branch: `release/vX.Y.Z`
-2. Update `package.json` version
-3. Generate changelog
-4. Tag release: `git tag -s vX.Y.Z`
-5. GitHub Actions builds and publishes Docker image
-6. Deploy workflow available for manual trigger
+1. Update `package.json` and `package-lock.json` to the same SemVer and commit the release changes.
+2. From a clean `main`, run `powershell -File scripts/release.ps1 -Version X.Y.Z`.
+3. The script runs install, lint, typecheck, unit, clean build, E2E, audit, Compose, image-build, and container-smoke gates.
+4. After confirmation, the script creates a lightweight `vX.Y.Z` tag and atomically pushes `main` plus the tag. It never stages or commits files.
+5. CI publishes runtime and operations images only after successful checks; production deploys require environment approval and an exact publish run artifact.
 
 ## Code of Conduct
 

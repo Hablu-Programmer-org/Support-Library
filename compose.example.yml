@@ -6,10 +6,13 @@
 # For production with Traefik reverse proxy, also use compose.traefik.yml:
 #   docker compose -f compose.yml -f compose.traefik.yml up -d
 #
-# Required environment variables (see .env.example):
+# Required environment variables (production startup rejects a missing value, see .env.example):
 #   MONGODB_URI, MONGODB_DB, LMS_MONGODB_URI, LMS_MONGODB_DB
 #   AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_URL, AUTH_TRUST_HOST
-#   NEXT_PUBLIC_APP_URL, NODE_ENV, ALLOW_INSECURE_LINKS, ALLOWED_LINK_HOSTS, MAX_LINKS_PER_ITEM
+#   TRUSTED_PROXY_HOPS, STUDENT_EMAIL_KEY_VERSION
+#   STUDENT_EMAIL_ENCRYPTION_KEYS, STUDENT_EMAIL_LOOKUP_KEYS
+#   NEXT_PUBLIC_APP_URL, NODE_ENV
+# Optional: ALLOWED_ORIGINS, ALLOWED_LINK_HOSTS, MAX_LINKS_PER_ITEM
 
 name: support-library
 
@@ -23,15 +26,15 @@ services:
     restart: unless-stopped
     init: true
     env_file:
-      - .env.production
+      - ${APP_ENV_FILE:-.env.production}
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: "12000"
-    expose:
-      - "12000"
-    # networks:
-    #   - support_library_network
+    ports:
+      - "${SUPPORT_LIBRARY_BIND_ADDRESS:-127.0.0.1}:${SUPPORT_LIBRARY_PORT:-12000}:12000"
+    networks:
+      - support_library_network
     healthcheck:
       test:
         - CMD
@@ -66,7 +69,7 @@ services:
       dockerfile: Dockerfile
       target: ops
     env_file:
-      - .env.production
+      - ${APP_ENV_FILE:-.env.production}
     command: ["sh", "-c", "exit 0"]
     read_only: true
     tmpfs:
@@ -79,8 +82,9 @@ services:
     cpus: 0.5
     mem_limit: 512m
     stop_grace_period: 10s
+    networks:
+      - support_library_network
 
-# networks:
-#   support_library_network:
-#     driver: bridge
-#     name: support_library_network
+networks:
+  support_library_network:
+    driver: bridge

@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: support-library-ci-${{ github.event.pull_request.number || github.ref }}
@@ -27,7 +26,7 @@ jobs:
       LMS_MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
       LMS_MONGODB_DB: support_library_ci_e2e
       E2E_ALLOW_DATABASE_RESET: "true"
-      AUTH_SECRET: ci-only-not-a-production-secret-ci-only
+      AUTH_SECRET: CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026
       AUTH_TRUST_HOST: "true"
       AUTH_URL: http://127.0.0.1:12001
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:12001
@@ -85,8 +84,18 @@ jobs:
       - name: Production dependency audit
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Production build
-        run: npm run build
+      - name: Apply and verify database indexes
+        run: |
+          npm run db:indexes
+          npm run db:indexes -- --apply --create-only
+          npm run db:indexes -- --verify
+
+      - name: Clean production build and assert standalone output
+        run: |
+          rm -rf .next
+          npm run build
+          test -f .next/standalone/server.js
+          test -d .next/static
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -99,6 +108,67 @@ jobs:
             config=playwright.ci.config.ts
           fi
           npx playwright test --config="$config"
+
+      - name: Create Compose validation environment
+        shell: bash
+        run: |
+          cat > .env.production <<'EOF'
+          MONGODB_URI=mongodb://mongo.invalid:27017/?replicaSet=rs0
+          MONGODB_DB=support_library
+          LMS_MONGODB_URI=mongodb://mongo.invalid:27017/?replicaSet=rs0
+          LMS_MONGODB_DB=hp-v2
+          AUTH_SECRET=CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026
+          AUTH_TRUST_HOST=true
+          AUTH_URL=https://support.example.com
+          AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com
+          AUTH_GOOGLE_SECRET=ci-only-placeholder
+          NEXT_PUBLIC_APP_URL=https://support.example.com
+          NODE_ENV=production
+          EOF
+
+      - name: Validate Compose models
+        env:
+          APP_ENV_FILE: .env.production
+          APP_IMAGE: ghcr.io/example/support-library@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          OPS_IMAGE: ghcr.io/example/support-library-ops@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+        run: |
+          docker compose -f compose.example.yml config --quiet
+          docker compose -f compose.example.yml -f compose.traefik.yml config --quiet
+          docker compose -f compose.production.yml config --quiet
+
+      - name: Build and smoke-test runtime container
+        shell: bash
+        run: |
+          docker build --target runner --build-arg DEPLOYMENT_VERSION="$GITHUB_SHA" --tag support-library-ci:"$GITHUB_SHA" .
+          container_id=$(docker run --detach --rm --publish 127.0.0.1:12002:12000 \
+            --env NODE_ENV=production \
+            --env MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
+            --env MONGODB_DB=support_library_ci_smoke \
+            --env LMS_MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
+            --env LMS_MONGODB_DB=hp-v2 \
+            --env AUTH_SECRET='CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026' \
+            --env AUTH_TRUST_HOST=true \
+            --env AUTH_URL='http://127.0.0.1:12001' \
+            --env AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com \
+            --env AUTH_GOOGLE_SECRET=ci-only-placeholder \
+            --env TRUSTED_PROXY_HOPS=1 \
+            --env STUDENT_EMAIL_KEY_VERSION=v1 \
+            --env STUDENT_EMAIL_ENCRYPTION_KEYS='v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=' \
+            --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \
+            support-library-ci:"$GITHUB_SHA")
+          trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:12002/api/health/live >/dev/null; then
+              exit 0
+            fi
+            if ! docker inspect "$container_id" >/dev/null 2>&1; then
+              echo "Runtime container exited before becoming live"
+              exit 1
+            fi
+            sleep 2
+          done
+          docker logs "$container_id"
+          exit 1
 
       - name: Upload Playwright diagnostics
         if: failure()

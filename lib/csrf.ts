@@ -1,28 +1,56 @@
-"use server";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-import { cookies } from "next/headers";
-import { createHash } from "node:crypto";
+import { auth } from "@/auth";
 
-export async function generateCsrfToken(): Promise<string> {
-  const cookieStore = await cookies();
-  const token = createHash("sha256").update(crypto.randomUUID()).digest("hex");
-  cookieStore.set("csrf_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 8, // 8 hours
-    path: "/",
-  });
-  return token;
+const CSRF_VERSION = "v1";
+const CSRF_TTL_SECONDS = 60 * 60 * 8;
+
+function csrfSecret() {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET is required for CSRF protection");
+  return secret;
+}
+
+function signature(payload: string, secret: string) {
+  return createHmac("sha256", secret).update(payload).digest("base64url");
+}
+
+export function createCsrfToken(
+  userId: string,
+  secret: string,
+  now = Date.now(),
+  nonce = randomBytes(18).toString("base64url"),
+) {
+  const expiresAt = Math.floor(now / 1000) + CSRF_TTL_SECONDS;
+  const payload = `${CSRF_VERSION}.${expiresAt}.${nonce}.${userId}`;
+  return `${CSRF_VERSION}.${expiresAt}.${nonce}.${signature(payload, secret)}`;
+}
+
+export function verifyCsrfToken(token: string, userId: string, secret: string, now = Date.now()) {
+  const parts = token.split(".");
+  if (parts.length !== 4) return false;
+  const [version, expiresAtValue, nonce, suppliedSignature] = parts;
+  const expiresAt = Number(expiresAtValue);
+  if (
+    version !== CSRF_VERSION ||
+    !Number.isSafeInteger(expiresAt) ||
+    expiresAt < Math.floor(now / 1000) ||
+    !nonce ||
+    !suppliedSignature
+  ) return false;
+
+  const payload = `${version}.${expiresAt}.${nonce}.${userId}`;
+  const expected = Buffer.from(signature(payload, secret), "base64url");
+  const supplied = Buffer.from(suppliedSignature, "base64url");
+  return expected.length === supplied.length && timingSafeEqual(expected, supplied);
+}
+
+export async function generateCsrfToken(userId: string): Promise<string> {
+  return createCsrfToken(userId, csrfSecret());
 }
 
 export async function validateCsrfToken(token: string): Promise<boolean> {
-  const cookieStore = await cookies();
-  const storedToken = cookieStore.get("csrf_token")?.value;
-  return storedToken === token;
-}
-
-export async function getCsrfToken(): Promise<string | undefined> {
-  const cookieStore = await cookies();
-  return cookieStore.get("csrf_token")?.value;
+  const session = await auth();
+  if (!session?.user?.id || session.user.isActive === false) return false;
+  return verifyCsrfToken(token, session.user.id, csrfSecret());
 }

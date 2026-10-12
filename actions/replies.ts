@@ -77,8 +77,8 @@ export async function editReplyAction(issueId: string, replyId: string, formData
   });
 }
 
-export async function deleteReplyAction(issueId: string, replyId: string) {
-  return withCsrfProtection(new FormData(), async () => {
+export async function deleteReplyAction(issueId: string, replyId: string, formData: FormData) {
+  return withCsrfProtection(formData, async () => {
     const guard = await assertRole("ADMIN", "MENTOR");
     if (!guard.ok) redirect("/unauthorized");
 

@@ -17,8 +17,8 @@ export type RateLimitScope =
   | "reply.add"
   | "reply.edit"
   | "reply.delete"
-  | "oauth.callback"
-  | "health.check";
+  | "oauth.signin"
+  | "oauth.callback";
 
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
@@ -31,14 +31,21 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "reply.add": { limit: 30, windowMs: 60_000 },
   "reply.edit": { limit: 30, windowMs: 60_000 },
   "reply.delete": { limit: 30, windowMs: 60_000 },
+  "oauth.signin": { limit: 10, windowMs: 60_000 },
   "oauth.callback": { limit: 10, windowMs: 60_000 },
-  "health.check": { limit: 60, windowMs: 60_000 },
 };
 
 export class MutationRateLimitError extends Error {
   constructor() {
     super("Mutation request could not be processed");
     this.name = "MutationRateLimitError";
+  }
+}
+
+export class RateLimitUnavailableError extends Error {
+  constructor() {
+    super("Rate limit service is unavailable");
+    this.name = "RateLimitUnavailableError";
   }
 }
 
@@ -80,7 +87,7 @@ export async function consumeRateLimit(
     }
   } catch (error) {
     if (error instanceof MutationRateLimitError) throw error;
-    throw new MutationRateLimitError();
+    throw new RateLimitUnavailableError();
   }
 }
 
@@ -100,7 +107,7 @@ export async function consumeRateLimitByKey(
     await dbConnect();
     const config = RATE_LIMITS[scope];
     const window = fixedWindow(new Date(), config.windowMs);
-    const bucketKey = `${scope}:${key}:${window.startMs}`;
+    const bucketKey = rateLimitBucketKey(scope, key, window.startMs);
     const bucket = await RateLimitBucketModel.findOneAndUpdate(
       { key: bucketKey },
       {
@@ -119,6 +126,6 @@ export async function consumeRateLimitByKey(
     }
   } catch (error) {
     if (error instanceof MutationRateLimitError) throw error;
-    throw new MutationRateLimitError();
+    throw new RateLimitUnavailableError();
   }
 }

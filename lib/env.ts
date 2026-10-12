@@ -9,6 +9,11 @@ const mongoUriSchema = z
     message: "Must be a MongoDB connection URI",
   });
 
+const studentEmailKeyringSchema = z.string().regex(
+  /^v[1-9]\d*:[A-Za-z0-9+/]{43}=(?:,v[1-9]\d*:[A-Za-z0-9+/]{43}=)*$/,
+  "Must use vN:<32-byte-base64>[,vN:<32-byte-base64>] format",
+);
+
 // Check for minimum entropy in AUTH_SECRET (at least 3 unique character types)
 function hasSufficientEntropy(secret: string): boolean {
   const hasUpper = /[A-Z]/.test(secret);
@@ -36,6 +41,18 @@ const productionEnvSchema = z.object({
       (url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname));
   }, { message: "AUTH_URL must use HTTPS outside loopback environments" }),
   AUTH_TRUST_HOST: z.literal("true"),
+  TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5),
+  STUDENT_EMAIL_KEY_VERSION: z.string().regex(/^v[1-9]\d*$/),
+  STUDENT_EMAIL_ENCRYPTION_KEYS: studentEmailKeyringSchema,
+  STUDENT_EMAIL_LOOKUP_KEYS: studentEmailKeyringSchema,
+}).superRefine((env, context) => {
+  const prefix = `${env.STUDENT_EMAIL_KEY_VERSION}:`;
+  if (!env.STUDENT_EMAIL_ENCRYPTION_KEYS.split(",").some((entry) => entry.startsWith(prefix))) {
+    context.addIssue({ code: "custom", path: ["STUDENT_EMAIL_ENCRYPTION_KEYS"], message: "Active version is missing" });
+  }
+  if (!env.STUDENT_EMAIL_LOOKUP_KEYS.split(",").some((entry) => entry.startsWith(prefix))) {
+    context.addIssue({ code: "custom", path: ["STUDENT_EMAIL_LOOKUP_KEYS"], message: "Active version is missing" });
+  }
 });
 
 export function validateProductionEnv() {

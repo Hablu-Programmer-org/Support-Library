@@ -6,8 +6,8 @@ export async function withCsrfProtection<T>(
   formData: FormData,
   action: (data: FormData) => Promise<T>
 ): Promise<T> {
-  const csrfToken = formData.get("csrfToken") as string | null;
-  if (!csrfToken) {
+  const csrfToken = formData.get("csrfToken");
+  if (typeof csrfToken !== "string" || !csrfToken) {
     throw new Error("CSRF token missing");
   }
   const valid = await validateCsrfToken(csrfToken);

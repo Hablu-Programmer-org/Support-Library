@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { assertRole } from "@/lib/auth-guard";
+import { findLmsUserByEmail } from "@/lib/lms";
 import { operationIdSchema } from "@/lib/mutation-security";
 import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
@@ -37,6 +38,7 @@ const parseTags = (value?: string) =>
     .filter(Boolean) ?? [];
 
 const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
+const revisionSchema = z.string().datetime();
 
 const zodFieldErrors = (
   error: z.ZodError,
@@ -67,6 +69,14 @@ const parseIssueForm = (formData: FormData) =>
     tags: parseTags(formValue(formData, "tags")),
   });
 
+async function bindLmsIdentity(issueData: z.infer<typeof supportIssueInputSchema>) {
+  const lmsUser = await findLmsUserByEmail(issueData.studentEmail);
+  if (issueData.lmsUserId && issueData.lmsUserId !== lmsUser?.userId) {
+    throw new Error("LMS_IDENTITY_MISMATCH");
+  }
+  return { ...issueData, lmsUserId: lmsUser?.userId };
+}
+
 export async function createIssueAction(_prevState: FormState, formData: FormData): Promise<FormState> {
   return withCsrfProtection(formData, async (formData) => {
     const guard = await assertRole("ADMIN", "MENTOR");
@@ -75,9 +85,12 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     let issueData;
     let operationId: string;
     try {
-      issueData = parseIssueForm(formData);
+      issueData = await bindLmsIdentity(parseIssueForm(formData));
       operationId = operationIdSchema.parse(formData.get("operationId"));
     } catch (err) {
+      if (err instanceof Error && err.message === "LMS_IDENTITY_MISMATCH") {
+        return { fieldErrors: { studentEmail: ["The selected LMS user does not match this email"] } };
+      }
       if (err instanceof z.ZodError) {
         return { fieldErrors: zodFieldErrors(err) };
       }
@@ -140,8 +153,11 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
 
     let issueData;
     try {
-      issueData = parseIssueForm(formData);
+      issueData = await bindLmsIdentity(parseIssueForm(formData));
     } catch (err) {
+      if (err instanceof Error && err.message === "LMS_IDENTITY_MISMATCH") {
+        return { fieldErrors: { studentEmail: ["The selected LMS user does not match this email"] } };
+      }
       if (err instanceof z.ZodError) {
         return { fieldErrors: zodFieldErrors(err) };
       }
@@ -151,11 +167,18 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
     let supportIssue;
     try {
       await consumeRateLimit("issue.update", guard.session.user.id);
-      supportIssue = await updateIssue(id, issueData, guard.session.user.id, guard.session.user.role as "ADMIN" | "MENTOR");
+      const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
+      supportIssue = await updateIssue(
+        id,
+        issueData,
+        guard.session.user.id,
+        guard.session.user.role as "ADMIN" | "MENTOR",
+        new Date(expectedUpdatedAt),
+      );
     } catch {
       return { fieldErrors: { _form: ["Unable to update the issue. Please try again later."] } };
     }
-    if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
+    if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
 
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
@@ -175,11 +198,12 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
     let supportIssue;
     try {
       await consumeRateLimit("issue.status", guard.session.user.id);
-      supportIssue = await changeIssueStatus(id, status, guard.session.user.id);
+      const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
+      supportIssue = await changeIssueStatus(id, status, guard.session.user.id, new Date(expectedUpdatedAt));
     } catch {
       return { fieldErrors: { _form: ["Unable to update the status. Please try again later."] } };
     }
-    if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
+    if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
     return { message: "Status updated" };
@@ -195,8 +219,8 @@ export async function changeIssueStatusActionSimple(id: string, formData: FormDa
   }
 }
 
-export async function deleteIssueAction(_prevState: FormState | undefined, id: string): Promise<FormState> {
-  return withCsrfProtection(new FormData(), async () => {
+export async function deleteIssueAction(id: string, formData: FormData): Promise<FormState> {
+  return withCsrfProtection(formData, async () => {
     const guard = await assertRole("ADMIN", "MENTOR");
     if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
@@ -218,8 +242,8 @@ export async function deleteIssueAction(_prevState: FormState | undefined, id: s
 }
 
 // Backward-compatible wrapper for simple delete forms
-export async function deleteIssueActionSimple(id: string) {
-  const result = await deleteIssueAction(undefined, id);
+export async function deleteIssueActionSimple(id: string, formData: FormData) {
+  const result = await deleteIssueAction(id, formData);
   if (result.fieldErrors) {
     throw new Error(result.fieldErrors._form?.[0] ?? "Failed to delete issue");
   }
@@ -268,8 +292,8 @@ export async function publishIssueAction(
   });
 }
 
-export async function unpublishIssueAction(id: string) {
-  return withCsrfProtection(new FormData(), async () => {
+export async function unpublishIssueAction(id: string, formData: FormData) {
+  return withCsrfProtection(formData, async (formData) => {
     const guard = await assertRole("ADMIN");
     if (!guard.ok) redirect("/unauthorized");
 
@@ -280,11 +304,12 @@ export async function unpublishIssueAction(id: string) {
         resourceType: "SupportIssue",
         resourceId: id,
       });
-      supportIssue = await unpublishIssue(id, guard.session.user.id);
+      const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
+      supportIssue = await unpublishIssue(id, guard.session.user.id, new Date(expectedUpdatedAt));
     } catch {
       throw new Error("Unable to unpublish the issue. Please try again later.");
     }
-    if (!supportIssue) throw new Error("Issue not found");
+    if (!supportIssue) throw new Error("Issue changed since you opened it. Refresh and try again.");
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);

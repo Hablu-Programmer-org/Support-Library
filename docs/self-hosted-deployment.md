@@ -25,8 +25,8 @@ docker run -d --name mongo-rs \
 
 docker exec mongo-rs mongosh --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
 
-# 3. Build and start
-docker compose -f compose.yml up -d --build
+# 3. Build and start (binds only to 127.0.0.1:12000 by default)
+docker compose -f compose.example.yml up -d --build
 
 # 4. Verify
 curl http://localhost:12000/api/health/live
@@ -40,7 +40,6 @@ curl http://localhost:12000/api/health/ready
 ```bash
 # Copy example configs
 cp compose.example.yml compose.yml
-cp compose.traefik.yml compose.traefik.yml  # if using Traefik
 cp .env.example .env.production
 ```
 
@@ -65,8 +64,7 @@ AUTH_TRUST_HOST=true
 NEXT_PUBLIC_APP_URL=https://support.your-domain.com
 NODE_ENV=production
 
-# External links
-ALLOW_INSECURE_LINKS=false
+# External links (HTTPS is always required)
 ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
 MAX_LINKS_PER_ITEM=10
 ```
@@ -95,13 +93,11 @@ curl https://support.your-domain.com/api/health/ready
 ### 5. Deploy without Traefik (Direct Port)
 
 ```bash
-# Edit compose.yml: uncomment networks section, change expose to ports
-# ports:
-#   - "12000:12000"
-
 docker compose up -d --build
 
-# Configure your reverse proxy (nginx, Caddy, etc.) to proxy to localhost:12000
+# The default host mapping is 127.0.0.1:12000:12000. Configure nginx or
+# Caddy to proxy to localhost:12000. Set SUPPORT_LIBRARY_BIND_ADDRESS only
+# when a different bind address is intentionally required.
 ```
 
 ## Platform-Specific Guides
@@ -194,6 +190,7 @@ db.createUser({
 After first deploy, run:
 ```bash
 docker compose run --rm ops npm run db:indexes -- --apply --create-only
+docker compose run --rm ops npm run db:indexes -- --verify
 docker compose run --rm ops npm run db:preflight
 ```
 

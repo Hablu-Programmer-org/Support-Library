@@ -1,6 +1,9 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 export const AUDIT_ACTIONS = [
+  "ISSUE_CREATE",
+  "ISSUE_UPDATE",
+  "ISSUE_STATUS_CHANGE",
   "ISSUE_PUBLISH",
   "ISSUE_UNPUBLISH",
   "ISSUE_ARCHIVE",

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import { dbConnect } from "../lib/db";
 import { buildIssueSearchText } from "../lib/search";
+import { protectStudentEmail } from "../lib/student-email-crypto";
 import { SupportIssueModel, UserModel } from "../models";
 
 const adminEmail = (process.env.SEED_ADMIN_EMAIL || "").toLowerCase().trim();
@@ -40,16 +41,25 @@ const demoIssue = {
 };
 
 async function seedDemo(actorId: mongoose.Types.ObjectId) {
+  const { studentEmail, ...issueFields } = demoIssue;
+  const protectedEmail = protectStudentEmail(studentEmail);
   await SupportIssueModel.findOneAndUpdate(
-    { title: demoIssue.title, studentEmail: demoIssue.studentEmail },
+    {
+      title: demoIssue.title,
+      "studentEmailLookup.keyVersion": protectedEmail.lookup.keyVersion,
+      "studentEmailLookup.digest": protectedEmail.lookup.digest,
+    },
     {
       $set: {
-        ...demoIssue,
+        ...issueFields,
+        studentEmailEncrypted: protectedEmail.encrypted,
+        studentEmailLookup: protectedEmail.lookup,
         searchText: buildIssueSearchText(demoIssue),
         mentorId: actorId,
         createdBy: actorId,
         updatedBy: actorId,
       },
+      $unset: { studentEmail: "", studentEmailHash: "" },
     },
     { upsert: true, new: true, runValidators: true },
   );

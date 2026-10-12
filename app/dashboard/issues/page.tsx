@@ -11,6 +11,7 @@ import { canMutate } from "@/lib/roles";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listStaff } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
+import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,7 @@ export default async function IssuesPage({
   const mentors = staff.filter((member) => member.isActive && (member.role === "MENTOR" || member.role === "ADMIN"));
 
   const canDelete = canCreate; // Same roles can delete
+  const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
   const q = resolvedSearchParams?.q ?? "";
   const tag = resolvedSearchParams?.tag ?? "";
   const status = resolvedSearchParams?.status ?? "";
@@ -162,7 +164,11 @@ export default async function IssuesPage({
                     )}
                   </Link>
                   {canDelete && (
-                    <DeleteButton action={deleteIssueActionSimple.bind(null, supportIssue.id)} className="flex-shrink-0" />
+                    <DeleteButton
+                      action={deleteIssueActionSimple.bind(null, supportIssue.id)}
+                      csrfToken={csrfToken}
+                      className="flex-shrink-0"
+                    />
                   )}
                 </div>
               ))}

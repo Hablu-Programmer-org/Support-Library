@@ -15,10 +15,10 @@ export default async function EditIssuePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireMentorOrAdmin();
+  const session = await requireMentorOrAdmin();
   const supportIssue = await getIssueDetail(id);
   if (!supportIssue) notFound();
-  const csrfToken = await generateCsrfToken();
+  const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
@@ -57,6 +57,7 @@ export default async function EditIssuePage({
           studentName: supportIssue.studentName,
           studentEmail: supportIssue.studentEmail ?? undefined,
           lmsUserId: supportIssue.lmsUserId ?? undefined,
+          updatedAt: supportIssue.updatedAt?.toISOString(),
         }}
         csrfToken={csrfToken}
       />

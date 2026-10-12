@@ -15,8 +15,8 @@ const authSecret = process.env.AUTH_SECRET;
 if (!authSecret) throw new Error("AUTH_SECRET not set in env for test fixtures");
 const secret: string = authSecret;
 
-// Default cookie name for development (non-HTTPS)
-const sessionTokenCookieName = "authjs.session-token";
+// Auth.js derives the JWT encryption key from the configured cookie name.
+const sessionTokenCookieName = "support-library.session-token";
 
 async function upsertStaffUser(user: (typeof STAFF_USERS)[number]) {
   await dbConnect();
@@ -81,7 +81,7 @@ for (const user of STAFF_USERS) {
     await page.goto("/");
     await page.context().addCookies([
       {
-        name: "authjs.session-token",
+        name: sessionTokenCookieName,
         value: token,
         domain: "127.0.0.1",
         path: "/",

@@ -6,6 +6,8 @@ import { dbConnect } from "@/lib/db";
 import { normalizeEmail } from "@/lib/email";
 import { findLmsUserByEmail } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
+import { getRequestContext } from "@/lib/request-context";
+import { recordAuditEvent } from "@/lib/services/audit";
 import { UserModel, type UserRole } from "@/models/User";
 
 /**
@@ -71,14 +73,14 @@ const config = {
       // The main Hablu Programmer database is the source of truth for who may
       // log in and which role they get. Students land on VIEWER; staff roles
       // map to ADMIN/MENTOR (see mapLmsRole).
-      const lmsUser = await findLmsUserByEmail(user.email);
+const lmsUser = await findLmsUserByEmail(user.email);
 
       if (!lmsUser || lmsUser.isActive === false) {
         await markStaffInactive(user.email);
         return false;
       }
 
-      await ensureStaffUser({
+      const profile = await ensureStaffUser({
         id: user.id ?? user.email,
         email: user.email,
         name: lmsUser.name || user.name,
@@ -87,6 +89,15 @@ const config = {
         isActive: true,
         recordLogin: true,
       });
+
+      const ctx = await getRequestContext().catch(() => undefined);
+      await recordAuditEvent({
+        actorId: profile._id.toString(),
+        action: "OAUTH_CALLBACK",
+        resourceType: "OAuthCallback",
+        resourceId: normalizeEmail(user.email),
+        result: "SUCCEEDED",
+      }, ctx);
 
       return true;
     },

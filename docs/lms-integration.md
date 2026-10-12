@@ -115,63 +115,28 @@ LMS_MONGODB_DB=hp-v2  # Database name containing User collection
 
 ## Mock LMS for Development/Testing
 
-For local development without a real LMS, you can seed a mock `User` collection:
+For local development without a real LMS, point `LMS_MONGODB_URI` / `MONGODB_URI` at a local replica set and set `LMS_MONGODB_DB` and `MONGODB_TEST_DB` to a dedicated test database (requires `E2E_ALLOW_DATABASE_RESET=true`):
 
 ```bash
-# Using the test database (requires E2E_ALLOW_DATABASE_RESET=true)
 MONGODB_URI=mongodb://127.0.0.1:27017/?replicaSet=rs0
-MONGODB_DB=support_library_test
+MONGODB_DB=support_library_test_e2e
+MONGODB_TEST_DB=support_library_test_e2e
 LMS_MONGODB_URI=mongodb://127.0.0.1:27017/?replicaSet=rs0
-LMS_MONGODB_DB=support_library_test
+LMS_MONGODB_DB=support_library_test_e2e
 ```
 
-Seed script (`scripts/seed-mock-lms.ts`):
-```typescript
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+Mock `User` documents are seeded by the Playwright fixtures (`e2e/fixtures/lms.fixtures.ts` for a student, `e2e/fixtures/auth.fixtures.ts` for staff) directly into the pinned test database. Documents look like:
 
-async function seedMockLms() {
-  await mongoose.connect(process.env.LMS_MONGODB_URI!, { dbName: process.env.LMS_MONGODB_DB! });
-  const db = mongoose.connection.db!;
-
-  await db.collection("User").deleteMany({});
-  await db.collection("User").insertMany([
-    {
-      userId: "ADMIN-001",
-      email: "admin@test.com",
-      name: "Test Admin",
-      role: "ADMIN",
-      image: null,
-      isActive: true,
-      emailVerified: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      userId: "MENTOR-001",
-      email: "mentor@test.com",
-      name: "Test Mentor",
-      role: "INSTRUCTOR",
-      image: null,
-      isActive: true,
-      emailVerified: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      userId: "STUDENT-001",
-      email: "student@test.com",
-      name: "Test Student",
-      role: "STUDENT",
-      image: null,
-      isActive: true,
-      emailVerified: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
-  console.log("Mock LMS users seeded");
-  await mongoose.disconnect();
+```javascript
+{
+  userId: "ADMIN-001",
+  email: "admin@test.com",
+  name: "Test Admin",
+  role: "ADMIN",
+  image: null,
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
 }
 ```
 
@@ -194,7 +159,7 @@ The integration points are isolated in:
 - **Read-only credentials**: LMS MongoDB user must have `read` role only
 - **Network isolation**: LMS database should only be accessible from Support Library servers
 - **Separate databases**: Use different MongoDB users for Support Library and LMS
-- **Audit**: Log all LMS lookups (already implemented via rate limiting + audit)
+- **Audit**: LMS lookups are not comprehensively audited today; add privacy-safe events only where operationally required, without logging query values or returned PII
 
 ## Troubleshooting
 

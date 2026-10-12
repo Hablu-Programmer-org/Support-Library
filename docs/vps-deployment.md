@@ -1,6 +1,6 @@
 # VPS deployment
 
-Production pulls an exact GHCR full-commit-SHA tag, resolves it to an immutable registry digest, and runs that digest behind the existing Traefik instance. GitHub's protected `production` environment must require an approver.
+Production publishes full-commit-SHA tags for discoverability but deploys only the immutable GHCR digests recorded in the publish artifact. GitHub's protected `production` environment must require an approver.
 
 ## VPS layout
 
@@ -27,22 +27,22 @@ Create `/opt/hablu-support-library/shared/.env.production` owned by the deploy u
 
 Create a protected `production` environment with required reviewers and deployment-branch restrictions. Add environment secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_PRIVATE_KEY`, and `VPS_SSH_KNOWN_HOSTS`; the known-host value must be obtained through a trusted out-of-band channel, not `ssh-keyscan` in CI. Optionally set `VPS_SSH_PORT` as an environment variable.
 
-The workflows run in order: `CI` -> `Publish GHCR image` -> approval-gated `Deploy production`. Publish builds both the runtime and `-ops` images for the verified commit and uploads a `release-metadata` artifact containing the commit SHA and both image digests; deploy downloads that artifact rather than trusting `workflow_run` metadata, and refuses to run if the pulled image digests differ.
+The workflows run in order: `CI` -> `Publish GHCR image` -> approval-gated `Deploy production`. Publish builds and smoke-tests the runtime image, builds the operations image, pushes both under exact-SHA tags, and uploads checksummed `release.env` plus the exact production Compose file. Deploy validates that the selected run is a successful `publish.yml` run on `main`, verifies artifact checksums and digest formats, and pulls the recorded digests.
 
-A manual `Deploy production` run needs no SHA. Leaving `sha` blank resolves the latest successful `Publish GHCR image` run on `main`, downloads its `release-metadata` artifact, and verifies the SHA and both image digests. Supplying a full 40-character SHA redeploys that exact published `sha-<sha>` tag (tag-pinned, without an artifact lookup). CI uses an ephemeral MongoDB and runs the production build before Playwright. It automatically adopts `playwright.ci.config.ts` when that future config is added; until then it uses `playwright.12001.config.ts`.
+A manual deploy requires the numeric run ID of a successful `Publish GHCR image` run; it cannot accept a tag or SHA directly. A manual publish requires a full SHA already contained in `main` and verifies that the exact SHA has successful CI. CI uses an ephemeral replica-set MongoDB, applies and verifies indexes there, removes `.next` before building, asserts standalone output, runs production E2E, validates all Compose combinations, and smoke-tests the runtime container.
 
 ## Initial deploy and checks
 
 1. Back up the support database and verify the protected env file and Atlas roles.
 2. Merge to `main`, wait for CI and image publication, then approve the production deployment.
 3. Check `docker ps --filter name=hablu-support-library` and `docker inspect --format '{{json .State.Health}}' hablu-support-library`.
-4. Check `/api/health/live` for process liveness and `/api/health/ready` for support/LMS database readiness.
+4. Check `/api/health/live` for process liveness and `/api/health/ready` for support/LMS database readiness and the expected release SHA.
 5. Sign in through Google, load the issue library, create/read a disposable support issue with an authorized staff account, then remove it.
 6. Confirm Traefik serves the expected certificate and no container port is published on the host.
 
 ## Rollback
 
-Run `Deploy production` manually with action `rollback` and approve the protected environment. The workflow restores the recorded previous release and image. A failed deployment also rolls back automatically before the workflow exits. Re-run liveness, login, and issue-library smoke checks after rollback.
+Run `Deploy production` manually with action `rollback` and approve the protected environment; no publish run ID is needed. The workflow restores the recorded previous release/image pair and swaps the state files so the displaced release remains available. A failed cutover automatically restores the prior image when one exists; on the first managed deployment, a failed new container is stopped because no prior managed image may be available. Additive indexes are not rolled back. Re-run liveness, readiness, login, and issue-library smoke checks after rollback.
 
 ## Backup and recovery
 

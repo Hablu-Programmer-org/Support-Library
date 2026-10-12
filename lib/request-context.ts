@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { getClientIp } from "@/lib/client-ip";
 
 export interface RequestContext {
   ip: string | undefined;
@@ -11,10 +12,7 @@ export interface RequestContext {
 export async function getRequestContext(): Promise<RequestContext> {
   const headersList = await headers();
   
-  // Get client IP
-  const forwarded = headersList.get("x-forwarded-for");
-  const realIp = headersList.get("x-real-ip");
-  const ip = forwarded?.split(",")[0]?.trim() || realIp || undefined;
+  const ip = getClientIp(headersList);
 
   // Get user agent
   const userAgent = headersList.get("user-agent") || undefined;

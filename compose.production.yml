@@ -2,15 +2,12 @@ name: hablu-support-library
 
 services:
   support-library:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runner
+    image: ${APP_IMAGE:?APP_IMAGE must be an immutable GHCR digest}
     container_name: hablu-support-library
     restart: unless-stopped
     init: true
     env_file:
-      - /opt/hablu-support-library/shared/.env.production
+      - ${APP_ENV_FILE:-/opt/hablu-support-library/shared/.env.production}
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
@@ -60,12 +57,11 @@ services:
       traefik.http.services.support-library.loadbalancer.server.port: "12000"
 
   ops:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: ops
+    image: ${OPS_IMAGE:?OPS_IMAGE must be an immutable GHCR digest}
+    profiles:
+      - ops
     env_file:
-      - /opt/hablu-support-library/shared/.env.production
+      - ${APP_ENV_FILE:-/opt/hablu-support-library/shared/.env.production}
     command: ["sh", "-c", "exit 0"]
     read_only: true
     tmpfs:

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 
 import "./globals.css";
 import { Providers } from "./providers";
@@ -22,17 +23,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     // suppressHydrationWarning is required: next-themes sets the `dark` class on
     // <html> before React hydrates, so the server and client markup differ.
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body>
-        <Providers>{children}</Providers>
+        <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>
   );

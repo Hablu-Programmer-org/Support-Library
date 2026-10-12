@@ -51,6 +51,7 @@ type IssueFormProps = {
     studentName?: string;
     studentEmail?: string | null;
     lmsUserId?: string | null;
+    updatedAt?: string;
   };
   minimal?: boolean;
   csrfToken?: string;
@@ -303,6 +304,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
       onSubmit={ensureOperationId}
     >
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
+      {supportIssue && <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt ?? ""} />}
       <input type="hidden" name="csrfToken" value={csrfToken} id="csrfToken" />
       {state.fieldErrors?._form?.[0] && (
         <p

@@ -11,8 +11,8 @@ import { generateCsrfToken } from "@/lib/csrf";
 export const dynamic = "force-dynamic";
 
 export default async function NewIssuePage() {
-  await requireMentorOrAdmin();
-  const csrfToken = await generateCsrfToken();
+  const session = await requireMentorOrAdmin();
+  const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
     <div className="flex flex-col">

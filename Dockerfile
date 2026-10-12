@@ -17,7 +17,9 @@ ENV DEPLOYMENT_VERSION=$DEPLOYMENT_VERSION
 
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN rm -rf .next && npm run build && \
+    test -f .next/standalone/server.js && \
+    test -d .next/static
 
 FROM dependencies AS ops
 

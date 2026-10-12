@@ -4,8 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 1.x.x   | ✅ Yes    |
-| < 1.0   | ❌ No     |
+| 1.x.x   | Yes       |
+| < 1.0   | No        |
 
 Only the latest stable release receives security updates.
 
@@ -39,7 +39,7 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - **Auth.js v5** with Google OAuth only
 - **JWT sessions** (8-hour expiry, HTTP-only cookies)
 - **Role mapping** from external LMS database (read-only)
-- **CSRF protection** on all Server Actions (double-submit cookie)
+- **CSRF protection** on all Server Actions (session-bound expiring HMAC tokens, timing-safe validation)
 
 ### Authorization
 - **Three-tier roles**: ADMIN, MENTOR, VIEWER
@@ -47,10 +47,10 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - **Resource ownership** checks (mentors can only edit own replies)
 
 ### Data Protection
-- **Student email hashing**: Bcrypt (cost 12) at rest, excluded from search indexes
+- **Student email storage**: AES-256-GCM authenticated encryption for authorized staff display plus a separately keyed HMAC-SHA-256 lookup value for exact search; plaintext is excluded from storage and from full-text search
 - **HTTPS enforcement**: All external links must use HTTPS
 - **Rate limiting**: Per-scope fixed-window (10-30 req/min)
-- **Audit logging**: All mutations with actor, action, resource, IP, UA, requestId
+- **Audit logging**: issue/reply mutations, publication, OAuth sign-in, and selected denied events; request context is recorded when available
 
 ### Infrastructure
 - **Container hardening**: Non-root, read-only FS, dropped capabilities
@@ -71,7 +71,9 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - No password reset flow in Support Library
 
 ### Student Data
-- Student emails are hashed and excluded from search
+- Student names and encrypted emails are sensitive issue fields visible only to authorized staff; email is excluded from full-text search
+- Each `studentEmailEncrypted` ciphertext is authenticated with AES-256-GCM and bound to its key version; the `studentEmailLookup` HMAC is derived from an independent key so a search index leak cannot decrypt email
+- Key rotation keeps previous versions in both keyrings until records are re-wrapped by the guarded migration script
 - Student data snapshotted into issues (not linked to LMS)
 - Public API strips all PII (`studentName`, `studentEmail`, `lmsUserId`)
 
@@ -80,9 +82,10 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - [ ] MongoDB: Auth enabled, TLS, replica set
 - [ ] LMS credentials: Read-only, separate from app credentials
 - [ ] `AUTH_SECRET`: 32+ chars, generated via `npx auth secret`
+- [ ] `STUDENT_EMAIL_ENCRYPTION_KEYS` / `STUDENT_EMAIL_LOOKUP_KEYS`: independent random 32-byte keyrings, `STUDENT_EMAIL_KEY_VERSION` set
+- [ ] `TRUSTED_PROXY_HOPS`: matches the number of trusted proxies in front of the app
 - [ ] `AUTH_URL`: HTTPS in production
 - [ ] `AUTH_TRUST_HOST`: `true` behind proxy
-- [ ] `ALLOW_INSECURE_LINKS`: `false` in production
 - [ ] TLS: Let's Encrypt or custom certs via Traefik
 - [ ] Rate limits: Traefik middleware + app-level limits
 - [ ] Monitoring: Health endpoints, log aggregation
@@ -90,13 +93,15 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 
 ## Security Headers
 
-Configured in `next.config.js`:
+Configured in `next.config.mjs`:
 - `Content-Security-Policy`
 - `Strict-Transport-Security`
 - `X-Frame-Options: DENY`
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+
+The CSP itself is applied as a nonce-based policy in `proxy.ts` that allows no `unsafe-eval` in production builds.
 
 ## Contact
 

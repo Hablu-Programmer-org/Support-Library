@@ -3,8 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 import { resolveE2EDatabase } from "./e2e/fixtures/test-db";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:12000";
+process.env.AUTH_SECRET ??= "E2E-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026";
 process.env.AUTH_URL = baseURL;
-process.env.NEXTAUTH_URL = baseURL;
 
 // Pin E2E to a dedicated database so a run never writes into the dev database,
 // and so global teardown resolves the same name from either loader context.
@@ -40,6 +40,8 @@ export default defineConfig({
       MONGODB_TEST_DB: testDb,
       MONGODB_DEV_DB: devDb ?? "",
       LMS_MONGODB_DB: testDb,
+      AUTH_SECRET: process.env.AUTH_SECRET,
+      AUTH_URL: baseURL,
     },
   },
   projects: [

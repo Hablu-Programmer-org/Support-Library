@@ -3,22 +3,23 @@
 import { TrashIcon } from "@/components/icons";
 
 type DeleteButtonProps = {
-  action: () => Promise<unknown>;
+  action: (formData: FormData) => Promise<void>;
+  csrfToken: string;
   disabled?: boolean;
   className?: string;
 };
 
-export function DeleteButton({ action, disabled = false, className = "" }: DeleteButtonProps) {
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+export function DeleteButton({ action, csrfToken, disabled = false, className = "" }: DeleteButtonProps) {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     if (!window.confirm("Are you sure you want to delete this issue?")) {
+      e.preventDefault();
       return;
     }
-    await action();
   };
 
   return (
-    <form onSubmit={handleSubmit} className={className}>
+    <form action={action} onSubmit={handleSubmit} className={className}>
+      <input type="hidden" name="csrfToken" value={csrfToken} />
       <button
         type="submit"
         disabled={disabled}

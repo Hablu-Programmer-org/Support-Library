@@ -1,168 +1,152 @@
 <#
 .SYNOPSIS
-    Create and push a signed Git tag for Support Library release.
+    Verify and atomically push a Support Library release tag.
 
 .DESCRIPTION
-    This script commits all changes, creates a signed tag, and pushes to origin.
-    Requires GPG key configured for signed tags.
+    Requires an already committed, clean main branch. The script never stages or
+    commits files. It verifies the manifest version, runs the complete release
+    gate, creates a lightweight tag, and atomically pushes main plus the tag.
 
 .PARAMETER Version
-    Version to tag (default: v1.0.0)
-
-.PARAMETER Lightweight
-    Use lightweight tag instead of signed tag (no GPG required)
-
-.EXAMPLE
-    .\scripts\release.ps1 -Version v1.0.0
-    .\scripts\release.ps1 -Version v1.0.0 -Lightweight
+    SemVer with or without a leading v. Defaults to the package.json version.
 #>
 
 param(
-    [string]$Version = "v1.0.0",
-    [switch]$Lightweight
+    [string]$Version
 )
 
 $ErrorActionPreference = "Stop"
-
-# Get repo root
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-Write-Host "=== Support Library Release Script ===" -ForegroundColor Cyan
-Write-Host "Version: $Version" -ForegroundColor Yellow
-Write-Host "Repo: $RepoRoot" -ForegroundColor Yellow
-Write-Host ""
+function Invoke-Gate {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][scriptblock]$Command
+    )
 
-# Check git status
-$Status = git status --porcelain
-if (-not $Status) {
-    Write-Host "No changes to commit. Checking for existing tag..." -ForegroundColor Yellow
-    if (git tag -l $Version) {
-        Write-Host "Tag $Version already exists!" -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "Changes detected. Staging all..." -ForegroundColor Yellow
-    git add -A
-    git status
-}
-
-# Verify build passes before release
-Write-Host "`n=== Running verification gates ===" -ForegroundColor Cyan
-$Commands = @(
-    "npm run lint",
-    "npm run typecheck",
-    "npm test",
-    "npm run build"
-)
-
-foreach ($cmd in $Commands) {
-    Write-Host "Running: $cmd" -ForegroundColor Gray
-    $result = & cmd /c $cmd
+    Write-Host "`n=== $Name ===" -ForegroundColor Cyan
+    & $Command
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "FAILED: $cmd" -ForegroundColor Red
-        exit 1
+        throw "$Name failed with exit code $LASTEXITCODE"
     }
 }
-Write-Host "All verification gates PASSED" -ForegroundColor Green
 
-# Commit message
-$CommitMsg = @"
-release: $Version - Open-source release with security hardening
+$PackageVersion = (Get-Content -Raw -LiteralPath (Join-Path $RepoRoot "package.json") | ConvertFrom-Json).version
+if (-not $Version) {
+    $Version = $PackageVersion
+}
+$NormalizedVersion = $Version.TrimStart("v")
+$Tag = "v$NormalizedVersion"
 
-Phase 1: Critical security fixes
-- CSRF protection on all Server Actions
-- Remove ALLOW_INSECURE_LINKS, enforce HTTPS everywhere
-- Hash studentEmail (bcrypt cost 12) at rest, exclude from search
-- Security headers (CSP, HSTS, X-Frame-Options, etc.)
-- Rate limit on OAuth callback (10 req/min/IP)
-- Secure session cookies (HttpOnly, Secure, SameSite=Lax)
-
-Phase 2: Defense-in-depth hardening
-- Server-side mentorId enforcement (MENTOR role)
-- Audit logs enriched with IP, UA, requestId
-- Search regex timeout (5s maxTimeMS)
-- IP fallback rate limiting
-- Fix createOperationId partial index (sentinel '__none__')
-
-Phase 3: Open-source preparation
-- Generic Docker Compose (compose.example.yml + compose.traefik.yml)
-- Multi-platform deploy workflow (.github/workflows/deploy.example.yml)
-- Self-hosted deployment docs (Docker, Vercel, Railway, Render, Coolify)
-- LMS integration docs (schema, role mapping, custom adapters)
-- Branding guidelines (BRANDING.md)
-- Standard OSS files (CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md)
-- Updated README with architecture + doc navigation
-
-All verification gates pass: lint, typecheck, test (52), build
-"@
-
-# Commit if there are changes
-if ($Status) {
-    Write-Host "`n=== Committing changes ===" -ForegroundColor Cyan
-    git commit -m $CommitMsg
-} else {
-    Write-Host "`nNo new changes to commit (already committed)." -ForegroundColor Yellow
+if ($NormalizedVersion -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$') {
+    throw "Version must be valid SemVer: $Version"
+}
+if ($NormalizedVersion -ne $PackageVersion) {
+    throw "Requested version $NormalizedVersion does not match package.json version $PackageVersion"
+}
+if ((git branch --show-current) -ne "main") {
+    throw "Releases must be cut from main"
+}
+if (git status --porcelain) {
+    throw "Working tree must be clean. Commit or stash changes before releasing."
+}
+git diff --quiet
+if ($LASTEXITCODE -ne 0) { throw "Working tree has unstaged changes" }
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) { throw "Index has staged changes" }
+if (git tag --list $Tag) {
+    throw "Tag $Tag already exists locally"
+}
+git ls-remote --exit-code --tags origin "refs/tags/$Tag" *> $null
+if ($LASTEXITCODE -eq 0) {
+    throw "Tag $Tag already exists on origin"
+}
+if ($LASTEXITCODE -ne 2) {
+    throw "Could not verify remote tag state"
 }
 
-# Check if tag exists
-if (git tag -l $Version) {
-    Write-Host "Tag $Version already exists locally!" -ForegroundColor Red
-    Write-Host "Delete it first: git tag -d $Version" -ForegroundColor Yellow
-    exit 1
+Invoke-Gate "Locked dependency install" { cmd /c "npm ci" }
+Invoke-Gate "Lint" { cmd /c "npm run lint" }
+Invoke-Gate "Typecheck" { cmd /c "npm run typecheck" }
+Invoke-Gate "Unit tests" { cmd /c "npm test" }
+Invoke-Gate "Clean production build" {
+    if (Test-Path -LiteralPath ".next") { Remove-Item -Recurse -Force -LiteralPath ".next" }
+    cmd /c "npm run build"
+}
+if (-not (Test-Path -LiteralPath ".next/standalone/server.js" -PathType Leaf)) {
+    throw "Build did not produce .next/standalone/server.js"
+}
+Invoke-Gate "Production E2E" { cmd /c "npm run test:e2e" }
+Invoke-Gate "Production dependency audit" { cmd /c "npm audit --omit=dev --audit-level=high" }
+Invoke-Gate "Full dependency audit" { cmd /c "npm audit --audit-level=high" }
+
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    throw "Docker is required for release verification"
+}
+$ComposeEnv = Join-Path $env:TEMP "support-library-release-$PID.env"
+try {
+    @(
+        "MONGODB_URI=mongodb://mongo.invalid:27017/?replicaSet=rs0"
+        "MONGODB_DB=support_library"
+        "LMS_MONGODB_URI=mongodb://mongo.invalid:27017/?replicaSet=rs0"
+        "LMS_MONGODB_DB=hp-v2"
+        "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026"
+        "AUTH_TRUST_HOST=true"
+        "AUTH_URL=https://support.example.com"
+        "AUTH_GOOGLE_ID=release.invalid.apps.googleusercontent.com"
+        "AUTH_GOOGLE_SECRET=release-only-placeholder"
+        "NEXT_PUBLIC_APP_URL=https://support.example.com"
+        "NODE_ENV=production"
+    ) | Set-Content -LiteralPath $ComposeEnv -Encoding ASCII
+
+    $env:APP_ENV_FILE = $ComposeEnv
+    $env:APP_IMAGE = "ghcr.io/example/support-library@sha256:" + ("a" * 64)
+    $env:OPS_IMAGE = "ghcr.io/example/support-library-ops@sha256:" + ("b" * 64)
+    Invoke-Gate "Generic Compose validation" { docker compose -f compose.example.yml config --quiet }
+    Invoke-Gate "Traefik Compose validation" { docker compose -f compose.example.yml -f compose.traefik.yml config --quiet }
+    Invoke-Gate "Production Compose validation" { docker compose -f compose.production.yml config --quiet }
+
+    $Image = "support-library-release:$NormalizedVersion"
+    Invoke-Gate "Runtime image build" { docker build --target runner --build-arg "DEPLOYMENT_VERSION=$(git rev-parse HEAD)" --tag $Image . }
+    Invoke-Gate "Operations image build" { docker build --target ops --tag "support-library-ops-release:$NormalizedVersion" . }
+    Invoke-Gate "Runtime container smoke" {
+        docker run --rm --detach --name "support-library-release-$PID" --publish 127.0.0.1:12002:12000 --env NODE_ENV=production --env "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026" $Image
+    }
+    try {
+        $Healthy = $false
+        for ($Attempt = 1; $Attempt -le 30; $Attempt++) {
+            curl.exe --fail --silent http://127.0.0.1:12002/api/health/live *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $Healthy = $true
+                break
+            }
+            Start-Sleep -Seconds 2
+        }
+        if (-not $Healthy) {
+            docker logs "support-library-release-$PID"
+            throw "Runtime container did not become live"
+        }
+    } finally {
+        docker stop "support-library-release-$PID" *> $null
+    }
+} finally {
+    Remove-Item -LiteralPath $ComposeEnv -Force -ErrorAction SilentlyContinue
+    Remove-Item Env:APP_ENV_FILE, Env:APP_IMAGE, Env:OPS_IMAGE -ErrorAction SilentlyContinue
 }
 
-# Create tag
-Write-Host "`n=== Creating tag $Version ===" -ForegroundColor Cyan
-$TagMsg = @"
-$Version - Support Library Open Source Release
-
-Security-hardened support library for Hablu Programmer LMS.
-
-Features:
-- Staff-first issue management with replies, file/video links
-- Google OAuth via Auth.js v5, roles synced from external LMS
-- Three-tier access: ADMIN / MENTOR / VIEWER
-- Student email hashing (bcrypt), excluded from search indexes
-- CSRF protection, rate limiting, audit logging on all mutations
-- Container hardening (non-root, read-only FS, dropped caps)
-- Security headers (CSP, HSTS, X-Frame-Options, etc.)
-
-Deployment:
-- Docker Compose (generic + Traefik override)
-- Multi-platform: Vercel, Railway, Render, Coolify, VPS
-- Self-hosted deployment guide with MongoDB replica set setup
-
-Documentation:
-- Self-hosted deployment guide
-- LMS integration guide (schema, role mapping, custom adapters)
-- Branding guidelines, contributing, security policy, code of conduct
-
-Verification: lint + typecheck + 52 unit tests + build all pass
-"@
-
-if ($Lightweight) {
-    Write-Host "Creating lightweight tag (no GPG signature)..." -ForegroundColor Yellow
-    git tag $Version -m $TagMsg
-} else {
-    Write-Host "Creating signed tag (requires GPG key)..." -ForegroundColor Yellow
-    git tag -s $Version -m $TagMsg
+Write-Host "`nAll release gates passed for $Tag." -ForegroundColor Green
+$Confirmation = Read-Host "Create lightweight tag $Tag and atomically push main plus the tag? (y/N)"
+if ($Confirmation -notin @("y", "Y")) {
+    Write-Host "Release cancelled; no tag was created."
+    exit 0
 }
 
-# Show tag info
-git show $Version --no-pager | Select-Object -First 20
-
-# Confirm push
-Write-Host "`nReady to push to origin?" -ForegroundColor Cyan
-$Confirm = Read-Host "Push commit and tag to origin/main? (y/N)"
-if ($Confirm -eq 'y' -or $Confirm -eq 'Y') {
-    Write-Host "Pushing..." -ForegroundColor Cyan
-    git push origin main
-    git push origin $Version
-    Write-Host "`n✅ Release $Version pushed successfully!" -ForegroundColor Green
-    Write-Host "GitHub Release: https://github.com/$(git config --get remote.origin.url | Select-String '(?<=github.com[:/])[^/]+/[^/]+(?=\.git)').Matches.Value/releases/tag/$Version" -ForegroundColor Cyan
-} else {
-    Write-Host "`nSkipped push. Run manually when ready:" -ForegroundColor Yellow
-    Write-Host "  git push origin main" -ForegroundColor Gray
-    Write-Host "  git push origin $Version" -ForegroundColor Gray
+git tag $Tag
+if ($LASTEXITCODE -ne 0) { throw "Failed to create lightweight tag $Tag" }
+git push --atomic origin HEAD:main "refs/tags/$Tag"
+if ($LASTEXITCODE -ne 0) {
+    throw "Atomic push failed. The local tag remains; no partial remote update was accepted."
 }
+
+Write-Host "Release $Tag pushed atomically." -ForegroundColor Green

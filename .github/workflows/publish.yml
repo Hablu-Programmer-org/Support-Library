@@ -1,0 +1,140 @@
+name: Publish GHCR image
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character commit SHA on main with a successful CI run
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  packages: write
+
+concurrency:
+  group: support-library-publish-${{ github.event.workflow_run.head_sha || inputs.sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish immutable images
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Resolve and validate release revision
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          sha="$WORKFLOW_SHA"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            sha="$INPUT_SHA"
+          fi
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "A full lowercase commit SHA is required"; exit 1; }
+
+          default_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          compare_status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$sha...$default_sha" --jq .status)
+          [[ "$compare_status" == "ahead" || "$compare_status" == "identical" ]] || {
+            echo "Revision is not contained in main"
+            exit 1
+          }
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            successful_ci=$(gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=100" \
+              --jq ".workflow_runs[] | select(.head_sha == \"$sha\") | .id" | head -n 1)
+            [[ -n "$successful_ci" ]] || { echo "No successful CI run exists for $sha"; exit 1; }
+          fi
+
+          package_content=$(gh api "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$sha" --jq .content)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "version=$(printf '%s' "$package_content" | base64 --decode | jq -r .version)" >> "$GITHUB_OUTPUT"
+
+      - name: Check out exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ steps.release.outputs.sha }}
+
+      - name: Log in to GHCR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Build, smoke-test, and publish exact-SHA images
+        id: images
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          repository="${GITHUB_REPOSITORY,,}"
+          app_tag="ghcr.io/$repository:sha-$RELEASE_SHA"
+          ops_tag="ghcr.io/$repository-ops:sha-$RELEASE_SHA"
+
+          docker build --pull --target runner --build-arg DEPLOYMENT_VERSION="$RELEASE_SHA" --tag "$app_tag" .
+          docker build --pull --target ops --tag "$ops_tag" .
+
+          container_id=$(docker run --detach --rm --publish 127.0.0.1:12002:12000 \
+            --env NODE_ENV=production \
+            --env MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
+            --env MONGODB_DB=support_library_smoke \
+            --env LMS_MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
+            --env LMS_MONGODB_DB=hp-v2 \
+            --env AUTH_SECRET='Publish-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026' \
+            --env AUTH_TRUST_HOST=true \
+            --env AUTH_URL='http://127.0.0.1:12001' \
+            --env AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com \
+            --env AUTH_GOOGLE_SECRET=ci-only-placeholder \
+            --env TRUSTED_PROXY_HOPS=1 \
+            --env STUDENT_EMAIL_KEY_VERSION=v1 \
+            --env STUDENT_EMAIL_ENCRYPTION_KEYS='v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=' \
+            --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \
+            "$app_tag")
+          trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:12002/api/health/live >/dev/null; then
+              break
+            fi
+            [[ "$attempt" != 30 ]] || { docker logs "$container_id"; exit 1; }
+            sleep 2
+          done
+          docker stop "$container_id" >/dev/null
+          trap - EXIT
+
+          docker push "$app_tag"
+          docker push "$ops_tag"
+          app_digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$app_tag")
+          ops_digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$ops_tag")
+          [[ "$app_digest" =~ @sha256:[0-9a-f]{64}$ ]]
+          [[ "$ops_digest" =~ @sha256:[0-9a-f]{64}$ ]]
+
+          printf '%s\n' \
+            "RELEASE_SHA=$RELEASE_SHA" \
+            "PACKAGE_VERSION=${{ steps.release.outputs.version }}" \
+            "APP_IMAGE=$app_digest" \
+            "OPS_IMAGE=$ops_digest" > release.env
+          sha256sum release.env compose.production.yml > SHA256SUMS
+
+      - name: Upload digest-bound release metadata
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: release-metadata
+          path: |
+            release.env
+            compose.production.yml
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
