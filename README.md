@@ -27,16 +27,16 @@ The interface is English throughout, with Inter typography and English date form
 
 ### Key Components
 
-| Layer | Technology |
-|-------|------------|
-| **Framework** | Next.js 16 App Router + React 19 |
-| **Language** | TypeScript (strict) |
-| **Auth** | Auth.js v5 (Google OAuth only) |
-| **Database** | MongoDB + Mongoose (replica set required) |
-| **Styling** | Tailwind CSS 4 + CSS Variables |
-| **Testing** | Vitest (unit) + Playwright (E2E) |
-| **Validation** | Zod schemas |
-| **Container** | Docker multi-stage (non-root, read-only FS) |
+| Layer          | Technology                                  |
+| -------------- | ------------------------------------------- |
+| **Framework**  | Next.js 16 App Router + React 19            |
+| **Language**   | TypeScript (strict)                         |
+| **Auth**       | Auth.js v5 (Google OAuth only)              |
+| **Database**   | MongoDB + Mongoose (replica set required)   |
+| **Styling**    | Tailwind CSS 4 + CSS Variables              |
+| **Testing**    | Vitest (unit) + Playwright (E2E)            |
+| **Validation** | Zod schemas                                 |
+| **Container**  | Docker multi-stage (non-root, read-only FS) |
 
 ### Security Features
 
@@ -50,15 +50,15 @@ The interface is English throughout, with Inter typography and English date form
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
+| Document                                                 | Description                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------- |
 | [Self-Hosted Deployment](docs/self-hosted-deployment.md) | Deploy to Docker Compose, Vercel, Railway, Render, Coolify |
-| [LMS Integration](docs/lms-integration.md) | Schema requirements, role mapping, custom adapters |
-| [VPS Deployment](docs/vps-deployment.md) | Production runbook for VPS + Traefik |
-| [Branding Guidelines](BRANDING.md) | MIT attribution and separate trademark guidance |
-| [Contributing](CONTRIBUTING.md) | Development setup, code standards, PR process |
-| [Security Policy](SECURITY.md) | Vulnerability reporting, supported versions |
-| [Code of Conduct](CODE_OF_CONDUCT.md) | Community standards and enforcement |
+| [LMS Integration](docs/lms-integration.md)               | Schema requirements, role mapping, custom adapters         |
+| [VPS Deployment](docs/vps-deployment.md)                 | Production runbook for VPS + Traefik                       |
+| [Branding Guidelines](BRANDING.md)                       | MIT attribution and separate trademark guidance            |
+| [Contributing](CONTRIBUTING.md)                          | Development setup, code standards, PR process              |
+| [Security Policy](SECURITY.md)                           | Vulnerability reporting, supported versions                |
+| [Code of Conduct](CODE_OF_CONDUCT.md)                    | Community standards and enforcement                        |
 
 ## Stack
 
@@ -190,6 +190,7 @@ Production uses standalone Next.js runtime and operations images from GHCR, both
 Dependabot opens reviewable npm, Actions, and Docker update pull requests. Updates are not auto-merged.
 
 Auth callback URL:
+
 ```text
 https://support.your-domain.com/api/auth/callback/google
 ```
@@ -209,4 +210,4 @@ DB-backed routes use Node.js runtime. `/api/health/live` checks the process and 
 
 MIT License — See [LICENSE](LICENSE) for details.
 
-Copyright (c) 2026 Hablu Programmer
+Copyright (c) 2026 Hablu Programmer!
