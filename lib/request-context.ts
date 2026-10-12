@@ -1,5 +1,3 @@
-"use server";
-
 import { headers } from "next/headers";
 import { getClientIp } from "@/lib/client-ip";
 

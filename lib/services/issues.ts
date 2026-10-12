@@ -275,8 +275,15 @@ export async function updateIssue(
   const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
-  const { studentEmail, ...issueFields } = parsed;
+  const { studentEmail, status, ...issueFields } = parsed;
   const protectedEmail = protectStudentEmail(studentEmail);
+
+  // Editing can never archive an issue: ARCHIVED is only reachable through the
+  // dedicated soft-delete flow, which also clears visibility, records the
+  // ARCHIVED publication event, and removes the issue from active lists. Dropping
+  // the field here leaves the current status untouched instead of persisting a
+  // status that would keep the issue visible but marked archived.
+  const safeStatus = status === "ARCHIVED" ? undefined : status;
 
   // For MENTOR role, enforce mentorId = actorId (ignore input)
   // For ADMIN role, allow custom mentorId
@@ -286,6 +293,7 @@ export async function updateIssue(
 
   const updateData: Record<string, unknown> = {
     ...issueFields,
+    ...(safeStatus ? { status: safeStatus } : {}),
     studentEmailEncrypted: protectedEmail.encrypted,
     studentEmailLookup: protectedEmail.lookup,
     visibility: "INTERNAL",

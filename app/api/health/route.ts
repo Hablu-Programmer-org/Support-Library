@@ -10,12 +10,17 @@ export async function GET() {
   try {
     validateProductionEnv();
     await Promise.all([checkSupportReadiness(), checkLmsReadiness()]);
-    return NextResponse.json({
+    const body: { ok: boolean; ready: boolean; ts: string; release?: string } = {
       ok: true,
       ready: true,
-      release: process.env.DEPLOYMENT_VERSION ?? "development",
       ts: new Date().toISOString(),
-    });
+    };
+    // The deployed revision is only disclosed outside production so the public
+    // health endpoint cannot be used to fingerprint the exact commit in prod.
+    if (process.env.NODE_ENV !== "production") {
+      body.release = process.env.DEPLOYMENT_VERSION ?? "development";
+    }
+    return NextResponse.json(body);
   } catch {
     return NextResponse.json(
       { ok: false, ready: false, ts: new Date().toISOString() },

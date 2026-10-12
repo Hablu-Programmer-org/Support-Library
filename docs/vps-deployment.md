@@ -36,7 +36,7 @@ A manual deploy requires the numeric run ID of a successful `Publish GHCR image`
 1. Back up the support database and verify the protected env file and Atlas roles.
 2. Merge to `main`, wait for CI and image publication, then approve the production deployment.
 3. Check `docker ps --filter name=hablu-support-library` and `docker inspect --format '{{json .State.Health}}' hablu-support-library`.
-4. Check `/api/health/live` for process liveness and `/api/health/ready` for support/LMS database readiness and the expected release SHA.
+4. Check `/api/health/live` for process liveness and `/api/health/ready` for support/LMS database readiness. In production the health payload omits the release SHA (it is only returned outside production), so confirm the deployed revision from the recorded `state/current-release` file or the running image digest.
 5. Sign in through Google, load the issue library, create/read a disposable support issue with an authorized staff account, then remove it.
 6. Confirm Traefik serves the expected certificate and no container port is published on the host.
 

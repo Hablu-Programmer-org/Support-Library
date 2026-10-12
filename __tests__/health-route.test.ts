@@ -37,4 +37,42 @@ describe("readiness route", () => {
     expect(checkSupportReadiness).toHaveBeenCalledOnce();
     expect(checkLmsReadiness).toHaveBeenCalledOnce();
   });
+
+  it("omits the release revision in production", async () => {
+    checkSupportReadiness.mockResolvedValueOnce(undefined);
+    checkLmsReadiness.mockResolvedValueOnce(undefined);
+    const env = process.env as Record<string, string | undefined>;
+    const originalNodeEnv = env.NODE_ENV;
+    const originalRelease = env.DEPLOYMENT_VERSION;
+    env.NODE_ENV = "production";
+    env.DEPLOYMENT_VERSION = "deadbeef";
+    try {
+      const response = await GET();
+      const body = await response.json();
+      expect(body).not.toHaveProperty("release");
+    } finally {
+      env.NODE_ENV = originalNodeEnv;
+      if (originalRelease === undefined) delete env.DEPLOYMENT_VERSION;
+      else env.DEPLOYMENT_VERSION = originalRelease;
+    }
+  });
+
+  it("reports the release revision outside production", async () => {
+    checkSupportReadiness.mockResolvedValueOnce(undefined);
+    checkLmsReadiness.mockResolvedValueOnce(undefined);
+    const env = process.env as Record<string, string | undefined>;
+    const originalNodeEnv = env.NODE_ENV;
+    const originalRelease = env.DEPLOYMENT_VERSION;
+    env.NODE_ENV = "development";
+    env.DEPLOYMENT_VERSION = "deadbeef";
+    try {
+      const response = await GET();
+      const body = await response.json();
+      expect(body.release).toBe("deadbeef");
+    } finally {
+      env.NODE_ENV = originalNodeEnv;
+      if (originalRelease === undefined) delete env.DEPLOYMENT_VERSION;
+      else env.DEPLOYMENT_VERSION = originalRelease;
+    }
+  });
 });

@@ -85,6 +85,8 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
       - name: Apply and verify database indexes
+        env:
+          MONGODB_DB: support_library_ci_e2e
         run: |
           npm run db:indexes
           npm run db:indexes -- --apply --create-only

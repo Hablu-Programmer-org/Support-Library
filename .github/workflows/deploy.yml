@@ -200,8 +200,21 @@ jobs:
           rm -f /tmp/hablu-support-library-compose.yml
           compose_file="$release_dir/compose.production.yml"
 
-          docker pull "$app_image"
-          docker pull "$ops_image"
+          # Pull before touching any container so a registry failure aborts cleanly
+          # (the rollback trap is armed later, once a change is imminent).
+          if ! docker pull "$app_image"; then
+            echo "Failed to pull the application image: $app_image" >&2
+            echo "If Docker reported 'manifest unknown', this host is not authenticated" >&2
+            echo "to GHCR for a private package (GHCR returns 404 for private manifests)." >&2
+            echo "Create a read:packages token for the package owner and log in once as the" >&2
+            echo "deploy user: docker login ghcr.io -u <github-user> --password-stdin" >&2
+            exit 1
+          fi
+          if ! docker pull "$ops_image"; then
+            echo "Failed to pull the operations image: $ops_image" >&2
+            echo "See the GHCR authentication note above." >&2
+            exit 1
+          fi
           docker image inspect "$app_image" >/dev/null
           docker image inspect "$ops_image" >/dev/null
 

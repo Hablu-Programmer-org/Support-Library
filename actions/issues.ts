@@ -164,6 +164,13 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
       return { fieldErrors: { _form: ["Invalid form data"] } };
     }
 
+    // Archiving is a distinct stateful operation (soft delete + audit + publication
+    // history). Editing must never be able to move an issue into ARCHIVED, or the
+    // issue would be marked archived without being removed from active lists.
+    if (issueData.status === "ARCHIVED") {
+      return { fieldErrors: { status: ["Use the Archive issue action instead"] } };
+    }
+
     let supportIssue;
     try {
       await consumeRateLimit("issue.update", guard.session.user.id);

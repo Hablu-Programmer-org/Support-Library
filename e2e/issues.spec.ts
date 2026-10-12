@@ -191,4 +191,78 @@ test.describe("Issue CRUD (mentor)", () => {
       ),
     ).toBe(true);
   });
+
+  test("edits an issue and persists the change", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Edit Student");
+    await page.fill('input[name="studentEmail"]', `e2e.edit.${Date.now()}@test.com`);
+    await page.fill('input[name="title"]', "E2E editable issue");
+    await page.fill('textarea[name="question"]', "This issue is going to be edited successfully.");
+    await page.uncheck('input[name="solveIssue"]');
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+
+    await page.getByRole("link", { name: "Edit issue details" }).click();
+    await expect(page.getByRole("heading", { name: "Edit issue" })).toBeVisible();
+    await page.fill('input[name="title"]', "E2E edited issue title");
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Save Issue" }).click(),
+    ]);
+    await expect(page.getByRole("heading", { name: "E2E edited issue title" })).toBeVisible();
+  });
+
+  test("rejects moving an issue to ARCHIVED through the edit form", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Guard Student");
+    await page.fill('input[name="studentEmail"]', `e2e.guard.${Date.now()}@test.com`);
+    await page.fill('input[name="title"]', "E2E archive guard issue");
+    await page.fill('textarea[name="question"]', "Editing must not be able to archive this issue.");
+    await page.uncheck('input[name="solveIssue"]');
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+
+    await page.getByRole("link", { name: "Edit issue details" }).click();
+    await expect(page.getByRole("heading", { name: "Edit issue" })).toBeVisible();
+    // The rendered status control never offers ARCHIVED. Inject it and submit in one
+    // synchronous task so the server sees a tampered value and must reject it.
+    await page.getByRole("button", { name: "Save Issue" }).evaluate((btn) => {
+      const form = (btn as HTMLButtonElement).form!;
+      const select = form.querySelector('select[name="status"]') as HTMLSelectElement;
+      const option = document.createElement("option");
+      option.value = "ARCHIVED";
+      select.appendChild(option);
+      select.value = "ARCHIVED";
+      form.requestSubmit();
+    });
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Use the Archive issue action instead" }),
+    ).toBeVisible();
+  });
+
+  test("archives an issue from the detail page", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    await page.fill('input[name="studentName"]', "E2E Archive Student");
+    await page.fill('input[name="studentEmail"]', `e2e.archive.${Date.now()}@test.com`);
+    await page.fill('input[name="title"]', "E2E issue to archive");
+    await page.fill('textarea[name="question"]', "This issue is going to be archived.");
+    await page.uncheck('input[name="solveIssue"]');
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/),
+      page.getByRole("button", { name: "Create Issue", exact: true }).click(),
+    ]);
+
+    // The archive control gates submission behind window.confirm; accept it so the
+    // form action actually runs, then confirm the redirect back to the issue list.
+    page.on("dialog", (dialog) => dialog.accept());
+    await Promise.all([
+      page.waitForURL(/\/dashboard\/issues$/),
+      page.getByRole("button", { name: "Archive issue" }).click(),
+    ]);
+    await expect(page).toHaveURL("/dashboard/issues");
+  });
 });

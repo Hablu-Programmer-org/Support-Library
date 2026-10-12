@@ -1,5 +1,3 @@
-"use server";
-
 import { validateCsrfToken } from "@/lib/csrf";
 
 export async function withCsrfProtection<T>(
