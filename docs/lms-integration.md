@@ -64,7 +64,7 @@ LMS roles are mapped to Support Library's three-tier system:
 | `COORDINATOR` | `ADMIN` | Full access, publish/unpublish |
 | `MODERATOR` | `ADMIN` | Full access, publish/unpublish |
 | `INSTRUCTOR` | `MENTOR` | Create/edit issues, replies |
-| `MEMBER` | `MENTOR` | Create/edit issues, replies |
+| `MEMBER` | `VIEWER` | Read published issues only |
 | `STUDENT` | `VIEWER` | Read published issues only |
 | `USER` | `VIEWER` | Read published issues only |
 | (unknown) | `VIEWER` | Read published issues only |
@@ -74,7 +74,7 @@ LMS roles are mapped to Support Library's three-tier system:
 const ADMIN_LMS_ROLES = new Set([
   "SUPER_ADMIN", "ADMIN", "MANAGER", "COORDINATOR", "MODERATOR"
 ]);
-const MENTOR_LMS_ROLES = new Set(["INSTRUCTOR", "MEMBER"]);
+const MENTOR_LMS_ROLES = new Set(["INSTRUCTOR"]);
 
 function mapLmsRole(lmsRole?: string | null): UserRole {
   const normalized = (lmsRole ?? "").trim().toUpperCase();

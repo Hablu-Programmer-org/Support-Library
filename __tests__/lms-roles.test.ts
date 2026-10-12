@@ -10,13 +10,13 @@ describe("mapLmsRole", () => {
   });
 
   it("maps teaching roles to MENTOR", () => {
-    for (const role of ["INSTRUCTOR", "MEMBER"]) {
+    for (const role of ["INSTRUCTOR"]) {
       expect(mapLmsRole(role)).toBe("MENTOR");
     }
   });
 
   it("maps student/learner roles to VIEWER", () => {
-    for (const role of ["STUDENT", "USER"]) {
+    for (const role of ["MEMBER", "STUDENT", "USER"]) {
       expect(mapLmsRole(role)).toBe("VIEWER");
     }
   });

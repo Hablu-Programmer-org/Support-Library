@@ -8,7 +8,10 @@ import { findLmsUserByEmail } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { getRequestContext } from "@/lib/request-context";
 import { recordAuditEvent } from "@/lib/services/audit";
-import { UserModel, type UserRole } from "@/models/User";
+import { UserModel, type UserDocument, type UserRole } from "@/models/User";
+
+const isDuplicateKeyError = (error: unknown) =>
+  typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 
 /**
  * Local cache row for a logged-in hp-v2 user. Name/image keep the Google
@@ -27,26 +30,41 @@ export const ensureStaffUser = async (user: {
   const email = normalizeEmail(user.email);
   await dbConnect();
 
+  const applyProfile = (userRow: UserDocument) => {
+    if (user.name) userRow.name = user.name;
+    if (user.image) userRow.image = user.image;
+    userRow.role = user.role;
+    userRow.isActive = user.isActive;
+    if (user.recordLogin) userRow.lastLoginAt = new Date();
+  };
+
   const existing = await UserModel.findOne({ email });
 
   if (existing) {
-    if (user.name) existing.name = user.name;
-    if (user.image) existing.image = user.image;
-    existing.role = user.role;
-    existing.isActive = user.isActive;
-    if (user.recordLogin) existing.lastLoginAt = new Date();
+    applyProfile(existing);
     if (existing.isModified()) await existing.save();
     return existing;
   }
 
-  return UserModel.create({
-    name: user.name ?? email,
-    email,
-    image: user.image ?? null,
-    role: user.role,
-    isActive: user.isActive,
-    lastLoginAt: user.recordLogin ? new Date() : null,
-  });
+  try {
+    return await UserModel.create({
+      name: user.name ?? email,
+      email,
+      image: user.image ?? null,
+      role: user.role,
+      isActive: user.isActive,
+      lastLoginAt: user.recordLogin ? new Date() : null,
+    });
+  } catch (error) {
+    // Two simultaneous first logins for the same new email can race the unique
+    // email index; fall back to the row created by the winner and refresh it.
+    if (!isDuplicateKeyError(error)) throw error;
+    const winner = await UserModel.findOne({ email });
+    if (!winner) throw error;
+    applyProfile(winner);
+    if (winner.isModified()) await winner.save();
+    return winner;
+  }
 };
 
 /**

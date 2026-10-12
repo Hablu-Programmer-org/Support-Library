@@ -42,9 +42,8 @@ LMS role mapping:
 | LMS Role | Support Library Role |
 | --- | --- |
 | `INSTRUCTOR` | `MENTOR` |
-| `MEMBER` | `MENTOR` |
 | `SUPER_ADMIN`, `ADMIN`, `MANAGER`, `COORDINATOR`, `MODERATOR` | `ADMIN` |
-| `STUDENT`, `USER`, unknown, missing | `VIEWER` |
+| `STUDENT`, `MEMBER`, `USER`, unknown, missing | `VIEWER` |
 
 Important access behavior:
 
