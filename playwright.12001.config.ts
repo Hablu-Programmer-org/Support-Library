@@ -18,6 +18,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 5_000 },
   workers: 1,
+  retries: process.env.CI ? 1 : 0,
   globalTeardown: "./e2e/global-teardown.ts",
   use: {
     baseURL,

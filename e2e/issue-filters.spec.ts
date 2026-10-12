@@ -1,19 +1,22 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { formFor } from "./form-helpers";
+
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
-// This spec runs first alphabetically, so its first page views pay a cold dev
+// This spec runs first alphabetically, so its first page views pay a cold
 // compile. A click that lands before React hydrates falls back to a native form
 // post and silently stays on the same URL, so retry the submit until it routes.
 test.describe.configure({ timeout: 120_000 });
 
 const submit = async (page: Page, url: RegExp) => {
+  const form = formFor(page, "Create Issue");
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const navigated = page
       .waitForURL(url, { timeout: 10_000 })
       .then(() => true)
       .catch(() => false);
-    await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+    await form.getByRole("button", { name: "Create Issue", exact: true }).click();
     if (await navigated) return;
   }
   throw new Error(`Submit never navigated to ${url}`);
@@ -55,17 +58,18 @@ async function createIssue(
   batchNo: string,
 ) {
   await page.goto("/dashboard/issues/new");
-  await page.fill('input[name="studentName"]', "E2E Filter Student");
-  await page.fill('input[name="studentEmail"]', `e2e.filter.${suffix}@test.com`);
-  await page.fill('input[name="title"]', title);
-  await page.fill('textarea[name="question"]', `Body for ${title}`);
+  const form = formFor(page, "Create Issue");
+  await form.locator('input[name="studentName"]').fill("E2E Filter Student");
+  await form.locator('input[name="studentEmail"]').fill(`e2e.filter.${suffix}@test.com`);
+  await form.locator('input[name="title"]').fill(title);
+  await form.locator('textarea[name="question"]').fill(`Body for ${title}`);
 
   // Course slug and batch live inside a collapsed <details>.
-  await page.locator("details").filter({ hasText: "Additional Details" }).locator("summary").click();
-  await page.fill('input[name="courseSlug"]', courseSlug);
-  await page.fill('input[name="batchNo"]', batchNo);
+  await form.locator("details").filter({ hasText: "Additional Details" }).locator("summary").click();
+  await form.locator('input[name="courseSlug"]').fill(courseSlug);
+  await form.locator('input[name="batchNo"]').fill(batchNo);
 
-  await page.uncheck('input[name="solveIssue"]');
+  await form.locator('input[name="solveIssue"]').uncheck();
   await submit(page, /\/dashboard\/issues\/[a-f0-9]{24}$/);
 }
 
@@ -117,16 +121,16 @@ test.describe("Issue list filters (mentor)", () => {
       /mentorId=[a-f0-9]{24}&from=2000-01-01&to=2999-12-31/,
       async () => {
         await page.selectOption('main select[name="mentorId"]:visible', { label: "Mentor User" });
-        await page.fill('input[name="from"]', "2000-01-01");
-        await page.fill('input[name="to"]', "2999-12-31");
+        await page.locator('main input[name="from"]:visible').fill("2000-01-01");
+        await page.locator('main input[name="to"]:visible').fill("2999-12-31");
       },
     );
     await expect(issueHeading(page, "E2E filter mentor issue")).toBeVisible();
 
     // A date range that ends before the issue was created must exclude it.
     await filterWith(page, /from=2000-01-01&to=2000-01-02/, async () => {
-      await page.fill('input[name="from"]', "2000-01-01");
-      await page.fill('input[name="to"]', "2000-01-02");
+      await page.locator('main input[name="from"]:visible').fill("2000-01-01");
+      await page.locator('main input[name="to"]:visible').fill("2000-01-02");
     });
     await expect(issueHeading(page, "E2E filter mentor issue")).toHaveCount(0);
   });

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { formFor, submitAndWait } from "./form-helpers";
+
 /**
  * VIEWER (students) must only see published issues, and never student PII.
  * Data is prepared as ADMIN, then asserted as VIEWER.
@@ -19,23 +21,17 @@ test.describe("VIEWER content gating", () => {
 
     // Admin prepares an issue with one public reply.
     await page.goto("/dashboard/issues/new");
-    await page.fill('input[name="studentName"]', "E2E Gating Student");
-    await page.fill('input[name="studentEmail"]', studentEmail);
-    await page.fill('input[name="title"]', issueTitle);
-    await page.fill('textarea[name="question"]', "Which content may students see?");
-    await page.uncheck('input[name="solveIssue"]');
+    const form = formFor(page, "Create Issue");
+    await form.locator('input[name="studentName"]').fill("E2E Gating Student");
+    await form.locator('input[name="studentEmail"]').fill(studentEmail);
+    await form.locator('input[name="title"]').fill(issueTitle);
+    await form.locator('textarea[name="question"]').fill("Which content may students see?");
+    await form.locator('input[name="solveIssue"]').uncheck();
 
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const navigated = page
-        .waitForURL(/\/dashboard\/issues\/[a-f0-9]{24}$/, { timeout: 10_000 })
-        .then(() => true)
-        .catch(() => false);
-      await page.getByRole("button", { name: "Create Issue", exact: true }).click();
-      if (await navigated) break;
-    }
+    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
     const issuePath = new URL(page.url()).pathname;
 
-    const replyForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add response" }) });
+    const replyForm = formFor(page, "Add response");
     await replyForm.locator('textarea[name="body"]').fill(publicReply);
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: publicReply })).toBeVisible();
