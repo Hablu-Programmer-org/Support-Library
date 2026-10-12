@@ -106,12 +106,16 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.goto("/dashboard/issues/new");
     await page.fill('input[name="studentEmail"]', "e2e.lms.student@test.com");
     await expect(page.getByText("Found in LMS")).toBeVisible();
-    await page.locator('input[name="lmsUserId"]').evaluate((input) => {
-      (input as HTMLInputElement).value = "another-lms-user";
-    });
     await page.fill('input[name="title"]', "E2E mismatched LMS identity");
     await page.fill('textarea[name="question"]', "The server must reject a mismatched LMS identity.");
-    await page.getByRole("button", { name: "Create Issue", exact: true }).click();
+    // The visible fields above are React-controlled, so any re-render would reset a
+    // plain DOM value assignment. Tamper with the hidden input and submit in the same
+    // synchronous task so the submitted FormData carries the tampered value.
+    await page.getByRole("button", { name: "Create Issue", exact: true }).evaluate((btn) => {
+      const form = (btn as HTMLButtonElement).form!;
+      (form.querySelector('input[name="lmsUserId"]') as HTMLInputElement).value = "another-lms-user";
+      form.requestSubmit();
+    });
     await expect(page.getByRole("alert").filter({ hasText: "does not match this email" })).toBeVisible();
     await expect(page).toHaveURL("/dashboard/issues/new");
   });
@@ -128,11 +132,15 @@ test.describe("Issue CRUD (mentor)", () => {
       page.getByRole("button", { name: "Create Issue", exact: true }).click(),
     ]);
     await page.getByRole("link", { name: "Edit issue details" }).click();
-    await page.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {
-      (input as HTMLInputElement).value = "2000-01-01T00:00:00.000Z";
-    });
     await page.fill('input[name="title"]', "E2E stale overwrite attempt");
-    await page.getByRole("button", { name: "Save Issue" }).click();
+    // React re-asserts controlled `value` props on every re-render, so a plain DOM
+    // assignment is reverted. Tamper with the hidden revision input and submit in the
+    // same synchronous task so the submitted FormData carries the stale revision.
+    await page.getByRole("button", { name: "Save Issue" }).evaluate((btn) => {
+      const form = (btn as HTMLButtonElement).form!;
+      (form.querySelector('input[name="expectedUpdatedAt"]') as HTMLInputElement).value = "2000-01-01T00:00:00.000Z";
+      form.requestSubmit();
+    });
     await expect(page.getByRole("alert").filter({ hasText: "Issue changed since you opened it" })).toBeVisible();
   });
 
