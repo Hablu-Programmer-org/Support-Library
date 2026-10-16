@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import { dbConnect } from "../../lib/db";
 import { getLmsMongoClient } from "../../lib/lms-db";
-import { UserModel } from "../../models/User";
+import { UserModel } from "../../models/user";
 import { STAFF_USERS, staffDisplayName } from "./staff-users";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env.local") });

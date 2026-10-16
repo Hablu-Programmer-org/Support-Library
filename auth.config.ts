@@ -1,7 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 
-import type { UserRole } from "@/models/User";
+import type { UserRole } from "@/models/user";
 
 export default {
   secret: process.env.AUTH_SECRET,

@@ -1,7 +1,7 @@
-import type { UserRole } from "../../models/User";
+import type { UserRole } from "../../models/user";
 
 export type StaffFixtureUser = {
-  /** Fixed ObjectId so JWT `id`/`sub` always matches a real `staff_users` row. */
+  /** Fixed ObjectId so JWT `id`/`sub` always matches a real `staff-users` row. */
   id: string;
   name: string;
   email: string;

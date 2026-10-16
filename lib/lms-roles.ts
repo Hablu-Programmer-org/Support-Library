@@ -1,4 +1,4 @@
-import type { UserRole } from "@/models/User";
+import type { UserRole } from "@/models/user";
 
 /**
  * hp-v2 roles that map to local ADMIN (full staff access).

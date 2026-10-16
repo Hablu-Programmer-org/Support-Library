@@ -1,5 +1,5 @@
 import type { DefaultSession } from "next-auth";
-import type { UserRole } from "@/models/User";
+import type { UserRole } from "@/models/user";
 
 type StaffSessionUser = DefaultSession["user"] & {
   id: string;

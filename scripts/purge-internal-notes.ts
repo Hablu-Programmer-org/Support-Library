@@ -16,7 +16,7 @@ const confirmation = process.argv
 /**
  * Removes the retired private-staff-note feature from the database.
  *
- * Private notes were ordinary `support_replies` documents flagged with
+ * Private notes were ordinary `support-replies` documents flagged with
  * `isInternalNote: true`. Because there is no separate collection, the field must
  * not be dropped before the flagged documents are deleted: doing so would make the
  * notes render as normal, student-visible replies.

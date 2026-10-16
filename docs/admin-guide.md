@@ -21,7 +21,7 @@ Admins must review public-facing text before publishing because copied student p
 
 ## 2. Who Gets Admin Access
 
-Access is controlled by the main Hablu Programmer LMS database. The Support Library keeps a local `staff_users` cache row, but LMS role and active status remain the source of truth.
+Access is controlled by the main Hablu Programmer LMS database. The Support Library keeps a local `staff-users` cache row, but LMS role and active status remain the source of truth.
 
 LMS role mapping:
 
@@ -626,7 +626,7 @@ Publication history events on the issue can include:
 
 Current UI limitation:
 
-- Audit events are stored in the `audit_events` collection.
+- Audit events are stored in the `audit-events` collection.
 - Publication history is stored on the support issue document.
 - There is no current admin page that displays audit events or publication history.
 - Use these records for backend traceability, not as a visible admin workflow today.

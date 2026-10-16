@@ -17,7 +17,7 @@ The interface is English throughout, with Inter typography and English date form
         ▼
 ┌─────────────────────┐
 │  Local Cache        │
-│  (staff_users)      │
+│  (staff-users)      │
 └─────────────────────┘
 ```
 

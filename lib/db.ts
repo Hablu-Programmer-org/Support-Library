@@ -53,5 +53,5 @@ export const checkSupportReadiness = async () => {
   const db = mongoose.connection.db;
   if (!db) throw new Error("Support database is unavailable");
   await db.admin().ping();
-  await db.collection("staff_users").findOne({}, { projection: { _id: 1 }, maxTimeMS: 2_000 });
+  await db.collection("staff-users").findOne({}, { projection: { _id: 1 }, maxTimeMS: 2_000 });
 };

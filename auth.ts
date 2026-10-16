@@ -8,7 +8,7 @@ import { findLmsUserByEmail } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { getRequestContext } from "@/lib/request-context";
 import { recordAuditEvent } from "@/lib/services/audit";
-import { UserModel, type UserDocument, type UserRole } from "@/models/User";
+import { UserModel, type UserDocument, type UserRole } from "@/models/user";
 
 const isDuplicateKeyError = (error: unknown) =>
   typeof error === "object" && error !== null && "code" in error && error.code === 11000;

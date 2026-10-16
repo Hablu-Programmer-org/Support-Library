@@ -55,7 +55,7 @@ async function main() {
   console.info("[student-email-migration] rollback: restore the pre-apply encrypted mongodump; do not export plaintext to logs or source control");
 
   await mongoose.connect(uri, { dbName: databaseName });
-  const collection = mongoose.connection.db!.collection("support_issues");
+  const collection = mongoose.connection.db!.collection("support-issues");
   const cursor = collection.find({}, {
     projection: {
       _id: 1,

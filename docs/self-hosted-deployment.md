@@ -225,7 +225,7 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 | `AUTH_SECRET` invalid | Regenerate with `npx auth secret` (32+ chars) |
 | Google OAuth redirect mismatch | Verify exact URI in Google Console |
 | Health check fails | Check MongoDB connectivity, `docker compose logs` |
-| Rate limited | Check `rate_limit_buckets` collection, adjust limits |
+| Rate limited | Check `rate-limit-buckets` collection, adjust limits |
 
 ## Security Checklist
 

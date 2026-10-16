@@ -43,7 +43,7 @@ async function main() {
 
   // Resolve child records first so their parents can be matched by id.
   const e2eIssues = await db
-    .collection("support_issues")
+    .collection("support-issues")
     .find({ title: E2E_TITLE_PREFIX }, { projection: { _id: 1 } })
     .toArray();
 
@@ -51,17 +51,17 @@ async function main() {
 
   const plans: Plan[] = [
     {
-      collection: "support_replies",
+      collection: "support-replies",
       filter: issueIds.length ? { issueId: { $in: issueIds } } : { issueId: { $in: [] } },
       label: "replies on E2E issues",
     },
     {
-      collection: "support_issues",
+      collection: "support-issues",
       filter: { title: E2E_TITLE_PREFIX },
       label: "issues titled 'E2E ...'",
     },
     {
-      collection: "staff_users",
+      collection: "staff-users",
       filter: { email: { $in: STAFF_FIXTURE_EMAILS } },
       label: "Playwright fixture staff users",
     },

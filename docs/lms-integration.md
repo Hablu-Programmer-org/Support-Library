@@ -13,7 +13,7 @@ Support Library requires read-only access to an external LMS (Learning Managemen
         ▼
 ┌─────────────────────┐
 │  Local Cache        │
-│  (staff_users)      │
+│  (staff-users)      │
 └─────────────────────┘
 ```
 
@@ -91,7 +91,7 @@ function mapLmsRole(lmsRole?: string | null): UserRole {
 3. Support Library queries LMS `User` collection by email
 4. If user exists and `isActive: true`:
    - Map LMS role → Support Library role
-   - Create/update local `staff_users` cache entry
+   - Create/update local `staff-users` cache entry
    - Grant access
 5. If user not found or `isActive: false`:
    - Deny access

@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    collection: "staff_users",
+    collection: "staff-users",
   },
 );
 
@@ -29,5 +29,5 @@ export type UserDocument = InferSchemaType<typeof userSchema> & {
 };
 
 export const UserModel: Model<UserDocument> =
-  (mongoose.models.User as Model<UserDocument>) ??
-  mongoose.model<UserDocument>("User", userSchema);
+  (mongoose.models.user as Model<UserDocument>) ??
+  mongoose.model<UserDocument>("user", userSchema);
