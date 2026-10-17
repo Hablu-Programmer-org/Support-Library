@@ -33,7 +33,7 @@ export default async function EditIssuePage({
       <header className="mb-7 flex items-start gap-3">
         <SettingsIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Edit issue</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Edit issue</h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             Updating public content will remove it from the Student Library until an admin reviews it again.
           </p>

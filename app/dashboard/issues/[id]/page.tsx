@@ -93,7 +93,7 @@ export default async function IssueDetailPage({
             </span>
           )}
         </div>
-        <h1 className="max-w-4xl text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+        <h1 className="max-w-4xl text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
           {supportIssue.title}
         </h1>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">

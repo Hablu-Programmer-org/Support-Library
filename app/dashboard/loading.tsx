@@ -1,31 +1,21 @@
-/**
- * Dashboard-wide loading fallback. It renders inside the dashboard
- * layout, so the header stays visible and only the content area
- * shows a skeleton while a route is fetching. Every dashboard route
- * is `force-dynamic`, so this appears on each navigation instead of
- * the UI freezing with no feedback.
- */
+import { Skeleton } from "@/components/shared/skeleton";
+
 export default function DashboardLoading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading">
-      {/* Page title skeleton */}
-      <div className="flex flex-col gap-3">
-        <div className="h-8 w-48 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
-        <div className="h-4 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700" />
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-72" />
       </div>
-
-      {/* Stat card skeletons */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div
-            key={i}
-            className="h-28 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700"
-          />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} className="h-24" />
         ))}
       </div>
-
-      {/* Main content skeleton */}
-      <div className="h-64 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-48" />
+        <Skeleton className="h-48" />
+      </div>
     </div>
   );
 }

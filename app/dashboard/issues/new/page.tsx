@@ -39,14 +39,9 @@ export default async function NewIssuePage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-                  aria-hidden="true"
-                >
-                  <SparklesIcon size={20} />
-                </span>
+                <SparklesIcon size={20} className="mt-1 shrink-0 text-slate-400 dark:text-slate-500" />
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Submit a support request
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400">
@@ -107,7 +102,7 @@ export default async function NewIssuePage() {
             <div className="flex items-start gap-3">
               <SparklesIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <div className="min-w-0 flex-1">
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   New Support Issue
                 </h1>
                 <p className="text-slate-600 dark:text-slate-400">
