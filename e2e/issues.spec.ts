@@ -244,6 +244,25 @@ test.describe("Issue CRUD (mentor)", () => {
     ).toBeVisible();
   });
 
+  test("shows quick tips from the info button beside the title", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+
+    const tipsButton = page.getByRole("button", { name: "Quick tips" });
+    const tipsPanel = page.getByRole("region", { name: "Quick tips" });
+
+    await expect(tipsButton).toHaveAttribute("aria-expanded", "false");
+    await expect(tipsPanel).toBeHidden();
+
+    await tipsButton.click();
+    await expect(tipsButton).toHaveAttribute("aria-expanded", "true");
+    await expect(tipsPanel).toBeVisible();
+    await expect(tipsPanel).toContainText("Describe the issue");
+
+    // Escape closes the popover without leaving the page.
+    await page.keyboard.press("Escape");
+    await expect(tipsPanel).toBeHidden();
+  });
+
   test("creates a general issue without any student identity", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");

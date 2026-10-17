@@ -5,6 +5,7 @@ import {
 } from "@/components/icons";
 import { IssueForm } from "@/components/issues/issue-form";
 import { StudentIssueForm } from "@/components/issues/student-issue-form";
+import { QuickTips } from "@/components/issues/quick-tips";
 import { requireIssueCreator } from "@/lib/auth-guard";
 import { canMutate } from "@/lib/roles";
 import Link from "next/link";
@@ -103,14 +104,14 @@ export default async function NewIssuePage() {
         <div className="space-y-6">
           {/* Page Title & Description */}
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
               <span
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
                 aria-hidden="true"
               >
                 <SparklesIcon size={20} />
               </span>
-              <div>
+              <div className="min-w-0 flex-1">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                   New Support Issue
                 </h1>
@@ -119,48 +120,16 @@ export default async function NewIssuePage() {
                   fields and add an optional answer.
                 </p>
               </div>
+              <QuickTips
+                tips={[
+                  "Describe the issue — this is the main part.",
+                  "Add an answer to resolve the issue immediately.",
+                  "Student Identity is optional — add name and email only for a specific student.",
+                  "Use Cmd+Enter or Ctrl+Enter to submit quickly.",
+                ]}
+              />
             </div>
           </div>
-
-          {/* Quick Tips */}
-          <section
-            className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
-            aria-labelledby="tips-heading"
-          >
-            <h2
-              id="tips-heading"
-              className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
-            >
-              <HelpCircleIcon size={16} />
-              Quick Tips
-            </h2>
-            <ul className="mt-2 grid gap-2 text-sm text-slate-600 dark:text-slate-400 sm:grid-cols-2">
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                  1
-                </span>
-                Describe the issue — this is the main part
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                  2
-                </span>
-                Add an answer to resolve the issue immediately
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                  3
-                </span>
-                Student Identity is optional — add name and email only for a specific student
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                  4
-                </span>
-                Use Cmd+Enter to submit quickly
-              </li>
-            </ul>
-          </section>
 
           {/* Form */}
           <IssueForm minimal csrfToken={csrfToken} />
