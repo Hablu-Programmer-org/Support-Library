@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { Panel } from "@/components/shared/panel";
 import { StatCard } from "@/components/shared/stat-card";
 import { getDashboardStats, getRecentUnresolvedIssues, getTopTags } from "@/lib/services/analytics";
 import { requireSession } from "@/lib/auth-guard";
@@ -32,8 +31,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel>
-          <h2 className="mb-3 font-semibold">Recent Unresolved Issues</h2>
+        <section className="border-t border-slate-200 pt-5 dark:border-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Recent Unresolved Issues</h2>
           <div className="space-y-2">
             {recentIssues.length === 0 ? (
               <EmptyState>No unresolved issues.</EmptyState>
@@ -41,7 +40,7 @@ export default async function DashboardPage() {
               recentIssues.map((item) => (
                 <Link
                   key={item.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 p-3 transition hover:border-cyan-500 dark:border-slate-800"
+                  className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition hover:border-cyan-500 dark:border-slate-800"
                   href={`/dashboard/issues/${item.id}`}
                 >
                   <span className="font-medium text-cyan-600 dark:text-cyan-400">{item.title}</span>
@@ -50,10 +49,10 @@ export default async function DashboardPage() {
               ))
             )}
           </div>
-        </Panel>
+        </section>
 
-        <Panel>
-          <h2 className="mb-3 font-semibold">Popular Tags</h2>
+        <section className="border-t border-slate-200 pt-5 dark:border-slate-800">
+          <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Popular Tags</h2>
           {topTags.length === 0 ? (
             <EmptyState>No tags yet.</EmptyState>
           ) : (
@@ -69,7 +68,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           )}
-        </Panel>
+        </section>
       </div>
     </div>
   );

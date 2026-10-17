@@ -188,7 +188,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.getByRole("heading", { name: "Responses" })).toBeVisible();
     const archiveHeading = page.getByRole("heading", { name: "Archive this issue" });
     const dangerZone = page.locator("section").filter({ has: archiveHeading });
-    await expect(dangerZone).toHaveClass(/dark:bg-slate-900/);
+    await expect(dangerZone).toHaveClass(/border-danger-300/);
     await expect(archiveHeading).toHaveClass(/dark:text-slate-50/);
     expect(
       await page.evaluate(

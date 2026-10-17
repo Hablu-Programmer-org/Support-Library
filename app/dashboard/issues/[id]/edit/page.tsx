@@ -31,9 +31,7 @@ export default async function EditIssuePage({
       </Link>
 
       <header className="mb-7 flex items-start gap-3">
-        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
-          <SettingsIcon size={21} />
-        </span>
+        <SettingsIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Edit issue</h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">

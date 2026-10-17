@@ -49,15 +49,15 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
       {formError && (
         <p
           id="student-issue-error"
-          className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"
+          className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-300"
           role="alert"
         >
           {formError}
         </p>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-7">
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300"
@@ -69,7 +69,7 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
           </h2>
         </div>
 
-        <div className="space-y-4 px-5 py-6 sm:px-7 sm:py-7">
+        <div className="space-y-4">
           {email && (
             <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
               Submitting as <span className="font-medium">{email}</span>. Your identity

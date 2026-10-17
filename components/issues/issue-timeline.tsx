@@ -17,7 +17,7 @@ export function IssueTimeline({
 }) {
   if (replies.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-8 text-center dark:border-slate-700 dark:bg-slate-900/50">
+      <section className="py-8 text-center">
         <p className="font-medium text-slate-700 dark:text-slate-200">
           No responses yet
         </p>

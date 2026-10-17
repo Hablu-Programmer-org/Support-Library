@@ -9,7 +9,7 @@ import Link from "next/link";
 export function NotFoundContent() {
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <section className="w-full max-w-md p-6 text-center">
         <div className="mb-6 flex flex-col items-center">
           <h1 className="text-2xl font-bold">404</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -22,7 +22,7 @@ export function NotFoundContent() {
           </p>
           <Link
             href="/dashboard"
-            className="block w-full rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+            className="block w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
           >
             Go to Dashboard
           </Link>

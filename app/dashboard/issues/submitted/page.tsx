@@ -15,7 +15,7 @@ export default async function IssueSubmittedPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="p-8 text-center">
         <span
           aria-hidden="true"
           className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-success-100 text-success-700 dark:bg-success-950/50 dark:text-success-300"

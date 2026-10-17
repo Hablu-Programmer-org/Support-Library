@@ -37,15 +37,12 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
         {uploads.map((upload) => {
           const src = `/api/attachments/${upload.id}`;
           return (
-            <li
-              key={upload.id}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
-            >
+            <li key={upload.id} className="space-y-1">
               <a
                 href={src}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block bg-slate-50 dark:bg-slate-950"
+                className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -53,17 +50,17 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                   alt={upload.originalName}
                   loading="lazy"
                   decoding="async"
-                  className="mx-auto max-h-64 w-full object-contain"
+                  className="mx-auto h-40 w-full object-contain"
                 />
               </a>
-              <div className="flex items-center justify-between gap-2 px-3 py-2">
+              <div className="flex items-center justify-between gap-2 text-xs">
                 <span
-                  className="truncate text-xs text-slate-600 dark:text-slate-300"
+                  className="truncate text-slate-600 dark:text-slate-300"
                   title={upload.originalName}
                 >
                   {upload.originalName}
                 </span>
-                <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
+                <span className="shrink-0 text-slate-400 dark:text-slate-500">
                   {formatByteSize(upload.byteSize)}
                 </span>
               </div>

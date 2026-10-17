@@ -66,10 +66,10 @@ test.describe("Shell: dashboard chrome", () => {
     await page.getByRole("button", { name: "Advanced filters" }).click();
     await expect(page.locator("main select[name]:visible")).toHaveCount(5);
 
-    // Native card surfaces are slate-900 in dark (theme default was zinc #18181b)
-    // Allow small floating-point variance in lab() color space
-    const bgColor = await page.locator("main section").first().evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(bgColor).toMatch(/^(rgb\(15, 23, 42\)|oklch\(0\.208 0\.042 265\.755\)|lab\(7\.78673 1\.8234[56] -15\.0537\))$/);
+    // The page background is the dark slate (theme default was zinc #18181b).
+    // Allow small floating-point variance in lab() color space.
+    const bgColor = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    expect(bgColor).toMatch(/^(rgb\(2, 6, 23\)|oklch\(0\.208 0\.042 265\.755\)|lab\(7\.78673 1\.8234[56] -15\.0537\))$/);
   });
 });
 

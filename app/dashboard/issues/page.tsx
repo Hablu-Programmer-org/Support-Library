@@ -43,25 +43,35 @@ export default async function IssuesPage({
   const canSubmit = canCreateIssue(session.user.role);
   const publicOnly = !canManage;
   const page = Number(resolvedSearchParams?.page ?? "1");
-  const sort: IssueSort = ISSUE_SORTS.includes(resolvedSearchParams?.sort as IssueSort)
+  const sort: IssueSort = ISSUE_SORTS.includes(
+    resolvedSearchParams?.sort as IssueSort,
+  )
     ? (resolvedSearchParams?.sort as IssueSort)
     : "newest";
 
   // The filter schema expects ISO datetimes, but a date input yields YYYY-MM-DD.
   // `from` starts at midnight, `to` ends at end-of-day, both in UTC.
-  const from = resolvedSearchParams?.from ? `${resolvedSearchParams.from}T00:00:00.000Z` : undefined;
-  const to = resolvedSearchParams?.to ? `${resolvedSearchParams.to}T23:59:59.999Z` : undefined;
+  const from = resolvedSearchParams?.from
+    ? `${resolvedSearchParams.from}T00:00:00.000Z`
+    : undefined;
+  const to = resolvedSearchParams?.to
+    ? `${resolvedSearchParams.to}T23:59:59.999Z`
+    : undefined;
 
   const issues = await listIssues(
     {
       q: resolvedSearchParams?.q,
       status: CASE_STATUSES.includes(resolvedSearchParams?.status as never)
-        ? resolvedSearchParams?.status as never
+        ? (resolvedSearchParams?.status as never)
         : undefined,
       tag: resolvedSearchParams?.tag,
       courseSlug: resolvedSearchParams?.courseSlug || undefined,
-      batchNo: resolvedSearchParams?.batchNo ? Number(resolvedSearchParams.batchNo) : undefined,
-      mentorId: canManage ? resolvedSearchParams?.mentorId || undefined : undefined,
+      batchNo: resolvedSearchParams?.batchNo
+        ? Number(resolvedSearchParams.batchNo)
+        : undefined,
+      mentorId: canManage
+        ? resolvedSearchParams?.mentorId || undefined
+        : undefined,
       from,
       to,
       sort,
@@ -83,7 +93,7 @@ export default async function IssuesPage({
   const status = resolvedSearchParams?.status ?? "";
   const courseSlug = resolvedSearchParams?.courseSlug ?? "";
   const batchNo = resolvedSearchParams?.batchNo ?? "";
-  const mentorId = canManage ? resolvedSearchParams?.mentorId ?? "" : "";
+  const mentorId = canManage ? (resolvedSearchParams?.mentorId ?? "") : "";
   const dateFrom = resolvedSearchParams?.from ?? "";
   const dateTo = resolvedSearchParams?.to ?? "";
 
@@ -122,13 +132,23 @@ export default async function IssuesPage({
       <IssueFilterPanel
         batchNos={batchNos}
         courseSlugs={courseSlugs}
-        defaults={{ q, tag, status, courseSlug, batchNo, mentorId, dateFrom, dateTo, sort }}
+        defaults={{
+          q,
+          tag,
+          status,
+          courseSlug,
+          batchNo,
+          mentorId,
+          dateFrom,
+          dateTo,
+          sort,
+        }}
         mentors={mentors}
         showMentor={canManage}
         statuses={CASE_STATUSES}
       />
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         <div className="p-0">
           {issues.items.length === 0 ? (
             <EmptyState>No issues found.</EmptyState>
@@ -137,7 +157,7 @@ export default async function IssuesPage({
               {issues.items.map((supportIssue) => (
                 <div
                   key={supportIssue.id}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 >
                   <Link
                     href={`/dashboard/issues/${supportIssue.id}`}
@@ -148,18 +168,25 @@ export default async function IssuesPage({
                         <h2 className="font-semibold">{supportIssue.title}</h2>
                         <StatusBadge status={supportIssue.status} />
                       </div>
-                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportIssue.question}</p>
+                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+                        {supportIssue.question}
+                      </p>
                       {canManage && (
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {supportIssue.studentName || "Unknown student"}
-                          {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}
+                          {supportIssue.studentEmail
+                            ? ` · ${supportIssue.studentEmail}`
+                            : ""}
                         </p>
                       )}
                     </div>
                     {supportIssue.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
                         {supportIssue.tags.map((item) => (
-                          <span key={item} className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
+                          <span
+                            key={item}
+                            className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800"
+                          >
                             {item}
                           </span>
                         ))}
@@ -168,9 +195,12 @@ export default async function IssuesPage({
                   </Link>
                   {canDelete && (
                     <DeleteButton
-                      action={deleteIssueActionSimple.bind(null, supportIssue.id)}
+                      action={deleteIssueActionSimple.bind(
+                        null,
+                        supportIssue.id,
+                      )}
                       csrfToken={csrfToken}
-                      className="flex-shrink-0"
+                      className="shrink-0"
                     />
                   )}
                 </div>

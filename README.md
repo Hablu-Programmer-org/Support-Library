@@ -181,7 +181,7 @@ Support-library chrome uses a light "glass + gradient" language on top of the sh
 - **Brand gradient** cyan `#06b6d4` → violet `#8b5cf6` (`brand-text`, `brand-bg`).
 - **Glass surfaces** (`.glass`): translucent white/slate with `backdrop-blur`, used on the topbar actions, account sheet, landing cards and the login/unauthorized cards.
 - **Aurora backdrop** (`.aurora-blob`): slow drifting gradient blobs on public pages and the dashboard shell; disabled under `prefers-reduced-motion`.
-- **Motion**: `framer-motion` for the mobile account sheet; also reduced-motion aware.
+- **Issue surfaces** use a flat document style: reading content (problem, replies, attachments, links) has no card or shadow, only section headings and `divide-y` rows; interactive surfaces (forms, reply composer, filter panel, aside, danger zone) use a single `Panel` (`rounded-lg border`, no shadow). Icon badge squares and the `Required` pill are removed from section headings. See `components/shared/panel.tsx`, `components/shared/section-heading.tsx`.
 
 Theme-restricted pages keep their exact base `background-color` utilities (`header` `white/80` → `slate-950/80`, landing `main` `slate-950`, cards `slate-900`) — glass/gradient is layered via `background-image`, borders and shadows so the computed colors asserted by `e2e/shell.spec.ts` stay intact.
 

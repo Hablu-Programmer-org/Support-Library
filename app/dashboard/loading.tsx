@@ -19,13 +19,13 @@ export default function DashboardLoading() {
         {Array.from({ length: 4 }, (_, i) => (
           <div
             key={i}
-            className="h-28 animate-pulse rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-700 dark:bg-slate-700"
+            className="h-28 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700"
           />
         ))}
       </div>
 
       {/* Main content skeleton */}
-      <div className="h-64 animate-pulse rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-700 dark:bg-slate-700" />
+      <div className="h-64 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
     </div>
   );
 }

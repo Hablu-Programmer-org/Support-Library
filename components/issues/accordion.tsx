@@ -37,14 +37,14 @@ export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
       <details
         ref={ref}
         className={cn(
-          "group rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
+          "group",
           className,
         )}
         open={isOpen}
       >
         <summary
           className={cn(
-            "flex items-center gap-3 p-4 cursor-pointer list-none select-none transition-colors",
+            "flex items-center gap-3 py-4 cursor-pointer list-none select-none transition-colors",
             "hover:bg-slate-50 dark:hover:bg-slate-800/50",
             titleClassName,
           )}
@@ -61,7 +61,7 @@ export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
               {icon}
             </span>
           )}
-          <span className="font-semibold text-slate-900 dark:text-white flex-1">
+          <span className="text-lg font-semibold text-slate-900 dark:text-white flex-1">
             {title}
           </span>
           <motion.div
@@ -78,7 +78,7 @@ export const Accordion = forwardRef<HTMLDetailsElement, AccordionProps>(
           hidden={!isOpen}
           className={cn("overflow-hidden", contentClassName)}
         >
-          <div className="px-4 pb-4 pt-0">{children}</div>
+          <div className="pb-8 pt-2">{children}</div>
         </div>
       </details>
     );

@@ -6,7 +6,7 @@ import { cn } from "@/lib/cn";
 import { createIssueAction, updateIssueAction } from "@/actions/issues";
 import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
-import { SectionCard } from "@/components/issues/section-card";
+import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { formatByteSize } from "@/components/shared/attachment-list";
 import {
@@ -325,7 +325,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
     <form
       key={formKey}
       action={formAction}
-      className="space-y-5"
+      className="space-y-6"
       onKeyDown={handleKeyDown}
       onSubmit={ensureOperationId}
     >
@@ -334,20 +334,21 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
       <input type="hidden" name="csrfToken" value={csrfToken} id="csrfToken" />
       {state.fieldErrors?._form?.[0] && (
         <p
-          className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900 dark:bg-danger-950/40 dark:text-danger-300"
+          className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-300"
           role="alert"
         >
           {state.fieldErrors._form[0]}
         </p>
       )}
       {/* Section 1: Issue Details — the issue and its answer are the priority. */}
-      <SectionCard
-        title="Issue Details"
-        icon={<FileTextIcon size={20} />}
-        description="Describe the issue clearly. A good title helps with search and categorization."
-        required
-      >
-        <div className="space-y-4">
+      <div className="divide-y divide-slate-200 dark:divide-slate-800">
+      <section className="py-8 first:pt-0">
+        <SectionHeading
+          title="Issue Details"
+          icon={<FileTextIcon size={16} />}
+          description="Describe the issue clearly. A good title helps with search and categorization."
+        />
+        <div className="mt-4 space-y-4">
           <FieldWrapper
             label="Issue Title"
             required
@@ -438,13 +439,13 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
                   return (
                     <li
                       key={upload.id}
-                      className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+                      className="space-y-1"
                     >
                       <a
                         href={src}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block bg-slate-50 dark:bg-slate-950"
+                        className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
                         aria-label={`Open ${upload.originalName}`}
                       >
                         {/* A direct image request carries the staff session cookie;
@@ -455,10 +456,10 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
                           alt={upload.originalName}
                           loading="lazy"
                           decoding="async"
-                          className="mx-auto h-40 w-full object-contain"
+                          className="h-40 w-full object-contain"
                         />
                       </a>
-                      <div className="flex items-center justify-between gap-3 px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div
                             className="truncate text-sm text-slate-700 dark:text-slate-300"
@@ -494,7 +495,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
             </div>
           )}
         </div>
-      </SectionCard>
+      </section>
 
       {/* Section 2: Answer (Optional) - only on create/minimal */}
       {!supportIssue && minimal && (
@@ -689,11 +690,13 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
         </div>
       </Accordion>
 
-      <div className="flex justify-center flex-col pt-4">
+      </div>
+
+      <div className="flex justify-center flex-col pt-8">
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950 w-full"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950 w-full"
         >
           <span>
             {pending

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 import { ChevronDownIcon, SearchIcon } from "@/components/icons";
-import { Panel } from "@/components/shared/panel";
 import { nativeFieldClass, nativeLabelClass, nativeSelectClass } from "@/lib/config/fields";
 
 const statusLabels: Record<string, string> = {
@@ -195,14 +194,14 @@ function PanelHeader({ defaults, open, onToggle }: { defaults: IssueFilterDefaul
 
 function PanelSkeleton() {
   return (
-    <Panel>
+    <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
       <form action="/dashboard/issues" method="get" className="space-y-4">
         <div className="relative">
-          <div className="h-10 w-full rounded-xl bg-slate-100 animate-pulse dark:bg-slate-800" />
+          <div className="h-10 w-full rounded-lg bg-slate-100 animate-pulse dark:bg-slate-800" />
           <div className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 rounded-md bg-slate-100 animate-pulse dark:bg-slate-800" />
         </div>
       </form>
-    </Panel>
+    </div>
   );
 }
 
@@ -241,7 +240,7 @@ export function IssueFilterPanel({
 
   // Client render: full interactive panel
   return (
-    <Panel>
+    <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
       <form action="/dashboard/issues" method="get" className="space-y-4">
         <PanelHeader defaults={defaults} open={open} onToggle={toggle} />
 
@@ -256,6 +255,6 @@ export function IssueFilterPanel({
           />
         )}
       </form>
-    </Panel>
+    </div>
   );
 }

@@ -9,13 +9,13 @@
 const disabledClasses = "disabled:cursor-not-allowed disabled:opacity-60";
 
 export const nativeFieldClass = [
-  "w-full rounded-xl border border-transparent bg-slate-100 px-3 py-2.5 text-sm text-slate-900",
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900",
   "outline-none transition-all duration-200 placeholder:text-slate-400",
-  "hover:border-slate-300 hover:bg-slate-200/70",
+  "hover:border-slate-300 hover:bg-slate-50",
   "focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-500/20",
-  "dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500",
-  "dark:hover:border-slate-700 dark:hover:bg-slate-700",
-  "dark:focus:border-cyan-500 dark:focus:bg-slate-800",
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder:text-slate-500",
+  "dark:hover:border-slate-600 dark:hover:bg-slate-800",
+  "dark:focus:border-cyan-500 dark:focus:bg-slate-900",
   disabledClasses,
 ].join(" ");
 

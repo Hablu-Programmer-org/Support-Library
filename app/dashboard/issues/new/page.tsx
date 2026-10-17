@@ -58,7 +58,7 @@ export default async function NewIssuePage() {
             </div>
 
             <section
-              className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/50"
+              className="border-l-2 border-primary pl-4"
               aria-labelledby="tips-heading"
             >
               <h2
@@ -105,12 +105,7 @@ export default async function NewIssuePage() {
           {/* Page Title & Description */}
           <div className="space-y-2">
             <div className="flex items-start gap-3">
-              <span
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-                aria-hidden="true"
-              >
-                <SparklesIcon size={20} />
-              </span>
+              <SparklesIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
               <div className="min-w-0 flex-1">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                   New Support Issue

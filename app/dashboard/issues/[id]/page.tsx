@@ -106,22 +106,17 @@ export default async function IssueDetailPage({
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <main className="min-w-0 space-y-8">
-          <article
-            aria-labelledby="problem-heading"
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
-          >
-            <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-7">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
-                <FileTextIcon size={19} />
-              </span>
+          <section aria-labelledby="problem-heading" className="pb-8">
+            <div className="mb-4 flex items-center gap-2">
+              <FileTextIcon size={16} className="text-slate-400 dark:text-slate-500" />
               <h2
                 id="problem-heading"
-                className="text-lg font-semibold text-slate-950 dark:text-white"
+                className="text-xl font-semibold text-slate-950 dark:text-white"
               >
                 The problem
               </h2>
             </div>
-            <div className="px-5 py-6 sm:px-7 sm:py-8">
+            <div className="space-y-4">
               <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
                 {supportIssue.question}
               </p>
@@ -145,17 +140,15 @@ export default async function IssueDetailPage({
                 </div>
               )}
             </div>
-          </article>
+          </section>
 
-          <section aria-labelledby="responses-heading" className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
-                <MessageSquareIcon size={19} />
-              </span>
+          <section aria-labelledby="responses-heading" className="space-y-6">
+            <div className="flex items-center gap-2">
+              <MessageSquareIcon size={16} className="text-slate-400 dark:text-slate-500" />
               <div>
                 <h2
                   id="responses-heading"
-                  className="text-xl font-semibold text-slate-950 dark:text-white"
+                  className="text-lg font-semibold text-slate-950 dark:text-white"
                 >
                   {canEdit ? "Responses" : "Answers and updates"}
                 </h2>
@@ -167,29 +160,34 @@ export default async function IssueDetailPage({
               </div>
             </div>
 
-            <IssueTimeline
-              issueId={supportIssue.id}
-              replies={replies}
-              viewerId={session.user.id}
-              viewerRole={session.user.role}
-              csrfToken={csrfToken}
-            />
-
-            {canEdit && (
-              <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />
-            )}
+            <div className="divide-y divide-slate-200 dark:divide-slate-800">
+              <div className="py-6">
+                <IssueTimeline
+                  issueId={supportIssue.id}
+                  replies={replies}
+                  viewerId={session.user.id}
+                  viewerRole={session.user.role}
+                  csrfToken={csrfToken}
+                />
+              </div>
+              {canEdit && (
+                <div className="py-6">
+                  <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />
+                </div>
+              )}
+            </div>
           </section>
         </main>
 
-        <aside className="space-y-4 lg:sticky lg:top-20">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-            <div className="mb-4 flex items-center gap-2">
-              <SettingsIcon className="text-slate-500" size={18} />
-              <h2 className="font-semibold text-slate-950 dark:text-white">
+        <aside className="space-y-0 lg:sticky lg:top-20">
+          <section className="border-t border-slate-200 py-6 first:border-t-0 first:pt-0 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <SettingsIcon className="text-slate-400" size={16} />
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
                 Issue context
               </h2>
             </div>
-            <dl className="space-y-4 text-sm">
+            <dl className="mt-3 space-y-3 text-sm">
               <Info label="Course" value={supportIssue.courseSlug} />
               <Info label="Batch" value={supportIssue.batchNo?.toString()} />
               <Info
@@ -204,14 +202,14 @@ export default async function IssueDetailPage({
           </section>
 
           {staffIssue && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-              <div className="mb-4 flex items-center gap-2">
-                <UserIcon className="text-slate-500" size={18} />
-                <h2 className="font-semibold text-slate-950 dark:text-white">
+            <section className="border-t border-slate-200 py-6 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <UserIcon className="text-slate-400" size={16} />
+                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
                   Student snapshot
                 </h2>
               </div>
-              <p className="wrap-break-word font-medium text-slate-900 dark:text-white">
+              <p className="mt-3 wrap-break-word font-medium text-slate-900 dark:text-white">
                 {staffIssue.studentName || "General issue (no student)"}
               </p>
               <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
@@ -221,8 +219,8 @@ export default async function IssueDetailPage({
           )}
 
           {canEdit && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="font-semibold text-slate-950 dark:text-white">
+            <section className="border-t border-slate-200 py-6 dark:border-slate-800">
+              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
                 Manage issue
               </h2>
               <form
@@ -230,7 +228,7 @@ export default async function IssueDetailPage({
                   null,
                   supportIssue.id,
                 )}
-                className="mt-4 space-y-3"
+                className="mt-3 space-y-3"
               >
                 <input type="hidden" name="csrfToken" value={csrfToken} />
                 <input
@@ -266,7 +264,7 @@ export default async function IssueDetailPage({
 
               <Link
                 href={`/dashboard/issues/${supportIssue.id}/edit`}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Edit issue details
               </Link>
@@ -283,9 +281,9 @@ export default async function IssueDetailPage({
           )}
 
           {canEdit && (
-            <section className="rounded-2xl border border-l-4 border-danger-300 border-l-danger-500 bg-danger-50 p-5 shadow-[0_16px_36px_-24px_rgba(225,29,72,0.75)] dark:border-danger-300/70 dark:border-l-danger-500 dark:bg-slate-900 dark:shadow-[0_18px_40px_-28px_rgba(244,63,94,0.38)]">
+            <section className="border-t-2 border-danger-300 py-6 dark:border-danger-300/70">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-danger-600 text-white shadow-md shadow-danger-600/25 dark:bg-danger-300 dark:text-danger-900 dark:shadow-[0_8px_20px_-12px_rgba(244,63,94,0.7)]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-danger-600 text-white dark:bg-danger-300 dark:text-danger-900">
                   <WarningTriangleIcon size={21} />
                 </span>
                 <div>

@@ -18,7 +18,7 @@ export function ReplyComposer({ issueId, csrfToken = "" }: { issueId: string; cs
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+    <section className="py-6">
       <h3 className="font-semibold text-slate-950 dark:text-white">Write a public response</h3>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
         Students can read this response after the issue is reviewed and published.
@@ -27,7 +27,7 @@ export function ReplyComposer({ issueId, csrfToken = "" }: { issueId: string; cs
         <input ref={operationIdRef} type="hidden" name="operationId" />
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <TextAreaField name="body" label="Response" rows={5} required maxLength={20_000} />
-        <details className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+        <details className="border-t border-slate-200 pt-3 dark:border-slate-800">
           <summary className="cursor-pointer text-sm font-semibold">Add attachments or video links</summary>
           <div className="mt-3 grid gap-3">
             <AttachmentField />
