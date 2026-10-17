@@ -82,7 +82,7 @@ export function ReplyItem({
         )}
       </header>
 
-      <p className="whitespace-pre-wrap wrap-break-word text-base leading-7 text-slate-700 dark:text-slate-200">
+      <p className="whitespace-pre-wrap wrap-break-word text-base leading-7 text-slate-700 dark:text-slate-200 max-w-3xl">
         {reply.body}
       </p>
       <LinkList videoLinks={reply.videoLinks} />

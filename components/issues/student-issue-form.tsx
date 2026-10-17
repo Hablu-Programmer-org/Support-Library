@@ -60,7 +60,7 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300"
           >
             <HelpCircleIcon size={19} />
           </span>
@@ -71,7 +71,7 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
 
         <div className="space-y-4">
           {email && (
-            <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+            <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
               Submitting as <span className="font-medium">{email}</span>. Your identity
               is taken from your account automatically, so there is nothing to fill in.
               The support team will reach you at this address.
@@ -290,7 +290,7 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
       >
         <CheckCircleIcon size={18} />
         {pending ? "Submitting..." : "Submit request"}

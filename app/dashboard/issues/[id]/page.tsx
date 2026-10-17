@@ -71,7 +71,7 @@ export default async function IssueDetailPage({
   const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl py-6">
       <Link
         href="/dashboard/issues"
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
@@ -117,7 +117,7 @@ export default async function IssueDetailPage({
               </h2>
             </div>
             <div className="space-y-4">
-              <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
+              <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg max-w-3xl">
                 {supportIssue.question}
               </p>
               <LinkList videoLinks={supportIssue.videoLinks} />

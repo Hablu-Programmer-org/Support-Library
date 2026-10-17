@@ -9,6 +9,7 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { AccountSheet } from "@/components/layout/account-sheet";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { ShellUser } from "@/components/layout/shell";
+import { PageContainer } from "@/components/shared/page-container";
 import { navItemsForRole, type NavItem } from "@/lib/config/nav";
 
 type TopbarProps = {
@@ -46,7 +47,7 @@ export function Topbar({ user }: TopbarProps) {
         className="pointer-events-none absolute inset-0 bg-linear-to-r from-cyan-500/10 via-transparent to-violet-500/10"
       />
 
-      <div className="relative z-10 flex w-full items-center justify-between gap-2 px-4">
+      <PageContainer className="relative z-10 flex items-center justify-between gap-2">
         <div className="flex min-w-fit items-center gap-2.5">
           <Link
             className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-cyan-500"
@@ -123,7 +124,7 @@ export function Topbar({ user }: TopbarProps) {
             </>
           )}
         </div>
-      </div>
+      </PageContainer>
     </header>
   );
 }

@@ -51,7 +51,7 @@ export function QuickTips({ tips }: { tips: string[] }) {
         role="region"
         aria-label="Quick tips"
         hidden={!open}
-        className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-4 text-left shadow-lg dark:border-slate-700 dark:bg-slate-900"
+        className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white p-4 text-left shadow-lg dark:border-slate-700 dark:bg-slate-900"
       >
         <p className="text-sm font-semibold text-slate-900 dark:text-white">
           Quick Tips

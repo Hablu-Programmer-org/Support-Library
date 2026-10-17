@@ -2,7 +2,11 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { LibrarySearch } from "@/components/landing/library-search";
-import { CheckCircleIcon, FileTextIcon, MessageSquareIcon } from "@/components/icons";
+import {
+  CheckCircleIcon,
+  FileTextIcon,
+  MessageSquareIcon,
+} from "@/components/icons";
 import { Topbar } from "@/components/layout/topbar";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 
@@ -37,20 +41,23 @@ export default async function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="aurora-blob absolute -left-32 top-[-12%] h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-cyan-500/25 to-violet-500/20 blur-[120px]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="aurora-blob absolute -left-32 top-[-12%] h-112 w-md rounded-full bg-linear-to-br from-cyan-500/25 to-violet-500/20 blur-[120px]" />
         <div
-          className="aurora-blob absolute right-[-12%] top-1/3 h-[26rem] w-[26rem] rounded-full bg-gradient-to-tr from-violet-500/20 to-cyan-500/15 blur-[120px]"
+          className="aurora-blob absolute right-[-12%] top-1/3 h-104 w-104 rounded-full bg-linear-to-tr from-violet-500/20 to-cyan-500/15 blur-[120px]"
           style={{ animationDelay: "-7s" }}
         />
       </div>
 
       <Topbar user={session?.user} />
 
-      <section className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col justify-center px-6 py-24">
+      <section className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-screen-2xl flex-col justify-center px-4 py-24 sm:px-6 lg:px-8">
         <div className="max-w-3xl space-y-8">
           <span className="glass inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-violet-500" />
+            <span className="h-1.5 w-1.5 rounded-full bg-linear-to-r from-cyan-500 to-violet-500" />
             Hablu Programmer Staff Tool
           </span>
 
@@ -59,8 +66,8 @@ export default async function Home() {
               Simplify support for your <span className="brand-text">team</span>
             </h1>
             <p className="max-w-2xl text-lg text-slate-600 dark:text-slate-300">
-              A fast, searchable knowledge base for Hablu Programmer support — publish
-              solutions once and let the whole team reuse them.
+              A fast, searchable knowledge base for Hablu Programmer support —
+              publish solutions once and let the whole team reuse them.
             </p>
           </div>
 
@@ -93,7 +100,7 @@ export default async function Home() {
                   key={feature.title}
                   className="glass rounded-2xl p-5 transition hover:-translate-y-0.5"
                 >
-                  <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/15 to-violet-500/15 text-cyan-600 ring-1 ring-cyan-500/20 dark:text-cyan-300">
+                  <span className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500/15 to-violet-500/15 text-cyan-600 ring-1 ring-cyan-500/20 dark:text-cyan-300">
                     <Icon size={20} />
                   </span>
                   <h2 className="text-base font-semibold text-slate-900 dark:text-white">

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { PageContainer } from "@/components/shared/page-container";
 import { Topbar } from "@/components/layout/topbar";
 import type { UserRole } from "@/lib/roles";
 
@@ -33,7 +34,9 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
         />
       </div>
       <Topbar user={user} />
-      <main className="min-h-screen p-4 pt-20">{children}</main>
+      <main className="min-h-screen pt-20 pb-6">
+        <PageContainer>{children}</PageContainer>
+      </main>
     </div>
   );
 }

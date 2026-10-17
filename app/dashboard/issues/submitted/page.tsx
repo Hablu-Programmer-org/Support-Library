@@ -14,7 +14,7 @@ export default async function IssueSubmittedPage() {
   const session = await requireSession();
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10">
+    <div className="mx-auto w-full max-w-2xl py-10">
       <div className="p-8 text-center">
         <span
           aria-hidden="true"

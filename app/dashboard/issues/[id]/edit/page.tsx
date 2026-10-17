@@ -21,7 +21,7 @@ export default async function EditIssuePage({
   const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
+    <div className="mx-auto w-full max-w-3xl py-6">
       <Link
         href={`/dashboard/issues/${supportIssue.id}`}
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"

@@ -21,7 +21,7 @@ export default async function NewIssuePage() {
   if (!canManage) {
     return (
       <div className="flex flex-col">
-        <header className="w-full px-4 py-3">
+        <header className="w-full py-3">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             <Link
               href="/dashboard/issues"
@@ -35,8 +35,8 @@ export default async function NewIssuePage() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-          <div className="space-y-6">
+        <main className="py-6">
+          <div className="mx-auto max-w-2xl space-y-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <SparklesIcon size={20} className="mt-1 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -80,8 +80,8 @@ export default async function NewIssuePage() {
   return (
     <div className="flex flex-col">
       {/* Back link */}
-      <header className="w-full px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+      <header className="w-full py-3">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <Link
             href="/dashboard/issues"
             className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -95,8 +95,8 @@ export default async function NewIssuePage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6">
-        <div className="space-y-6">
+      <main className="py-6">
+        <div className="mx-auto max-w-3xl space-y-6">
           {/* Page Title & Description */}
           <div className="space-y-2">
             <div className="flex items-start gap-3">

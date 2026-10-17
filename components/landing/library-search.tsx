@@ -31,7 +31,7 @@ export function LibrarySearch() {
         value={term}
       />
       <button
-        className="brand-bg rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
+        className="brand-bg rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-500"
         type="submit"
       >
         Search
