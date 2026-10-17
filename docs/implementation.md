@@ -44,6 +44,9 @@
   them. Students may add them when submitting. The student form surfaces an explicit
   error when typed text yields no valid link (no silent drop). The publish
   confirmation now covers attached links.
+- `MAX_LINKS_PER_ITEM` is enforced: `linkLimit()` (`lib/validation/common.ts`) reads
+  it per call and both `lib/parse-links.ts` and the link-array Zod schemas apply it.
+  Valid range 1-50, hard ceiling 50, and a missing/invalid value falls back to 10.
 
 ## Search Performance Findings
 
@@ -127,7 +130,6 @@ cmd /c "npm run test:e2e"
   staff attach external HTTPS links (images/files/videos) instead. A real upload
   needs storage, size limits, virus scanning, and access control for student PII
   screenshots. See the "Deferred" section in the README.
-- `MAX_LINKS_PER_ITEM` is documented in `.env.example`, `compose.example.yml`, and
-  `docs/self-hosted-deployment.md` but is **not read by any code** — the 10-link cap
-  is hardcoded in `lib/parse-links.ts` and the zod schemas. Either wire it or remove
-  it from the docs (flagged, not changed).
+- `MAX_LINKS_PER_ITEM` is now read and enforced by `lib/validation/common.ts`
+  (`linkLimit()`) in both the link parser and the Zod schemas — the docs match the
+  code. Range 1-50; hard ceiling 50; missing/invalid falls back to 10.

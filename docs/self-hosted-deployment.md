@@ -66,6 +66,7 @@ NODE_ENV=production
 
 # External links (HTTPS is always required)
 ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
+# Attachment links per type (file/video): 1-50; invalid/missing falls back to 10
 MAX_LINKS_PER_ITEM=10
 ```
 

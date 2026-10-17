@@ -1,8 +1,6 @@
 import { z } from "zod";
 
-import { externalFileLinkSchema, videoLinkSchema } from "@/lib/validation";
-
-const LINK_LINE_LIMIT = 10;
+import { externalFileLinkSchema, linkLimit, videoLinkSchema } from "@/lib/validation";
 
 const toHttpsUrl = (value: string) =>
   value.includes("://") ? value : `https://${value}`;
@@ -61,7 +59,7 @@ export function parseFileLinks(value?: string): z.infer<typeof externalFileLinkS
     if (parsed.success) links.push(parsed.data);
   }
 
-  return links.slice(0, LINK_LINE_LIMIT);
+  return links.slice(0, linkLimit());
 }
 
 export function parseVideoLinks(value?: string): z.infer<typeof videoLinkSchema>[] {
@@ -82,5 +80,5 @@ export function parseVideoLinks(value?: string): z.infer<typeof videoLinkSchema>
     if (parsed.success) links.push(parsed.data);
   }
 
-  return links.slice(0, LINK_LINE_LIMIT);
+  return links.slice(0, linkLimit());
 }

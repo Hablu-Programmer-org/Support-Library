@@ -72,8 +72,63 @@ export const videoLinkSchema = z.strictObject({
   summary: z.string().trim().max(500).optional(),
 });
 
-export const fileLinksSchema = z.array(externalFileLinkSchema).max(10).default([]);
-export const videoLinksSchema = z.array(videoLinkSchema).max(10).default([]);
+/** Default cap on attachment links per type when `MAX_LINKS_PER_ITEM` is unset. */
+export const LINK_LIMIT_DEFAULT = 10;
+
+/**
+ * Hard ceiling for `MAX_LINKS_PER_ITEM`, independent of the environment.
+ *
+ * The cap is an abuse guard, so an operator typo (`0`, `999`, `ten`, an empty
+ * string) must never disable it: an out-of-range value falls back to
+ * `LINK_LIMIT_DEFAULT`, and the schemas still reject anything above this.
+ */
+export const LINK_LIMIT_MAX = 50;
+
+/**
+ * Configured maximum number of attachment links per type (env: `MAX_LINKS_PER_ITEM`).
+ *
+ * Read per call rather than at module load so the value is always current, and
+ * lenient for the same reason `ALLOWED_LINK_HOSTS` is: a bad value must not break
+ * the app, and the safe default is the strict side of the choice.
+ */
+export function linkLimit(): number {
+  const raw = (process.env.MAX_LINKS_PER_ITEM ?? "").trim();
+  if (!raw) return LINK_LIMIT_DEFAULT;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > LINK_LIMIT_MAX) {
+    return LINK_LIMIT_DEFAULT;
+  }
+  return parsed;
+}
+
+/**
+ * Attachment link arrays.
+ *
+ * `.max(LINK_LIMIT_MAX)` is a static hard ceiling; the `superRefine` then applies
+ * the configured `MAX_LINKS_PER_ITEM` value. Validation is therefore enforced by
+ * the Zod schema (server-side parse) as well as by `lib/parse-links.ts`.
+ */
+export const fileLinksSchema = z
+  .array(externalFileLinkSchema)
+  .max(LINK_LIMIT_MAX)
+  .default([])
+  .superRefine((links, ctx) => {
+    const limit = linkLimit();
+    if (links.length > limit) {
+      ctx.addIssue({ code: "custom", message: `Add at most ${limit} file links` });
+    }
+  });
+
+export const videoLinksSchema = z
+  .array(videoLinkSchema)
+  .max(LINK_LIMIT_MAX)
+  .default([])
+  .superRefine((links, ctx) => {
+    const limit = linkLimit();
+    if (links.length > limit) {
+      ctx.addIssue({ code: "custom", message: `Add at most ${limit} video links` });
+    }
+  });
 
 export const paginationSchema = z.strictObject({
   page: z.coerce.number().int().min(1).default(1),

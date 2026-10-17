@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 
@@ -95,5 +95,40 @@ describe("parseVideoLinks", () => {
   it("caps at 10 links", () => {
     const lines = Array.from({ length: 12 }, (_, i) => `https://youtu.be/${i}`).join("\n");
     expect(parseVideoLinks(lines)).toHaveLength(10);
+  });
+});
+
+describe("MAX_LINKS_PER_ITEM", () => {
+  const original = process.env.MAX_LINKS_PER_ITEM;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.MAX_LINKS_PER_ITEM;
+    else process.env.MAX_LINKS_PER_ITEM = original;
+  });
+
+  const fileLines = (count: number) =>
+    Array.from({ length: count }, (_, i) => `https://example.com/${i}.pdf`).join("\n");
+  const videoLines = (count: number) =>
+    Array.from({ length: count }, (_, i) => `https://youtu.be/${i}`).join("\n");
+
+  it("lowers the cap for both attachment types", () => {
+    process.env.MAX_LINKS_PER_ITEM = "3";
+    expect(parseFileLinks(fileLines(12))).toHaveLength(3);
+    expect(parseVideoLinks(videoLines(12))).toHaveLength(3);
+  });
+
+  it("raises the cap up to the hard ceiling of 50", () => {
+    process.env.MAX_LINKS_PER_ITEM = "20";
+    expect(parseFileLinks(fileLines(25))).toHaveLength(20);
+
+    process.env.MAX_LINKS_PER_ITEM = "999";
+    expect(parseFileLinks(fileLines(25))).toHaveLength(10);
+  });
+
+  it("falls back to 10 for an invalid override", () => {
+    for (const value of ["", "0", "-1", "ten"]) {
+      process.env.MAX_LINKS_PER_ITEM = value;
+      expect(parseFileLinks(fileLines(12))).toHaveLength(10);
+    }
   });
 });
