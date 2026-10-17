@@ -29,6 +29,13 @@ test.describe("STUDENT issue submission", () => {
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
+    // Attachments are optional external HTTPS links (the app stores no files).
+    await form
+      .locator('textarea[name="fileLinks"]')
+      .fill("Screenshot|https://example.com/buffering.png|image|Where it stalls");
+    await form
+      .locator('textarea[name="videoLinks"]')
+      .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
 
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
     await expect(
@@ -49,6 +56,15 @@ test.describe("STUDENT issue submission", () => {
     await adminPage.goto("/dashboard/issues");
     await expect(adminPage.getByRole("heading", { name: title })).toBeVisible();
     await expect(adminPage.getByText("student@hablu-programmer.com")).toBeVisible();
+
+    // The student's attachment links are preserved end-to-end and render on the
+    // internal case view.
+    await adminPage.getByRole("heading", { name: title }).click();
+    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await expect(adminPage.getByRole("heading", { name: "File Links" })).toBeVisible();
+    await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
+    await expect(adminPage.getByRole("link", { name: /Screenshot/ })).toBeVisible();
+    await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
 
     await adminContext.close();
   });

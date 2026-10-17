@@ -34,12 +34,26 @@ import {
 type LeanDoc = Record<string, unknown>;
 
 const PUBLIC_ISSUE_FIELDS =
-  "title question status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+  "title question fileLinks videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
 
 /** LOW=1 … URGENT=4 — string order would be wrong, so sorting uses this rank. */
 const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
   CASE_PRIORITIES.map((priority, index) => [priority, index + 1]),
 );
+
+export type IssueFileLink = {
+  title: string;
+  url: string;
+  type?: string | null;
+  note?: string | null;
+};
+
+export type IssueVideoLink = {
+  title: string;
+  url: string;
+  timestamp?: string | null;
+  summary?: string | null;
+};
 
 export type SupportIssueListItem = {
   id: string;
@@ -48,6 +62,8 @@ export type SupportIssueListItem = {
   lmsUserId?: string | null;
   title: string;
   question: string;
+  fileLinks: IssueFileLink[];
+  videoLinks: IssueVideoLink[];
   status: CaseStatus;
   priority?: string | null;
   courseSlug?: string | null;
@@ -66,6 +82,8 @@ export type PublicIssueDetail = Pick<
   | "id"
   | "title"
   | "question"
+  | "fileLinks"
+  | "videoLinks"
   | "status"
   | "priority"
   | "courseSlug"
@@ -97,6 +115,8 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   lmsUserId: (item.lmsUserId as string | null) ?? null,
   title: String(item.title),
   question: String(item.question),
+  fileLinks: Array.isArray(item.fileLinks) ? item.fileLinks as IssueFileLink[] : [],
+  videoLinks: Array.isArray(item.videoLinks) ? item.videoLinks as IssueVideoLink[] : [],
   status: item.status as CaseStatus,
   priority: item.priority as string | null | undefined,
   courseSlug: item.courseSlug as string | null | undefined,
@@ -116,6 +136,8 @@ const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
+    fileLinks: mapped.fileLinks,
+    videoLinks: mapped.videoLinks,
     status: mapped.status,
     priority: mapped.priority,
     courseSlug: mapped.courseSlug,
@@ -459,6 +481,8 @@ export async function listIssues(
                 $project: {
                   title: 1,
                   question: 1,
+                  fileLinks: 1,
+                  videoLinks: 1,
                   status: 1,
                   priority: 1,
                   courseSlug: 1,
@@ -555,6 +579,8 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
+    fileLinks: mapped.fileLinks,
+    videoLinks: mapped.videoLinks,
     status: mapped.status,
     priority: mapped.priority,
     courseSlug: mapped.courseSlug,

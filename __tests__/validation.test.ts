@@ -65,6 +65,44 @@ describe("product validation", () => {
     expect(parsed.videoLinks).toHaveLength(1);
   });
 
+  it("accepts issue-level attachment links and defaults them to empty", () => {
+    const withLinks = supportIssueInputSchema.parse({
+      studentName: "Rahim Uddin",
+      studentEmail: "rahim@example.com",
+      title: "React image problem",
+      question: "Image show hocche na in React component",
+      fileLinks: [
+        { title: "Screenshot", url: "https://example.com/error.png", type: "image" },
+      ],
+      videoLinks: [{ title: "Walkthrough", url: "https://youtu.be/demo", timestamp: "01:20" }],
+    });
+
+    expect(withLinks.fileLinks).toHaveLength(1);
+    expect(withLinks.videoLinks).toHaveLength(1);
+
+    const withoutLinks = supportIssueInputSchema.parse({
+      studentName: "Rahim Uddin",
+      studentEmail: "rahim@example.com",
+      title: "React image problem",
+      question: "Image show hocche na in React component",
+    });
+
+    expect(withoutLinks.fileLinks).toEqual([]);
+    expect(withoutLinks.videoLinks).toEqual([]);
+  });
+
+  it("rejects insecure issue-level attachment links", () => {
+    expect(() =>
+      supportIssueInputSchema.parse({
+        studentName: "Rahim Uddin",
+        studentEmail: "rahim@example.com",
+        title: "React image problem",
+        question: "Image show hocche na in React component",
+        fileLinks: [{ title: "Bad", url: "http://example.com/error.png" }],
+      }),
+    ).toThrow();
+  });
+
   it("rejects the removed internal-note field", () => {
     expect(() =>
       supportReplyInputSchema.parse({

@@ -46,6 +46,12 @@ const parseTags = (value?: string) =>
 const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
 const revisionSchema = z.string().datetime();
 
+/** Shown when the student typed something that yielded no parseable link. */
+const FILE_LINKS_HINT =
+  "Use one link per line: Title|https://example.com/image.png (optionally add |image and a note)";
+const VIDEO_LINKS_HINT =
+  "Use one link per line: Title|https://youtu.be/videoId (optionally add |01:30 and a summary)";
+
 const zodFieldErrors = (
   error: z.ZodError,
   fieldNames: Record<string, string> = {},
@@ -73,6 +79,8 @@ const parseIssueForm = (formData: FormData) =>
     moduleSlug: formValue(formData, "moduleSlug"),
     contentSlug: formValue(formData, "contentSlug"),
     tags: parseTags(formValue(formData, "tags")),
+    fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
+    videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });
 
 async function bindLmsIdentity(issueData: z.infer<typeof supportIssueInputSchema>) {
@@ -207,6 +215,20 @@ export async function createStudentIssueAction(
       const profileName = profile.name.trim();
       const studentName = (profileName.length >= 2 ? profileName : email).slice(0, 120);
 
+      // Attachment links are optional. `parseFileLinks` silently drops invalid
+      // lines, so when the student typed something but nothing parsed we surface
+      // an explicit error instead of quietly losing their evidence.
+      const rawFileLinks = formValue(formData, "fileLinks");
+      const rawVideoLinks = formValue(formData, "videoLinks");
+      const fileLinks = parseFileLinks(rawFileLinks);
+      const videoLinks = parseVideoLinks(rawVideoLinks);
+      if (rawFileLinks && fileLinks.length === 0) {
+        return { fieldErrors: { fileLinks: [FILE_LINKS_HINT] } };
+      }
+      if (rawVideoLinks && videoLinks.length === 0) {
+        return { fieldErrors: { videoLinks: [VIDEO_LINKS_HINT] } };
+      }
+
       const lmsUser = await findLmsUserByEmail(email);
       issueData = supportIssueInputSchema.parse({
         studentName,
@@ -214,6 +236,8 @@ export async function createStudentIssueAction(
         lmsUserId: lmsUser?.userId,
         title: formValue(formData, "title"),
         question: formValue(formData, "question"),
+        fileLinks,
+        videoLinks,
         status: "OPEN",
         priority: "NORMAL",
         tags: [],
@@ -221,8 +245,20 @@ export async function createStudentIssueAction(
     } catch (err) {
       if (err instanceof z.ZodError) {
         const fieldErrors = zodFieldErrors(err);
-        if (fieldErrors.title || fieldErrors.question) {
-          return { fieldErrors: { title: fieldErrors.title, question: fieldErrors.question } };
+        if (
+          fieldErrors.title ||
+          fieldErrors.question ||
+          fieldErrors.fileLinks ||
+          fieldErrors.videoLinks
+        ) {
+          return {
+            fieldErrors: {
+              title: fieldErrors.title,
+              question: fieldErrors.question,
+              fileLinks: fieldErrors.fileLinks,
+              videoLinks: fieldErrors.videoLinks,
+            },
+          };
         }
         return { fieldErrors: { _form: ["Invalid form data"] } };
       }

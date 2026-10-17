@@ -37,6 +37,13 @@
   environment at startup (`lib/env.ts`), not just in production.
 - `e2e/student-submit.spec.ts` and `e2e/student-gating.spec.ts` cover the student
   create path, staff pickup, and that students never receive staff controls.
+- Issue-level attachment links: `SupportIssue` now carries `fileLinks`/`videoLinks`
+  (the reporter's evidence), editable by staff on the create/edit form, parsed with
+  the same HTTPS-only link parser as replies, rendered under the problem description
+  via `LinkList`, and included in the public projection so published issues show
+  them. Students may add them when submitting. The student form surfaces an explicit
+  error when typed text yields no valid link (no silent drop). The publish
+  confirmation now covers attached links.
 
 ## Search Performance Findings
 
@@ -116,4 +123,11 @@ cmd /c "npm run test:e2e"
   excluded. Addressing this changes publish/search semantics and is deferred.
 - Data migration: environments with `staff-users` rows on the old `VIEWER` value
   need `npm run db:migrate-role-viewer-to-student -- --apply --confirm=<db>`.
-- File/image upload for the student form is not implemented yet.
+- **Direct file upload** for issue attachments is not implemented yet — students and
+  staff attach external HTTPS links (images/files/videos) instead. A real upload
+  needs storage, size limits, virus scanning, and access control for student PII
+  screenshots. See the "Deferred" section in the README.
+- `MAX_LINKS_PER_ITEM` is documented in `.env.example`, `compose.example.yml`, and
+  `docs/self-hosted-deployment.md` but is **not read by any code** — the 10-link cap
+  is hardcoded in `lib/parse-links.ts` and the zod schemas. Either wire it or remove
+  it from the docs (flagged, not changed).

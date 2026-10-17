@@ -190,7 +190,7 @@ Click `New Issue` from the issue list.
 The create page has these main sections:
 
 - Student Identity.
-- Issue Details.
+- Issue Details (title, problem description, and optional image/file and video links).
 - Answer (Optional).
 - Additional Details.
 
@@ -250,6 +250,10 @@ Optional metadata:
 | Content/Lesson slug | Lowercase slug, hyphen format, max 120. |
 | Tags | Max 10 tags, lowercase, unique, max 32 each. |
 | Priority | Low, Normal, High, Urgent. |
+| Image / File Links | Max 10 HTTPS links, one per line: `title\|url\|type\|note`. |
+| Video Links | Max 10 HTTPS links, one per line: `title\|url\|timestamp\|summary`. |
+
+The issue-level `Image / File Links` and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` links, which belong to the initial staff answer.
 
 Allowed tag characters:
 
@@ -318,6 +322,8 @@ If you need to add a later response, write a body first, then optionally add lin
 
 ## 14. File And Video Link Formats
 
+The same format applies everywhere links appear: the issue's `Image / File Links` and `Video Links` (the reporter's evidence), and the `Answer (Optional)` or public reply links.
+
 File links format:
 
 ```text
@@ -349,8 +355,8 @@ Link behavior and limits:
 - One link per line.
 - Missing protocol becomes `https://...`.
 - Invalid/non-URL lines are ignored.
-- Maximum 10 file links per reply.
-- Maximum 10 video links per reply.
+- Maximum 10 file links per issue or reply.
+- Maximum 10 video links per issue or reply.
 - Production expects HTTPS links.
 - File title max 120 characters.
 - File type max 40 characters.
@@ -390,6 +396,7 @@ The issue detail page shows:
 - Issue title.
 - Updated time.
 - Full problem description.
+- Attached file/video links (the problem's evidence), if any.
 - Tags.
 - Responses.
 - Issue context.
@@ -487,6 +494,8 @@ Mentors can edit:
 - Student identity fields.
 - Issue title.
 - Problem description.
+- Image / file links.
+- Video links.
 - Status.
 - Priority.
 - Course slug.
@@ -504,6 +513,8 @@ Important side effects:
 - Students cannot see it again until admin review and publish.
 
 Even a small typo fix can temporarily remove a published issue from the Student Library.
+
+The issue edit form shows the current attachment links as editable lines. Leave the fields empty to remove links, and clear any link that points at a private screenshot before the issue is published.
 
 ## 22. Archive Issue
 
@@ -553,7 +564,7 @@ Mentors cannot:
 Admins must confirm:
 
 ```text
-I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, or public replies.
+I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached file/video links, or public replies.
 ```
 
 If issue content changes after admin review, publish can fail until the admin refreshes and reviews again.
@@ -566,11 +577,12 @@ Check these fields:
 
 - Issue title.
 - Problem description.
+- Issue file link title/note and video link title/summary.
 - Reply body.
-- File link title.
-- File link note.
-- Video link title.
-- Video link summary.
+- Reply file link title.
+- Reply file link note.
+- Reply video link title.
+- Reply video link summary.
 
 Remove or generalize:
 
@@ -681,6 +693,7 @@ Mobile behavior:
 | View dashboard | Yes | `/dashboard` |
 | View all active issues | Yes | `/dashboard/issues` |
 | Create issue | Yes | `/dashboard/issues/new` |
+| Add issue-level attachment links | Yes | Issue form |
 | Use LMS email lookup | Yes | Issue form |
 | Add first answer during create | Yes | Issue form |
 | Add public response | Yes | Issue detail |
@@ -718,6 +731,7 @@ Before creating or updating an issue:
 - [ ] Use the student's LMS email when available.
 - [ ] Keep title general and searchable.
 - [ ] Remove student PII from public-facing text.
+- [ ] Check issue-level file/video links for private screenshots before publishing.
 - [ ] Add course/batch/tags if useful for filtering.
 - [ ] Add an answer if the fix is known.
 - [ ] Mark solved only when the answer is final.

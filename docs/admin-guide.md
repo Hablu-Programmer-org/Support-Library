@@ -17,7 +17,7 @@ Visibility states:
 
 Publishing does not anonymize content automatically. It only changes visibility after an admin confirms the content was reviewed.
 
-Admins must review public-facing text before publishing because copied student personal information can still appear in titles, problem descriptions, replies, and link metadata.
+Admins must review public-facing text before publishing because copied student personal information can still appear in titles, problem descriptions, issue attachments, replies, and link metadata.
 
 ## 2. Who Gets Admin Access
 
@@ -187,6 +187,8 @@ Student-visible issue fields:
 
 - Issue title.
 - Problem description.
+- Issue-level file links (title, type, hostname, note).
+- Issue-level video links (title, timestamp, hostname, summary).
 - Status.
 - Priority.
 - Course slug.
@@ -235,6 +237,7 @@ Check these public-facing areas:
 
 - Issue title.
 - Problem description.
+- Issue file/video links.
 - Reply body.
 - File link title.
 - File link type.
@@ -274,11 +277,16 @@ Important link behavior:
 - A bare URL line is accepted and uses the hostname as the title.
 - A missing URL scheme is prefixed with `https://`.
 - Invalid link lines can be ignored and not saved.
-- Up to 10 file links can be saved per reply.
-- Up to 10 video links can be saved per reply.
+- Up to 10 file links can be saved per issue or reply.
+- Up to 10 video links can be saved per issue or reply.
 - Production requires HTTPS links by default.
 - Optional environment configuration can restrict allowed link hosts.
 - Links open in a new browser tab.
+
+Links can appear in two places, and both are reviewed:
+
+- Issue-level `Image / File Links` and `Video Links` — the reporter's evidence, shown under the problem description.
+- Reply-level file/video links — part of a staff answer.
 
 Admin review steps:
 
@@ -295,7 +303,7 @@ Publish workflow:
 
 1. Open `/dashboard/issues/[id]`.
 2. Review the issue title and problem description.
-3. Review all replies and link metadata.
+3. Review the issue-level file/video links and all replies and their link metadata.
 4. Confirm no student personal information is present in public content.
 5. In the publish form, check the confirmation checkbox.
 6. Click `Publish to library`.
@@ -305,7 +313,7 @@ Publish workflow:
 The confirmation text is:
 
 ```text
-I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, or public replies.
+I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached file/video links, or public replies.
 ```
 
 Publishing sets:
@@ -535,10 +543,11 @@ Student issue detail can show:
 - Issue title.
 - Last updated time.
 - Full problem description.
+- Issue-level file links and video links.
 - Tags.
 - Answers and updates.
-- File links.
-- Video links.
+- Reply file links.
+- Reply video links.
 - Course.
 - Batch.
 - Published date.
@@ -693,6 +702,7 @@ Before publishing:
 - [ ] Open the issue detail page.
 - [ ] Confirm the issue title is general and safe.
 - [ ] Confirm the problem description contains no PII.
+- [ ] Review the issue-level file/video links (title, note, hostname, URL) for private screenshots.
 - [ ] Review every reply body.
 - [ ] Review every file link title, type, note, hostname, and URL.
 - [ ] Review every video link title, timestamp, summary, hostname, and URL.

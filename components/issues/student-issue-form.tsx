@@ -18,6 +18,8 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
   });
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
+  const [fileLinks, setFileLinks] = useState("");
+  const [videoLinks, setVideoLinks] = useState("");
   const operationIdRef = useRef<HTMLInputElement>(null);
 
   const ensureOperationId = () => {
@@ -118,6 +120,57 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Include the steps to reproduce the problem if you can.
+              </p>
+            )}
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Image / file links <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+            </span>
+            <textarea
+              className={nativeTextareaClass}
+              name="fileLinks"
+              value={fileLinks}
+              onChange={(event) => setFileLinks(event.target.value)}
+              rows={2}
+              aria-invalid={state.fieldErrors?.fileLinks?.[0] ? "true" : "false"}
+              placeholder={"Screenshot|https://example.com/image.png|image|What the error looks like"}
+            />
+            {state.fieldErrors?.fileLinks?.[0] ? (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.fileLinks[0]}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                One per line: <span className="font-medium">Title|https://link</span> (optionally add
+                |image or |pdf and a short note). Upload the file somewhere public first — we store
+                links, not files.
+              </p>
+            )}
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Video links <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+            </span>
+            <textarea
+              className={nativeTextareaClass}
+              name="videoLinks"
+              value={videoLinks}
+              onChange={(event) => setVideoLinks(event.target.value)}
+              rows={2}
+              aria-invalid={state.fieldErrors?.videoLinks?.[0] ? "true" : "false"}
+              placeholder={"Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"}
+            />
+            {state.fieldErrors?.videoLinks?.[0] ? (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.videoLinks[0]}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                One per line: <span className="font-medium">Title|https://link</span> (optionally add
+                |timestamp and a summary).
               </p>
             )}
           </label>

@@ -51,6 +51,13 @@ type IssueFormProps = {
     studentName?: string;
     studentEmail?: string | null;
     lmsUserId?: string | null;
+    fileLinks?: { title: string; url: string; type?: string | null; note?: string | null }[];
+    videoLinks?: {
+      title: string;
+      url: string;
+      timestamp?: string | null;
+      summary?: string | null;
+    }[];
     updatedAt?: string;
   };
   minimal?: boolean;
@@ -63,6 +70,8 @@ type FormData = {
   lmsUserId: string;
   title: string;
   question: string;
+  fileLinks: string;
+  videoLinks: string;
   status: string;
   priority: string;
   courseSlug: string;
@@ -75,6 +84,40 @@ type FormData = {
   solutionVideoLinks: string;
   solveIssue: boolean;
 };
+
+/**
+ * Renders stored links back into the `title|url|type|note` line format the
+ * `fileLinks` textarea expects. Empty trailing segments are trimmed so a link
+ * with only a title+url round-trips cleanly.
+ */
+function formatFileLinks(
+  links?: { title: string; url: string; type?: string | null; note?: string | null }[],
+) {
+  return (links ?? [])
+    .map((link) => {
+      const parts = [link.title, link.url, link.type ?? "", link.note ?? ""];
+      while (parts.length > 2 && !parts[parts.length - 1]) parts.pop();
+      return parts.join("|");
+    })
+    .join("\n");
+}
+
+function formatVideoLinks(
+  links?: {
+    title: string;
+    url: string;
+    timestamp?: string | null;
+    summary?: string | null;
+  }[],
+) {
+  return (links ?? [])
+    .map((link) => {
+      const parts = [link.title, link.url, link.timestamp ?? "", link.summary ?? ""];
+      while (parts.length > 2 && !parts[parts.length - 1]) parts.pop();
+      return parts.join("|");
+    })
+    .join("\n");
+}
 
 function ErrorMessage({ error }: { error?: string }) {
   if (!error) return null;
@@ -224,6 +267,8 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
     lmsUserId: supportIssue?.lmsUserId ?? "",
     title: supportIssue?.title ?? "",
     question: supportIssue?.question ?? "",
+    fileLinks: formatFileLinks(supportIssue?.fileLinks),
+    videoLinks: formatVideoLinks(supportIssue?.videoLinks),
     status: supportIssue?.status ?? "OPEN",
     priority: supportIssue?.priority ?? "NORMAL",
     courseSlug: supportIssue?.courseSlug ?? "",
@@ -396,6 +441,36 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
               maxLength={20_000}
               error={state.fieldErrors?.question?.[0]}
               placeholder="Describe the issue in detail. Include steps to reproduce, expected behavior, and actual behavior."
+            />
+          </FieldWrapper>
+
+          <FieldWrapper
+            label="Image / File Links"
+            description="One per line: title|https://url|type|note. HTTPS links only; files are not uploaded."
+            error={state.fieldErrors?.fileLinks?.[0]}
+          >
+            <ControlledTextarea
+              name="fileLinks"
+              value={formData.fileLinks}
+              onChange={handleChange("fileLinks")}
+              rows={2}
+              error={state.fieldErrors?.fileLinks?.[0]}
+              placeholder="Screenshot|https://example.com/error.png|image|What the student sees"
+            />
+          </FieldWrapper>
+
+          <FieldWrapper
+            label="Video Links"
+            description="One per line: title|https://url|timestamp|summary"
+            error={state.fieldErrors?.videoLinks?.[0]}
+          >
+            <ControlledTextarea
+              name="videoLinks"
+              value={formData.videoLinks}
+              onChange={handleChange("videoLinks")}
+              rows={2}
+              error={state.fieldErrors?.videoLinks?.[0]}
+              placeholder="Walkthrough|https://youtu.be/abc123|01:30|Reproduces the bug"
             />
           </FieldWrapper>
         </div>

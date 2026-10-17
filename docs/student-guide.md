@@ -15,7 +15,7 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached file links or video walkthrough links.
-- Submit a new support request with a title and a description.
+- Submit a new support request with a title, a description, and optional file/video links.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
 
@@ -181,6 +181,7 @@ The issue detail page can show:
 - Issue title.
 - Last updated time.
 - Full problem description.
+- Attached file links and video links, if the reporter added any.
 - Tags.
 - Answers and updates.
 - Course.
@@ -216,7 +217,7 @@ Students cannot add replies or edit replies.
 
 ## 11. File Links And Video Links
 
-Some answers include external file or video links.
+Issues and answers can include external file or video links. A support request can also carry its own attachment links, which appear under the problem description.
 
 File links can show:
 
@@ -297,6 +298,13 @@ The form asks for two things:
 - A title: a short summary of the problem, at least 5 characters.
 - Problem details: what you were doing, what you expected, and what happened instead. Include the steps to reproduce the problem if you can.
 
+You can also add optional attachment links (the app stores links, never uploaded files):
+
+- **Image / file links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|image` or `|pdf` and a short note).
+- **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
+
+Upload the image, file, or video somewhere public first (for example Google Drive or YouTube), then paste the link. Links must be HTTPS links. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it.
+
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email.
 
 After you submit, a confirmation page appears and the request goes to the support team. You cannot add replies to it and you cannot see it in the library until the team reviews and publishes it; if they do not publish it, they answer you by email instead.
@@ -315,9 +323,9 @@ Students do not see:
 - Internal staff-only controls.
 - Internal/unpublished issues.
 
-Public issue data includes only the reviewed fields needed for the library, such as title, problem, status, priority, course, batch, tags, visibility, and dates.
+Public issue data includes only the reviewed fields needed for the library, such as title, problem, attached file/video links, status, priority, course, batch, tags, visibility, and dates.
 
-Staff must review an issue before publishing it to the student library.
+Staff must review an issue before publishing it to the student library. The publish confirmation covers the title, problem description, attached file/video links, and public replies.
 
 ## 15. Why A Link May Show 404
 
@@ -369,7 +377,8 @@ Unexpected error:
 | I cannot see a known issue. | It may be unpublished, archived, edited, or not yet reviewed for the student library. |
 | Search does not find an answer. | Search does not search answer/reply body text; try words from the title, problem, tag, or course slug. |
 | A link opens a new tab. | File and video links are external resources and are opened separately. |
-| I need to submit a new problem. | This app does not support student-created tickets. Use the official Hablu support channel. |
+| I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
+| My attachment link is rejected. | Links must be HTTPS URLs. Upload the file somewhere public first, then paste the link. |
 
 ## 18. Quick Reference
 
@@ -381,10 +390,11 @@ Unexpected error:
 | Filter by tag/status/course/batch/date | Yes | `/dashboard/issues` |
 | Sort by newest/oldest/priority | Yes | `/dashboard/issues` |
 | Read issue details | Yes, published only | `/dashboard/issues/[id]` |
-| Open file/video links | Yes | Issue detail replies |
+| Open file/video links | Yes | Issue attachments and detail replies |
 | Toggle theme | Yes | Topbar/account menu |
 | Sign out | Yes | Topbar/account menu |
-| Create issue | No | Staff only |
+| Submit a support request | Yes | `/dashboard/issues/new` |
+| Create an issue on behalf of a student | No | Staff only |
 | Reply to issue | No | Staff only |
 | Edit issue | No | Staff only |
 | Publish issue | No | Admin only |

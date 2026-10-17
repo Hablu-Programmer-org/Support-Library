@@ -1,6 +1,12 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-import { CASE_PRIORITIES, CASE_STATUSES, ISSUE_VISIBILITIES } from "./shared";
+import {
+  CASE_PRIORITIES,
+  CASE_STATUSES,
+  ISSUE_VISIBILITIES,
+  externalFileLinkSchema,
+  videoLinkSchema,
+} from "./shared";
 
 const publicationEventSchema = new mongoose.Schema(
   {
@@ -34,6 +40,10 @@ const supportIssueSchema = new mongoose.Schema(
     lmsUserId: { type: String, default: null },
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },
+    // Evidence the reporter attached to the problem itself (before any reply):
+    // external HTTPS links only — this app stores links, never uploaded files.
+    fileLinks: { type: [externalFileLinkSchema], default: [] },
+    videoLinks: { type: [videoLinkSchema], default: [] },
     courseSlug: { type: String, trim: true, default: null, index: true },
     batchNo: { type: Number, default: null, index: true },
     moduleSlug: { type: String, trim: true, default: null },

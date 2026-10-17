@@ -11,6 +11,7 @@ import { PublishIssueForm } from "@/components/issues/publish-issue-form";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
+import { LinkList } from "@/components/shared/link-list";
 import {
   ArrowLeftIcon,
   FileTextIcon,
@@ -22,10 +23,7 @@ import {
 import { requireSession } from "@/lib/auth-guard";
 import { nativeSelectClass } from "@/lib/config/fields";
 import { canMutate, isAdmin } from "@/lib/roles";
-import {
-  getIssueDetail,
-  getPublishedIssueDetail,
-} from "@/lib/services/issues";
+import { getIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
@@ -85,7 +83,8 @@ export default async function IssueDetailPage({
         <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <StatusBadge status={supportIssue.status} />
           <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            {priorityLabels[supportIssue.priority ?? "NORMAL"] ?? supportIssue.priority}
+            {priorityLabels[supportIssue.priority ?? "NORMAL"] ??
+              supportIssue.priority}
           </span>
           {supportIssue.visibility === "PUBLISHED" && (
             <span className="rounded-full bg-success-100 px-2.5 py-1 font-medium text-success-700 dark:bg-success-950/50 dark:text-success-200">
@@ -97,7 +96,10 @@ export default async function IssueDetailPage({
           {supportIssue.title}
         </h1>
         <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-          Updated <time dateTime={supportIssue.updatedAt?.toISOString()}>{formatDate(supportIssue.updatedAt)}</time>
+          Updated{" "}
+          <time dateTime={supportIssue.updatedAt?.toISOString()}>
+            {formatDate(supportIssue.updatedAt)}
+          </time>
         </p>
       </header>
 
@@ -111,16 +113,26 @@ export default async function IssueDetailPage({
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300">
                 <FileTextIcon size={19} />
               </span>
-              <h2 id="problem-heading" className="text-lg font-semibold text-slate-950 dark:text-white">
+              <h2
+                id="problem-heading"
+                className="text-lg font-semibold text-slate-950 dark:text-white"
+              >
                 The problem
               </h2>
             </div>
             <div className="px-5 py-6 sm:px-7 sm:py-8">
-              <p className="whitespace-pre-wrap break-words text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
+              <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
                 {supportIssue.question}
               </p>
+              <LinkList
+                fileLinks={supportIssue.fileLinks}
+                videoLinks={supportIssue.videoLinks}
+              />
               {supportIssue.tags.length > 0 && (
-                <div className="mt-7 flex flex-wrap gap-2" aria-label="Issue tags">
+                <div
+                  className="mt-7 flex flex-wrap gap-2"
+                  aria-label="Issue tags"
+                >
                   {supportIssue.tags.map((tag) => (
                     <span
                       key={tag}
@@ -140,7 +152,10 @@ export default async function IssueDetailPage({
                 <MessageSquareIcon size={19} />
               </span>
               <div>
-                <h2 id="responses-heading" className="text-xl font-semibold text-slate-950 dark:text-white">
+                <h2
+                  id="responses-heading"
+                  className="text-xl font-semibold text-slate-950 dark:text-white"
+                >
                   {canEdit ? "Responses" : "Answers and updates"}
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -159,7 +174,9 @@ export default async function IssueDetailPage({
               csrfToken={csrfToken}
             />
 
-            {canEdit && <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />}
+            {canEdit && (
+              <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />
+            )}
           </section>
         </main>
 
@@ -167,13 +184,21 @@ export default async function IssueDetailPage({
           <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex items-center gap-2">
               <SettingsIcon className="text-slate-500" size={18} />
-              <h2 className="font-semibold text-slate-950 dark:text-white">Issue context</h2>
+              <h2 className="font-semibold text-slate-950 dark:text-white">
+                Issue context
+              </h2>
             </div>
             <dl className="space-y-4 text-sm">
               <Info label="Course" value={supportIssue.courseSlug} />
               <Info label="Batch" value={supportIssue.batchNo?.toString()} />
-              <Info label="Published" value={formatDate(supportIssue.publishedAt)} />
-              <Info label="Created" value={formatDate(supportIssue.createdAt)} />
+              <Info
+                label="Published"
+                value={formatDate(supportIssue.publishedAt)}
+              />
+              <Info
+                label="Created"
+                value={formatDate(supportIssue.createdAt)}
+              />
             </dl>
           </section>
 
@@ -181,9 +206,11 @@ export default async function IssueDetailPage({
             <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
               <div className="mb-4 flex items-center gap-2">
                 <UserIcon className="text-slate-500" size={18} />
-                <h2 className="font-semibold text-slate-950 dark:text-white">Student snapshot</h2>
+                <h2 className="font-semibold text-slate-950 dark:text-white">
+                  Student snapshot
+                </h2>
               </div>
-              <p className="break-words font-medium text-slate-900 dark:text-white">
+              <p className="wrap-break-word font-medium text-slate-900 dark:text-white">
                 {staffIssue.studentName}
               </p>
               <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
@@ -194,14 +221,26 @@ export default async function IssueDetailPage({
 
           {canEdit && (
             <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-              <h2 className="font-semibold text-slate-950 dark:text-white">Manage issue</h2>
+              <h2 className="font-semibold text-slate-950 dark:text-white">
+                Manage issue
+              </h2>
               <form
-                action={changeIssueStatusActionSimple.bind(null, supportIssue.id)}
+                action={changeIssueStatusActionSimple.bind(
+                  null,
+                  supportIssue.id,
+                )}
                 className="mt-4 space-y-3"
               >
                 <input type="hidden" name="csrfToken" value={csrfToken} />
-                <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt?.toISOString() ?? ""} />
-                <label htmlFor="issue-status" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <input
+                  type="hidden"
+                  name="expectedUpdatedAt"
+                  value={supportIssue.updatedAt?.toISOString() ?? ""}
+                />
+                <label
+                  htmlFor="issue-status"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Status
                 </label>
                 <select
@@ -210,13 +249,18 @@ export default async function IssueDetailPage({
                   defaultValue={supportIssue.status}
                   className={nativeSelectClass}
                 >
-                  {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
-                    <option key={status} value={status}>
-                      {statusLabels[status]}
-                    </option>
-                  ))}
+                  {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
+                    (status) => (
+                      <option key={status} value={status}>
+                        {statusLabels[status]}
+                      </option>
+                    ),
+                  )}
                 </select>
-                <PendingSubmitButton label="Update status" pendingLabel="Updating..." />
+                <PendingSubmitButton
+                  label="Update status"
+                  pendingLabel="Updating..."
+                />
               </form>
 
               <Link
@@ -253,7 +297,8 @@ export default async function IssueDetailPage({
                 </div>
               </div>
               <p className="mt-3 text-sm leading-6 text-danger-900/80 dark:text-slate-300">
-                Remove this issue from active staff lists and the student library. Archive it only when no further action is needed.
+                Remove this issue from active staff lists and the student
+                library. Archive it only when no further action is needed.
               </p>
               <ArchiveIssueButton
                 action={deleteIssueActionSimple.bind(null, supportIssue.id)}
@@ -273,7 +318,7 @@ function Info({ label, value }: { label: string; value?: string | null }) {
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </dt>
-      <dd className="mt-1 break-words font-medium text-slate-800 dark:text-slate-200">
+      <dd className="mt-1 wrap-break-word font-medium text-slate-800 dark:text-slate-200">
         {value || "Not specified"}
       </dd>
     </div>

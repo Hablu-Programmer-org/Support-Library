@@ -57,6 +57,8 @@ export default async function EditIssuePage({
           studentName: supportIssue.studentName,
           studentEmail: supportIssue.studentEmail ?? undefined,
           lmsUserId: supportIssue.lmsUserId ?? undefined,
+          fileLinks: supportIssue.fileLinks,
+          videoLinks: supportIssue.videoLinks,
           updatedAt: supportIssue.updatedAt?.toISOString(),
         }}
         csrfToken={csrfToken}
