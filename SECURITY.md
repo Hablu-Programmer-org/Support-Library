@@ -51,6 +51,7 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - **HTTPS enforcement**: All external links must use HTTPS
 - **Rate limiting**: Per-scope fixed-window (10-30 req/min)
 - **Audit logging**: issue/reply mutations, publication, OAuth sign-in, and selected denied events; request context is recorded when available
+- **Uploaded attachments (images only, PNG/JPEG/GIF/WebP)**: stored in a private object store (Cloudflare R2). Object keys are server-generated (`attachments/YYYY/MM/<uuid>.<ext>`); the client filename is never used as a path. The store is never reached directly: `/api/attachments/<id>` authorizes the session (ADMIN/MENTOR, or the uploader themselves) before streaming, and answers 404 rather than 403 to avoid an existence oracle. Uploads are **never** added to the public projection (policy A1) and filenames are excluded from `searchText` to prevent PII leaks. No antivirus runs, so risky container formats (PDF/ZIP/Office) are deliberately excluded. Images are identified by magic bytes, dimensions are capped (8000 px side, 40 MP) against decompression bombs, and EXIF metadata is accepted as a residual risk (images are not re-encoded). Container formats rely on `X-Content-Type-Options: nosniff` and the enumerated MIME type allowlist.
 
 ### Infrastructure
 - **Container hardening**: Non-root, read-only FS, dropped capabilities

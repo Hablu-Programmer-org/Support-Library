@@ -29,7 +29,8 @@ test.describe("STUDENT issue submission", () => {
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
-    // Attachments are optional external HTTPS links (the app stores no files).
+    // Attachments are optional external HTTPS links; uploaded images are handled
+    // separately by the AttachmentsField and are covered in attachments.spec.ts.
     await form
       .locator('textarea[name="fileLinks"]')
       .fill("Screenshot|https://example.com/buffering.png|image|Where it stalls");

@@ -31,6 +31,10 @@ export const proxy = auth((req) => {
   };
 
   if (pathname.startsWith("/api/auth")) return secure(next());
+  // Attachment downloads must answer 401 themselves: an unauthenticated <img>
+  // request that got a redirect to /login would render as a login page inside the
+  // image slot instead of simply failing.
+  if (pathname.startsWith("/api/attachments")) return secure(next());
   if (PUBLIC_PATHS.has(pathname)) return secure(next());
 
   if (!req.auth?.user) {

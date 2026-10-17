@@ -62,6 +62,86 @@ const studentEmailEnvSchema = z
   .object(studentEmailEnvShape)
   .superRefine(checkActiveKeyVersion);
 
+/**
+ * Upload storage configuration.
+ *
+ * Validated in every environment: turning on `UPLOAD_STORAGE=r2` without
+ * credentials would otherwise fail only when a student tried to attach a file,
+ * which is exactly the kind of failure a boot check should catch instead.
+ */
+const UPLOAD_MODES = ["disabled", "memory", "r2"] as const;
+
+const uploadEnvShape = {
+  UPLOAD_STORAGE: z.string().trim().optional(),
+  UPLOAD_STORAGE_ALLOW_EPHEMERAL: z.string().trim().optional(),
+  R2_ACCOUNT_ID: z.string().trim().optional(),
+  R2_BUCKET: z.string().trim().optional(),
+  R2_ACCESS_KEY_ID: z.string().trim().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().trim().optional(),
+  R2_ENDPOINT: z.string().trim().optional(),
+  MAX_UPLOADS_PER_ITEM: z.string().trim().optional(),
+  MAX_UPLOAD_BYTES: z.string().trim().optional(),
+};
+
+type UploadEnv = {
+  UPLOAD_STORAGE?: string;
+  UPLOAD_STORAGE_ALLOW_EPHEMERAL?: string;
+  R2_ACCOUNT_ID?: string;
+  R2_BUCKET?: string;
+  R2_ACCESS_KEY_ID?: string;
+  R2_SECRET_ACCESS_KEY?: string;
+  R2_ENDPOINT?: string;
+};
+
+/** Accepts the usual affirmative spellings for a boolean environment flag. */
+const isEnabled = (value: string | undefined) =>
+  ["1", "true", "yes", "on"].includes((value ?? "").trim().toLowerCase());
+
+function checkUploadStorage(env: UploadEnv, context: z.core.$RefinementCtx) {
+  const mode = (env.UPLOAD_STORAGE ?? "disabled").toLowerCase();
+
+  if (!(UPLOAD_MODES as readonly string[]).includes(mode)) {
+    context.addIssue({
+      code: "custom",
+      path: ["UPLOAD_STORAGE"],
+      message: `Must be one of ${UPLOAD_MODES.join(", ")}`,
+    });
+    return;
+  }
+
+  // A memory store loses every object on restart and is not shared between
+  // replicas; in production that is silent data loss, not a valid configuration.
+  // An explicit acknowledgement keeps it available for a throwaway deployment —
+  // the end-to-end run, or a preview that only needs the flow to work.
+  if (
+    mode === "memory" &&
+    process.env.NODE_ENV === "production" &&
+    !isEnabled(env.UPLOAD_STORAGE_ALLOW_EPHEMERAL)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["UPLOAD_STORAGE"],
+      message:
+        "Cannot be `memory` in production; use `r2`, leave it unset, or set UPLOAD_STORAGE_ALLOW_EPHEMERAL=true to accept that every upload is lost on restart",
+    });
+    return;
+  }
+
+  if (mode !== "r2") return;
+
+  for (const key of ["R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const) {
+    if (!env[key]) {
+      context.addIssue({
+        code: "custom",
+        path: [key],
+        message: "Required when UPLOAD_STORAGE is r2",
+      });
+    }
+  }
+}
+
+const uploadEnvSchema = z.object(uploadEnvShape).superRefine(checkUploadStorage);
+
 const productionEnvSchema = z
   .object({
     MONGODB_URI: mongoUriSchema,
@@ -96,13 +176,19 @@ const issueNames = (error: z.ZodError) =>
 /**
  * Fails fast on unusable configuration.
  *
- * The student email keyring is checked everywhere; the remaining secrets are
- * only enforced in production so local development stays low-friction.
+ * The student email keyring and the upload storage mode are checked everywhere;
+ * the remaining secrets are only enforced in production so local development
+ * stays low-friction.
  */
 export function validateEnv() {
   const studentEmail = studentEmailEnvSchema.safeParse(process.env);
   if (!studentEmail.success) {
     throw new Error(`Invalid student email encryption environment: ${issueNames(studentEmail.error)}`);
+  }
+
+  const uploads = uploadEnvSchema.safeParse(process.env);
+  if (!uploads.success) {
+    throw new Error(`Invalid upload storage environment: ${issueNames(uploads.error)}`);
   }
 
   if (process.env.NODE_ENV !== "production") return;

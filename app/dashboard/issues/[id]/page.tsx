@@ -11,6 +11,7 @@ import { PublishIssueForm } from "@/components/issues/publish-issue-form";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
+import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import {
   ArrowLeftIcon,
@@ -128,6 +129,9 @@ export default async function IssueDetailPage({
                 fileLinks={supportIssue.fileLinks}
                 videoLinks={supportIssue.videoLinks}
               />
+              {/* `staffIssue` is set only for staff; the published projection has
+                  no uploads at all, so students never receive their ids. */}
+              <AttachmentList uploads={staffIssue?.uploads ?? []} />
               {supportIssue.tags.length > 0 && (
                 <div
                   className="mt-7 flex flex-wrap gap-2"

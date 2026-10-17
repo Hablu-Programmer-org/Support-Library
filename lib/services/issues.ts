@@ -3,11 +3,7 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import {
-  assertOperationPayload,
-  mutationRequestHash,
-  operationIdSchema,
-} from "@/lib/mutation-security";
+import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import { buildIssueSearchText, buildIssueSearchTextWithReplies, buildSearchRegex } from "@/lib/search";
 import {
   createStudentEmailLookupCandidates,
@@ -22,7 +18,9 @@ import {
   type SupportReplyInput,
 } from "@/lib/validation";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
+import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import {
   CASE_PRIORITIES,
   SupportReplyModel,
@@ -64,6 +62,7 @@ export type SupportIssueListItem = {
   question: string;
   fileLinks: IssueFileLink[];
   videoLinks: IssueVideoLink[];
+  uploads: AttachmentView[];
   status: CaseStatus;
   priority?: string | null;
   courseSlug?: string | null;
@@ -117,6 +116,7 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   question: String(item.question),
   fileLinks: Array.isArray(item.fileLinks) ? item.fileLinks as IssueFileLink[] : [],
   videoLinks: Array.isArray(item.videoLinks) ? item.videoLinks as IssueVideoLink[] : [],
+  uploads: toAttachmentViews(item.uploads),
   status: item.status as CaseStatus,
   priority: item.priority as string | null | undefined,
   courseSlug: item.courseSlug as string | null | undefined,
@@ -200,10 +200,21 @@ export async function createIssue(
   operationId: string,
   initialReply: InitialReplyInput | null = null,
   solveIssue = false,
+  uploads: IngestedUpload[] = [],
+  replyUploads: IngestedUpload[] = [],
 ) {
   const parsed = supportIssueInputSchema.parse(input);
   const parsedOperationId = operationIdSchema.parse(operationId);
+
+  // Uploads are excluded from the hash on purpose: their object keys are
+  // generated server-side and are not part of the client's request, so including
+  // them would make an identical retry hash differently and look like a conflict.
   const requestHash = mutationRequestHash({ input: parsed, initialReply, solveIssue });
+  // An initial answer only exists when `initialReply` does; files selected for an
+  // answer that was not submitted must not be stored.
+  const replyFiles = initialReply ? replyUploads : [];
+  const attachedUploads = [...uploads, ...replyFiles];
+
   await dbConnect();
   const actorObjectId = new mongoose.Types.ObjectId(actorId);
 
@@ -227,13 +238,15 @@ export async function createIssue(
     createOperationId: parsedOperationId,
   }).select("+studentEmail").lean();
   if (existing) {
-    assertOperationPayload(existing.createOperationHash, requestHash);
+    await settleReplayedUploads(attachedUploads, existing.createOperationHash, requestHash, existing.uploads);
     return toIssueListItem(existing);
   }
 
   try {
     const supportIssue = await mongoose.connection.transaction(async (session) => {
       const finalStatus = initialReply && solveIssue ? "SOLVED" : "OPEN";
+      // Filenames are deliberately kept out of `searchText`: a screenshot named
+      // after the student would otherwise become searchable PII.
       const searchText = initialReply
         ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
         : buildIssueSearchText(parsed);
@@ -244,19 +257,40 @@ export async function createIssue(
         status: finalStatus,
         searchText,
         mentorId: effectiveMentorId,
+        uploads,
         createdBy: actorObjectId,
         updatedBy: actorObjectId,
         createOperationId: parsedOperationId,
         createOperationHash: requestHash,
       }], { session });
 
+      const context = await getRequestContext();
+      for (const upload of uploads) {
+        await recordAuditEvent({
+          actorId,
+          action: "ATTACHMENT_UPLOAD",
+          resourceType: "SupportAttachment",
+          resourceId: upload._id,
+          result: "SUCCEEDED",
+        }, context, session);
+      }
+
       if (initialReply) {
         const [reply] = await SupportReplyModel.create([{
           ...initialReply,
+          uploads: replyFiles,
           issueId: createdIssue._id,
           authorId: actorObjectId,
         }], { session });
-        const context = await getRequestContext();
+        for (const upload of replyFiles) {
+          await recordAuditEvent({
+            actorId,
+            action: "ATTACHMENT_UPLOAD",
+            resourceType: "SupportAttachment",
+            resourceId: upload._id,
+            result: "SUCCEEDED",
+          }, context, session);
+        }
         await recordAuditEvent({
           actorId,
           action: "REPLY_CREATE",
@@ -266,7 +300,6 @@ export async function createIssue(
         }, context, session);
       }
 
-      const context = await getRequestContext();
       await recordAuditEvent({
         actorId,
         action: "ISSUE_CREATE",
@@ -280,13 +313,20 @@ export async function createIssue(
 
     return toIssueListItem(supportIssue);
   } catch (error) {
-    if (!isDuplicateKeyError(error)) throw error;
+    if (!isDuplicateKeyError(error)) {
+      // Nothing was committed, so nothing may reference these objects.
+      await discardUploads(attachedUploads);
+      throw error;
+    }
     const duplicate = await SupportIssueModel.findOne({
       createdBy: actorObjectId,
       createOperationId: parsedOperationId,
     }).select("+studentEmail").lean();
-    if (!duplicate) throw error;
-    assertOperationPayload(duplicate.createOperationHash, requestHash);
+    if (!duplicate) {
+      await discardUploads(attachedUploads);
+      throw error;
+    }
+    await settleReplayedUploads(attachedUploads, duplicate.createOperationHash, requestHash, duplicate.uploads);
     return toIssueListItem(duplicate);
   }
 }

@@ -133,3 +133,12 @@ cmd /c "npm run test:e2e"
 - `MAX_LINKS_PER_ITEM` is now read and enforced by `lib/validation/common.ts`
   (`linkLimit()`) in both the link parser and the Zod schemas — the docs match the
   code. Range 1-50; hard ceiling 50; missing/invalid falls back to 10.
+
+### Session log — uploaded screenshots (Cloudflare R2)
+- Added image-only uploads (PNG/JPEG/GIF/WebP) via Server Actions + R2 (or `memory`).
+- `UPLOAD_STORAGE` unset -> disabled in production, memory otherwise; `r2` requires R2 credentials.
+- New `lib/uploads/*` core, `lib/services/attachments.ts`, `/api/attachments/[id]` route, `uploads[]` on issues/replies, indexes, audit actions, proxy exemption, rate-limit scopes, `uploadEnvSchema` wired into `validateEnv`.
+- Actions parse `uploads`/`solutionUploads`, ingest before the write, compensate on replay/failure.
+- UI: `AttachmentField` + `AttachmentList` (plain `<img>`), rendered in student/student? form, issue form (create only), reply composer, issue detail, reply items.
+- Tests: 24 new upload unit tests; env tests extended; `e2e/attachments.spec.ts` happy path + denial.
+- Gates: lint (clean), typecheck, test (124 passing), build all green.

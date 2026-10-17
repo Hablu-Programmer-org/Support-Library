@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { deleteReplyAction, editReplyAction } from "@/actions/replies";
 import { PencilIcon, TrashIcon } from "@/components/icons";
+import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 import type { SupportReplyListItem } from "@/lib/services/replies";
@@ -81,6 +82,7 @@ export function ReplyItem({
         {reply.body}
       </p>
       <LinkList fileLinks={reply.fileLinks} videoLinks={reply.videoLinks} />
+      <AttachmentList uploads={reply.uploads} />
       {canEdit && editing && (
         <form
           action={editReplyAction.bind(null, issueId, reply.id)}

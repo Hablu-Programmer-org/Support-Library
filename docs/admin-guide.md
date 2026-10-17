@@ -1,4 +1,10 @@
-# Admin Guide â€” Hablu Support Library
+# Admin Guide — Hablu Support Library
+
+## Uploaded screenshots
+
+Issues and replies may carry uploaded screenshots (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. The screenshot field is only available when creating an issue or reply; uploads cannot be added or removed when editing.
+
+y
 
 This guide explains how admins review support issues, publish safe answers to the Student Library, remove published content, and handle re-review after staff changes.
 

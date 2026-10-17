@@ -1,6 +1,6 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-import { externalFileLinkSchema, videoLinkSchema } from "./shared";
+import { externalFileLinkSchema, uploadAttachmentSchema, videoLinkSchema } from "./shared";
 
 const supportReplySchema = new mongoose.Schema(
   {
@@ -14,6 +14,7 @@ const supportReplySchema = new mongoose.Schema(
     body: { type: String, required: true, trim: true, minlength: 1, maxlength: 20_000 },
     fileLinks: { type: [externalFileLinkSchema], default: [] },
     videoLinks: { type: [videoLinkSchema], default: [] },
+    uploads: { type: [uploadAttachmentSchema], default: [] },
     editedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null, index: true },
     createOperationId: { type: String, default: null },
@@ -26,6 +27,7 @@ const supportReplySchema = new mongoose.Schema(
 );
 
 supportReplySchema.index({ issueId: 1, createdAt: 1 });
+supportReplySchema.index({ "uploads._id": 1 });
 supportReplySchema.index(
   { authorId: 1, createOperationId: 1 },
   {

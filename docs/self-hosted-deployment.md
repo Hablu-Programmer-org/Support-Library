@@ -236,3 +236,7 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 - [ ] TLS: Traefik/Let's Encrypt or custom certs
 - [ ] Rate limits: Traefik middleware + app-level limits
 - [ ] Updates: Watch GitHub releases for security patches
+
+## Uploaded screenshots (Cloudflare R2)
+
+Screenshots are the only uploaded content. The Server Action body limit (`experimental.serverActions.bodySizeLimit`) is derived from `MAX_UPLOADS_PER_ITEM` and `MAX_UPLOAD_BYTES` at **build** time in `next.config.mjs`, so change those values and rebuild before deploying. Production must set `UPLOAD_STORAGE=r2` (or leave it unset to disable uploads); `memory` is rejected in production unless `UPLOAD_STORAGE_ALLOW_EPHEMERAL=true` is also set. R2 credentials (`R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are required when `UPLOAD_STORAGE=r2`, and `validateEnv` aborts startup if they are missing. The bucket stays private; downloads go through `/api/attachments/<id>` with the session's cookies.

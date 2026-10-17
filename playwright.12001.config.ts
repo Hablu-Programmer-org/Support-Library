@@ -48,6 +48,10 @@ MONGODB_URI: process.env.MONGODB_URI ?? "",
       STUDENT_EMAIL_KEY_VERSION: "v1",
       STUDENT_EMAIL_ENCRYPTION_KEYS: "v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=",
       STUDENT_EMAIL_LOOKUP_KEYS: "v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=",
+      // Uploads stay in memory for the duration of the run: the E2E database is
+      // throwaway and the bucket would otherwise have to be real R2 credentials.
+      UPLOAD_STORAGE: "memory",
+      UPLOAD_STORAGE_ALLOW_EPHEMERAL: "true",
     },
   },
   projects: [

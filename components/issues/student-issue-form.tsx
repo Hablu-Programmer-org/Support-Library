@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 
 import { createStudentIssueAction } from "@/actions/issues";
 import { CheckCircleIcon, HelpCircleIcon } from "@/components/icons";
+import { AttachmentField } from "@/components/shared/attachment-field";
 import { nativeFieldClass, nativeTextareaClass } from "@/lib/config/fields";
 
 type StudentIssueFormProps = {
@@ -124,6 +125,18 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
             )}
           </label>
 
+          <div className="flex flex-col gap-1.5">
+            <AttachmentField
+              label="Screenshots (optional)"
+              description="PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Screenshots are only visible to the support team."
+            />
+            {state.fieldErrors?.uploads?.[0] && (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.uploads[0]}
+              </p>
+            )}
+          </div>
+
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Image / file links <span className="text-slate-400 dark:text-slate-500">(optional)</span>
@@ -144,8 +157,8 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 One per line: <span className="font-medium">Title|https://link</span> (optionally add
-                |image or |pdf and a short note). Upload the file somewhere public first — we store
-                links, not files.
+                |image or |pdf and a short note). Use this for files that are already hosted
+                somewhere, or for formats the uploader does not accept.
               </p>
             )}
           </label>

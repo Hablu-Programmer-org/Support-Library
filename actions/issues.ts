@@ -24,6 +24,13 @@ import {
   supportReplyInputSchema,
   type SupportIssueInput,
 } from "@/lib/validation";
+import {
+  discardUploads,
+  formFiles,
+  ingestUploads,
+  UploadValidationError,
+  type IngestedUpload,
+} from "@/lib/uploads/ingest";
 import { CASE_STATUSES, type CaseStatus } from "@/models";
 import { withCsrfProtection } from "@/lib/safe-action";
 
@@ -116,7 +123,17 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     const solutionVideoLinks = parseVideoLinks(formValue(formData, "solutionVideoLinks"));
     const solveIssue = formData.get("solveIssue") === "on";
 
-    const hasSolution = Boolean(solutionBody || solutionFileLinks.length || solutionVideoLinks.length);
+    // Read the file inputs up front: they decide whether the answer section was
+    // filled in at all, and whether the upload budget needs to be charged.
+    const issueFiles = formFiles(formData, "uploads");
+    const solutionFiles = formFiles(formData, "solutionUploads");
+
+    const hasSolution = Boolean(
+      solutionBody ||
+        solutionFileLinks.length ||
+        solutionVideoLinks.length ||
+        solutionFiles.length,
+    );
     let solution: z.infer<typeof initialReplySchema> | null;
     try {
       solution = hasSolution
@@ -139,9 +156,34 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
       return { fieldErrors: { _form: ["Invalid answer data"] } };
     }
 
-    let supportIssue;
     try {
       await consumeRateLimit("issue.create", guard.session.user.id);
+      if (issueFiles.length || solutionFiles.length) {
+        await consumeRateLimit("attachment.upload", guard.session.user.id);
+      }
+    } catch {
+      return { fieldErrors: { _form: ["Too many submissions. Please wait a moment and try again."] } };
+    }
+
+    // Bytes are stored before the document is written, so a failed write has to
+    // clean up after itself. `createIssue` discards these objects when the
+    // operation id is replayed or the write loses a race; anything that fails
+    // before it is reached is discarded here.
+    let issueUploads: IngestedUpload[] = [];
+    let solutionUploads: IngestedUpload[] = [];
+    try {
+      issueUploads = await ingestUploads(issueFiles, guard.session.user.id);
+      solutionUploads = await ingestUploads(solutionFiles, guard.session.user.id, "solutionUploads");
+    } catch (err) {
+      await discardUploads([...issueUploads, ...solutionUploads]);
+      if (err instanceof UploadValidationError) {
+        return { fieldErrors: { [err.field]: [err.message] } };
+      }
+      return { fieldErrors: { _form: ["Unable to attach the selected files. Please try again later."] } };
+    }
+
+    let supportIssue;
+    try {
       supportIssue = await createIssue(
         { ...issueData, status: "OPEN" },
         guard.session.user.id,
@@ -149,6 +191,8 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
         operationId,
         solution,
         solveIssue,
+        issueUploads,
+        solutionUploads,
       );
     } catch {
       return { fieldErrors: { _form: ["Unable to create the issue. Please try again later."] } };
@@ -266,9 +310,36 @@ export async function createStudentIssueAction(
       return { fieldErrors: { _form: ["Unable to submit the issue. Please try again later."] } };
     }
 
+    // Attachments the student picked for this submission. The filenames are never
+    // added to the search index: they routinely contain a person's name, which
+    // would turn a previously private value into something searchable.
+    const studentFiles = formFiles(formData, "uploads");
+
     try {
       await consumeRateLimit("issue.create.student", guard.session.user.id);
-      await createIssue(issueData, guard.session.user.id, "STUDENT", operationId, null, false);
+      if (studentFiles.length) {
+        await consumeRateLimit("attachment.upload", guard.session.user.id);
+      }
+    } catch {
+      return {
+        fieldErrors: {
+          _form: ["Too many submissions. Please wait a few minutes and try again."],
+        },
+      };
+    }
+
+    let uploads: IngestedUpload[] = [];
+    try {
+      uploads = await ingestUploads(studentFiles, guard.session.user.id);
+    } catch (err) {
+      if (err instanceof UploadValidationError) {
+        return { fieldErrors: { [err.field]: [err.message] } };
+      }
+      return { fieldErrors: { _form: ["Unable to attach the selected files. Please try again later."] } };
+    }
+
+    try {
+      await createIssue(issueData, guard.session.user.id, "STUDENT", operationId, null, false, uploads);
     } catch {
       return { fieldErrors: { _form: ["Unable to submit the issue. Please try again later."] } };
     }

@@ -10,6 +10,8 @@ export const AUDIT_ACTIONS = [
   "REPLY_CREATE",
   "REPLY_EDIT",
   "REPLY_DELETE",
+  "ATTACHMENT_UPLOAD",
+  "ATTACHMENT_DELETE",
   "OAUTH_CALLBACK",
 ] as const;
 
@@ -19,7 +21,11 @@ const auditEventSchema = new mongoose.Schema(
   {
     actorId: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
     action: { type: String, enum: AUDIT_ACTIONS, required: true, index: true },
-    resourceType: { type: String, enum: ["SupportIssue", "SupportReply", "OAuthCallback"], required: true },
+    resourceType: {
+      type: String,
+      enum: ["SupportIssue", "SupportReply", "SupportAttachment", "OAuthCallback"],
+      required: true,
+    },
     resourceId: { type: String, required: true, trim: true, maxlength: 64 },
     result: { type: String, enum: AUDIT_RESULTS, required: true, index: true },
     timestamp: { type: Date, required: true, default: Date.now, index: true },

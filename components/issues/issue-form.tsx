@@ -7,6 +7,7 @@ import { createIssueAction, updateIssueAction } from "@/actions/issues";
 import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionCard } from "@/components/issues/section-card";
+import { AttachmentField } from "@/components/shared/attachment-field";
 import {
   CheckCircleIcon,
   FileTextIcon,
@@ -446,7 +447,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
 
           <FieldWrapper
             label="Image / File Links"
-            description="One per line: title|https://url|type|note. HTTPS links only; files are not uploaded."
+            description="One per line: title|https://url|type|note. HTTPS links only. Images can also be uploaded directly in the Screenshots field."
             error={state.fieldErrors?.fileLinks?.[0]}
           >
             <ControlledTextarea
@@ -473,6 +474,15 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
               placeholder="Walkthrough|https://youtu.be/abc123|01:30|Reproduces the bug"
             />
           </FieldWrapper>
+
+          {/* Attachments are create-only: editing an issue cannot add or remove
+              files, so the picker only appears on the create form. */}
+          {!supportIssue && (
+            <div className="flex flex-col gap-1.5">
+              <AttachmentField description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
+              <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
+            </div>
+          )}
         </div>
       </SectionCard>
 
@@ -504,6 +514,15 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
                 placeholder="Write your solution here..."
               />
             </FieldWrapper>
+
+            <div className="flex flex-col gap-1.5">
+              <AttachmentField
+                name="solutionUploads"
+                label="Answer screenshots"
+                description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them."
+              />
+              <ErrorMessage error={state.fieldErrors?.solutionUploads?.[0]} />
+            </div>
 
             <FieldWrapper
               label="File Links (PDF/Images)"

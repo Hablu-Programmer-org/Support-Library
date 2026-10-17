@@ -70,3 +70,12 @@ The script redacts URI credentials, conditionally updates against source values,
 and exits nonzero on conflicts or invalid data. Rollback is restoration of the
 pre-migration encrypted dump; no plaintext export is produced. Retain old
 encryption key versions through the backup retention window.
+
+## R2 key rotation
+
+1. Create a new access key in the Cloudflare R2 dashboard.
+2. Set `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` to the new values on the deployment.
+3. Redeploy; the new key is picked up at boot (`readR2Config` reads env at process start).
+4. Revoke the old key only after every running instance has restarted.
+
+Rotating the bucket or account ID requires migrating every object key (keys are stored in Mongo), so prefer rotating credentials only. Object keys are immutable and never contain the client filename.

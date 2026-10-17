@@ -8,6 +8,12 @@ import { operationIdSchema } from "@/lib/mutation-security";
 import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 import { addReply, editReply, softDeleteReply } from "@/lib/services/replies";
+import {
+  formFiles,
+  ingestUploads,
+  UploadValidationError,
+  type IngestedUpload,
+} from "@/lib/uploads/ingest";
 import { supportReplyInputSchema } from "@/lib/validation";
 import { z } from "zod";
 import { withCsrfProtection } from "@/lib/safe-action";
@@ -22,6 +28,8 @@ export async function addReplyAction(issueId: string, formData: FormData) {
     const guard = await assertRole("ADMIN", "MENTOR");
     if (!guard.ok) redirect("/unauthorized");
 
+    const files = formFiles(formData, "uploads");
+
     let reply: Awaited<ReturnType<typeof addReply>>;
     try {
       const parsed = supportReplyInputSchema.parse({
@@ -31,13 +39,31 @@ export async function addReplyAction(issueId: string, formData: FormData) {
         videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
       });
       const operationId = operationIdSchema.parse(formData.get("operationId"));
+
       await consumeRateLimit("reply.add", guard.session.user.id, {
         action: "REPLY_CREATE",
-        resourceType: "SupportIssue",
+        resourceType: "SupportReply",
         resourceId: issueId,
       });
-      reply = await addReply(parsed, guard.session.user.id, operationId);
-    } catch {
+      if (files.length) {
+        await consumeRateLimit("attachment.upload", guard.session.user.id);
+      }
+
+      let uploads: IngestedUpload[] = [];
+      try {
+        uploads = await ingestUploads(files, guard.session.user.id);
+      } catch (error) {
+        // Surface the file problem itself (too large, wrong type, ...) rather than
+        // the generic failure, so the user knows what to change.
+        if (error instanceof UploadValidationError) throw error;
+        throw new Error("Upload failed");
+      }
+
+      // `addReply` deletes these objects when the write is a replay, loses the
+      // duplicate-key race, or discovers the issue is already gone.
+      reply = await addReply(parsed, guard.session.user.id, operationId, uploads);
+    } catch (error) {
+      if (error instanceof UploadValidationError) throw new Error(error.message);
       throw new Error("Unable to add the response. Please try again later.");
     }
     if (!reply) throw new Error("Issue not found");

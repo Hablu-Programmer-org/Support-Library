@@ -18,6 +18,8 @@ export type RateLimitScope =
   | "reply.add"
   | "reply.edit"
   | "reply.delete"
+  | "attachment.upload"
+  | "attachment.download"
   | "oauth.signin"
   | "oauth.callback";
 
@@ -35,6 +37,11 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "reply.add": { limit: 30, windowMs: 60_000 },
   "reply.edit": { limit: 30, windowMs: 60_000 },
   "reply.delete": { limit: 30, windowMs: 60_000 },
+  // Uploads are heavier than any other mutation, so they get a tighter budget.
+  "attachment.upload": { limit: 20, windowMs: 60_000 },
+  // Downloads are read-only but can be used to enumerate or scrape, so they are
+  // budgeted generously for normal reading yet bounded overall.
+  "attachment.download": { limit: 300, windowMs: 60_000 },
   "oauth.signin": { limit: 10, windowMs: 60_000 },
   "oauth.callback": { limit: 10, windowMs: 60_000 },
 };

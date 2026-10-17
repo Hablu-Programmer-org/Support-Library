@@ -3,15 +3,13 @@ import "server-only";
 import mongoose, { type ClientSession } from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import {
-  assertOperationPayload,
-  mutationRequestHash,
-  operationIdSchema,
-} from "@/lib/mutation-security";
+import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import { isAdmin, type UserRole } from "@/lib/roles";
 import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
+import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
 
@@ -25,6 +23,7 @@ export type SupportReplyListItem = {
   body: string;
   fileLinks: Array<{ title: string; url: string; type?: string | null; note?: string | null }>;
   videoLinks: Array<{ title: string; url: string; timestamp?: string | null; summary?: string | null }>;
+  uploads: AttachmentView[];
   createdAt?: Date;
   updatedAt?: Date;
   editedAt?: Date | null;
@@ -42,6 +41,7 @@ const toReplyListItem = (reply: LeanDoc, authors: Map<string, LeanDoc> = new Map
     body: String(reply.body),
     fileLinks: Array.isArray(reply.fileLinks) ? reply.fileLinks as SupportReplyListItem["fileLinks"] : [],
     videoLinks: Array.isArray(reply.videoLinks) ? reply.videoLinks as SupportReplyListItem["videoLinks"] : [],
+    uploads: toAttachmentViews(reply.uploads),
     createdAt: reply.createdAt as Date | undefined,
     updatedAt: reply.updatedAt as Date | undefined,
     editedAt: reply.editedAt as Date | null | undefined,
@@ -132,9 +132,16 @@ function isDuplicateKeyError(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
-export async function addReply(input: SupportReplyInput, authorId: string, operationId: string) {
+export async function addReply(
+  input: SupportReplyInput,
+  authorId: string,
+  operationId: string,
+  uploads: IngestedUpload[] = [],
+) {
   const parsed = supportReplyInputSchema.parse(input);
   const parsedOperationId = operationIdSchema.parse(operationId);
+  // Uploads stay out of the hash: object keys are server-generated, so a retry
+  // that carries the same client payload must still be recognized as a replay.
   const requestHash = mutationRequestHash({ input: parsed });
   await dbConnect();
   const authorObjectId = new mongoose.Types.ObjectId(authorId);
@@ -144,17 +151,19 @@ export async function addReply(input: SupportReplyInput, authorId: string, opera
     createOperationId: parsedOperationId,
   }).lean();
   if (existing) {
-    assertOperationPayload(existing.createOperationHash, requestHash);
+    await settleReplayedUploads(uploads, existing.createOperationHash, requestHash, existing.uploads);
     return toReplyListItem(existing);
   }
 
+  let reply: SupportReplyListItem | null;
   try {
-    return await mongoose.connection.transaction(async (session) => {
+    reply = await mongoose.connection.transaction(async (session) => {
       const supportIssue = await requireLiveIssue(parsed.issueId, session);
       if (!supportIssue) return null;
 
-      const [reply] = await SupportReplyModel.create([{
+      const [createdReply] = await SupportReplyModel.create([{
         ...parsed,
+        uploads,
         authorId: authorObjectId,
         createOperationId: parsedOperationId,
         createOperationHash: requestHash,
@@ -162,25 +171,45 @@ export async function addReply(input: SupportReplyInput, authorId: string, opera
       await requirePublicationReview(parsed.issueId, authorId, session);
       await refreshIssueReplySearchText(parsed.issueId, session);
       const context = await getRequestContext();
+      for (const upload of uploads) {
+        await recordAuditEvent({
+          actorId: authorId,
+          action: "ATTACHMENT_UPLOAD",
+          resourceType: "SupportAttachment",
+          resourceId: upload._id,
+          result: "SUCCEEDED",
+        }, context, session);
+      }
       await recordAuditEvent({
         actorId: authorId,
         action: "REPLY_CREATE",
         resourceType: "SupportReply",
-        resourceId: String(reply._id),
+        resourceId: String(createdReply._id),
         result: "SUCCEEDED",
       }, context, session);
-      return toReplyListItem(reply.toObject());
+      return toReplyListItem(createdReply.toObject());
     });
   } catch (error) {
-    if (!isDuplicateKeyError(error)) throw error;
+    if (!isDuplicateKeyError(error)) {
+      // The transaction rolled back, so nothing references these objects.
+      await discardUploads(uploads);
+      throw error;
+    }
     const duplicate = await SupportReplyModel.findOne({
       authorId: authorObjectId,
       createOperationId: parsedOperationId,
     }).lean();
-    if (!duplicate) throw error;
-    assertOperationPayload(duplicate.createOperationHash, requestHash);
+    if (!duplicate) {
+      await discardUploads(uploads);
+      throw error;
+    }
+    await settleReplayedUploads(uploads, duplicate.createOperationHash, requestHash, duplicate.uploads);
     return toReplyListItem(duplicate);
   }
+
+  // The issue disappeared between page load and submit; drop the orphaned files.
+  if (!reply) await discardUploads(uploads);
+  return reply;
 }
 
 export async function listReplies(issueId: string, redactActorIds = false) {
@@ -193,7 +222,11 @@ export async function listReplies(issueId: string, redactActorIds = false) {
   const authors = await buildAuthorMap(replies as LeanDoc[]);
   return (replies as LeanDoc[]).map((reply) => {
     const mapped = toReplyListItem(reply, authors);
-    return redactActorIds ? { ...mapped, authorId: "" } : mapped;
+    // The public projection strips uploads entirely: the bytes are staff-only by
+    // policy, and even the id and original filename would leak — filenames
+    // routinely contain a person's name, which is exactly what this app is
+    // careful never to expose to a student.
+    return redactActorIds ? { ...mapped, authorId: "", uploads: [] } : mapped;
   });
 }
 

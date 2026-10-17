@@ -15,6 +15,7 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached file links or video walkthrough links.
+- Attach up to a few screenshots (PNG, JPEG, GIF or WebP) to a new request. Screenshots are only visible to the support team, not published.
 - Submit a new support request with a title, a description, and optional file/video links.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.

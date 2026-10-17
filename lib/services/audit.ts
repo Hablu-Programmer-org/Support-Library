@@ -12,7 +12,7 @@ import {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditResult = (typeof AUDIT_RESULTS)[number];
-export type AuditResourceType = "SupportIssue" | "SupportReply" | "OAuthCallback";
+export type AuditResourceType = "SupportIssue" | "SupportReply" | "SupportAttachment" | "OAuthCallback";
 
 export interface AuditEventContext {
   ip?: string;

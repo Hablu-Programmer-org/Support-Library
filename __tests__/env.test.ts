@@ -22,6 +22,15 @@ const MANAGED_VARS = [
   "AUTH_URL",
   "AUTH_TRUST_HOST",
   "TRUSTED_PROXY_HOPS",
+  "UPLOAD_STORAGE",
+  "UPLOAD_STORAGE_ALLOW_EPHEMERAL",
+  "R2_ACCOUNT_ID",
+  "R2_BUCKET",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+  "R2_ENDPOINT",
+  "MAX_UPLOADS_PER_ITEM",
+  "MAX_UPLOAD_BYTES",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -99,6 +108,68 @@ describe("validateEnv", () => {
     setEnv({ NODE_ENV: "production", ...studentEmailVars });
 
     expect(() => validateEnv()).toThrow(/Invalid production environment/i);
+  });
+
+  it("rejects an unknown UPLOAD_STORAGE mode", () => {
+    setEnv({ NODE_ENV: "development", ...studentEmailVars, UPLOAD_STORAGE: "s3" });
+
+    expect(() => validateEnv()).toThrow(/UPLOAD_STORAGE/);
+  });
+
+  it("rejects the in-memory store in production", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "memory",
+    });
+
+    expect(() => validateEnv()).toThrow(/UPLOAD_STORAGE/);
+  });
+
+  it("rejects UPLOAD_STORAGE=r2 without credentials", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "r2",
+      R2_ACCOUNT_ID: "account",
+    });
+
+    expect(() => validateEnv()).toThrow(/R2_BUCKET/);
+  });
+
+  it("accepts a fully configured r2 deployment", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "r2",
+      R2_ACCOUNT_ID: "account",
+      R2_BUCKET: "bucket",
+      R2_ACCESS_KEY_ID: "key",
+      R2_SECRET_ACCESS_KEY: "secret",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts the in-memory store outside production", () => {
+    setEnv({ NODE_ENV: "development", ...studentEmailVars, UPLOAD_STORAGE: "memory" });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts ephemeral memory storage in production only when explicitly allowed", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "memory",
+      UPLOAD_STORAGE_ALLOW_EPHEMERAL: "true",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
   });
 
   it("accepts a fully configured production environment", () => {
