@@ -8,6 +8,7 @@ import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionCard } from "@/components/issues/section-card";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import { formatByteSize } from "@/components/shared/attachment-list";
 import {
   CheckCircleIcon,
   FileTextIcon,
@@ -52,13 +53,13 @@ type IssueFormProps = {
     studentName?: string;
     studentEmail?: string | null;
     lmsUserId?: string | null;
-    fileLinks?: { title: string; url: string; type?: string | null; note?: string | null }[];
     videoLinks?: {
       title: string;
       url: string;
       timestamp?: string | null;
       summary?: string | null;
     }[];
+    uploads?: { id: string; originalName: string; byteSize: number }[];
     updatedAt?: string;
   };
   minimal?: boolean;
@@ -71,7 +72,6 @@ type FormData = {
   lmsUserId: string;
   title: string;
   question: string;
-  fileLinks: string;
   videoLinks: string;
   status: string;
   priority: string;
@@ -81,27 +81,9 @@ type FormData = {
   contentSlug: string;
   tags: string;
   solutionBody: string;
-  solutionFileLinks: string;
   solutionVideoLinks: string;
   solveIssue: boolean;
 };
-
-/**
- * Renders stored links back into the `title|url|type|note` line format the
- * `fileLinks` textarea expects. Empty trailing segments are trimmed so a link
- * with only a title+url round-trips cleanly.
- */
-function formatFileLinks(
-  links?: { title: string; url: string; type?: string | null; note?: string | null }[],
-) {
-  return (links ?? [])
-    .map((link) => {
-      const parts = [link.title, link.url, link.type ?? "", link.note ?? ""];
-      while (parts.length > 2 && !parts[parts.length - 1]) parts.pop();
-      return parts.join("|");
-    })
-    .join("\n");
-}
 
 function formatVideoLinks(
   links?: {
@@ -268,7 +250,6 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
     lmsUserId: supportIssue?.lmsUserId ?? "",
     title: supportIssue?.title ?? "",
     question: supportIssue?.question ?? "",
-    fileLinks: formatFileLinks(supportIssue?.fileLinks),
     videoLinks: formatVideoLinks(supportIssue?.videoLinks),
     status: supportIssue?.status ?? "OPEN",
     priority: supportIssue?.priority ?? "NORMAL",
@@ -278,7 +259,6 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
     contentSlug: supportIssue?.contentSlug ?? "",
     tags: supportIssue?.tags.join(", ") ?? "",
     solutionBody: "",
-    solutionFileLinks: "",
     solutionVideoLinks: "",
     solveIssue: true,
   };
@@ -446,21 +426,6 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
           </FieldWrapper>
 
           <FieldWrapper
-            label="Image / File Links"
-            description="One per line: title|https://url|type|note. HTTPS links only. Images can also be uploaded directly in the Screenshots field."
-            error={state.fieldErrors?.fileLinks?.[0]}
-          >
-            <ControlledTextarea
-              name="fileLinks"
-              value={formData.fileLinks}
-              onChange={handleChange("fileLinks")}
-              rows={2}
-              error={state.fieldErrors?.fileLinks?.[0]}
-              placeholder="Screenshot|https://example.com/error.png|image|What the student sees"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
             label="Video Links"
             description="One per line: title|https://url|timestamp|summary"
             error={state.fieldErrors?.videoLinks?.[0]}
@@ -475,9 +440,76 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
             />
           </FieldWrapper>
 
-          {/* Attachments are create-only: editing an issue cannot add or remove
-              files, so the picker only appears on the create form. */}
+          {/* New issues use the first picker; edit mode shows existing private
+              screenshots below and provides a second picker for additions. */}
           {!supportIssue && (
+            <div className="flex flex-col gap-1.5">
+              <AttachmentField description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
+              <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
+            </div>
+          )}
+
+          {supportIssue && (supportIssue.uploads?.length ?? 0) > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing screenshots
+              </span>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {(supportIssue.uploads ?? []).map((upload) => {
+                  const src = `/api/attachments/${upload.id}`;
+                  return (
+                    <li
+                      key={upload.id}
+                      className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+                    >
+                      <a
+                        href={src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block bg-slate-50 dark:bg-slate-950"
+                        aria-label={`Open ${upload.originalName}`}
+                      >
+                        {/* A direct image request carries the staff session cookie;
+                            next/image's optimizer request would not. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt={upload.originalName}
+                          loading="lazy"
+                          decoding="async"
+                          className="mx-auto h-40 w-full object-contain"
+                        />
+                      </a>
+                      <div className="flex items-center justify-between gap-3 px-3 py-2">
+                        <div className="min-w-0">
+                          <div
+                            className="truncate text-sm text-slate-700 dark:text-slate-300"
+                            title={upload.originalName}
+                          >
+                            {upload.originalName}
+                          </div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500">
+                            {formatByteSize(upload.byteSize)}
+                          </div>
+                        </div>
+                        <label className="flex shrink-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <input
+                            type="checkbox"
+                            name="removeUploadIds"
+                            value={upload.id}
+                            className="h-4 w-4 rounded border-slate-300 text-danger focus:ring-danger-500"
+                          />
+                          Remove
+                        </label>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          {supportIssue && (
             <div className="flex flex-col gap-1.5">
               <AttachmentField description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
               <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
@@ -523,21 +555,6 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
               />
               <ErrorMessage error={state.fieldErrors?.solutionUploads?.[0]} />
             </div>
-
-            <FieldWrapper
-              label="File Links (PDF/Images)"
-              description="One per line: title|https://url|type|note"
-              error={state.fieldErrors?.solutionFileLinks?.[0]}
-            >
-              <ControlledTextarea
-                name="solutionFileLinks"
-                value={formData.solutionFileLinks}
-                onChange={handleChange("solutionFileLinks")}
-                rows={2}
-                error={state.fieldErrors?.solutionFileLinks?.[0]}
-                placeholder="Screenshot|https://example.com/fix.png|image|Annotated screenshot"
-              />
-            </FieldWrapper>
 
             <FieldWrapper
               label="Video Links"

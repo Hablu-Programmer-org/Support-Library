@@ -21,7 +21,6 @@ export type SupportReplyListItem = {
   authorId: string;
   authorName?: string;
   body: string;
-  fileLinks: Array<{ title: string; url: string; type?: string | null; note?: string | null }>;
   videoLinks: Array<{ title: string; url: string; timestamp?: string | null; summary?: string | null }>;
   uploads: AttachmentView[];
   createdAt?: Date;
@@ -39,7 +38,6 @@ const toReplyListItem = (reply: LeanDoc, authors: Map<string, LeanDoc> = new Map
     authorId,
     authorName: author?.name as string | undefined,
     body: String(reply.body),
-    fileLinks: Array.isArray(reply.fileLinks) ? reply.fileLinks as SupportReplyListItem["fileLinks"] : [],
     videoLinks: Array.isArray(reply.videoLinks) ? reply.videoLinks as SupportReplyListItem["videoLinks"] : [],
     uploads: toAttachmentViews(reply.uploads),
     createdAt: reply.createdAt as Date | undefined,

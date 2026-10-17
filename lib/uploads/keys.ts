@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 /**
  * Builds the storage object key for one upload.
  *
+ * A backend may return a backend-specific key after writing; that returned value
+ * is what the attachment document persists.
+ *
  * The key is entirely server-generated: the client filename never reaches the
  * bucket path, so a hostile name (`../../etc/passwd`, a 4 KB unicode string, a
  * name that collides with another object) can only ever be a display label. The

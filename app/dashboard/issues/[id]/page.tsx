@@ -125,10 +125,7 @@ export default async function IssueDetailPage({
               <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg">
                 {supportIssue.question}
               </p>
-              <LinkList
-                fileLinks={supportIssue.fileLinks}
-                videoLinks={supportIssue.videoLinks}
-              />
+              <LinkList videoLinks={supportIssue.videoLinks} />
               {/* `staffIssue` is set only for staff; the published projection has
                   no uploads at all, so students never receive their ids. */}
               <AttachmentList uploads={staffIssue?.uploads ?? []} />

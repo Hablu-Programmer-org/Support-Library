@@ -21,6 +21,8 @@ import { recordAuditEvent } from "@/lib/services/audit";
 import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
+import { uploadLimit } from "@/lib/uploads/limits";
+import { UploadValidationError } from "@/lib/uploads/ingest";
 import {
   CASE_PRIORITIES,
   SupportReplyModel,
@@ -32,19 +34,12 @@ import {
 type LeanDoc = Record<string, unknown>;
 
 const PUBLIC_ISSUE_FIELDS =
-  "title question fileLinks videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+  "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
 
 /** LOW=1 … URGENT=4 — string order would be wrong, so sorting uses this rank. */
 const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
   CASE_PRIORITIES.map((priority, index) => [priority, index + 1]),
 );
-
-export type IssueFileLink = {
-  title: string;
-  url: string;
-  type?: string | null;
-  note?: string | null;
-};
 
 export type IssueVideoLink = {
   title: string;
@@ -60,7 +55,6 @@ export type SupportIssueListItem = {
   lmsUserId?: string | null;
   title: string;
   question: string;
-  fileLinks: IssueFileLink[];
   videoLinks: IssueVideoLink[];
   uploads: AttachmentView[];
   status: CaseStatus;
@@ -81,7 +75,6 @@ export type PublicIssueDetail = Pick<
   | "id"
   | "title"
   | "question"
-  | "fileLinks"
   | "videoLinks"
   | "status"
   | "priority"
@@ -114,7 +107,6 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   lmsUserId: (item.lmsUserId as string | null) ?? null,
   title: String(item.title),
   question: String(item.question),
-  fileLinks: Array.isArray(item.fileLinks) ? item.fileLinks as IssueFileLink[] : [],
   videoLinks: Array.isArray(item.videoLinks) ? item.videoLinks as IssueVideoLink[] : [],
   uploads: toAttachmentViews(item.uploads),
   status: item.status as CaseStatus,
@@ -136,7 +128,6 @@ const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
-    fileLinks: mapped.fileLinks,
     videoLinks: mapped.videoLinks,
     status: mapped.status,
     priority: mapped.priority,
@@ -337,6 +328,8 @@ export async function updateIssue(
   actorId: string,
   actorRole: "ADMIN" | "MENTOR",
   expectedUpdatedAt: Date,
+  uploads: IngestedUpload[] = [],
+  removeUploadIds: string[] = [],
 ) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
@@ -378,43 +371,133 @@ export async function updateIssue(
     updateData.mentorId = new mongoose.Types.ObjectId(actorId);
   }
 
-  return mongoose.connection.transaction(async (session) => {
-    const replies = await SupportReplyModel.find({ issueId: id, deletedAt: null })
-      .select("body")
-      .session(session)
-      .lean();
-    updateData.searchText = buildIssueSearchTextWithReplies(
-      parsed,
-      replies.map((reply) => reply.body),
-    );
+  let result: ReturnType<typeof toIssueListItem> | null = null;
+  let removedUploads: { key: string }[] = [];
+  try {
+    result = await mongoose.connection.transaction(async (session) => {
+      const existing = await SupportIssueModel.findOne({ _id: id, deletedAt: null })
+        .select("uploads")
+        .session(session)
+        .lean();
+      if (!existing) return null;
 
-    const supportIssue = await SupportIssueModel.findOneAndUpdate(
-      { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
-    {
-      $set: updateData,
-      $unset: { studentEmail: "", studentEmailHash: "" },
-        $push: {
-          publicationHistory: {
-            action: "CONTENT_CHANGED",
-            actorId: new mongoose.Types.ObjectId(actorId),
-            at: new Date(),
+      const removeSet = new Set(removeUploadIds);
+      const removed = ((existing.uploads ?? []) as unknown as LeanDoc[]).filter((entry) =>
+        removeSet.has(String(entry._id)),
+      );
+      const kept = ((existing.uploads ?? []) as unknown as LeanDoc[]).filter(
+        (entry) => !removeSet.has(String(entry._id)),
+      );
+      removedUploads = removed as unknown as { key: string }[];
+
+      const replies = await SupportReplyModel.find({ issueId: id, deletedAt: null })
+        .select("body")
+        .session(session)
+        .lean();
+      updateData.searchText = buildIssueSearchTextWithReplies(
+        parsed,
+        replies.map((reply) => reply.body),
+      );
+
+      // Guard the per-item cap across kept + newly added uploads: ingestUploads
+      // only sees the incoming batch, so the combined total must be checked here.
+      const remaining = uploadLimit() - kept.length;
+      if (uploads.length > remaining) {
+        throw new UploadValidationError(
+          "uploads",
+          `This issue already has ${kept.length} screenshot(s); you can add at most ${Math.max(0, remaining)} more`,
+        );
+      }
+
+      updateData.uploads = [...kept, ...uploads];
+
+      const supportIssue = await SupportIssueModel.findOneAndUpdate(
+        { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
+        {
+          $set: updateData,
+          $unset: { studentEmail: "", studentEmailHash: "" },
+          $push: {
+            publicationHistory: {
+              action: "CONTENT_CHANGED",
+              actorId: new mongoose.Types.ObjectId(actorId),
+              at: new Date(),
+            },
           },
         },
-      },
-      { new: true, runValidators: true, session },
-    ).lean();
+        { new: true, runValidators: true, session },
+      ).lean();
 
-    const context = await getRequestContext();
-    await recordAuditEvent({
-      actorId,
-      action: "ISSUE_UPDATE",
-      resourceType: "SupportIssue",
-      resourceId: id,
-      result: supportIssue ? "SUCCEEDED" : "DENIED",
-    }, context, session);
+      if (!supportIssue) {
+        const context = await getRequestContext();
+        await recordAuditEvent(
+          {
+            actorId,
+            action: "ISSUE_UPDATE",
+            resourceType: "SupportIssue",
+            resourceId: id,
+            result: "DENIED",
+          },
+          context,
+          session,
+        );
+        return null;
+      }
 
-    return supportIssue ? toIssueListItem(supportIssue) : null;
-  });
+      const context = await getRequestContext();
+      for (const upload of uploads) {
+        await recordAuditEvent(
+          {
+            actorId,
+            action: "ATTACHMENT_UPLOAD",
+            resourceType: "SupportAttachment",
+            resourceId: upload._id,
+            result: "SUCCEEDED",
+          },
+          context,
+          session,
+        );
+      }
+      for (const entry of removed) {
+        await recordAuditEvent(
+          {
+            actorId,
+            action: "ATTACHMENT_DELETE",
+            resourceType: "SupportAttachment",
+            resourceId: String(entry._id),
+            result: "SUCCEEDED",
+          },
+          context,
+          session,
+        );
+      }
+      await recordAuditEvent(
+        {
+          actorId,
+          action: "ISSUE_UPDATE",
+          resourceType: "SupportIssue",
+          resourceId: id,
+          result: "SUCCEEDED",
+        },
+        context,
+        session,
+      );
+
+      return toIssueListItem(supportIssue);
+    });
+  } catch (error) {
+    await discardUploads(uploads);
+    throw error;
+  }
+
+  if (!result) {
+    // Stale optimistic lock or missing issue: drop the freshly written objects.
+    await discardUploads(uploads);
+    return null;
+  }
+
+  // The removed objects are no longer referenced by any document.
+  await discardUploads(removedUploads);
+  return result;
 }
 
 export async function changeIssueStatus(id: string, status: CaseStatus, actorId: string, expectedUpdatedAt: Date) {
@@ -521,7 +604,6 @@ export async function listIssues(
                 $project: {
                   title: 1,
                   question: 1,
-                  fileLinks: 1,
                   videoLinks: 1,
                   status: 1,
                   priority: 1,
@@ -619,7 +701,6 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
-    fileLinks: mapped.fileLinks,
     videoLinks: mapped.videoLinks,
     status: mapped.status,
     priority: mapped.priority,

@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { request, test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 import { formFor, submitAndWait } from "./form-helpers";
 
@@ -33,9 +33,24 @@ test.describe("uploaded attachments", () => {
     png.writeUInt32BE(2, 16);
     png.writeUInt32BE(3, 20);
 
-    await form
-      .locator('input[name="uploads"]')
-      .setInputFiles({ name: "screenshot.png", mimeType: "image/png", buffer: png });
+    const uploadInput = form.locator('input[name="uploads"]');
+    await uploadInput.setInputFiles([
+      { name: "screenshot.png", mimeType: "image/png", buffer: png },
+      { name: "remove-me.png", mimeType: "image/png", buffer: Buffer.from(png) },
+    ]);
+
+    const localPreview = form.locator('img[alt="Preview of screenshot.png"]');
+    await expect(localPreview).toBeVisible();
+    await expect(localPreview).toHaveAttribute("src", /^blob:/);
+    await expect(form.locator('img[alt="Preview of remove-me.png"]')).toBeVisible();
+
+    await form.getByRole("button", { name: "Remove remove-me.png" }).click();
+    await expect(form.locator('img[alt="Preview of remove-me.png"]')).toHaveCount(0);
+    expect(
+      await uploadInput.evaluate((input: HTMLInputElement) =>
+        Array.from(input.files ?? []).map((file) => file.name),
+      ),
+    ).toEqual(["screenshot.png"]);
 
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
     await expect(pageErrors).toEqual([]);
@@ -66,12 +81,20 @@ test.describe("uploaded attachments", () => {
     expect(studentResponse.status()).toBe(200);
 
     // An unauthenticated client is turned away with 401, not a login redirect.
-    const anonContext = await request.newContext({
+    const anonContext = await browser.newContext({
       baseURL: test.info().project.use.baseURL as string,
+      storageState: { cookies: [], origins: [] },
     });
-    const anonResponse = await anonContext.get(src!);
-    expect(anonResponse.status()).toBe(401);
-    await anonContext.dispose();
+    const anonResponse = await anonContext.request.get(src!, { maxRedirects: 0 });
+    expect(
+      anonResponse.status(),
+      JSON.stringify({
+        url: anonResponse.url(),
+        contentType: anonResponse.headers()["content-type"],
+        cookies: (await anonContext.cookies()).map((cookie) => cookie.name),
+      }),
+    ).toBe(401);
+    await anonContext.close();
 
     await adminContext.close();
   });
@@ -97,7 +120,7 @@ test.describe("uploaded attachments", () => {
     await form.getByRole("button", { name: "Submit request", exact: true }).click();
 
     // The submission must not succeed: the field error is reported in place.
-    await expect(page.getByRole("alert")).toContainText(/not a supported image/i);
+    await expect(form.getByRole("alert")).toContainText(/not a supported image/i);
     await expect(page).toHaveURL(/\/dashboard\/issues\/new$/);
   });
 });

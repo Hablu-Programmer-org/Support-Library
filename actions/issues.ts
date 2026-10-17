@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import mongoose from "mongoose";
+
 import { assertRole } from "@/lib/auth-guard";
 import { findLmsUserByEmail } from "@/lib/lms";
 import { normalizeEmail } from "@/lib/email";
 import { operationIdSchema } from "@/lib/mutation-security";
-import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
+import { parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 import {
   changeIssueStatus,
@@ -54,8 +56,6 @@ const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
 const revisionSchema = z.string().datetime();
 
 /** Shown when the student typed something that yielded no parseable link. */
-const FILE_LINKS_HINT =
-  "Use one link per line: Title|https://example.com/image.png (optionally add |image and a note)";
 const VIDEO_LINKS_HINT =
   "Use one link per line: Title|https://youtu.be/videoId (optionally add |01:30 and a summary)";
 
@@ -86,7 +86,6 @@ const parseIssueForm = (formData: FormData) =>
     moduleSlug: formValue(formData, "moduleSlug"),
     contentSlug: formValue(formData, "contentSlug"),
     tags: parseTags(formValue(formData, "tags")),
-    fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
     videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });
 
@@ -119,7 +118,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     }
 
     const solutionBody = formValue(formData, "solutionBody");
-    const solutionFileLinks = parseFileLinks(formValue(formData, "solutionFileLinks"));
     const solutionVideoLinks = parseVideoLinks(formValue(formData, "solutionVideoLinks"));
     const solveIssue = formData.get("solveIssue") === "on";
 
@@ -130,7 +128,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
 
     const hasSolution = Boolean(
       solutionBody ||
-        solutionFileLinks.length ||
         solutionVideoLinks.length ||
         solutionFiles.length,
     );
@@ -138,8 +135,7 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     try {
       solution = hasSolution
         ? initialReplySchema.parse({
-            body: solutionBody ?? "See the attached file or video links for the answer.",
-            fileLinks: solutionFileLinks,
+            body: solutionBody ?? "See the attached screenshots or video links for the answer.",
             videoLinks: solutionVideoLinks,
           })
         : null;
@@ -148,7 +144,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
         return {
           fieldErrors: zodFieldErrors(err, {
             body: "solutionBody",
-            fileLinks: "solutionFileLinks",
             videoLinks: "solutionVideoLinks",
           }),
         };
@@ -259,16 +254,8 @@ export async function createStudentIssueAction(
       const profileName = profile.name.trim();
       const studentName = (profileName.length >= 2 ? profileName : email).slice(0, 120);
 
-      // Attachment links are optional. `parseFileLinks` silently drops invalid
-      // lines, so when the student typed something but nothing parsed we surface
-      // an explicit error instead of quietly losing their evidence.
-      const rawFileLinks = formValue(formData, "fileLinks");
       const rawVideoLinks = formValue(formData, "videoLinks");
-      const fileLinks = parseFileLinks(rawFileLinks);
       const videoLinks = parseVideoLinks(rawVideoLinks);
-      if (rawFileLinks && fileLinks.length === 0) {
-        return { fieldErrors: { fileLinks: [FILE_LINKS_HINT] } };
-      }
       if (rawVideoLinks && videoLinks.length === 0) {
         return { fieldErrors: { videoLinks: [VIDEO_LINKS_HINT] } };
       }
@@ -280,7 +267,6 @@ export async function createStudentIssueAction(
         lmsUserId: lmsUser?.userId,
         title: formValue(formData, "title"),
         question: formValue(formData, "question"),
-        fileLinks,
         videoLinks,
         status: "OPEN",
         priority: "NORMAL",
@@ -292,14 +278,12 @@ export async function createStudentIssueAction(
         if (
           fieldErrors.title ||
           fieldErrors.question ||
-          fieldErrors.fileLinks ||
           fieldErrors.videoLinks
         ) {
           return {
             fieldErrors: {
               title: fieldErrors.title,
               question: fieldErrors.question,
-              fileLinks: fieldErrors.fileLinks,
               videoLinks: fieldErrors.videoLinks,
             },
           };
@@ -375,9 +359,26 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
       return { fieldErrors: { status: ["Use the Archive issue action instead"] } };
     }
 
-    let supportIssue;
+    const removeUploadIds = formData
+      .getAll("removeUploadIds")
+      .map(String)
+      .filter((value) => mongoose.Types.ObjectId.isValid(value));
+    const newFiles = formFiles(formData, "uploads");
+
+    let newUploads: IngestedUpload[] = [];
     try {
       await consumeRateLimit("issue.update", guard.session.user.id);
+      if (newFiles.length) await consumeRateLimit("attachment.upload", guard.session.user.id);
+      newUploads = await ingestUploads(newFiles, guard.session.user.id);
+    } catch (err) {
+      if (err instanceof UploadValidationError) {
+        return { fieldErrors: { [err.field]: [err.message] } };
+      }
+      return { fieldErrors: { _form: ["Unable to attach the selected files. Please try again later."] } };
+    }
+
+    let supportIssue;
+    try {
       const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
       supportIssue = await updateIssue(
         id,
@@ -385,11 +386,17 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
         guard.session.user.id,
         guard.session.user.role as "ADMIN" | "MENTOR",
         new Date(expectedUpdatedAt),
+        newUploads,
+        removeUploadIds,
       );
     } catch {
+      await discardUploads(newUploads);
       return { fieldErrors: { _form: ["Unable to update the issue. Please try again later."] } };
     }
-    if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
+    if (!supportIssue) {
+      await discardUploads(newUploads);
+      return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
+    }
 
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);

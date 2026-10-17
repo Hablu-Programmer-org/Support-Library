@@ -1,27 +1,28 @@
 import "server-only";
 
 import { AwsClient } from "aws4fetch";
+import { createCloudinaryStore, readCloudinaryConfig } from "./cloudinary";
 
 /**
  * Upload object storage.
  *
- * Two backends, chosen by `UPLOAD_STORAGE`:
+ * Backends, chosen by `UPLOAD_STORAGE`:
  *
- * - `r2`     — Cloudflare R2 over its S3 API, signed with SigV4 (`aws4fetch`,
- *              a single dependency-free module).
- * - `memory` — a process-local `Map`, for development and E2E only. Objects are
- *              lost on restart and are not shared between instances.
+ * - `r2`         — Cloudflare R2 over its S3 API, signed with SigV4 (`aws4fetch`).
+ * - `cloudinary` — authenticated Cloudinary images, signed server-side.
+ * - `memory`     — a process-local `Map`, for development and E2E only. Objects
+ *                  are lost on restart and are not shared between instances.
  *
- * The bucket is always private: nothing is served straight from R2. Downloads go
+ * The store is always private: nothing is served straight from it. Downloads go
  * through `/api/attachments/[id]`, which authorizes the session before streaming
- * bytes, so no object URL ever leaks.
+ * bytes, so no object key or id ever leaks to the client.
  *
  * `UPLOAD_STORAGE` is unset by default, which means *disabled*: an unconfigured
  * deployment must never silently accept files it cannot store. Development and
  * test runs default to `memory` so the feature is usable without credentials.
  */
 
-export type UploadStorageMode = "disabled" | "memory" | "r2";
+export type UploadStorageMode = "disabled" | "memory" | "r2" | "cloudinary";
 
 export type StoredObject = {
   body: Uint8Array;
@@ -30,7 +31,7 @@ export type StoredObject = {
 
 export interface UploadStore {
   readonly mode: Exclude<UploadStorageMode, "disabled">;
-  put(key: string, body: Buffer, contentType: string): Promise<void>;
+  put(key: string, body: Buffer, contentType: string): Promise<string>;
   get(key: string): Promise<StoredObject | null>;
   delete(key: string): Promise<void>;
 }
@@ -60,6 +61,7 @@ export function readR2Config(): R2Config | null {
 export function uploadStorageMode(): UploadStorageMode {
   const raw = (process.env.UPLOAD_STORAGE ?? "").trim().toLowerCase();
   if (raw === "r2") return readR2Config() ? "r2" : "disabled";
+  if (raw === "cloudinary") return readCloudinaryConfig() ? "cloudinary" : "disabled";
   if (raw === "memory") return "memory";
   if (raw === "disabled") return "disabled";
   // Unset: convenient in development, never assumed in production.
@@ -80,6 +82,7 @@ const memoryStore: UploadStore = {
   async put(key, body, contentType) {
     // Copy: the caller's buffer may be reused or mutated after the call.
     memoryBucket.set(key, { body: new Uint8Array(body), contentType });
+    return key;
   },
   async get(key) {
     return memoryBucket.get(key) ?? null;
@@ -137,6 +140,7 @@ function createR2Store(config: R2Config): UploadStore {
         await drain(response);
         throw new Error(`Upload store rejected the write (${response.status})`);
       }
+      return key;
     },
     async get(key) {
       const response = await client.fetch(objectUrl(key));
@@ -167,7 +171,14 @@ let cachedStore: { mode: UploadStorageMode; store: UploadStore | null } | null =
 export function getUploadStore(): UploadStore | null {
   const mode = uploadStorageMode();
   if (cachedStore?.mode === mode) return cachedStore.store;
-  const store = mode === "r2" ? createR2Store(readR2Config()!) : mode === "memory" ? memoryStore : null;
+  const store =
+    mode === "r2"
+      ? createR2Store(readR2Config()!)
+      : mode === "cloudinary"
+        ? createCloudinaryStore(readCloudinaryConfig()!)
+        : mode === "memory"
+          ? memoryStore
+          : null;
   cachedStore = { mode, store };
   return store;
 }

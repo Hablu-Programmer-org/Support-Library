@@ -66,7 +66,7 @@ NODE_ENV=production
 
 # External links (HTTPS is always required)
 ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
-# Attachment links per type (file/video): 1-50; invalid/missing falls back to 10
+# Video links per issue/reply: 1-50; invalid/missing falls back to 10
 MAX_LINKS_PER_ITEM=10
 ```
 
@@ -232,11 +232,19 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 
 - [ ] MongoDB: Auth enabled, TLS, replica set
 - [ ] Network: VPC/firewall restricts MongoDB to app servers only
-- [ ] Secrets: `AUTH_SECRET`, OAuth secrets, DB passwords in secure vault
+- [ ] Secrets: `AUTH_SECRET`, OAuth secrets, DB passwords, and selected storage-backend credentials in secure vault
 - [ ] TLS: Traefik/Let's Encrypt or custom certs
 - [ ] Rate limits: Traefik middleware + app-level limits
 - [ ] Updates: Watch GitHub releases for security patches
 
-## Uploaded screenshots (Cloudflare R2)
+## Uploaded screenshots
 
-Screenshots are the only uploaded content. The Server Action body limit (`experimental.serverActions.bodySizeLimit`) is derived from `MAX_UPLOADS_PER_ITEM` and `MAX_UPLOAD_BYTES` at **build** time in `next.config.mjs`, so change those values and rebuild before deploying. Production must set `UPLOAD_STORAGE=r2` (or leave it unset to disable uploads); `memory` is rejected in production unless `UPLOAD_STORAGE_ALLOW_EPHEMERAL=true` is also set. R2 credentials (`R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are required when `UPLOAD_STORAGE=r2`, and `validateEnv` aborts startup if they are missing. The bucket stays private; downloads go through `/api/attachments/<id>` with the session's cookies.
+Screenshots are the only uploaded content. The Server Action body limit (`experimental.serverActions.bodySizeLimit`) is derived from `MAX_UPLOADS_PER_ITEM` and `MAX_UPLOAD_BYTES` at **build** time in `next.config.mjs`, so change those values and rebuild before deploying.
+
+Backends, chosen by `UPLOAD_STORAGE` (unset -> `disabled` in production, `memory` in dev):
+- `r2` (Cloudflare R2): needs `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (optional `R2_ENDPOINT`). Requires a payment method on the Cloudflare account.
+- `cloudinary` (free plan needs no card): needs `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. Assets use the `authenticated` delivery type and are retrieved only through the authorized app proxy. Free accounts accept images up to 10 MiB and 25 MP; the app's defaults are 5 MiB and 25 MP. A paid plan with a larger file limit may explicitly set `CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true` together with its larger `MAX_UPLOAD_BYTES`.
+- `memory`: in-process, lost on restart, rejected in production unless `UPLOAD_STORAGE_ALLOW_EPHEMERAL=true` (E2E/preview only).
+- `disabled` (default in production): uploads are turned off.
+
+The store stays private; downloads go through `/api/attachments/<id>` with the session's cookies. Switching backends on an existing deployment leaves previously stored objects unreachable (their keys are backend-specific), so migrate or accept the loss. `validateEnv` aborts startup when a selected backend's credentials are missing or its Cloudinary file-size configuration conflicts with the free-plan limit.

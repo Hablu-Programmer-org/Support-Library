@@ -1,8 +1,10 @@
-# Admin Guide � Hablu Support Library
+# Admin Guide � Hablu Support Library
 
 ## Uploaded screenshots
 
-Issues and replies may carry uploaded screenshots (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. The screenshot field is only available when creating an issue or reply; uploads cannot be added or removed when editing.
+Issues and replies may carry uploaded screenshots (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. Existing screenshots show authorized thumbnail previews on the issue edit form; select a preview to open the original, or use its checkbox to remove it. New screenshots can also be added there. Replies cannot be edited for attachments in this phase.
+
+Every screenshot picker also shows a browser-local preview immediately after selection, before the create/edit/reply form is submitted. A preview card's `Remove` button removes that image from the submitted file list. The local preview does not upload or expose the file early.
 
 y
 
@@ -169,7 +171,7 @@ Admins can see:
 - Responses.
 - Reply author names.
 - Reply creation and edited markers.
-- File links and video links.
+- Video links and private screenshots.
 - Course.
 - Batch.
 - Published date.
@@ -193,7 +195,6 @@ Student-visible issue fields:
 
 - Issue title.
 - Problem description.
-- Issue-level file links (title, type, hostname, note).
 - Issue-level video links (title, timestamp, hostname, summary).
 - Status.
 - Priority.
@@ -210,10 +211,6 @@ Student-visible reply fields:
 - Reply creation time.
 - `edited` marker.
 - Reply body.
-- File link title.
-- File link type.
-- File link hostname.
-- File link note.
 - Video link title.
 - Video link timestamp.
 - Video link hostname.
@@ -243,11 +240,8 @@ Check these public-facing areas:
 
 - Issue title.
 - Problem description.
-- Issue file/video links.
+- Issue video links.
 - Reply body.
-- File link title.
-- File link type.
-- File link note.
 - Video link title.
 - Video link summary.
 - External link URL.
@@ -262,15 +256,9 @@ Bad public wording:
 - `Rahim from batch 7 cannot pay with 01XXXXXXXXX.`
 - `rahim@example.com sent this screenshot with payment ID...`
 
-## 10. File And Video Link Review
+## 10. Video Link Review
 
-The MVP stores links only. It does not upload files into the Support Library.
-
-File link format:
-
-```text
-title|https://url|type|note
-```
+The app stores video links and privately uploads screenshot images. It does not accept PDF, ZIP, Office, or other generic file attachments.
 
 Video link format:
 
@@ -283,23 +271,22 @@ Important link behavior:
 - A bare URL line is accepted and uses the hostname as the title.
 - A missing URL scheme is prefixed with `https://`.
 - Invalid link lines can be ignored and not saved.
-- Up to 10 file links can be saved per issue or reply.
 - Up to 10 video links can be saved per issue or reply.
 - Production requires HTTPS links by default.
 - Optional environment configuration can restrict allowed link hosts.
 - Links open in a new browser tab.
 
-Links can appear in two places, and both are reviewed:
+Video links can appear in two places, and both are reviewed:
 
-- Issue-level `Image / File Links` and `Video Links` — the reporter's evidence, shown under the problem description.
-- Reply-level file/video links — part of a staff answer.
+- Issue-level `Video Links` — the reporter's evidence, shown under the problem description.
+- Reply-level video links — part of a staff answer.
 
 Admin review steps:
 
 1. Confirm every expected link appears after saving.
 2. Open important links to verify they work.
-3. Review link titles, types, notes, summaries, and URLs for PII.
-4. Do not publish links to private student files unless the file content is already safe for students.
+3. Review link titles, timestamps, summaries, and URLs for PII.
+4. Remember that privately uploaded screenshots are staff-only and excluded from the public projection.
 
 ## 11. Publish To Student Library
 
@@ -309,7 +296,7 @@ Publish workflow:
 
 1. Open `/dashboard/issues/[id]`.
 2. Review the issue title and problem description.
-3. Review the issue-level file/video links and all replies and their link metadata.
+3. Review the issue-level video links and all replies and their link metadata.
 4. Confirm no student personal information is present in public content.
 5. In the publish form, check the confirmation checkbox.
 6. Click `Publish to library`.
@@ -319,7 +306,7 @@ Publish workflow:
 The confirmation text is:
 
 ```text
-I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached file/video links, or public replies.
+I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached video links, or public replies.
 ```
 
 Publishing sets:
@@ -426,8 +413,8 @@ Admin reply permissions:
 Reply edit limitation:
 
 - The current edit form changes only the reply body.
-- File links and video links cannot be edited through the reply edit form.
-- To change links on an existing reply, delete the reply and add a corrected reply, or add a follow-up reply.
+- Video links and screenshots cannot be edited through the reply edit form.
+- To change a video link on an existing reply, delete the reply and add a corrected reply, or add a follow-up reply.
 
 Any successful reply add, edit, or delete makes the issue `INTERNAL` until admin review.
 
@@ -549,10 +536,9 @@ Student issue detail can show:
 - Issue title.
 - Last updated time.
 - Full problem description.
-- Issue-level file links and video links.
+- Issue-level video links.
 - Tags.
 - Answers and updates.
-- Reply file links.
 - Reply video links.
 - Course.
 - Batch.
@@ -708,9 +694,8 @@ Before publishing:
 - [ ] Open the issue detail page.
 - [ ] Confirm the issue title is general and safe.
 - [ ] Confirm the problem description contains no PII.
-- [ ] Review the issue-level file/video links (title, note, hostname, URL) for private screenshots.
+- [ ] Review the issue-level video links (title, timestamp, summary, hostname, URL).
 - [ ] Review every reply body.
-- [ ] Review every file link title, type, note, hostname, and URL.
 - [ ] Review every video link title, timestamp, summary, hostname, and URL.
 - [ ] Confirm expected links actually saved and open correctly.
 - [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or private screenshots are visible.

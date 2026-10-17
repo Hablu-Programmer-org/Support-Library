@@ -94,6 +94,12 @@ export async function GET(
     });
   }
   if (!object) return NOT_FOUND();
+  if (object.body.byteLength !== attachment.byteSize) {
+    return new NextResponse("Service unavailable", {
+      status: 503,
+      headers: { "Retry-After": "5", "Cache-Control": "no-store" },
+    });
+  }
 
   const body = new Uint8Array(object.body);
   return new NextResponse(body, {

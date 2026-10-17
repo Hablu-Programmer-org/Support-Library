@@ -18,8 +18,12 @@ export type DetectedImage = {
 /** Reject any image wider or taller than this, whatever the file size. */
 export const MAX_IMAGE_DIMENSION = 8000;
 
-/** Reject images above this many pixels (40 MP) as a decompression-bomb guard. */
-export const MAX_IMAGE_PIXELS = 40_000_000;
+/**
+ * Reject images above this many pixels (25 MP) as a decompression-bomb guard.
+ * This also matches Cloudinary Free's image-resolution ceiling, so an image the
+ * app accepts is not later rejected by the selected production backend.
+ */
+export const MAX_IMAGE_PIXELS = 25_000_000;
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 

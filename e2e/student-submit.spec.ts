@@ -25,15 +25,13 @@ test.describe("STUDENT issue submission", () => {
     const form = formFor(page, "Submit request");
     // The student picks no identity — it is derived from the session.
     await expect(form.locator('input[name="studentEmail"]')).toHaveCount(0);
+    await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
-    // Attachments are optional external HTTPS links; uploaded images are handled
-    // separately by the AttachmentsField and are covered in attachments.spec.ts.
-    await form
-      .locator('textarea[name="fileLinks"]')
-      .fill("Screenshot|https://example.com/buffering.png|image|Where it stalls");
+    // Uploaded screenshots are covered in attachments.spec.ts; videos remain
+    // external HTTPS links.
     await form
       .locator('textarea[name="videoLinks"]')
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
@@ -55,16 +53,15 @@ test.describe("STUDENT issue submission", () => {
     });
     const adminPage = await adminContext.newPage();
     await adminPage.goto("/dashboard/issues");
-    await expect(adminPage.getByRole("heading", { name: title })).toBeVisible();
-    await expect(adminPage.getByText("student@hablu-programmer.com")).toBeVisible();
+    const issueHeading = adminPage.getByRole("heading", { name: title });
+    const issueCard = adminPage.locator("a").filter({ has: issueHeading });
+    await expect(issueHeading).toBeVisible();
+    await expect(issueCard).toContainText("student@hablu-programmer.com");
 
-    // The student's attachment links are preserved end-to-end and render on the
-    // internal case view.
-    await adminPage.getByRole("heading", { name: title }).click();
+    // The student's video link is preserved end-to-end on the internal case.
+    await issueHeading.click();
     await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
-    await expect(adminPage.getByRole("heading", { name: "File Links" })).toBeVisible();
     await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
-    await expect(adminPage.getByRole("link", { name: /Screenshot/ })).toBeVisible();
     await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
 
     await adminContext.close();

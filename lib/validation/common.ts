@@ -58,13 +58,6 @@ export const httpsUrlSchema = z
     return [...hosts].some((host) => hostname === host || hostname.endsWith(`.${host}`));
   }, "Link host is not allowed");
 
-export const externalFileLinkSchema = z.strictObject({
-  title: z.string().trim().min(1).max(120),
-  url: httpsUrlSchema,
-  type: z.string().trim().max(40).optional(),
-  note: z.string().trim().max(300).optional(),
-});
-
 export const videoLinkSchema = z.strictObject({
   title: z.string().trim().min(1).max(120),
   url: httpsUrlSchema,
@@ -72,7 +65,7 @@ export const videoLinkSchema = z.strictObject({
   summary: z.string().trim().max(500).optional(),
 });
 
-/** Default cap on attachment links per type when `MAX_LINKS_PER_ITEM` is unset. */
+/** Default cap on video links when `MAX_LINKS_PER_ITEM` is unset. */
 export const LINK_LIMIT_DEFAULT = 10;
 
 /**
@@ -85,7 +78,7 @@ export const LINK_LIMIT_DEFAULT = 10;
 export const LINK_LIMIT_MAX = 50;
 
 /**
- * Configured maximum number of attachment links per type (env: `MAX_LINKS_PER_ITEM`).
+ * Configured maximum number of video links (env: `MAX_LINKS_PER_ITEM`).
  *
  * Read per call rather than at module load so the value is always current, and
  * lenient for the same reason `ALLOWED_LINK_HOSTS` is: a bad value must not break
@@ -102,23 +95,12 @@ export function linkLimit(): number {
 }
 
 /**
- * Attachment link arrays.
+ * Video link arrays.
  *
  * `.max(LINK_LIMIT_MAX)` is a static hard ceiling; the `superRefine` then applies
  * the configured `MAX_LINKS_PER_ITEM` value. Validation is therefore enforced by
  * the Zod schema (server-side parse) as well as by `lib/parse-links.ts`.
  */
-export const fileLinksSchema = z
-  .array(externalFileLinkSchema)
-  .max(LINK_LIMIT_MAX)
-  .default([])
-  .superRefine((links, ctx) => {
-    const limit = linkLimit();
-    if (links.length > limit) {
-      ctx.addIssue({ code: "custom", message: `Add at most ${limit} file links` });
-    }
-  });
-
 export const videoLinksSchema = z
   .array(videoLinkSchema)
   .max(LINK_LIMIT_MAX)

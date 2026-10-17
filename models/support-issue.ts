@@ -4,7 +4,6 @@ import {
   CASE_PRIORITIES,
   CASE_STATUSES,
   ISSUE_VISIBILITIES,
-  externalFileLinkSchema,
   uploadAttachmentSchema,
   videoLinkSchema,
 } from "./shared";
@@ -42,10 +41,8 @@ const supportIssueSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },
     // Evidence the reporter attached to the problem itself (before any reply):
-    // external HTTPS links, plus images uploaded to the private object store
-    // (see `lib/uploads`). Links are never fetched server-side; uploads are
-    // served back only through the authorized `/api/attachments/[id]` route.
-    fileLinks: { type: [externalFileLinkSchema], default: [] },
+    // external video links plus images uploaded to the private object store.
+    // Uploads are served only through the authorized attachment proxy.
     videoLinks: { type: [videoLinkSchema], default: [] },
     uploads: { type: [uploadAttachmentSchema], default: [] },
     courseSlug: { type: String, trim: true, default: null, index: true },

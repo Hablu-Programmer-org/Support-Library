@@ -8,7 +8,7 @@
 - Roles and route guards
 - Students: service, actions, list/new/detail UI
 - Cases: service, actions, quick add, list, detail, soft delete
-- Replies with external file/video links
+- Replies with private screenshots and external video links
 - Solution library with slug routes and internal/public visibility
 - Case-solution linking through `case_solution_links`
 - Global search for cases and solutions
@@ -37,15 +37,13 @@
   environment at startup (`lib/env.ts`), not just in production.
 - `e2e/student-submit.spec.ts` and `e2e/student-gating.spec.ts` cover the student
   create path, staff pickup, and that students never receive staff controls.
-- Issue-level attachment links: `SupportIssue` now carries `fileLinks`/`videoLinks`
-  (the reporter's evidence), editable by staff on the create/edit form, parsed with
-  the same HTTPS-only link parser as replies, rendered under the problem description
-  via `LinkList`, and included in the public projection so published issues show
-  them. Students may add them when submitting. The student form surfaces an explicit
-  error when typed text yields no valid link (no silent drop). The publish
-  confirmation now covers attached links.
+- Issue-level video links: `SupportIssue` carries `videoLinks` as reporter evidence,
+  editable by staff on the create/edit form, parsed with the HTTPS-only link parser,
+  rendered under the problem description via `LinkList`, and included in the public
+  projection. Students may add them when submitting; invalid typed values receive an
+  explicit error rather than being silently dropped.
 - `MAX_LINKS_PER_ITEM` is enforced: `linkLimit()` (`lib/validation/common.ts`) reads
-  it per call and both `lib/parse-links.ts` and the link-array Zod schemas apply it.
+  it per call and both `lib/parse-links.ts` and the video-link Zod schema apply it.
   Valid range 1-50, hard ceiling 50, and a missing/invalid value falls back to 10.
 
 ## Search Performance Findings
@@ -126,12 +124,11 @@ cmd /c "npm run test:e2e"
   excluded. Addressing this changes publish/search semantics and is deferred.
 - Data migration: environments with `staff-users` rows on the old `VIEWER` value
   need `npm run db:migrate-role-viewer-to-student -- --apply --confirm=<db>`.
-- **Direct file upload** for issue attachments is not implemented yet — students and
-  staff attach external HTTPS links (images/files/videos) instead. A real upload
-  needs storage, size limits, virus scanning, and access control for student PII
-  screenshots. See the "Deferred" section in the README.
+- **Direct image upload** is implemented for PNG/JPEG/GIF/WebP screenshots, with
+  private storage, size/dimension limits and authorized proxy reads. External
+  HTTPS video links remain available. PDF/ZIP/Office attachments are not supported.
 - `MAX_LINKS_PER_ITEM` is now read and enforced by `lib/validation/common.ts`
-  (`linkLimit()`) in both the link parser and the Zod schemas — the docs match the
+  (`linkLimit()`) in both the video-link parser and Zod schema — the docs match the
   code. Range 1-50; hard ceiling 50; missing/invalid falls back to 10.
 
 ### Session log — uploaded screenshots (Cloudflare R2)
@@ -139,6 +136,21 @@ cmd /c "npm run test:e2e"
 - `UPLOAD_STORAGE` unset -> disabled in production, memory otherwise; `r2` requires R2 credentials.
 - New `lib/uploads/*` core, `lib/services/attachments.ts`, `/api/attachments/[id]` route, `uploads[]` on issues/replies, indexes, audit actions, proxy exemption, rate-limit scopes, `uploadEnvSchema` wired into `validateEnv`.
 - Actions parse `uploads`/`solutionUploads`, ingest before the write, compensate on replay/failure.
-- UI: `AttachmentField` + `AttachmentList` (plain `<img>`), rendered in student/student? form, issue form (create only), reply composer, issue detail, reply items.
+- UI: `AttachmentField` shows removable local blob previews immediately after image selection (removal also updates the submitted `FileList`), while `AttachmentList` renders stored images through the authorized proxy (plain `<img>`); used in the student form, issue form, reply composer, issue detail and reply items.
 - Tests: 24 new upload unit tests; env tests extended; `e2e/attachments.spec.ts` happy path + denial.
 - Gates: lint (clean), typecheck, test (124 passing), build all green.
+
+### Session log — P2a: edit-mode add/remove attachments
+- `updateIssue` now accepts `uploads` + `removeUploadIds`: merges kept + new uploads inside the transaction, audits ATTACHMENT_UPLOAD/ATTACHMENT_DELETE, deletes removed objects after commit, compensates on stale lock/failure, and enforces the per-item cap across kept + new.
+- `updateIssueAction` ingests new files, validates remove ids as ObjectIds, maps upload errors to field errors.
+- `IssueForm` edit mode: shows authorized thumbnail previews for existing screenshots with an open-original link and "Remove" checkbox, plus an AttachmentField for new ones; passes `uploads` from the edit page.
+- Defense-in-depth: cap bypass fixed (was: only incoming batch counted).
+- Gates: lint, typecheck, test (124), build all green.
+
+### Session log — Cloudinary authenticated-image backend
+- Added `lib/uploads/cloudinary.ts` using the official server SDK. Uploads are `image` + `authenticated`; upload metadata is verified before persisting a versioned key, downloads use SDK-signed URLs behind the app proxy, and deletes use the exact matching tuple with invalidation requested.
+- `store.ts`: `cloudinary` mode added; the previous experimental no-card backend and its setup script/tests removed. R2 and memory remain available.
+- `env.ts`: requires `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. Cloudinary Free's 10 MiB file ceiling fails fast unless a larger paid-plan limit is explicitly acknowledged.
+- Image resolution cap aligned with Cloudinary Free at 25 MP. PNG/JPEG/GIF/WebP magic-byte validation, the 8000 px side cap and all existing authorization/compensation rules remain.
+- `.env.example`, SECURITY.md, RUNBOOK.md, deployment docs and tests updated.
+- Gates: lint clean; typecheck clean; 16 test files / 138 tests passing; production build clean; attachment Playwright slice 7/7 passing; production dependency audit 0 vulnerabilities. Live provider smoke test awaits real Cloudinary credentials.

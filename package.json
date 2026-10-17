@@ -22,6 +22,7 @@
     "db:purge-internal-notes": "tsx scripts/purge-internal-notes.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:hash-student-emails": "tsx scripts/hash-student-emails.ts",
+    "db:remove-file-links": "tsx scripts/remove-file-links.ts",
     "clean:e2e-artifacts": "tsx scripts/clean-e2e-artifacts.ts",
     "bench:search": "tsx scripts/bench-search.ts",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
@@ -29,6 +30,7 @@
   },
   "dependencies": {
     "aws4fetch": "^1.0.20",
+    "cloudinary": "^2.11.0",
     "dotenv": "18.0.7",
     "framer-motion": "^14.1.0",
     "mongodb": "^6.21.0",

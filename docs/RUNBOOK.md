@@ -71,6 +71,22 @@ and exits nonzero on conflicts or invalid data. Rollback is restoration of the
 pre-migration encrypted dump; no plaintext export is produced. Retain old
 encryption key versions through the backup retention window.
 
+### Retired file-link cleanup
+
+The generic external `fileLinks` feature has been removed; private image uploads
+and HTTPS video links remain. Run the cleanup before deploying the schema removal:
+
+1. Take and verify an encrypted `mongodump` of the support database.
+2. Run `npm run db:remove-file-links` and retain its dry-run counts.
+3. Apply with
+   `npm run db:remove-file-links -- --apply --confirm=<database> --backup-acknowledged`.
+4. Confirm the apply summary reports the expected issue/reply counts, then deploy.
+
+The command removes only top-level `fileLinks` fields from `support-issues` and
+`support-replies`. It is idempotent and redacts URI credentials. Its only rollback
+is restoration of the pre-apply encrypted dump; retain the command output with the
+release evidence.
+
 ## R2 key rotation
 
 1. Create a new access key in the Cloudflare R2 dashboard.
@@ -79,3 +95,12 @@ encryption key versions through the backup retention window.
 4. Revoke the old key only after every running instance has restarted.
 
 Rotating the bucket or account ID requires migrating every object key (keys are stored in Mongo), so prefer rotating credentials only. Object keys are immutable and never contain the client filename.
+
+## Cloudinary key rotation and quota recovery
+
+1. In Cloudinary Console → Settings → API Keys, create a replacement key/secret.
+2. Atomically update `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` in the protected deployment env; `CLOUDINARY_CLOUD_NAME` normally stays unchanged.
+3. Restart every app instance, then verify one upload, one authorized download, and one delete.
+4. Revoke the old key only after all instances use the replacement.
+
+Cloudinary Free has 25 credits, a 10 MiB per-image limit and a 25 MP resolution limit. Check Console usage when writes or reads are rejected. The app defaults to 5 MiB and fails startup if a Cloudinary deployment configures more than 10 MiB unless `CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true` explicitly acknowledges a plan that supports it. Do not use that flag to bypass an actual account limit.

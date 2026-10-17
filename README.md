@@ -1,6 +1,6 @@
 # Hablu Support Library
 
-Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, external file/video links, and close issues when solved. Students can submit their own requests (with optional file/video links) and read published answers.
+Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, private screenshots or external video links, and close issues when solved. Students can submit their own requests with optional screenshots/video links and read published answers.
 
 The interface is English throughout, with Inter typography and English date formatting. Issue and reply content can still be written and searched in any language.
 
@@ -163,12 +163,12 @@ cmd /c "npm run test:e2e"
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
 - hp-v2 roles map to `ADMIN` / `MENTOR` / `STUDENT`; an unknown or inactive account is denied
 - Issue forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
-- Issues carry optional issue-level file/video links (the reporter's evidence: screenshots, files, walkthrough videos) alongside optional first-answer links
-- Mentor creates support issues with an optional first answer (text, file links, video links)
+- Issues carry optional private screenshots and issue-level video links as reporter evidence
+- Mentor creates support issues with an optional first answer (text, screenshots, video links)
 - If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
-- Mentor adds replies, external file links and video links
-- STUDENT (students) can submit a new issue with optional file/video links — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
-- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to a confirmation page instead of the internal case view; publish requires the admin to confirm no PII in the title, description, attached links, or replies
+- Mentor adds replies with private screenshots and external video links
+- STUDENT (students) can submit a new issue with optional screenshots/video links — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
+- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to a confirmation page instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, or replies
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts and recent unresolved issues for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
 - Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues, students see Issues/Submit issue (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
@@ -197,11 +197,10 @@ Auth callback URL:
 https://support.your-domain.com/api/auth/callback/google
 ```
 
-DB-backed routes use Node.js runtime. `/api/health/live` checks the process and `/api/health/ready` verifies both support and LMS database access. Direct uploads are not implemented; the application stores validated external links only.
+DB-backed routes use Node.js runtime. `/api/health/live` checks the process and `/api/health/ready` verifies both support and LMS database access. Image uploads (PNG/JPEG/GIF/WebP) are implemented via Server Actions into a private store (Cloudinary authenticated assets, Cloudflare R2, or in-process memory); external links are still supported.
 
 ## Deferred
 
-- Cloudflare R2 uploads (direct file uploads — the app currently stores validated external links only)
 - Student ticket tracking (students cannot yet view or follow up on their own submissions in the app)
 - Public knowledge base
 - AI-assisted search/answers

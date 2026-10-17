@@ -65,11 +65,12 @@ const studentEmailEnvSchema = z
 /**
  * Upload storage configuration.
  *
- * Validated in every environment: turning on `UPLOAD_STORAGE=r2` without
+ * Validated in every environment: selecting a remote backend without its
  * credentials would otherwise fail only when a student tried to attach a file,
  * which is exactly the kind of failure a boot check should catch instead.
  */
-const UPLOAD_MODES = ["disabled", "memory", "r2"] as const;
+const UPLOAD_MODES = ["disabled", "memory", "r2", "cloudinary"] as const;
+const CLOUDINARY_FREE_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const uploadEnvShape = {
   UPLOAD_STORAGE: z.string().trim().optional(),
@@ -79,6 +80,10 @@ const uploadEnvShape = {
   R2_ACCESS_KEY_ID: z.string().trim().optional(),
   R2_SECRET_ACCESS_KEY: z.string().trim().optional(),
   R2_ENDPOINT: z.string().trim().optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().trim().optional(),
+  CLOUDINARY_API_KEY: z.string().trim().optional(),
+  CLOUDINARY_API_SECRET: z.string().trim().optional(),
+  CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB: z.string().trim().optional(),
   MAX_UPLOADS_PER_ITEM: z.string().trim().optional(),
   MAX_UPLOAD_BYTES: z.string().trim().optional(),
 };
@@ -91,6 +96,11 @@ type UploadEnv = {
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
   R2_ENDPOINT?: string;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+  CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB?: string;
+  MAX_UPLOAD_BYTES?: string;
 };
 
 /** Accepts the usual affirmative spellings for a boolean environment flag. */
@@ -122,21 +132,63 @@ function checkUploadStorage(env: UploadEnv, context: z.core.$RefinementCtx) {
       code: "custom",
       path: ["UPLOAD_STORAGE"],
       message:
-        "Cannot be `memory` in production; use `r2`, leave it unset, or set UPLOAD_STORAGE_ALLOW_EPHEMERAL=true to accept that every upload is lost on restart",
+        "Cannot be `memory` in production; use `r2`, `cloudinary`, leave it unset, or set UPLOAD_STORAGE_ALLOW_EPHEMERAL=true to accept that every upload is lost on restart",
     });
     return;
   }
 
-  if (mode !== "r2") return;
+  if (mode !== "r2" && mode !== "cloudinary") return;
 
-  for (const key of ["R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const) {
+  if (mode === "r2") {
+    for (const key of ["R2_ACCOUNT_ID", "R2_BUCKET", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"] as const) {
+      if (!env[key]) {
+        context.addIssue({
+          code: "custom",
+          path: [key],
+          message: "Required when UPLOAD_STORAGE is r2",
+        });
+      }
+    }
+    return;
+  }
+
+  for (const key of ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] as const) {
     if (!env[key]) {
       context.addIssue({
         code: "custom",
         path: [key],
-        message: "Required when UPLOAD_STORAGE is r2",
+        message: "Required when UPLOAD_STORAGE is cloudinary",
       });
     }
+  }
+
+  if (env.CLOUDINARY_CLOUD_NAME && !/^[A-Za-z0-9_-]+$/.test(env.CLOUDINARY_CLOUD_NAME)) {
+    context.addIssue({
+      code: "custom",
+      path: ["CLOUDINARY_CLOUD_NAME"],
+      message: "Must be a valid Cloudinary cloud name",
+    });
+  }
+  if (env.CLOUDINARY_API_KEY && !/^\d+$/.test(env.CLOUDINARY_API_KEY)) {
+    context.addIssue({
+      code: "custom",
+      path: ["CLOUDINARY_API_KEY"],
+      message: "Must be the numeric API key from Cloudinary",
+    });
+  }
+
+  const configuredBytes = Number((env.MAX_UPLOAD_BYTES ?? "").trim());
+  if (
+    Number.isInteger(configuredBytes) &&
+    configuredBytes > CLOUDINARY_FREE_MAX_IMAGE_BYTES &&
+    !isEnabled(env.CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["MAX_UPLOAD_BYTES"],
+      message:
+        "Cloudinary Free accepts images up to 10 MiB; lower MAX_UPLOAD_BYTES or explicitly set CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true for a plan that supports larger images",
+    });
   }
 }
 

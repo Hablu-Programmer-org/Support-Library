@@ -128,11 +128,11 @@ export async function ingestUploads(
       }
 
       const key = buildUploadObjectKey(image.extension);
-      await store.put(key, buffer, image.mimeType);
+      const storedKey = await store.put(key, buffer, image.mimeType);
 
       accepted.push({
         _id: new mongoose.Types.ObjectId().toHexString(),
-        key,
+        key: storedKey,
         originalName,
         mimeType: image.mimeType,
         byteSize: buffer.byteLength,
@@ -158,7 +158,7 @@ export async function ingestUploads(
  * between the object write and the document write. It never throws, because it
  * runs while another error is already being reported.
  */
-export async function discardUploads(uploads: readonly IngestedUpload[]): Promise<void> {
+export async function discardUploads(uploads: readonly { key: string }[]): Promise<void> {
   if (!uploads.length) return;
   const store = getUploadStore();
   if (!store) return;

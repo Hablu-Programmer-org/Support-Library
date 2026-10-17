@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { detectImage, isOversizedImage, MAX_IMAGE_DIMENSION } = await import("@/lib/uploads/sniff");
+const { detectImage, isOversizedImage, MAX_IMAGE_DIMENSION, MAX_IMAGE_PIXELS } = await import("@/lib/uploads/sniff");
 const { buildUploadObjectKey, sanitizeOriginalName, ORIGINAL_NAME_MAX_LENGTH } = await import(
   "@/lib/uploads/keys"
 );
@@ -154,6 +154,8 @@ describe("image sniffing", () => {
     expect(isOversizedImage({ width: 100, height: 100 })).toBe(false);
     expect(isOversizedImage({ width: MAX_IMAGE_DIMENSION + 1, height: 10 })).toBe(true);
     expect(isOversizedImage({ width: 100_000, height: 100_000 })).toBe(true);
+    expect(isOversizedImage({ width: 5000, height: MAX_IMAGE_PIXELS / 5000 })).toBe(false);
+    expect(isOversizedImage({ width: 5000, height: MAX_IMAGE_PIXELS / 5000 + 1 })).toBe(true);
     expect(isOversizedImage({ width: 0, height: 10 })).toBe(true);
     // Unknown dimensions are not treated as oversized.
     expect(isOversizedImage({ width: null, height: null })).toBe(false);

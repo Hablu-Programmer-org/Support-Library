@@ -62,7 +62,7 @@ test.describe("Reply edit and delete interactions", () => {
     await expect(reply).toHaveCount(0);
   });
 
-  test("adds a bare file URL and a titled link line without an error page", async ({ page }) => {
+  test("adds a video link without an error page", async ({ page }) => {
     test.setTimeout(120000);
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");
@@ -76,10 +76,8 @@ test.describe("Reply edit and delete interactions", () => {
 
     const replyForm = formFor(page, "Add response");
     await replyForm.locator('textarea[name="body"]').fill("See the attached references.");
-    await replyForm.getByText("Add file or video links").click();
-    await replyForm.locator('textarea[name="fileLinks"]').fill(
-      "https://example.com/fix.pdf\nGuide|https://example.com/fix.png|image|Annotated screenshot",
-    );
+    await replyForm.getByText("Add screenshots or video links").click();
+    await expect(replyForm.locator('textarea[name="fileLinks"]')).toHaveCount(0);
     await replyForm.locator('textarea[name="videoLinks"]').fill("Walkthrough|https://example.com/fix.mp4|01:20");
     await replyForm.getByRole("button", { name: "Add response" }).click();
 
@@ -87,8 +85,6 @@ test.describe("Reply edit and delete interactions", () => {
 
     const reply = page.locator('[data-testid^="reply-"]').first();
     await expect(reply).toContainText("See the attached references.");
-    await expect(reply.locator('a[href="https://example.com/fix.pdf"]')).toBeVisible();
-    await expect(reply.locator('a[href="https://example.com/fix.png"]')).toBeVisible();
     await expect(reply.locator('a[href="https://example.com/fix.mp4"]')).toBeVisible();
   });
 });

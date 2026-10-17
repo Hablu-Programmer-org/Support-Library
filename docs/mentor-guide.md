@@ -190,7 +190,7 @@ Click `New Issue` from the issue list.
 The create page has these main sections:
 
 - Student Identity.
-- Issue Details (title, problem description, and optional image/file and video links).
+- Issue Details (title, problem description, private screenshots, and optional video links).
 - Answer (Optional).
 - Additional Details.
 
@@ -250,10 +250,11 @@ Optional metadata:
 | Content/Lesson slug | Lowercase slug, hyphen format, max 120. |
 | Tags | Max 10 tags, lowercase, unique, max 32 each. |
 | Priority | Low, Normal, High, Urgent. |
-| Image / File Links | Max 10 HTTPS links, one per line: `title\|url\|type\|note`. |
 | Video Links | Max 10 HTTPS links, one per line: `title\|url\|timestamp\|summary`. |
 
-The issue-level `Image / File Links` and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` links, which belong to the initial staff answer.
+Issue-level screenshots and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` screenshots and video links, which belong to the initial staff answer.
+
+Selected screenshots show local previews before submission. Use a preview card's `Remove` button to exclude that image from the submitted file list. These previews stay in the browser; the remaining files are uploaded only when the form is submitted.
 
 Allowed tag characters:
 
@@ -293,7 +294,7 @@ The create form includes `Answer (Optional)`.
 You can add:
 
 - Answer body.
-- File links.
+- Private screenshots.
 - Video links.
 - Solve checkbox.
 
@@ -302,7 +303,7 @@ Behavior:
 - If you add an answer and keep `Mark as solved when an answer is provided` checked, the issue is created as `SOLVED`.
 - If you add an answer but uncheck the solve checkbox, the issue is created as `OPEN`.
 - If you do not add an answer, the issue is created as `OPEN`.
-- If you add only file/video links and no answer body, the app saves this fallback answer: `See the attached file or video links for the answer.`
+- If you add only screenshots/video links and no answer body, the app saves this fallback answer: `See the attached screenshots or video links for the answer.`
 
 Use the solve checkbox only when the answer is final enough that no follow-up is expected.
 
@@ -314,21 +315,15 @@ Initial answer during creation and later public responses are not exactly the sa
 | --- | --- | --- |
 | Body required | No, if links exist | Yes |
 | Attachment-only answer | Allowed | Not allowed |
-| File/video links | Allowed | Allowed |
+| Screenshots/video links | Allowed | Allowed |
 | Can set issue solved immediately | Yes, with solve checkbox | No, update status separately |
 | Creates a reply | Yes | Yes |
 
 If you need to add a later response, write a body first, then optionally add links.
 
-## 14. File And Video Link Formats
+## 14. Video Link Format
 
-The same format applies everywhere links appear: the issue's `Image / File Links` and `Video Links` (the reporter's evidence), and the `Answer (Optional)` or public reply links.
-
-File links format:
-
-```text
-title|https://url|type|note
-```
+The same format applies everywhere video links appear: issue evidence, the `Answer (Optional)`, and public replies.
 
 Video links format:
 
@@ -339,15 +334,13 @@ title|https://url|timestamp|summary
 Examples:
 
 ```text
-Guide|https://example.com/fix.pdf|pdf|Step-by-step guide
-Screenshot|https://example.com/fix.png|image|Annotated screenshot
 Walkthrough|https://example.com/fix.mp4|01:20|Fix demonstration
 ```
 
 Bare URLs are also accepted:
 
 ```text
-https://example.com/fix.pdf
+https://example.com/fix.mp4
 ```
 
 Link behavior and limits:
@@ -355,12 +348,8 @@ Link behavior and limits:
 - One link per line.
 - Missing protocol becomes `https://...`.
 - Invalid/non-URL lines are ignored.
-- Maximum 10 file links per issue or reply.
 - Maximum 10 video links per issue or reply.
 - Production expects HTTPS links.
-- File title max 120 characters.
-- File type max 40 characters.
-- File note max 300 characters.
 - Video title max 120 characters.
 - Video timestamp max 12 characters and only digits/colon.
 - Video summary max 500 characters.
@@ -396,7 +385,7 @@ The issue detail page shows:
 - Issue title.
 - Updated time.
 - Full problem description.
-- Attached file/video links (the problem's evidence), if any.
+- Attached video links (the problem's evidence), if any.
 - Tags.
 - Responses.
 - Issue context.
@@ -448,10 +437,10 @@ Required:
 
 Optional:
 
-- File links.
+- Private screenshots.
 - Video links.
 
-Click `Add file or video links` to open link fields.
+Click `Add screenshots or video links` to open the optional fields.
 
 Important:
 
@@ -476,8 +465,8 @@ UI behavior:
 
 Important limitation:
 
-- Existing file/video links cannot be edited through the reply edit UI.
-- If a link is wrong, add a corrected follow-up reply or delete the reply and create a new one.
+- Existing video links and screenshots cannot be edited through the reply edit UI.
+- If a video link is wrong, add a corrected follow-up reply or delete the reply and create a new one.
 
 Side effects:
 
@@ -494,7 +483,7 @@ Mentors can edit:
 - Student identity fields.
 - Issue title.
 - Problem description.
-- Image / file links.
+- Private screenshots.
 - Video links.
 - Status.
 - Priority.
@@ -514,7 +503,7 @@ Important side effects:
 
 Even a small typo fix can temporarily remove a published issue from the Student Library.
 
-The issue edit form shows the current attachment links as editable lines. Leave the fields empty to remove links, and clear any link that points at a private screenshot before the issue is published.
+The issue edit form shows current video links as editable lines and authorized thumbnail previews for private screenshots. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another screenshot. Screenshots are never included in the published projection.
 
 ## 22. Archive Issue
 
@@ -564,7 +553,7 @@ Mentors cannot:
 Admins must confirm:
 
 ```text
-I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached file/video links, or public replies.
+I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached video links, or public replies.
 ```
 
 If issue content changes after admin review, publish can fail until the admin refreshes and reviews again.
@@ -577,10 +566,8 @@ Check these fields:
 
 - Issue title.
 - Problem description.
-- Issue file link title/note and video link title/summary.
+- Issue video link title/summary.
 - Reply body.
-- Reply file link title.
-- Reply file link note.
 - Reply video link title.
 - Reply video link summary.
 
@@ -693,7 +680,7 @@ Mobile behavior:
 | View dashboard | Yes | `/dashboard` |
 | View all active issues | Yes | `/dashboard/issues` |
 | Create issue | Yes | `/dashboard/issues/new` |
-| Add issue-level attachment links | Yes | Issue form |
+| Add issue screenshots/video links | Yes | Issue form |
 | Use LMS email lookup | Yes | Issue form |
 | Add first answer during create | Yes | Issue form |
 | Add public response | Yes | Issue detail |
@@ -731,11 +718,11 @@ Before creating or updating an issue:
 - [ ] Use the student's LMS email when available.
 - [ ] Keep title general and searchable.
 - [ ] Remove student PII from public-facing text.
-- [ ] Check issue-level file/video links for private screenshots before publishing.
+- [ ] Check issue-level video links for student PII before publishing.
 - [ ] Add course/batch/tags if useful for filtering.
 - [ ] Add an answer if the fix is known.
 - [ ] Mark solved only when the answer is final.
-- [ ] Use valid HTTPS file/video links.
+- [ ] Use valid HTTPS video links.
 - [ ] Ask admin to publish only after public content is safe.
 
 Before archiving:

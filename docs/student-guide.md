@@ -14,9 +14,9 @@ You can use it to:
 - Search for a known problem or keyword.
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
-- Open attached file links or video walkthrough links.
+- Open attached video walkthrough links.
 - Attach up to a few screenshots (PNG, JPEG, GIF or WebP) to a new request. Screenshots are only visible to the support team, not published.
-- Submit a new support request with a title, a description, and optional file/video links.
+- Submit a new support request with a title, a description, and optional screenshots/video links.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
 
@@ -182,7 +182,7 @@ The issue detail page can show:
 - Issue title.
 - Last updated time.
 - Full problem description.
-- Attached file links and video links, if the reporter added any.
+- Video links, if the reporter added any.
 - Tags.
 - Answers and updates.
 - Course.
@@ -206,7 +206,6 @@ Each reply can show:
 - Reply creation time.
 - `edited` marker if the reply was edited.
 - Reply text.
-- File links.
 - Video links.
 
 If no reply exists, the page shows:
@@ -216,16 +215,9 @@ If no reply exists, the page shows:
 
 Students cannot add replies or edit replies.
 
-## 11. File Links And Video Links
+## 11. Video Links
 
-Issues and answers can include external file or video links. A support request can also carry its own attachment links, which appear under the problem description.
-
-File links can show:
-
-- Title.
-- File type, if provided.
-- Link host.
-- Note, if provided.
+Issues and answers can include external video links. A support request can carry its own video links, which appear under the problem description.
 
 Video links can show:
 
@@ -234,7 +226,7 @@ Video links can show:
 - Link host.
 - Summary, if provided.
 
-When you click a file or video link:
+When you click a video link:
 
 - It opens in a new browser tab.
 - It opens as an external link.
@@ -299,12 +291,12 @@ The form asks for two things:
 - A title: a short summary of the problem, at least 5 characters.
 - Problem details: what you were doing, what you expected, and what happened instead. Include the steps to reproduce the problem if you can.
 
-You can also add optional attachment links (the app stores links, never uploaded files):
+You can also add optional evidence:
 
-- **Image / file links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|image` or `|pdf` and a short note).
+- **Screenshots** — select PNG, JPEG, GIF or WebP images, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library.
 - **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
 
-Upload the image, file, or video somewhere public first (for example Google Drive or YouTube), then paste the link. Links must be HTTPS links. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it.
+Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
 
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email.
 
@@ -324,9 +316,9 @@ Students do not see:
 - Internal staff-only controls.
 - Internal/unpublished issues.
 
-Public issue data includes only the reviewed fields needed for the library, such as title, problem, attached file/video links, status, priority, course, batch, tags, visibility, and dates.
+Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, status, priority, course, batch, tags, visibility, and dates. Private screenshot uploads are excluded.
 
-Staff must review an issue before publishing it to the student library. The publish confirmation covers the title, problem description, attached file/video links, and public replies.
+Staff must review an issue before publishing it to the student library. The publish confirmation covers the title, problem description, video links, and public replies.
 
 ## 15. Why A Link May Show 404
 
@@ -377,9 +369,9 @@ Unexpected error:
 | `/dashboard` sends me to the issue library. | This is normal for students. Staff users see the dashboard. |
 | I cannot see a known issue. | It may be unpublished, archived, edited, or not yet reviewed for the student library. |
 | Search does not find an answer. | Search does not search answer/reply body text; try words from the title, problem, tag, or course slug. |
-| A link opens a new tab. | File and video links are external resources and are opened separately. |
+| A link opens a new tab. | Video links are external resources and are opened separately. |
 | I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
-| My attachment link is rejected. | Links must be HTTPS URLs. Upload the file somewhere public first, then paste the link. |
+| My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
 
 ## 18. Quick Reference
 
@@ -391,7 +383,7 @@ Unexpected error:
 | Filter by tag/status/course/batch/date | Yes | `/dashboard/issues` |
 | Sort by newest/oldest/priority | Yes | `/dashboard/issues` |
 | Read issue details | Yes, published only | `/dashboard/issues/[id]` |
-| Open file/video links | Yes | Issue attachments and detail replies |
+| Open video links | Yes | Issue details and replies |
 | Toggle theme | Yes | Topbar/account menu |
 | Sign out | Yes | Topbar/account menu |
 | Submit a support request | Yes | `/dashboard/issues/new` |

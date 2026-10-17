@@ -29,6 +29,10 @@ const MANAGED_VARS = [
   "R2_ACCESS_KEY_ID",
   "R2_SECRET_ACCESS_KEY",
   "R2_ENDPOINT",
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+  "CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB",
   "MAX_UPLOADS_PER_ITEM",
   "MAX_UPLOAD_BYTES",
 ] as const;
@@ -149,6 +153,63 @@ describe("validateEnv", () => {
       R2_BUCKET: "bucket",
       R2_ACCESS_KEY_ID: "key",
       R2_SECRET_ACCESS_KEY: "secret",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("rejects UPLOAD_STORAGE=cloudinary without credentials", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "cloudinary",
+      CLOUDINARY_CLOUD_NAME: "hablu",
+    });
+
+    expect(() => validateEnv()).toThrow(/CLOUDINARY_API_KEY/);
+  });
+
+  it("accepts a fully configured Cloudinary deployment", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "cloudinary",
+      CLOUDINARY_CLOUD_NAME: "hablu",
+      CLOUDINARY_API_KEY: "123456789",
+      CLOUDINARY_API_SECRET: "cloudinary-secret",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("rejects a Cloudinary Free file cap above 10 MiB without acknowledgement", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "cloudinary",
+      CLOUDINARY_CLOUD_NAME: "hablu",
+      CLOUDINARY_API_KEY: "123456789",
+      CLOUDINARY_API_SECRET: "cloudinary-secret",
+      MAX_UPLOAD_BYTES: String(10 * 1024 * 1024 + 1),
+    });
+
+    expect(() => validateEnv()).toThrow(/Cloudinary Free accepts images up to 10 MiB/);
+  });
+
+  it("allows an explicitly acknowledged larger-file Cloudinary plan", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      UPLOAD_STORAGE: "cloudinary",
+      CLOUDINARY_CLOUD_NAME: "hablu",
+      CLOUDINARY_API_KEY: "123456789",
+      CLOUDINARY_API_SECRET: "cloudinary-secret",
+      MAX_UPLOAD_BYTES: String(20 * 1024 * 1024),
+      CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB: "true",
     });
 
     expect(() => validateEnv()).not.toThrow();

@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
 import { assertOperationPayload } from "@/lib/mutation-security";
-import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
+import { discardUploads } from "@/lib/uploads/ingest";
 import { SupportIssueModel, SupportReplyModel } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
@@ -106,7 +106,7 @@ export async function findAttachmentForDownload(
  * Comparing keys keeps both cases correct.
  */
 export async function discardUnreferencedUploads(
-  uploads: readonly IngestedUpload[],
+  uploads: readonly { key: string }[],
   referenced: unknown,
 ): Promise<void> {
   if (!uploads.length) return;
@@ -133,7 +133,7 @@ export async function discardUnreferencedUploads(
  * function throws and would otherwise skip the cleanup.
  */
 export async function settleReplayedUploads(
-  uploads: readonly IngestedUpload[],
+  uploads: readonly { key: string }[],
   storedHash: string | null | undefined,
   requestHash: string,
   referenced: unknown,

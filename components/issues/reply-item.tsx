@@ -81,7 +81,7 @@ export function ReplyItem({
       <p className="whitespace-pre-wrap break-words text-base leading-7 text-slate-700 dark:text-slate-200">
         {reply.body}
       </p>
-      <LinkList fileLinks={reply.fileLinks} videoLinks={reply.videoLinks} />
+      <LinkList videoLinks={reply.videoLinks} />
       <AttachmentList uploads={reply.uploads} />
       {canEdit && editing && (
         <form

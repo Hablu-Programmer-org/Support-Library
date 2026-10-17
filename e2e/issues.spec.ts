@@ -21,10 +21,9 @@ test.describe("Issue CRUD (mentor)", () => {
       await form.locator('input[name="studentEmail"]').fill(`e2e.answer.${Date.now()}@test.com`);
       await form.locator('input[name="title"]').fill(`E2E ${scenario.label}`);
       await form.locator('textarea[name="question"]').fill("How do I fix the broken image path?");
+      await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
+      await expect(form.locator('textarea[name="solutionFileLinks"]')).toHaveCount(0);
       await form.locator('textarea[name="solutionBody"]').fill(scenario.body);
-      await form
-        .locator('textarea[name="solutionFileLinks"]')
-        .fill("Guide|https://example.com/fix.pdf|pdf\nScreenshot|https://example.com/fix.png|image");
       await form
         .locator('textarea[name="solutionVideoLinks"]')
         .fill("Walkthrough|https://example.com/fix.mp4|01:20");
@@ -34,8 +33,6 @@ test.describe("Issue CRUD (mentor)", () => {
       const reply = page.locator('[data-testid^="reply-"]');
       await expect(reply).toHaveCount(1);
       if (scenario.body) await expect(reply).toContainText(scenario.body);
-      await expect(reply.locator('a[href="https://example.com/fix.pdf"]')).toBeVisible();
-      await expect(reply.locator('a[href="https://example.com/fix.png"]')).toBeVisible();
       await expect(reply.locator('a[href="https://example.com/fix.mp4"]')).toBeVisible();
       await expect(page.locator("span").filter({ hasText: scenario.solved ? /^Solved$/ : /^Open$/ }).first()).toBeVisible();
     });

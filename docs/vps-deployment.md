@@ -50,4 +50,4 @@ Schedule encrypted `mongodump` backups for the support database using a backup-o
 
 ## Secret rotation
 
-Rotate `AUTH_SECRET`, OAuth credentials, Atlas credentials, the GHCR read token, and SSH deploy keys on a documented schedule and immediately after suspected exposure. Rotation of `AUTH_SECRET` invalidates sessions. Update the VPS env file atomically, restart through the approved workflow, and verify health and authentication; never place runtime values in workflow files, images, logs, or deployment artifacts.
+Rotate `AUTH_SECRET`, OAuth credentials, Atlas credentials, Cloudinary API credentials, the GHCR read token, and SSH deploy keys on a documented schedule and immediately after suspected exposure. Rotation of `AUTH_SECRET` invalidates sessions. Update the VPS env file atomically, restart through the approved workflow, and verify health, authentication, and one private attachment round trip; never place runtime values in workflow files, images, logs, or deployment artifacts.

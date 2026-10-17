@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { assertRole } from "@/lib/auth-guard";
 import { operationIdSchema } from "@/lib/mutation-security";
-import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
+import { parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 import { addReply, editReply, softDeleteReply } from "@/lib/services/replies";
 import {
@@ -35,7 +35,6 @@ export async function addReplyAction(issueId: string, formData: FormData) {
       const parsed = supportReplyInputSchema.parse({
         issueId,
         body: formValue(formData, "body"),
-        fileLinks: parseFileLinks(formValue(formData, "fileLinks")),
         videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
       });
       const operationId = operationIdSchema.parse(formData.get("operationId"));

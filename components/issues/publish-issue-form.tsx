@@ -52,7 +52,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken =
         <span>
           I have reviewed this issue and confirmed no student personal information
           (name, email, phone, ID, etc.) is present in the title, problem
-          description, attached file/video links, or public replies.
+          description, attached video links, or public replies.
         </span>
       </label>
       {state.fieldErrors?.reviewConfirmed && (

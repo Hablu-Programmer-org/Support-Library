@@ -29,9 +29,9 @@ export const UPLOAD_MAX_BYTES_FLOOR = 1024;
 /**
  * MIME types accepted in phase 1.
  *
- * Images only: R2 (and the app) performs no malware scanning, so the risky
- * container formats (PDF, ZIP, Office) are deliberately excluded until an
- * antivirus step exists.
+ * Images only: the storage backends (and the app) perform no malware scanning,
+ * so risky container formats (PDF, ZIP, Office) are deliberately excluded until
+ * an antivirus step exists.
  */
 export const UPLOAD_IMAGE_MIME_TYPES = [
   "image/png",
