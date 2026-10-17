@@ -32,9 +32,9 @@ export const STAFF_USERS: readonly StaffFixtureUser[] = [
   },
   {
     id: "0000000000000000000000c3",
-    name: "viewer",
-    email: "viewer@hablu-programmer.com",
-    role: "VIEWER",
+    name: "student",
+    email: "student@hablu-programmer.com",
+    role: "STUDENT",
     isActive: true,
   },
 ];

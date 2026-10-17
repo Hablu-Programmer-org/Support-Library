@@ -64,10 +64,10 @@ LMS roles are mapped to Support Library's three-tier system:
 | `COORDINATOR` | `ADMIN` | Full access, publish/unpublish |
 | `MODERATOR` | `ADMIN` | Full access, publish/unpublish |
 | `INSTRUCTOR` | `MENTOR` | Create/edit issues, replies |
-| `MEMBER` | `VIEWER` | Read published issues only |
-| `STUDENT` | `VIEWER` | Read published issues only |
-| `USER` | `VIEWER` | Read published issues only |
-| (unknown) | `VIEWER` | Read published issues only |
+| `MEMBER` | `STUDENT` | Submit an issue, read published issues |
+| `STUDENT` | `STUDENT` | Submit an issue, read published issues |
+| `USER` | `STUDENT` | Submit an issue, read published issues |
+| (unknown) | `STUDENT` | Submit an issue, read published issues |
 
 **Mapping logic** (from `lib/lms-roles.ts`):
 ```typescript
@@ -80,9 +80,13 @@ function mapLmsRole(lmsRole?: string | null): UserRole {
   const normalized = (lmsRole ?? "").trim().toUpperCase();
   if (ADMIN_LMS_ROLES.has(normalized)) return "ADMIN";
   if (MENTOR_LMS_ROLES.has(normalized)) return "MENTOR";
-  return "VIEWER";
+  return "STUDENT";
 }
 ```
+
+> `STUDENT` can do exactly two things: submit a new support issue, and read
+> published answers. Editing, replying, archiving, publishing and reading
+> unpublished cases or student PII require `MENTOR`/`ADMIN`.
 
 ## Authentication Flow
 

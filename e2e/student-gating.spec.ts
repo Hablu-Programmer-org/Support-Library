@@ -3,10 +3,10 @@ import { test, expect } from "@playwright/test";
 import { formFor, submitAndWait } from "./form-helpers";
 
 /**
- * VIEWER (students) must only see published issues, and never student PII.
- * Data is prepared as ADMIN, then asserted as VIEWER.
+ * STUDENT (students) must only see published issues, and never student PII.
+ * Data is prepared as ADMIN, then asserted as STUDENT.
  */
-test.describe("VIEWER content gating", () => {
+test.describe("STUDENT content gating", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
   test("hides unpublished issues and student PII from students", async ({ page, browser }) => {
@@ -34,15 +34,15 @@ test.describe("VIEWER content gating", () => {
     const replyForm = formFor(page, "Add response");
     await replyForm.locator('textarea[name="body"]').fill(publicReply);
     await replyForm.getByRole("button", { name: "Add response" }).click();
-    await expect(page.locator("article").filter({ hasText: publicReply })).toBeVisible();
+    await expect(page.locator("article").filter({ hasText: publicReply }).first()).toBeVisible();
 
-    const viewerContext = await browser.newContext({
-      storageState: "e2e/.auth/viewer.json",
+    const studentContext = await browser.newContext({
+      storageState: "e2e/.auth/student.json",
       baseURL,
     });
-    const viewerPage = await viewerContext.newPage();
-    await viewerPage.goto(issuePath);
-    await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
+    const studentPage = await studentContext.newPage();
+    await studentPage.goto(issuePath);
+    await expect(studentPage.getByRole("heading", { name: "404" })).toBeVisible();
 
     await page.getByRole("button", { name: "Publish to library" }).click();
     await expect(
@@ -57,23 +57,34 @@ test.describe("VIEWER content gating", () => {
     await expect(page).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
     await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
 
-    // The viewer sees the issue and its public reply, but never student PII.
-    await viewerPage.goto(issuePath);
+    // The student sees the issue and its public reply, but never student PII.
+    await studentPage.goto(issuePath);
 
-    await expect(viewerPage.getByRole("heading", { name: issueTitle })).toBeVisible();
-    await expect(viewerPage.locator("article").filter({ hasText: publicReply })).toBeVisible();
-    await expect(viewerPage.getByText("E2E Gating Student")).toHaveCount(0);
-    await expect(viewerPage.getByText(studentEmail)).toHaveCount(0);
+    await expect(studentPage.getByRole("heading", { name: issueTitle })).toBeVisible();
+    await expect(studentPage.locator("article").filter({ hasText: publicReply }).first()).toBeVisible();
+    await expect(studentPage.getByText("E2E Gating Student")).toHaveCount(0);
+    await expect(studentPage.getByText(studentEmail)).toHaveCount(0);
 
-    await viewerPage.goto("/dashboard/issues");
-    await expect(viewerPage.getByRole("heading", { name: issueTitle })).toBeVisible();
-    await expect(viewerPage.getByText("E2E Gating Student")).toHaveCount(0);
-    await expect(viewerPage.getByText(studentEmail)).toHaveCount(0);
+    // A student may read a published issue but must never get staff controls.
+    for (const control of [
+      "Add response",
+      "Publish to library",
+      "Remove from library",
+      "Update status",
+    ]) {
+      await expect(studentPage.getByRole("button", { name: control })).toHaveCount(0);
+    }
+    await expect(studentPage.getByRole("link", { name: /edit issue details/i })).toHaveCount(0);
+
+    await studentPage.goto("/dashboard/issues");
+    await expect(studentPage.getByRole("heading", { name: issueTitle })).toBeVisible();
+    await expect(studentPage.getByText("E2E Gating Student")).toHaveCount(0);
+    await expect(studentPage.getByText(studentEmail)).toHaveCount(0);
 
     await page.getByRole("button", { name: "Remove from library" }).click();
     await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
-    await viewerPage.goto(issuePath);
-    await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
+    await studentPage.goto(issuePath);
+    await expect(studentPage.getByRole("heading", { name: "404" })).toBeVisible();
 
     await page.getByRole("checkbox", { name: /reviewed this issue/ }).check();
     await page.getByRole("button", { name: "Publish to library" }).click();
@@ -82,10 +93,10 @@ test.describe("VIEWER content gating", () => {
     await replyForm.locator('textarea[name="body"]').fill("E2E changed after publication");
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
-    await viewerPage.goto(issuePath);
-    await expect(viewerPage.getByRole("heading", { name: "404" })).toBeVisible();
+    await studentPage.goto(issuePath);
+    await expect(studentPage.getByRole("heading", { name: "404" })).toBeVisible();
     expect(pageErrors).toEqual([]);
 
-    await viewerContext.close();
+    await studentContext.close();
   });
 });

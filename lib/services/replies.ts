@@ -210,7 +210,7 @@ function replyMutationFilter(
   actorRole?: UserRole | null,
 ) {
   const base: Record<string, unknown> = { _id: replyId, issueId, deletedAt: null };
-  if (isAdmin(actorRole ?? "VIEWER")) return base;
+  if (isAdmin(actorRole ?? "STUDENT")) return base;
   return { ...base, authorId: actorId };
 }
 

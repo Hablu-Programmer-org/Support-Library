@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     image: { type: String, default: null },
-    role: { type: String, enum: USER_ROLES, default: "VIEWER", index: true },
+    role: { type: String, enum: USER_ROLES, default: "STUDENT", index: true },
     isActive: { type: Boolean, default: true, index: true },
     lastLoginAt: { type: Date, default: null },
   },

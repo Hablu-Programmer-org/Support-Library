@@ -7,5 +7,5 @@ export type CasePriority = (typeof CASE_PRIORITIES)[number];
 export const ISSUE_VISIBILITIES = ["INTERNAL", "PUBLISHED"] as const;
 export type IssueVisibility = (typeof ISSUE_VISIBILITIES)[number];
 
-export const USER_ROLES = ["ADMIN", "MENTOR", "VIEWER"] as const;
+export const USER_ROLES = ["ADMIN", "MENTOR", "STUDENT"] as const;
 export type UserRole = (typeof USER_ROLES)[number];

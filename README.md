@@ -41,7 +41,7 @@ The interface is English throughout, with Inter typography and English date form
 ### Security Features
 
 - **CSRF protection** on all Server Actions (session-bound expiring HMAC tokens, timing-safe validation)
-- **Role-based access**: ADMIN / MENTOR / VIEWER (mapped from LMS roles)
+- **Role-based access**: ADMIN / MENTOR / STUDENT (mapped from LMS roles)
 - **Student email protection**: AES-256-GCM for staff recovery plus separately keyed HMAC-SHA-256 for exact lookup; plaintext is excluded from storage and full-text search
 - **Rate limiting**: Per-scope fixed-window (10-30 req/min)
 - **Audit logging**: issue/reply mutations and selected denied events, with available request context
@@ -161,16 +161,17 @@ cmd /c "npm run test:e2e"
 ## Core Flows
 
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
-- hp-v2 roles map to `ADMIN` / `MENTOR` / `VIEWER`; an unknown or inactive account is denied
+- hp-v2 roles map to `ADMIN` / `MENTOR` / `STUDENT`; an unknown or inactive account is denied
 - Issue forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
 - Mentor creates support issues with an optional first answer (text, file links, video links)
 - If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
 - Mentor adds replies, external file links and video links
-- VIEWER (students) can read published issues but never unpublished ones
-- Issues list filters by course, batch, mentor and date range
-- Dashboard shows real DB counts and recent unresolved issues for staff; VIEWER/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline Dashboard/Issues navigation (Dashboard is staff-only in the nav); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
-- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; students browse published answers directly without the staff dashboard
+- STUDENT (students) can submit a new issue — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
+- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to a confirmation page instead of the internal case view
+- Issues list filters by course, batch, mentor and date range (staff only)
+- Dashboard shows real DB counts and recent unresolved issues for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
+- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues, students see Issues/Submit issue (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
+- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Submit a support request", and students browse published answers directly without the staff dashboard
 
 ## Design System
 

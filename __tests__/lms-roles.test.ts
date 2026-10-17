@@ -15,23 +15,23 @@ describe("mapLmsRole", () => {
     }
   });
 
-  it("maps student/learner roles to VIEWER", () => {
+  it("maps student/learner roles to STUDENT", () => {
     for (const role of ["MEMBER", "STUDENT", "USER"]) {
-      expect(mapLmsRole(role)).toBe("VIEWER");
+      expect(mapLmsRole(role)).toBe("STUDENT");
     }
   });
 
   it("is case-insensitive for dirty role casing", () => {
-    expect(mapLmsRole("student")).toBe("VIEWER");
-    expect(mapLmsRole("Student")).toBe("VIEWER");
-    expect(mapLmsRole("user")).toBe("VIEWER");
+    expect(mapLmsRole("student")).toBe("STUDENT");
+    expect(mapLmsRole("Student")).toBe("STUDENT");
+    expect(mapLmsRole("user")).toBe("STUDENT");
     expect(mapLmsRole("super_admin")).toBe("ADMIN");
   });
 
-  it("defaults unknown or missing roles to VIEWER", () => {
-    expect(mapLmsRole("ROOT")).toBe("VIEWER");
-    expect(mapLmsRole(null)).toBe("VIEWER");
-    expect(mapLmsRole(undefined)).toBe("VIEWER");
-    expect(mapLmsRole("")).toBe("VIEWER");
+  it("defaults unknown or missing roles to STUDENT", () => {
+    expect(mapLmsRole("ROOT")).toBe("STUDENT");
+    expect(mapLmsRole(null)).toBe("STUDENT");
+    expect(mapLmsRole(undefined)).toBe("STUDENT");
+    expect(mapLmsRole("")).toBe("STUDENT");
   });
 });

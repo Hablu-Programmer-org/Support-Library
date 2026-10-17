@@ -2,12 +2,14 @@
 
 import Image from "next/image";
 
+import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+
 interface UserMenuProps {
   user: {
     name?: string | null;
     email?: string | null;
     image?: string | null;
-    role?: string;
+    role?: UserRole;
   };
 }
 
@@ -29,7 +31,7 @@ export function UserMenu({ user }: UserMenuProps) {
         <span className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</span>
       </span>
       <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-        {user.role ?? "VIEWER"}
+        {user.role ? ROLE_LABELS[user.role] : ROLE_LABELS.STUDENT}
       </span>
     </div>
   );

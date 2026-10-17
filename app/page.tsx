@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { LibrarySearch } from "@/components/landing/library-search";
 import { CheckCircleIcon, FileTextIcon, MessageSquareIcon } from "@/components/icons";
 import { Topbar } from "@/components/layout/topbar";
-import { canMutate } from "@/lib/roles";
+import { canCreateIssue, canMutate } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,8 @@ const features = [
 export default async function Home() {
   const session = await auth();
   const role = session?.user?.role;
-  const canManage = canMutate(role ?? "VIEWER");
+  const canManage = canMutate(role ?? "STUDENT");
+  const canSubmit = canCreateIssue(role);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-white text-slate-900 dark:bg-slate-950 dark:text-white">
@@ -69,6 +70,11 @@ export default async function Home() {
             {canManage ? (
               <Link className={primaryCtaClass} href="/dashboard">
                 Open dashboard
+              </Link>
+            ) : null}
+            {!canManage && canSubmit ? (
+              <Link className={primaryCtaClass} href="/dashboard/issues/new">
+                Submit a support request
               </Link>
             ) : null}
             <Link

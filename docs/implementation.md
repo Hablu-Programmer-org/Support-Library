@@ -17,7 +17,7 @@
 - DB scripts: `db:indexes`, `db:seed`
 - Public-output serializer guard for future public/student output
 - Playwright public/unauth smoke tests
-- Authenticated Playwright role matrix (ADMIN/MENTOR/VIEWER read + mutation guards)
+- Authenticated Playwright role matrix (ADMIN/MENTOR/STUDENT read + mutation guards)
 - Authenticated Playwright CRUD flows (student -> case -> reply -> status, solution create)
 - Isolated E2E database: dedicated `MONGODB_TEST_DB`, safety guard, per-collection teardown
 - `clean:e2e-artifacts` script to purge E2E leftovers from the dev database
@@ -27,6 +27,16 @@
 - Analytics: course and batch breakdowns, mentor activity table, weekly case count, ADMIN/MENTOR-only access
 - Create-solution-from-case: prefilled draft from the case and its latest reply, INTERNAL by default
 - `bench:search` benchmark script and the recorded findings below
+- Student self-service issue submission: `STUDENT` can create an issue and nothing
+  else (no reply/edit/status/publish). Identity is derived from the session + LMS
+  lookup, cases are forced OPEN/INTERNAL with no mentor, and the submitter lands on
+  `/dashboard/issues/submitted`. `canCreateIssue()` is separate from `canMutate()`
+  so create rights never widen read access. STUDENT create is throttled tighter
+  than staff (`issue.create.student`).
+- Env fail-fast: the student-email encryption keyring is validated in every
+  environment at startup (`lib/env.ts`), not just in production.
+- `e2e/student-submit.spec.ts` and `e2e/student-gating.spec.ts` cover the student
+  create path, staff pickup, and that students never receive staff controls.
 
 ## Search Performance Findings
 
@@ -94,3 +104,16 @@ cmd /c "npm run test:e2e"
 - Apply the search strategy change (token array or text index) — see findings above
 - UI polish and mobile navigation improvements
 - Production deploy smoke test (target undecided: VPS vs Vercel)
+
+## Open Product Decisions (student issue submission)
+
+- An unrecognised/absent LMS role maps to `STUDENT` (it can submit a self-scoped
+  ticket). Confirm this is the intended fail-safe.
+- A student cannot see the issue they submitted (no list/detail access by design),
+  only the confirmation page. Confirm this product behaviour.
+- `studentName` remains in the denormalized `searchText` after publishing, so the
+  public library search can match a name to a published issue. Email is already
+  excluded. Addressing this changes publish/search semantics and is deferred.
+- Data migration: environments with `staff-users` rows on the old `VIEWER` value
+  need `npm run db:migrate-role-viewer-to-student -- --apply --confirm=<db>`.
+- File/image upload for the student form is not implemented yet.

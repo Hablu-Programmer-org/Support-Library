@@ -7,9 +7,9 @@ import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
-import { canMutate } from "@/lib/roles";
+import { canCreateIssue, canMutate } from "@/lib/roles";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
-import { listStaff } from "@/lib/services/staff";
+import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
 
@@ -36,8 +36,12 @@ export default async function IssuesPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const session = await requireSession();
-  const canCreate = Boolean(session.user.role && canMutate(session.user.role));
-  const publicOnly = !canCreate;
+  // Staff-level rights decide whether unpublished issues, student PII and the
+  // staff filters are visible — students must never pass this check.
+  const canManage = Boolean(session.user.role && canMutate(session.user.role));
+  // Submitting a request is a separate, narrower right that students also hold.
+  const canSubmit = canCreateIssue(session.user.role);
+  const publicOnly = !canManage;
   const page = Number(resolvedSearchParams?.page ?? "1");
   const sort: IssueSort = ISSUE_SORTS.includes(resolvedSearchParams?.sort as IssueSort)
     ? (resolvedSearchParams?.sort as IssueSort)
@@ -57,7 +61,7 @@ export default async function IssuesPage({
       tag: resolvedSearchParams?.tag,
       courseSlug: resolvedSearchParams?.courseSlug || undefined,
       batchNo: resolvedSearchParams?.batchNo ? Number(resolvedSearchParams.batchNo) : undefined,
-      mentorId: canCreate ? resolvedSearchParams?.mentorId || undefined : undefined,
+      mentorId: canManage ? resolvedSearchParams?.mentorId || undefined : undefined,
       from,
       to,
       sort,
@@ -67,20 +71,19 @@ export default async function IssuesPage({
     { publicOnly },
   );
 
-  const [{ courseSlugs, batchNos }, staff] = await Promise.all([
+  const [{ courseSlugs, batchNos }, mentors] = await Promise.all([
     listIssueFilterOptions(publicOnly),
-    canCreate ? listStaff() : Promise.resolve([]),
+    canManage ? listAssignableMentors() : Promise.resolve([]),
   ]);
-  const mentors = staff.filter((member) => member.isActive && (member.role === "MENTOR" || member.role === "ADMIN"));
 
-  const canDelete = canCreate; // Same roles can delete
+  const canDelete = canManage; // Same roles can delete
   const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
   const q = resolvedSearchParams?.q ?? "";
   const tag = resolvedSearchParams?.tag ?? "";
   const status = resolvedSearchParams?.status ?? "";
   const courseSlug = resolvedSearchParams?.courseSlug ?? "";
   const batchNo = resolvedSearchParams?.batchNo ?? "";
-  const mentorId = canCreate ? resolvedSearchParams?.mentorId ?? "" : "";
+  const mentorId = canManage ? resolvedSearchParams?.mentorId ?? "" : "";
   const dateFrom = resolvedSearchParams?.from ?? "";
   const dateTo = resolvedSearchParams?.to ?? "";
 
@@ -103,17 +106,17 @@ export default async function IssuesPage({
     <div className="space-y-6">
       <PageHeader
         action={
-          canCreate && (
+          canSubmit && (
             <Link
               className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
               href="/dashboard/issues/new"
             >
-              New Issue
+              {canManage ? "New Issue" : "Submit an issue"}
             </Link>
           )
         }
         description="Find support issues by problem, tag, status or keyword."
-        title={canCreate ? "Support Issues" : "Student Support Library"}
+        title={canManage ? "Support Issues" : "Student Support Library"}
       />
 
       <IssueFilterPanel
@@ -121,7 +124,7 @@ export default async function IssuesPage({
         courseSlugs={courseSlugs}
         defaults={{ q, tag, status, courseSlug, batchNo, mentorId, dateFrom, dateTo, sort }}
         mentors={mentors}
-        showMentor={canCreate}
+        showMentor={canManage}
         statuses={CASE_STATUSES}
       />
 
@@ -146,7 +149,7 @@ export default async function IssuesPage({
                         <StatusBadge status={supportIssue.status} />
                       </div>
                       <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{supportIssue.question}</p>
-                      {canCreate && (
+                      {canManage && (
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {supportIssue.studentName || "Unknown student"}
                           {supportIssue.studentEmail ? ` · ${supportIssue.studentEmail}` : ""}

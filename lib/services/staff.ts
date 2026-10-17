@@ -32,10 +32,32 @@ const toStaffListItem = (user: LeanDoc): StaffListItem => ({
   updatedAt: user.updatedAt as Date | undefined,
 });
 
-export async function listStaff() {
+/**
+ * Active ADMIN/MENTOR accounts, for the issue list's mentor filter.
+ *
+ * Filtered in the database rather than in memory: `staff-users` also caches one
+ * row per LMS student who has ever signed in, so loading every row to discard
+ * most of them would grow with the whole user base.
+ */
+export async function listAssignableMentors() {
   await dbConnect();
-  const users = await UserModel.find({}).sort({ createdAt: -1 }).lean();
+  const users = await UserModel.find({ role: { $in: ["ADMIN", "MENTOR"] }, isActive: true })
+    .sort({ createdAt: -1 })
+    .lean();
   return (users as LeanDoc[]).map(toStaffListItem);
+}
+
+/**
+ * Reads one local account row by its id.
+ *
+ * Used to derive the submitting student's name/email from the session id rather
+ * than from client input.
+ */
+export async function getStaffUserById(userId: string) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) return null;
+  await dbConnect();
+  const user = await UserModel.findById(userId).lean();
+  return user ? toStaffListItem(user as LeanDoc) : null;
 }
 
 async function wouldRemoveLastActiveAdmin(userId: string, nextRole: UserRole, nextIsActive: boolean) {

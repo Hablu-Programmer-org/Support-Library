@@ -46,7 +46,7 @@ export function AccountSheet({ user }: AccountSheetProps) {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const roleLabel = user.role ? ROLE_LABELS[user.role] : "Viewer";
+  const roleLabel = user.role ? ROLE_LABELS[user.role] : ROLE_LABELS.STUDENT;
 
   const panelMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }

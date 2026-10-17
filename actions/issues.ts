@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { assertRole } from "@/lib/auth-guard";
 import { findLmsUserByEmail } from "@/lib/lms";
+import { normalizeEmail } from "@/lib/email";
 import { operationIdSchema } from "@/lib/mutation-security";
 import { parseFileLinks, parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
@@ -17,7 +18,12 @@ import {
   unpublishIssue,
   updateIssue,
 } from "@/lib/services/issues";
-import { supportIssueInputSchema, supportReplyInputSchema } from "@/lib/validation";
+import { getStaffUserById } from "@/lib/services/staff";
+import {
+  supportIssueInputSchema,
+  supportReplyInputSchema,
+  type SupportIssueInput,
+} from "@/lib/validation";
 import { CASE_STATUSES, type CaseStatus } from "@/models";
 import { withCsrfProtection } from "@/lib/safe-action";
 
@@ -143,6 +149,97 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     revalidatePath("/dashboard/issues");
     revalidatePath("/dashboard");
     redirect(`/dashboard/issues/${supportIssue.id}`);
+  });
+}
+
+/**
+ * Student self-service: submit an issue.
+ *
+ * The student's identity is derived from the session and the LMS lookup, never
+ * from the form, so nobody can raise a case on another student's behalf. The
+ * case is always created OPEN/INTERNAL with no mentor and no initial answer, and
+ * the submitter is sent to a confirmation page instead of the internal view.
+ */
+export async function createStudentIssueAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  return withCsrfProtection(formData, async (formData) => {
+    // Exact role, not the rank-based guard: this path always produces a
+    // student-owned, mentor-less case, so it must not be reachable by staff.
+    const guard = await assertRole("STUDENT");
+    if (!guard.ok || guard.session.user.role !== "STUDENT") {
+      return { fieldErrors: { _form: ["Unauthorized"] } };
+    }
+
+    const email = normalizeEmail(guard.session.user.email ?? "");
+    if (!email) {
+      return {
+        fieldErrors: {
+          _form: ["Your account has no email address. Please contact the support team."],
+        },
+      };
+    }
+
+    const profile = await getStaffUserById(guard.session.user.id);
+    if (!profile) {
+      return {
+        fieldErrors: { _form: ["Your account could not be found. Please sign in again."] },
+      };
+    }
+
+    let operationId: string;
+    try {
+      operationId = operationIdSchema.parse(formData.get("operationId"));
+    } catch {
+      return {
+        fieldErrors: {
+          _form: ["This submission could not be verified. Reload the page and try again."],
+        },
+      };
+    }
+
+    let issueData: SupportIssueInput;
+    try {
+      // Name and email come from our own records, never the form, so they only
+      // need clamping to the schema limits — a long LMS display name must not
+      // fail validation with an error the student has no field to fix.
+      const profileName = profile.name.trim();
+      const studentName = (profileName.length >= 2 ? profileName : email).slice(0, 120);
+
+      const lmsUser = await findLmsUserByEmail(email);
+      issueData = supportIssueInputSchema.parse({
+        studentName,
+        studentEmail: email,
+        lmsUserId: lmsUser?.userId,
+        title: formValue(formData, "title"),
+        question: formValue(formData, "question"),
+        status: "OPEN",
+        priority: "NORMAL",
+        tags: [],
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const fieldErrors = zodFieldErrors(err);
+        if (fieldErrors.title || fieldErrors.question) {
+          return { fieldErrors: { title: fieldErrors.title, question: fieldErrors.question } };
+        }
+        return { fieldErrors: { _form: ["Invalid form data"] } };
+      }
+      // Includes LMS lookup/connection failures, so keep it generic.
+      return { fieldErrors: { _form: ["Unable to submit the issue. Please try again later."] } };
+    }
+
+    try {
+      await consumeRateLimit("issue.create.student", guard.session.user.id);
+      await createIssue(issueData, guard.session.user.id, "STUDENT", operationId, null, false);
+    } catch {
+      return { fieldErrors: { _form: ["Unable to submit the issue. Please try again later."] } };
+    }
+
+    revalidatePath("/dashboard/issues");
+    revalidatePath("/dashboard");
+    redirect("/dashboard/issues/submitted");
   });
 }
 

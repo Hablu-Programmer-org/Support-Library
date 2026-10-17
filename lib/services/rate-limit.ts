@@ -9,6 +9,7 @@ import { getRequestContext } from "@/lib/request-context";
 export type RateLimitScope =
   | "lms.lookup"
   | "issue.create"
+  | "issue.create.student"
   | "issue.update"
   | "issue.status"
   | "issue.archive"
@@ -23,6 +24,9 @@ export type RateLimitScope =
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
   "issue.create": { limit: 10, windowMs: 60_000 },
+  // Students are untrusted self-service accounts, so their create path is
+  // throttled harder than the staff one to bound ticket spam.
+  "issue.create.student": { limit: 5, windowMs: 10 * 60_000 },
   "issue.update": { limit: 30, windowMs: 60_000 },
   "issue.status": { limit: 30, windowMs: 60_000 },
   "issue.archive": { limit: 10, windowMs: 60_000 },

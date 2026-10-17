@@ -7,7 +7,7 @@ const { checkSupportReadiness, checkLmsReadiness } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({ checkSupportReadiness }));
 vi.mock("@/lib/lms-db", () => ({ checkLmsReadiness }));
-vi.mock("@/lib/env", () => ({ validateProductionEnv: vi.fn() }));
+vi.mock("@/lib/env", () => ({ validateEnv: vi.fn() }));
 
 import { GET } from "@/app/api/health/route";
 

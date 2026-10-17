@@ -1,5 +1,5 @@
 import { checkSupportReadiness } from "@/lib/db";
-import { validateProductionEnv } from "@/lib/env";
+import { validateEnv } from "@/lib/env";
 import { checkLmsReadiness } from "@/lib/lms-db";
 import { NextResponse } from "next/server";
 
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    validateProductionEnv();
+    validateEnv();
     await Promise.all([checkSupportReadiness(), checkLmsReadiness()]);
     const body: { ok: boolean; ready: boolean; ts: string; release?: string } = {
       ok: true,

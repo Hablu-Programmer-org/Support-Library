@@ -29,7 +29,7 @@ LMS role mapping:
 | --- | --- |
 | `SUPER_ADMIN`, `ADMIN`, `MANAGER`, `COORDINATOR`, `MODERATOR` | `ADMIN` |
 | `INSTRUCTOR` | `MENTOR` |
-| `STUDENT`, `MEMBER`, `USER`, unknown, missing | `VIEWER` |
+| `STUDENT`, `MEMBER`, `USER`, unknown, missing | `STUDENT` |
 
 Important access behavior:
 
@@ -73,11 +73,12 @@ Common admin routes:
 
 | Route | Purpose |
 | --- | --- |
-| `/dashboard` | Staff overview, recent unresolved issues, popular tags. |
-| `/dashboard/issues` | Active issue list and filters. |
-| `/dashboard/issues/new` | Create a support issue. |
-| `/dashboard/issues/[id]` | Review, reply, publish, unpublish, status update, archive. |
-| `/dashboard/issues/[id]/edit` | Edit issue details. |
+| `/dashboard` | Staff overview, recent unresolved issues, popular tags. Students are redirected to `/dashboard/issues`. |
+| `/dashboard/issues` | Active issue list and filters. Students see the published library instead of the staff list. |
+| `/dashboard/issues/new` | Create a support issue (staff form). A student sees the simplified self-service form and lands on `/dashboard/issues/submitted`. |
+| `/dashboard/issues/submitted` | Confirmation shown to a student after submitting a request. |
+| `/dashboard/issues/[id]` | Review, reply, publish, unpublish, status update, archive. Students never reach unpublished issues. |
+| `/dashboard/issues/[id]/edit` | Edit issue details. Staff only. |
 
 Route access is enforced in server pages/actions. The proxy checks sign-in and active account status, while role permissions are enforced by page guards and server actions.
 
@@ -406,7 +407,7 @@ Admin reply permissions:
 - Admins can edit any reply.
 - Admins can delete any reply.
 - Mentors can edit/delete only their own replies.
-- Viewers cannot add, edit, or delete replies.
+- Students cannot add, edit, or delete replies.
 
 Reply edit limitation:
 
@@ -515,9 +516,9 @@ Archive only when no further staff action is needed.
 
 ## 20. What Students See
 
-Students are `VIEWER` users.
+Students are `STUDENT` users.
 
-Students see only published issues.
+Students see only published issues, and can submit a new issue from **Submit an issue** in the topbar. A student submission is always created as OPEN and internal, with no mentor assigned, and the student lands on a confirmation page rather than the case view.
 
 Student issue list can show:
 
@@ -680,7 +681,7 @@ Current UI limitation:
 | Archive | Soft-delete from active lists and Student Library. |
 | Admin | Staff role that can publish/unpublish and override reply ownership. |
 | Mentor | Staff role that can create/edit/archive issues and manage own replies. |
-| Viewer | Student/read-only role. |
+| Student | Learner role. Can submit a new issue and read published issues; cannot edit, reply, archive or publish. |
 | LMS Lookup | Read-only email lookup against Hablu Programmer LMS user database. |
 | PII | Personally identifiable information such as name, email, phone, account ID, or payment details. |
 | Stale Review | A publish attempt based on an older issue revision after content changed. |

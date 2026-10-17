@@ -42,7 +42,7 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 - **CSRF protection** on all Server Actions (session-bound expiring HMAC tokens, timing-safe validation)
 
 ### Authorization
-- **Three-tier roles**: ADMIN, MENTOR, VIEWER
+- **Three-tier roles**: ADMIN, MENTOR, STUDENT
 - **Server-side enforcement** on every mutation
 - **Resource ownership** checks (mentors can only edit own replies)
 

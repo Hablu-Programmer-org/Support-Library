@@ -18,6 +18,7 @@
     "db:indexes": "tsx scripts/sync-indexes.ts",
     "db:preflight": "tsx scripts/production-db-preflight.ts",
     "db:migrate-issue-visibility": "tsx scripts/migrate-issue-visibility.ts",
+    "db:migrate-role-viewer-to-student": "tsx scripts/migrate-role-viewer-to-student.ts",
     "db:purge-internal-notes": "tsx scripts/purge-internal-notes.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:hash-student-emails": "tsx scripts/hash-student-emails.ts",

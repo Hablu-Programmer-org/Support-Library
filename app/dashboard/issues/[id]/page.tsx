@@ -63,7 +63,7 @@ export default async function IssueDetailPage({
   const { id } = await params;
   const session = await requireSession();
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
-  const canPublish = isAdmin(session.user.role ?? "VIEWER");
+  const canPublish = isAdmin(session.user.role ?? "STUDENT");
   const staffIssue = canEdit ? await getIssueDetail(id) : null;
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();

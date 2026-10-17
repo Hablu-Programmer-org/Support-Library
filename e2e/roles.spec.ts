@@ -6,7 +6,7 @@ const test = base.extend<{
   authState: ["", { option: true }],
 });
 
-const roles = ["admin", "mentor", "viewer"] as const;
+const roles = ["admin", "mentor", "student"] as const;
 
 for (const role of roles) {
   test.describe(`Role matrix: ${role}`, () => {
@@ -14,7 +14,7 @@ for (const role of roles) {
 
     test("can access dashboard", async ({ page }) => {
       await page.goto("/dashboard");
-      if (role === "viewer") {
+      if (role === "student") {
         await expect(page).toHaveURL(/\/dashboard\/issues/);
         await expect(page.getByRole("heading", { name: "Student Support Library" })).toBeVisible();
       } else {
@@ -26,25 +26,27 @@ for (const role of roles) {
       await page.goto("/dashboard/issues");
       await expect(
         page.getByRole("heading", {
-          name: role === "viewer" ? "Student Support Library" : "Support Issues",
+          name: role === "student" ? "Student Support Library" : "Support Issues",
         }),
       ).toBeVisible();
     });
 
-    const canMutate = role === "admin" || role === "mentor";
+    const canManage = role === "admin" || role === "mentor";
 
-    test(`${canMutate ? "can" : "cannot"} create issue`, async ({ page }) => {
+    test(`${canManage ? "can" : "cannot"} open the staff create form`, async ({ page }) => {
       await page.goto("/dashboard/issues/new");
-      if (canMutate) {
+      if (canManage) {
         await expect(page.getByRole("heading", { name: "New Support Issue" })).toBeVisible();
       } else {
-        await expect(page).toHaveURL(/\/unauthorized/);
+        // A student gets the create-only form instead of the staff form.
+        await expect(page.getByRole("heading", { name: "Submit a support request" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "New Support Issue" })).toHaveCount(0);
       }
     });
 
-    test(`${canMutate ? "can" : "cannot"} open the issue editor`, async ({ page }) => {
+    test(`${canManage ? "can" : "cannot"} open the issue editor`, async ({ page }) => {
       await page.goto("/dashboard/issues/507f1f77bcf86cd799439011/edit");
-      if (canMutate) {
+      if (canManage) {
         await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
       } else {
         await expect(page).toHaveURL(/\/unauthorized/);

@@ -1,12 +1,12 @@
 # Student Guide — Hablu Support Library
 
-This guide explains how students use the Hablu Support Library, what they can read, what they can search, and what actions are not available to students.
+This guide explains how students use the Hablu Support Library, what they can read, what they can search, how to submit a support request, and what actions are not available to students.
 
-The Support Library is a read-only library of published support issues and reviewed answers. It is not a live chat system and it is not a student ticket submission portal.
+The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not a live chat system: you submit a request, the team answers you by email, and you cannot reply inside the app.
 
 ## 1. What The Support Library Is
 
-The Support Library helps students find answers that the Hablu Programmer support team has already reviewed and published.
+The Support Library helps students find answers that the Hablu Programmer support team has already reviewed and published, and lets them raise a new request when no existing answer fits.
 
 You can use it to:
 
@@ -15,8 +15,9 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached file links or video walkthrough links.
+- Submit a new support request with a title and a description.
 
-You cannot use it to create a new support request. If your problem is not already published in the library, contact the Hablu support team through the official support channel provided in your LMS/course community.
+You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
 
 ## 2. Who Can Use It
 
@@ -24,7 +25,7 @@ Only Hablu Programmer LMS members can sign in.
 
 You must use the same Google email that exists in the Hablu Programmer LMS. If your Google email is not found in the LMS, sign-in is denied.
 
-Student access is called the `VIEWER` role inside this app. LMS roles such as `STUDENT`, `USER`, unknown roles, or missing roles are treated as `VIEWER`.
+Student access is called the `STUDENT` role inside this app. LMS roles such as `STUDENT`, `USER`, unknown roles, or missing roles are treated as `STUDENT`.
 
 Your account must also be active in the LMS. If your LMS account is inactive, you cannot use the library.
 
@@ -268,10 +269,11 @@ Sign out sends you back to `/login`.
 
 ## 13. What Students Cannot Do
 
+Students can submit a new support request and read published issues. Everything else is staff-only.
+
 Students cannot:
 
 - Open the staff dashboard.
-- Create a new issue.
 - Edit an issue.
 - Archive or delete an issue.
 - Publish or unpublish an issue.
@@ -279,11 +281,27 @@ Students cannot:
 - Add a reply.
 - Edit a reply.
 - Delete a reply.
+- Choose which student an issue is filed for.
 - Use the mentor filter.
 - See internal/unpublished issues.
 - See student personal information saved on support issues.
 
 If you try to open a staff-only page, you may be redirected to `/unauthorized`.
+
+## 13a. Submitting a Support Request
+
+Open **Submit an issue** in the topbar, or press **Submit an issue** on the issues list.
+
+The form asks for two things:
+
+- A title: a short summary of the problem, at least 5 characters.
+- Problem details: what you were doing, what you expected, and what happened instead. Include the steps to reproduce the problem if you can.
+
+Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email.
+
+After you submit, a confirmation page appears and the request goes to the support team. You cannot add replies to it and you cannot see it in the library until the team reviews and publishes it; if they do not publish it, they answer you by email instead.
+
+If you submit the same request twice, only one request is created.
 
 ## 14. Privacy: What Students Will Not See
 
@@ -382,7 +400,7 @@ Unexpected error:
 | Answer/update | A staff reply attached to an issue. |
 | Published issue | An issue reviewed and made visible to students. |
 | Internal issue | An issue visible only to staff. |
-| VIEWER | The app role used for students/read-only users. |
+| STUDENT | The app role used for students. Can submit a new request and read published issues. |
 | Status | The support state, such as Open, Solved, Pending, or Follow-up. |
 | Priority | Staff-set importance, such as Low, Normal, High, or Urgent. |
 | Tag | A keyword used to group or filter issues. |

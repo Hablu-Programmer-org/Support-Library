@@ -89,7 +89,7 @@ const config = {
       if (!user.email) return false;
 
       // The main Hablu Programmer database is the source of truth for who may
-      // log in and which role they get. Students land on VIEWER; staff roles
+      // log in and which role they get. Students land on STUDENT; staff roles
       // map to ADMIN/MENTOR (see mapLmsRole).
 const lmsUser = await findLmsUserByEmail(user.email);
 

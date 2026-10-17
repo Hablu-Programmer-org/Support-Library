@@ -28,7 +28,16 @@ test.describe("LMS authorization freshness", () => {
         if (await navigated) break;
       }
 
-      await expect(page).toHaveURL(/\/unauthorized/);
+      // The demotion must reach the live session: the staff create form is no
+      // longer offered, only the student self-service form.
+      await expect(
+        page.getByRole("heading", { name: "Submit a support request" }),
+      ).toBeVisible();
+      await expect(page.getByRole("heading", { name: "New Support Issue" })).toHaveCount(0);
+
+      // The staff dashboard stays off limits for a demoted account.
+      await page.goto("/dashboard");
+      await expect(page).toHaveURL(/\/dashboard\/issues/);
     } finally {
       await users.updateOne({ email: admin.email }, { $set: { role: "ADMIN", isActive: true } });
     }

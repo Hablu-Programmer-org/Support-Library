@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  if (!canMutate(session.user.role ?? "VIEWER")) redirect("/dashboard/issues");
+  if (!canMutate(session.user.role ?? "STUDENT")) redirect("/dashboard/issues");
   const [stats, recentIssues, topTags] = await Promise.all([
     getDashboardStats(false),
     getRecentUnresolvedIssues(8, false),

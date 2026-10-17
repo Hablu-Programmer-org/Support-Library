@@ -20,9 +20,23 @@ const isActive = (pathname: string, item: NavItem) =>
     ? pathname === item.href
     : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
+/**
+ * Href of the single nav item to highlight.
+ *
+ * A prefix match can overlap a more specific sibling (e.g. `/dashboard/issues`
+ * vs `/dashboard/issues/new`), so the longest matching href wins and only one
+ * link ever carries `aria-current`.
+ */
+function activeHrefFor(pathname: string, items: NavItem[]) {
+  return items
+    .filter((item) => isActive(pathname, item))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+}
+
 export function Topbar({ user }: TopbarProps) {
   const pathname = usePathname();
   const navItems = user ? navItemsForRole(user.role) : [];
+  const activeHref = activeHrefFor(pathname, navItems);
 
   return (
     <header className="brand-hairline fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-950/80">
@@ -59,7 +73,7 @@ export function Topbar({ user }: TopbarProps) {
           className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5"
         >
           {navItems.map((item) => {
-            const active = isActive(pathname, item);
+            const active = item.href === activeHref;
             const Icon = item.icon;
             return (
               <Link

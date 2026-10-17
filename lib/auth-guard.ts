@@ -43,3 +43,13 @@ export async function assertRole(...allowed: UserRole[]): Promise<AuthGuardResul
 export async function requireMentorOrAdmin() {
   return requireRole("ADMIN", "MENTOR");
 }
+
+/**
+ * Any signed-in account that may submit a new issue.
+ *
+ * Every role qualifies (see `canCreateIssue`); students only ever reach the
+ * create form through this guard, never the staff editing surfaces.
+ */
+export async function requireIssueCreator() {
+  return requireRole("STUDENT");
+}

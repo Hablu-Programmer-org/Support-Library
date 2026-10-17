@@ -43,7 +43,7 @@ LMS role mapping:
 | --- | --- |
 | `INSTRUCTOR` | `MENTOR` |
 | `SUPER_ADMIN`, `ADMIN`, `MANAGER`, `COORDINATOR`, `MODERATOR` | `ADMIN` |
-| `STUDENT`, `MEMBER`, `USER`, unknown, missing | `VIEWER` |
+| `STUDENT`, `MEMBER`, `USER`, unknown, missing | `STUDENT` |
 
 Important access behavior:
 
@@ -707,7 +707,7 @@ Mobile behavior:
 | Archive | Soft-delete from active lists and Student Library. |
 | Mentor | Staff role that can create/edit/archive issues and manage own replies. |
 | Admin | Staff role that can also publish/unpublish and override reply ownership. |
-| Viewer | Student/read-only role. |
+| Student | Learner role. Can submit a new issue and read published issues; cannot edit, reply, archive or publish. |
 | LMS Lookup | Read-only email lookup against Hablu Programmer LMS user database. |
 | PII | Personally identifiable information such as name, email, phone, account ID, or payment details. |
 

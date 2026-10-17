@@ -7,7 +7,7 @@ import { withCsrfProtection } from "@/lib/safe-action";
 
 /**
  * Email autocomplete for the issue form: resolves a student's name from the main
- * hp-v2 database when an email is typed. Read-only and staff-only (VIEWER can
+ * hp-v2 database when an email is typed. Read-only and staff-only (a STUDENT can
  * never open the issue form, so the guard matches its other actions).
  */
 export async function lookupLmsStudentAction(email: string, csrfToken: string) {

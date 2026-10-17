@@ -174,7 +174,7 @@ function isDuplicateKeyError(error: unknown) {
 export async function createIssue(
   input: SupportIssueInput,
   actorId: string,
-  actorRole: "ADMIN" | "MENTOR",
+  actorRole: "ADMIN" | "MENTOR" | "STUDENT",
   operationId: string,
   initialReply: InitialReplyInput | null = null,
   solveIssue = false,
@@ -188,11 +188,17 @@ export async function createIssue(
   const { studentEmail, ...issueFields } = parsed;
   const protectedEmail = protectStudentEmail(studentEmail);
 
-  // For MENTOR role, enforce mentorId = actorId (ignore input)
-  // For ADMIN role, allow custom mentorId or default to actorId
-  const effectiveMentorId = actorRole === "MENTOR" 
-    ? actorObjectId 
-    : (parsed.mentorId ? new mongoose.Types.ObjectId(parsed.mentorId) : actorObjectId);
+  // A student submission is never assigned a mentor — the submitter is the
+  // student, not the owner of the case. For MENTOR the mentor is always the
+  // actor; for ADMIN a custom mentorId is allowed and falls back to the actor.
+  const effectiveMentorId =
+    actorRole === "STUDENT"
+      ? null
+      : actorRole === "MENTOR"
+        ? actorObjectId
+        : parsed.mentorId
+          ? new mongoose.Types.ObjectId(parsed.mentorId)
+          : actorObjectId;
 
   const existing = await SupportIssueModel.findOne({
     createdBy: actorObjectId,
