@@ -149,16 +149,15 @@ export default async function IssuesPage({
       />
 
       <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        <div className="p-0">
-          {issues.items.length === 0 ? (
-            <EmptyState>No issues found.</EmptyState>
-          ) : (
-            <div className="divide-y divide-slate-200 dark:divide-slate-800">
-              {issues.items.map((supportIssue) => (
-                <div
-                  key={supportIssue.id}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                >
+        {issues.items.length === 0 ? (
+          <EmptyState>No issues found.</EmptyState>
+        ) : (
+          <div className="divide-y divide-slate-200 dark:divide-slate-800">
+            {issues.items.map((supportIssue) => (
+              <div
+                key={supportIssue.id}
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+              >
                   <Link
                     href={`/dashboard/issues/${supportIssue.id}`}
                     className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
@@ -207,8 +206,7 @@ export default async function IssuesPage({
               ))}
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
       <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
