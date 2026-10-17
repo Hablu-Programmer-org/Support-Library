@@ -126,8 +126,8 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
 
           <div className="flex flex-col gap-1.5">
             <AttachmentField
-              label="Screenshots (optional)"
-              description="PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Screenshots are only visible to the support team."
+              label="Attachments (optional)"
+              description="Images only: PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Attachments are only visible to the support team."
             />
             {state.fieldErrors?.uploads?.[0] && (
               <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">

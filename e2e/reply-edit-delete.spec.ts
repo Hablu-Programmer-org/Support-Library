@@ -76,7 +76,7 @@ test.describe("Reply edit and delete interactions", () => {
 
     const replyForm = formFor(page, "Add response");
     await replyForm.locator('textarea[name="body"]').fill("See the attached references.");
-    await replyForm.getByText("Add screenshots or video links").click();
+    await replyForm.getByText("Add attachments or video links").click();
     await expect(replyForm.locator('textarea[name="fileLinks"]')).toHaveCount(0);
     await replyForm.locator('textarea[name="videoLinks"]').fill("Walkthrough|https://example.com/fix.mp4|01:20");
     await replyForm.getByRole("button", { name: "Add response" }).click();

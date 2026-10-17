@@ -6,10 +6,10 @@ import { formFor, submitAndWait } from "./form-helpers";
 test.describe("edit-mode attachments", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
-  test("an admin can remove an old screenshot and add a new one", async ({ page }) => {
+  test("an admin can preview and replace an old image attachment", async ({ page }) => {
     const title = `E2E edit attach ${Date.now()}`;
 
-    // --- create an issue with one screenshot ---
+    // --- create an issue with one image attachment ---
     await page.goto("/dashboard/issues/new");
     const createForm = formFor(page, "Create Issue");
     await createForm.locator('input[name="studentName"]').fill("E2E Attachment Student");

@@ -31,8 +31,8 @@ type LocalPreview = {
  */
 export function AttachmentField({
   name = UPLOAD_FILES_NAME,
-  label = "Screenshots",
-  description = "PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each.",
+  label = "Attachments",
+  description = "Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each.",
   accept = ACCEPTED_IMAGE_TYPES,
 }: {
   name?: string;
@@ -114,7 +114,7 @@ export function AttachmentField({
       {previews.length > 0 && (
         <div className="space-y-2" aria-live="polite">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Selected screenshots
+            Selected attachments
           </span>
           <ul className="grid gap-3 sm:grid-cols-2">
             {previews.map((preview) => (

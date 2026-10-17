@@ -236,7 +236,7 @@ export async function createIssue(
   try {
     const supportIssue = await mongoose.connection.transaction(async (session) => {
       const finalStatus = initialReply && solveIssue ? "SOLVED" : "OPEN";
-      // Filenames are deliberately kept out of `searchText`: a screenshot named
+      // Filenames are deliberately kept out of `searchText`: an image attachment named
       // after the student would otherwise become searchable PII.
       const searchText = initialReply
         ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
@@ -405,7 +405,7 @@ export async function updateIssue(
       if (uploads.length > remaining) {
         throw new UploadValidationError(
           "uploads",
-          `This issue already has ${kept.length} screenshot(s); you can add at most ${Math.max(0, remaining)} more`,
+          `This issue already has ${kept.length} image attachment(s); you can add at most ${Math.max(0, remaining)} more`,
         );
       }
 

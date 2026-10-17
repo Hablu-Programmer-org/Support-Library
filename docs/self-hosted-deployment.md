@@ -237,9 +237,9 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 - [ ] Rate limits: Traefik middleware + app-level limits
 - [ ] Updates: Watch GitHub releases for security patches
 
-## Uploaded screenshots
+## Uploaded image attachments
 
-Screenshots are the only uploaded content. The Server Action body limit (`experimental.serverActions.bodySizeLimit`) is derived from `MAX_UPLOADS_PER_ITEM` and `MAX_UPLOAD_BYTES` at **build** time in `next.config.mjs`, so change those values and rebuild before deploying.
+Images are the only supported attachment type. The Server Action body limit (`experimental.serverActions.bodySizeLimit`) is derived from `MAX_UPLOADS_PER_ITEM` and `MAX_UPLOAD_BYTES` at **build** time in `next.config.mjs`, so change those values and rebuild before deploying.
 
 Backends, chosen by `UPLOAD_STORAGE` (unset -> `disabled` in production, `memory` in dev):
 - `r2` (Cloudflare R2): needs `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (optional `R2_ENDPOINT`). Requires a payment method on the Cloudflare account.

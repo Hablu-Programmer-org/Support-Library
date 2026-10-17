@@ -11,7 +11,7 @@ function configuredAllowedOrigins() {
  * A submitted issue carries at most `MAX_UPLOADS_PER_ITEM` files of
  * `MAX_UPLOAD_BYTES` each, and the limit applies to the whole multipart body, so
  * it must cover every file plus the text fields and multipart overhead. Next's
- * default is 1 MB, which would silently reject any real screenshot.
+ * default is 1 MB, which would silently reject any real image attachment.
  *
  * The numbers below duplicate `lib/uploads/limits.ts` because this config file is
  * plain JavaScript and cannot import TypeScript; keep them in sync.
@@ -47,7 +47,7 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: configuredAllowedOrigins(),
       // A Server Action request carries every selected file in one body, so the
-      // default 1 MB cap would reject any real screenshot.
+      // default 1 MB cap would reject any real image attachment.
       bodySizeLimit: serverActionBodySizeLimit(),
     },
   },

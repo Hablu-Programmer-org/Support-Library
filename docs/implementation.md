@@ -8,7 +8,7 @@
 - Roles and route guards
 - Students: service, actions, list/new/detail UI
 - Cases: service, actions, quick add, list, detail, soft delete
-- Replies with private screenshots and external video links
+- Replies with private image attachments and external video links
 - Solution library with slug routes and internal/public visibility
 - Case-solution linking through `case_solution_links`
 - Global search for cases and solutions
@@ -124,14 +124,14 @@ cmd /c "npm run test:e2e"
   excluded. Addressing this changes publish/search semantics and is deferred.
 - Data migration: environments with `staff-users` rows on the old `VIEWER` value
   need `npm run db:migrate-role-viewer-to-student -- --apply --confirm=<db>`.
-- **Direct image upload** is implemented for PNG/JPEG/GIF/WebP screenshots, with
+- **Direct image upload** is implemented for PNG/JPEG/GIF/WebP attachments, with
   private storage, size/dimension limits and authorized proxy reads. External
   HTTPS video links remain available. PDF/ZIP/Office attachments are not supported.
 - `MAX_LINKS_PER_ITEM` is now read and enforced by `lib/validation/common.ts`
   (`linkLimit()`) in both the video-link parser and Zod schema — the docs match the
   code. Range 1-50; hard ceiling 50; missing/invalid falls back to 10.
 
-### Session log — uploaded screenshots (Cloudflare R2)
+### Session log — uploaded image attachments (Cloudflare R2)
 - Added image-only uploads (PNG/JPEG/GIF/WebP) via Server Actions + R2 (or `memory`).
 - `UPLOAD_STORAGE` unset -> disabled in production, memory otherwise; `r2` requires R2 credentials.
 - New `lib/uploads/*` core, `lib/services/attachments.ts`, `/api/attachments/[id]` route, `uploads[]` on issues/replies, indexes, audit actions, proxy exemption, rate-limit scopes, `uploadEnvSchema` wired into `validateEnv`.
@@ -143,7 +143,7 @@ cmd /c "npm run test:e2e"
 ### Session log — P2a: edit-mode add/remove attachments
 - `updateIssue` now accepts `uploads` + `removeUploadIds`: merges kept + new uploads inside the transaction, audits ATTACHMENT_UPLOAD/ATTACHMENT_DELETE, deletes removed objects after commit, compensates on stale lock/failure, and enforces the per-item cap across kept + new.
 - `updateIssueAction` ingests new files, validates remove ids as ObjectIds, maps upload errors to field errors.
-- `IssueForm` edit mode: shows authorized thumbnail previews for existing screenshots with an open-original link and "Remove" checkbox, plus an AttachmentField for new ones; passes `uploads` from the edit page.
+- `IssueForm` edit mode: shows authorized thumbnail previews for existing image attachments with an open-original link and "Remove" checkbox, plus an AttachmentField for new ones; passes `uploads` from the edit page.
 - Defense-in-depth: cap bypass fixed (was: only incoming batch counted).
 - Gates: lint, typecheck, test (124), build all green.
 

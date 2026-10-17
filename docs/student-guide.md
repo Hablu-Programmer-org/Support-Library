@@ -15,8 +15,8 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached video walkthrough links.
-- Attach up to a few screenshots (PNG, JPEG, GIF or WebP) to a new request. Screenshots are only visible to the support team, not published.
-- Submit a new support request with a title, a description, and optional screenshots/video links.
+- Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. Attachments are only visible to the support team, not published.
+- Submit a new support request with a title, a description, and optional attachments/video links.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
 
@@ -293,7 +293,7 @@ The form asks for two things:
 
 You can also add optional evidence:
 
-- **Screenshots** — select PNG, JPEG, GIF or WebP images, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library.
+- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library.
 - **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
 
 Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
@@ -316,7 +316,7 @@ Students do not see:
 - Internal staff-only controls.
 - Internal/unpublished issues.
 
-Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, status, priority, course, batch, tags, visibility, and dates. Private screenshot uploads are excluded.
+Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, status, priority, course, batch, tags, visibility, and dates. Private image attachments are excluded.
 
 Staff must review an issue before publishing it to the student library. The publish confirmation covers the title, problem description, video links, and public replies.
 

@@ -441,10 +441,10 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
           </FieldWrapper>
 
           {/* New issues use the first picker; edit mode shows existing private
-              screenshots below and provides a second picker for additions. */}
+              image attachments below and provides a second picker for additions. */}
           {!supportIssue && (
             <div className="flex flex-col gap-1.5">
-              <AttachmentField description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
+              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
               <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
             </div>
           )}
@@ -452,7 +452,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
           {supportIssue && (supportIssue.uploads?.length ?? 0) > 0 && (
             <div className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Existing screenshots
+                Existing attachments
               </span>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {(supportIssue.uploads ?? []).map((upload) => {
@@ -511,7 +511,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
 
           {supportIssue && (
             <div className="flex flex-col gap-1.5">
-              <AttachmentField description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
+              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them." />
               <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
             </div>
           )}
@@ -550,8 +550,8 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
             <div className="flex flex-col gap-1.5">
               <AttachmentField
                 name="solutionUploads"
-                label="Answer screenshots"
-                description="PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them."
+                label="Answer attachments"
+                description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only the support team can open them."
               />
               <ErrorMessage error={state.fieldErrors?.solutionUploads?.[0]} />
             </div>

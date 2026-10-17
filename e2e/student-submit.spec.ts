@@ -30,7 +30,7 @@ test.describe("STUDENT issue submission", () => {
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
-    // Uploaded screenshots are covered in attachments.spec.ts; videos remain
+    // Uploaded image attachments are covered in attachments.spec.ts; videos remain
     // external HTTPS links.
     await form
       .locator('textarea[name="videoLinks"]')

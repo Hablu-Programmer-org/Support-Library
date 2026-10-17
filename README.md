@@ -1,6 +1,6 @@
 # Hablu Support Library
 
-Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, private screenshots or external video links, and close issues when solved. Students can submit their own requests with optional screenshots/video links and read published answers.
+Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, private image attachments or external video links, and close issues when solved. Students can submit their own requests with optional attachments/video links and read published answers.
 
 The interface is English throughout, with Inter typography and English date formatting. Issue and reply content can still be written and searched in any language.
 
@@ -163,11 +163,11 @@ cmd /c "npm run test:e2e"
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
 - hp-v2 roles map to `ADMIN` / `MENTOR` / `STUDENT`; an unknown or inactive account is denied
 - Issue forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
-- Issues carry optional private screenshots and issue-level video links as reporter evidence
-- Mentor creates support issues with an optional first answer (text, screenshots, video links)
+- Issues carry optional private image attachments and issue-level video links as reporter evidence
+- Mentor creates support issues with an optional first answer (text, image attachments, video links)
 - If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
-- Mentor adds replies with private screenshots and external video links
-- STUDENT (students) can submit a new issue with optional screenshots/video links — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
+- Mentor adds replies with private image attachments and external video links
+- STUDENT (students) can submit a new issue with optional attachments/video links — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
 - STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to a confirmation page instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, or replies
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts and recent unresolved issues for staff; STUDENT/students hitting `/dashboard` are redirected to the published library

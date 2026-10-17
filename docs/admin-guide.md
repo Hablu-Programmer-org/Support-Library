@@ -1,10 +1,10 @@
 # Admin Guide � Hablu Support Library
 
-## Uploaded screenshots
+## Uploaded image attachments
 
-Issues and replies may carry uploaded screenshots (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. Existing screenshots show authorized thumbnail previews on the issue edit form; select a preview to open the original, or use its checkbox to remove it. New screenshots can also be added there. Replies cannot be edited for attachments in this phase.
+Issues and replies may carry uploaded image attachments (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. Existing attachments show authorized thumbnail previews on the issue edit form; select a preview to open the original, or use its checkbox to remove it. New image attachments can also be added there. Replies cannot be edited for attachments in this phase.
 
-Every screenshot picker also shows a browser-local preview immediately after selection, before the create/edit/reply form is submitted. A preview card's `Remove` button removes that image from the submitted file list. The local preview does not upload or expose the file early.
+Every attachment picker also shows a browser-local preview immediately after image selection, before the create/edit/reply form is submitted. A preview card's `Remove` button removes that image from the submitted file list. The local preview does not upload or expose the file early.
 
 y
 
@@ -171,7 +171,7 @@ Admins can see:
 - Responses.
 - Reply author names.
 - Reply creation and edited markers.
-- Video links and private screenshots.
+- Video links and private image attachments.
 - Course.
 - Batch.
 - Published date.
@@ -229,7 +229,7 @@ Before publishing, remove or generalize:
 - Phone number.
 - Discord/Facebook profile.
 - Payment transaction ID.
-- Private screenshot content.
+- Private image attachment content.
 - LMS user ID.
 - Address or location.
 - Passwords, tokens, OTPs, or recovery codes.
@@ -254,11 +254,11 @@ Good public wording:
 Bad public wording:
 
 - `Rahim from batch 7 cannot pay with 01XXXXXXXXX.`
-- `rahim@example.com sent this screenshot with payment ID...`
+- `rahim@example.com sent this private image with payment ID...`
 
 ## 10. Video Link Review
 
-The app stores video links and privately uploads screenshot images. It does not accept PDF, ZIP, Office, or other generic file attachments.
+The app stores video links and privately uploads image attachments. It does not accept PDF, ZIP, Office, or other generic file attachments.
 
 Video link format:
 
@@ -286,7 +286,7 @@ Admin review steps:
 1. Confirm every expected link appears after saving.
 2. Open important links to verify they work.
 3. Review link titles, timestamps, summaries, and URLs for PII.
-4. Remember that privately uploaded screenshots are staff-only and excluded from the public projection.
+4. Remember that privately uploaded image attachments are staff-only and excluded from the public projection.
 
 ## 11. Publish To Student Library
 
@@ -413,7 +413,7 @@ Admin reply permissions:
 Reply edit limitation:
 
 - The current edit form changes only the reply body.
-- Video links and screenshots cannot be edited through the reply edit form.
+- Video links and attachments cannot be edited through the reply edit form.
 - To change a video link on an existing reply, delete the reply and add a corrected reply, or add a follow-up reply.
 
 Any successful reply add, edit, or delete makes the issue `INTERNAL` until admin review.
@@ -698,7 +698,7 @@ Before publishing:
 - [ ] Review every reply body.
 - [ ] Review every video link title, timestamp, summary, hostname, and URL.
 - [ ] Confirm expected links actually saved and open correctly.
-- [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or private screenshots are visible.
+- [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or private image attachments are visible.
 - [ ] Confirm status is appropriate for students.
 - [ ] Check the PII confirmation box.
 - [ ] Click `Publish to library`.

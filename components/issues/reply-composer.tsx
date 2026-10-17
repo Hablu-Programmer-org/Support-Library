@@ -28,7 +28,7 @@ export function ReplyComposer({ issueId, csrfToken = "" }: { issueId: string; cs
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <TextAreaField name="body" label="Response" rows={5} required maxLength={20_000} />
         <details className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-          <summary className="cursor-pointer text-sm font-semibold">Add screenshots or video links</summary>
+          <summary className="cursor-pointer text-sm font-semibold">Add attachments or video links</summary>
           <div className="mt-3 grid gap-3">
             <AttachmentField />
             <TextAreaField name="videoLinks" label="Video links" rows={2} description="One per line: title|https://url|timestamp|summary" />

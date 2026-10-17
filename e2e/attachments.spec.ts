@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 import { formFor, submitAndWait } from "./form-helpers";
 
 /**
- * Uploaded screenshots: stored server-side, never published, and served only
+ * Uploaded image attachments: stored server-side, never published, and served only
  * through the authorized download route.
  */
 test.describe("uploaded attachments", () => {
@@ -35,11 +35,11 @@ test.describe("uploaded attachments", () => {
 
     const uploadInput = form.locator('input[name="uploads"]');
     await uploadInput.setInputFiles([
-      { name: "screenshot.png", mimeType: "image/png", buffer: png },
+      { name: "attachment.png", mimeType: "image/png", buffer: png },
       { name: "remove-me.png", mimeType: "image/png", buffer: Buffer.from(png) },
     ]);
 
-    const localPreview = form.locator('img[alt="Preview of screenshot.png"]');
+    const localPreview = form.locator('img[alt="Preview of attachment.png"]');
     await expect(localPreview).toBeVisible();
     await expect(localPreview).toHaveAttribute("src", /^blob:/);
     await expect(form.locator('img[alt="Preview of remove-me.png"]')).toBeVisible();
@@ -50,12 +50,12 @@ test.describe("uploaded attachments", () => {
       await uploadInput.evaluate((input: HTMLInputElement) =>
         Array.from(input.files ?? []).map((file) => file.name),
       ),
-    ).toEqual(["screenshot.png"]);
+    ).toEqual(["attachment.png"]);
 
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
     await expect(pageErrors).toEqual([]);
 
-    // Staff pick up the case and the screenshot is visible as an attachment.
+    // Staff pick up the case and the selected image is visible as an attachment.
     const adminContext = await browser.newContext({
       storageState: "e2e/.auth/admin.json",
       baseURL: test.info().project.use.baseURL as string,
@@ -66,7 +66,7 @@ test.describe("uploaded attachments", () => {
     await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
     await expect(adminPage.getByRole("heading", { name: "Attachments" })).toBeVisible();
 
-    const image = adminPage.locator('img[alt="screenshot.png"]');
+    const image = adminPage.locator('img[alt="attachment.png"]');
     await expect(image).toBeVisible();
     const src = await image.getAttribute("src");
     expect(src).toMatch(/^\/api\/attachments\/[a-f0-9]{24}$/);
@@ -107,12 +107,12 @@ test.describe("uploaded attachments", () => {
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
-      .fill("My screenshot is actually text.");
+      .fill("My selected image is actually text.");
 
     await form
       .locator('input[name="uploads"]')
       .setInputFiles({
-        name: "screenshot.png",
+        name: "attachment.png",
         mimeType: "image/png",
         buffer: Buffer.from("this is not an image"),
       });

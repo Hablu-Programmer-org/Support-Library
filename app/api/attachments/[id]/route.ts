@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  * Authorization:
  * - any ACTIVE staff member (ADMIN/MENTOR) may read any attachment, and
  * - the uploader may read their own upload, so a student can retrieve the
- *   screenshot they submitted even though uploads are never published.
+ *   image attachment they submitted even though uploads are never published.
  *
  * Everything else is answered with 404 (never 403) so the endpoint cannot be
  * used to probe whether an arbitrary attachment id exists.

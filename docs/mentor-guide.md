@@ -190,7 +190,7 @@ Click `New Issue` from the issue list.
 The create page has these main sections:
 
 - Student Identity.
-- Issue Details (title, problem description, private screenshots, and optional video links).
+- Issue Details (title, problem description, private image attachments, and optional video links).
 - Answer (Optional).
 - Additional Details.
 
@@ -252,9 +252,9 @@ Optional metadata:
 | Priority | Low, Normal, High, Urgent. |
 | Video Links | Max 10 HTTPS links, one per line: `title\|url\|timestamp\|summary`. |
 
-Issue-level screenshots and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` screenshots and video links, which belong to the initial staff answer.
+Issue-level attachments and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` attachments and video links, which belong to the initial staff answer. Attachments currently accept images only.
 
-Selected screenshots show local previews before submission. Use a preview card's `Remove` button to exclude that image from the submitted file list. These previews stay in the browser; the remaining files are uploaded only when the form is submitted.
+Selected attachments show local previews before submission. Use a preview card's `Remove` button to exclude that image from the submitted file list. These previews stay in the browser; the remaining files are uploaded only when the form is submitted.
 
 Allowed tag characters:
 
@@ -285,7 +285,7 @@ Examples:
 | --- | --- |
 | `React image not rendering after deployment` | `Rahim cannot load his image` |
 | `GitHub push rejected by remote origin` | `Student email rahim@example.com push issue` |
-| `Payment screenshot link is invalid` | `Bkash transaction 01XXXXXXXXX issue` |
+| `Payment image attachment is invalid` | `Bkash transaction 01XXXXXXXXX issue` |
 
 ## 12. Initial Answer During Issue Creation
 
@@ -294,7 +294,7 @@ The create form includes `Answer (Optional)`.
 You can add:
 
 - Answer body.
-- Private screenshots.
+- Private image attachments.
 - Video links.
 - Solve checkbox.
 
@@ -303,7 +303,7 @@ Behavior:
 - If you add an answer and keep `Mark as solved when an answer is provided` checked, the issue is created as `SOLVED`.
 - If you add an answer but uncheck the solve checkbox, the issue is created as `OPEN`.
 - If you do not add an answer, the issue is created as `OPEN`.
-- If you add only screenshots/video links and no answer body, the app saves this fallback answer: `See the attached screenshots or video links for the answer.`
+- If you add only attachments/video links and no answer body, the app saves this fallback answer: `See the attached images or video links for the answer.`
 
 Use the solve checkbox only when the answer is final enough that no follow-up is expected.
 
@@ -315,7 +315,7 @@ Initial answer during creation and later public responses are not exactly the sa
 | --- | --- | --- |
 | Body required | No, if links exist | Yes |
 | Attachment-only answer | Allowed | Not allowed |
-| Screenshots/video links | Allowed | Allowed |
+| Attachments/video links | Allowed | Allowed |
 | Can set issue solved immediately | Yes, with solve checkbox | No, update status separately |
 | Creates a reply | Yes | Yes |
 
@@ -404,7 +404,7 @@ The `Student snapshot` panel shows:
 
 This information is for staff context only.
 
-Do not copy student name, email, phone, ID, payment details, or private screenshots into fields that may be published:
+Do not copy student name, email, phone, ID, payment details, or private image content into fields that may be published:
 
 - Issue title.
 - Problem description.
@@ -437,10 +437,10 @@ Required:
 
 Optional:
 
-- Private screenshots.
+- Private image attachments.
 - Video links.
 
-Click `Add screenshots or video links` to open the optional fields.
+Click `Add attachments or video links` to open the optional fields.
 
 Important:
 
@@ -465,7 +465,7 @@ UI behavior:
 
 Important limitation:
 
-- Existing video links and screenshots cannot be edited through the reply edit UI.
+- Existing video links and attachments cannot be edited through the reply edit UI.
 - If a video link is wrong, add a corrected follow-up reply or delete the reply and create a new one.
 
 Side effects:
@@ -483,7 +483,7 @@ Mentors can edit:
 - Student identity fields.
 - Issue title.
 - Problem description.
-- Private screenshots.
+- Private image attachments.
 - Video links.
 - Status.
 - Priority.
@@ -503,7 +503,7 @@ Important side effects:
 
 Even a small typo fix can temporarily remove a published issue from the Student Library.
 
-The issue edit form shows current video links as editable lines and authorized thumbnail previews for private screenshots. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another screenshot. Screenshots are never included in the published projection.
+The issue edit form shows current video links as editable lines and authorized thumbnail previews for private image attachments. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another image attachment. Attachments are never included in the published projection.
 
 ## 22. Archive Issue
 
@@ -578,7 +578,7 @@ Remove or generalize:
 - Phone number.
 - Discord/Facebook profile.
 - Payment transaction ID.
-- Private screenshot content.
+- Private image attachment content.
 - LMS ID.
 - Address or location.
 - Any account-sensitive detail.
@@ -591,7 +591,7 @@ Good public wording:
 Bad public wording:
 
 - `Rahim from batch 7 cannot pay with 01XXXXXXXXX.`
-- `rahim@example.com sent this screenshot with payment ID...`
+- `rahim@example.com sent this private image with payment ID...`
 
 ## 25. What Removes An Issue From Student Library
 
@@ -680,7 +680,7 @@ Mobile behavior:
 | View dashboard | Yes | `/dashboard` |
 | View all active issues | Yes | `/dashboard/issues` |
 | Create issue | Yes | `/dashboard/issues/new` |
-| Add issue screenshots/video links | Yes | Issue form |
+| Add issue attachments/video links | Yes | Issue form |
 | Use LMS email lookup | Yes | Issue form |
 | Add first answer during create | Yes | Issue form |
 | Add public response | Yes | Issue detail |
