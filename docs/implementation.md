@@ -37,6 +37,18 @@
   environment at startup (`lib/env.ts`), not just in production.
 - `e2e/student-submit.spec.ts` and `e2e/student-gating.spec.ts` cover the student
   create path, staff pickup, and that students never receive staff controls.
+- **Student Identity is optional for staff.** The create form is ordered
+  `Issue Details → Answer (Optional) → Student Identity (optional) → Additional
+  Details`, so the issue and its answer are the primary work. Staff may record a
+  general issue or reusable solution without naming a learner; when identity is
+  given, name and email are all-or-none. Clearing identity on edit unsets the
+  encrypted email, lookup digest, LMS user id and name, and the detail page shows
+  `General issue (no student)`.
+- **Students get Additional Details** (course/batch/module/lesson slug, tags) and
+  their identity is filled from the session + LMS in the background — the student
+  form has no identity fields to fill in. Student submissions stay `OPEN` with
+  `NORMAL` priority; the metadata is descriptive only and is never treated as
+  enrollment or authorization truth.
 - Issue-level video links: `SupportIssue` carries `videoLinks` as reporter evidence,
   editable by staff on the create/edit form, parsed with the HTTPS-only link parser,
   rendered under the problem description via `LinkList`, and included in the public

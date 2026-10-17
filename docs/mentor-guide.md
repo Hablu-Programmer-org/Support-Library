@@ -187,25 +187,32 @@ Route: `/dashboard/issues/new`
 
 Click `New Issue` from the issue list.
 
-The create page has these main sections:
+The create page has these main sections, in order:
 
-- Student Identity.
 - Issue Details (title, problem description, private image attachments, and optional video links).
 - Answer (Optional).
+- Student Identity (optional).
 - Additional Details.
+
+The issue and its answer are the main part of the form. Student Identity is
+optional: record it only when the case belongs to a specific learner. Leave both
+fields empty for a general issue or a reusable solution.
 
 Quick tips shown in the UI:
 
-- Enter student email first to auto-fill name from LMS.
-- Title must be at least 5 characters.
+- Describe the issue — this is the main part.
 - Add an answer to resolve the issue immediately.
+- Student Identity is optional — add name and email only for a specific student.
 - Use `Cmd+Enter` or `Ctrl+Enter` to submit quickly.
 
 After successful creation, the app redirects to the new issue detail page.
 
 ## 9. Student Identity And LMS Autofill
 
-Required fields:
+Student Identity is optional. Leave both fields empty to record a general issue or
+a reusable solution that does not identify a learner.
+
+If you do fill it in, both fields are required together (all-or-none):
 
 - `Student Name`
 - `Student Email`
@@ -235,8 +242,8 @@ Required issue fields:
 
 | Field | Rule |
 | --- | --- |
-| Student name | 2-120 characters. |
-| Student email | Valid email, max 160 characters, stored lowercased. |
+| Student name | Optional. When given, 2-120 characters; must be paired with a student email. |
+| Student email | Optional. When given, a valid email, max 160 characters, stored lowercased; must be paired with a student name. |
 | Issue title | 5-200 characters. |
 | Problem description | 5-20,000 characters. |
 
@@ -401,6 +408,9 @@ The `Student snapshot` panel shows:
 
 - Student name.
 - Student email.
+
+When no student identity was recorded, the panel shows `General issue (no student)`
+and `No student identity recorded` instead.
 
 This information is for staff context only.
 

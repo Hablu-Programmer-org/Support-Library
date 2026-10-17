@@ -53,6 +53,59 @@ describe("product validation", () => {
     ).toThrow();
   });
 
+  it("allows a general issue with no student identity", () => {
+    const parsed = supportIssueInputSchema.parse({
+      title: "General React image problem",
+      question: "Image show hocche na in React component",
+    });
+
+    expect(parsed.studentName).toBeUndefined();
+    expect(parsed.studentEmail).toBeUndefined();
+  });
+
+  it("accepts optional course metadata for a general issue", () => {
+    const parsed = supportIssueInputSchema.parse({
+      title: "General React image problem",
+      question: "Image show hocche na in React component",
+      courseSlug: "react-beginner",
+      batchNo: "2",
+      moduleSlug: "assets",
+      contentSlug: "images-lecture",
+      tags: ["React", "image"],
+    });
+
+    expect(parsed.batchNo).toBe(2);
+    expect(parsed.tags).toEqual(["react", "image"]);
+  });
+
+  it("rejects a partial student identity", () => {
+    expect(() =>
+      supportIssueInputSchema.parse({
+        studentName: "Rahim Uddin",
+        title: "React image problem",
+        question: "Image show hocche na in React component",
+      }),
+    ).toThrow(/both student name and email/i);
+
+    expect(() =>
+      supportIssueInputSchema.parse({
+        studentEmail: "rahim@example.com",
+        title: "React image problem",
+        question: "Image show hocche na in React component",
+      }),
+    ).toThrow(/both student name and email/i);
+  });
+
+  it("rejects an LMS user id without a student email", () => {
+    expect(() =>
+      supportIssueInputSchema.parse({
+        lmsUserId: "lms-123",
+        title: "React image problem",
+        question: "Image show hocche na in React component",
+      }),
+    ).toThrow(/requires a student identity/i);
+  });
+
   it("accepts replies with external video links", () => {
     const parsed = supportReplyInputSchema.parse({
       issueId: objectId,

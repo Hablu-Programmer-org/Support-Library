@@ -340,50 +340,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
           {state.fieldErrors._form[0]}
         </p>
       )}
-      {/* Section 1: Student Identity */}
-      <SectionCard
-        title="Student Identity"
-        icon={<UserIcon size={20} />}
-        description="Enter the student's email to auto-fill their name from the LMS database."
-        required
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          <StudentFields
-            name={formData.studentName}
-            email={formData.studentEmail}
-            lmsUserId={formData.lmsUserId}
-            nameError={state.fieldErrors?.studentName?.[0]}
-            emailError={state.fieldErrors?.studentEmail?.[0]}
-            onNameChange={handleStudentNameChange}
-            onEmailChange={handleStudentEmailChange}
-            onLmsUserIdChange={handleLmsUserIdChange}
-            csrfToken={csrfToken}
-          />
-
-          {!minimal && (
-            <FieldWrapper
-              label="Status"
-              required
-              error={state.fieldErrors?.status?.[0]}
-            >
-              <ControlledSelect
-                name="status"
-                value={formData.status}
-                onChange={handleChange("status")}
-                error={state.fieldErrors?.status?.[0]}
-              >
-                {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabels[status]}
-                  </option>
-                ))}
-              </ControlledSelect>
-            </FieldWrapper>
-          )}
-        </div>
-      </SectionCard>
-
-      {/* Section 2: Issue Details */}
+      {/* Section 1: Issue Details — the issue and its answer are the priority. */}
       <SectionCard
         title="Issue Details"
         icon={<FileTextIcon size={20} />}
@@ -424,6 +381,27 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
               placeholder="Describe the issue in detail. Include steps to reproduce, expected behavior, and actual behavior."
             />
           </FieldWrapper>
+
+          {!minimal && (
+            <FieldWrapper
+              label="Status"
+              required
+              error={state.fieldErrors?.status?.[0]}
+            >
+              <ControlledSelect
+                name="status"
+                value={formData.status}
+                onChange={handleChange("status")}
+                error={state.fieldErrors?.status?.[0]}
+              >
+                {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
+                  <option key={status} value={status}>
+                    {statusLabels[status]}
+                  </option>
+                ))}
+              </ControlledSelect>
+            </FieldWrapper>
+          )}
 
           <FieldWrapper
             label="Video Links"
@@ -518,7 +496,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
         </div>
       </SectionCard>
 
-      {/* Section 3: Answer (Optional) - only on create/minimal */}
+      {/* Section 2: Answer (Optional) - only on create/minimal */}
       {!supportIssue && minimal && (
         <Accordion
           title="Answer (Optional)"
@@ -587,6 +565,34 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
           </div>
         </Accordion>
       )}
+
+      {/* Section 3: Student Identity (optional) — a general issue or reusable
+          solution may name no learner; when given, name and email are all-or-none. */}
+      <Accordion
+        title="Student Identity (optional)"
+        icon={<UserIcon size={20} />}
+        defaultOpen
+        contentClassName="space-y-4"
+      >
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Add the student&apos;s name and email when the case belongs to a specific
+          learner; the name auto-fills from the LMS by email. Leave both empty for a
+          general issue or solution that does not identify anyone.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <StudentFields
+            name={formData.studentName}
+            email={formData.studentEmail}
+            lmsUserId={formData.lmsUserId}
+            nameError={state.fieldErrors?.studentName?.[0]}
+            emailError={state.fieldErrors?.studentEmail?.[0]}
+            onNameChange={handleStudentNameChange}
+            onEmailChange={handleStudentEmailChange}
+            onLmsUserIdChange={handleLmsUserIdChange}
+            csrfToken={csrfToken}
+          />
+        </div>
+      </Accordion>
 
       {/* Section 4: Additional Details (Metadata) */}
       <Accordion

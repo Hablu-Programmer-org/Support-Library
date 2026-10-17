@@ -3,7 +3,8 @@
 import { useActionState, useRef, useState } from "react";
 
 import { createStudentIssueAction } from "@/actions/issues";
-import { CheckCircleIcon, HelpCircleIcon } from "@/components/icons";
+import { Accordion } from "@/components/issues/accordion";
+import { CheckCircleIcon, HelpCircleIcon, SettingsIcon } from "@/components/icons";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { nativeFieldClass, nativeTextareaClass } from "@/lib/config/fields";
 
@@ -20,6 +21,11 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
   const [videoLinks, setVideoLinks] = useState("");
+  const [courseSlug, setCourseSlug] = useState("");
+  const [batchNo, setBatchNo] = useState("");
+  const [moduleSlug, setModuleSlug] = useState("");
+  const [contentSlug, setContentSlug] = useState("");
+  const [tags, setTags] = useState("");
   const operationIdRef = useRef<HTMLInputElement>(null);
 
   const ensureOperationId = () => {
@@ -66,8 +72,9 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
         <div className="space-y-4 px-5 py-6 sm:px-7 sm:py-7">
           {email && (
             <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-              Submitting as <span className="font-medium">{email}</span>. The support team
-              will reach you at this address.
+              Submitting as <span className="font-medium">{email}</span>. Your identity
+              is taken from your account automatically, so there is nothing to fill in.
+              The support team will reach you at this address.
             </p>
           )}
 
@@ -162,6 +169,123 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
           </label>
         </div>
       </div>
+
+      <Accordion
+        title="Additional Details (optional)"
+        icon={<SettingsIcon size={20} />}
+        contentClassName="space-y-4"
+      >
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          If your problem is about a specific course or lesson, add it here so the
+          team can find the right content faster.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Course slug
+            </span>
+            <input
+              className={nativeFieldClass}
+              name="courseSlug"
+              value={courseSlug}
+              onChange={(event) => setCourseSlug(event.target.value)}
+              maxLength={120}
+              placeholder="e.g., react-beginner"
+              aria-invalid={state.fieldErrors?.courseSlug?.[0] ? "true" : "false"}
+            />
+            {state.fieldErrors?.courseSlug?.[0] && (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.courseSlug[0]}
+              </p>
+            )}
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Batch number
+            </span>
+            <input
+              className={nativeFieldClass}
+              name="batchNo"
+              type="number"
+              min={1}
+              max={9999}
+              value={batchNo}
+              onChange={(event) => setBatchNo(event.target.value)}
+              placeholder="e.g., 1"
+              aria-invalid={state.fieldErrors?.batchNo?.[0] ? "true" : "false"}
+            />
+            {state.fieldErrors?.batchNo?.[0] && (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.batchNo[0]}
+              </p>
+            )}
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Module slug
+            </span>
+            <input
+              className={nativeFieldClass}
+              name="moduleSlug"
+              value={moduleSlug}
+              onChange={(event) => setModuleSlug(event.target.value)}
+              maxLength={120}
+              placeholder="e.g., assets"
+              aria-invalid={state.fieldErrors?.moduleSlug?.[0] ? "true" : "false"}
+            />
+            {state.fieldErrors?.moduleSlug?.[0] && (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.moduleSlug[0]}
+              </p>
+            )}
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Lesson slug
+            </span>
+            <input
+              className={nativeFieldClass}
+              name="contentSlug"
+              value={contentSlug}
+              onChange={(event) => setContentSlug(event.target.value)}
+              maxLength={120}
+              placeholder="e.g., images-lecture"
+              aria-invalid={state.fieldErrors?.contentSlug?.[0] ? "true" : "false"}
+            />
+            {state.fieldErrors?.contentSlug?.[0] && (
+              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                {state.fieldErrors.contentSlug[0]}
+              </p>
+            )}
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Tags
+          </span>
+          <input
+            className={nativeFieldClass}
+            name="tags"
+            value={tags}
+            onChange={(event) => setTags(event.target.value)}
+            placeholder="react, image, rendering"
+            aria-invalid={state.fieldErrors?.tags?.[0] ? "true" : "false"}
+          />
+          {state.fieldErrors?.tags?.[0] ? (
+            <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              {state.fieldErrors.tags[0]}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Separate with commas, lowercase letters and numbers only.
+            </p>
+          )}
+        </label>
+      </Accordion>
 
       <button
         type="submit"

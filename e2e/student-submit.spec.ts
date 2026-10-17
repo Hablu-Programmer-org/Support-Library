@@ -36,6 +36,12 @@ test.describe("STUDENT issue submission", () => {
       .locator('textarea[name="videoLinks"]')
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
 
+    // Optional course context travels with the request.
+    const additional = form.locator("details").filter({ hasText: "Additional Details" });
+    await additional.locator("summary").click();
+    await additional.locator('input[name="courseSlug"]').fill("react-beginner");
+    await additional.locator('input[name="tags"]').fill("buffering, video");
+
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
     await expect(
       page.getByRole("heading", { name: "Your request has been submitted" }),
@@ -58,11 +64,12 @@ test.describe("STUDENT issue submission", () => {
     await expect(issueHeading).toBeVisible();
     await expect(issueCard).toContainText("student@hablu-programmer.com");
 
-    // The student's video link is preserved end-to-end on the internal case.
+    // The student's video link and optional course context are preserved.
     await issueHeading.click();
     await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
     await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
     await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
+    await expect(adminPage.getByText("react-beginner")).toBeVisible();
 
     await adminContext.close();
   });

@@ -8,6 +8,24 @@ import {
   videoLinkSchema,
 } from "./shared";
 
+const encryptedStudentEmailSchema = new mongoose.Schema(
+  {
+    ciphertext: { type: String, required: true },
+    iv: { type: String, required: true },
+    authTag: { type: String, required: true },
+    keyVersion: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const studentEmailLookupSchema = new mongoose.Schema(
+  {
+    digest: { type: String, required: true },
+    keyVersion: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const publicationEventSchema = new mongoose.Schema(
   {
     action: {
@@ -23,20 +41,12 @@ const publicationEventSchema = new mongoose.Schema(
 
 const supportIssueSchema = new mongoose.Schema(
   {
-    studentName: { type: String, required: true, trim: true, maxlength: 120 },
+    studentName: { type: String, trim: true, maxlength: 120, default: null },
     // Legacy fields remain readable only until the guarded migration removes them.
     studentEmail: { type: String, select: false },
     studentEmailHash: { type: String, select: false },
-    studentEmailEncrypted: {
-      ciphertext: { type: String, required: true },
-      iv: { type: String, required: true },
-      authTag: { type: String, required: true },
-      keyVersion: { type: String, required: true },
-    },
-    studentEmailLookup: {
-      digest: { type: String, required: true },
-      keyVersion: { type: String, required: true },
-    },
+    studentEmailEncrypted: { type: encryptedStudentEmailSchema, default: null },
+    studentEmailLookup: { type: studentEmailLookupSchema, default: null },
     lmsUserId: { type: String, default: null },
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },

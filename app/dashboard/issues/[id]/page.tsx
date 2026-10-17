@@ -212,10 +212,10 @@ export default async function IssueDetailPage({
                 </h2>
               </div>
               <p className="wrap-break-word font-medium text-slate-900 dark:text-white">
-                {staffIssue.studentName}
+                {staffIssue.studentName || "General issue (no student)"}
               </p>
               <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
-                {staffIssue.studentEmail ?? "No email recorded"}
+                {staffIssue.studentEmail ?? "No student identity recorded"}
               </p>
             </section>
           )}

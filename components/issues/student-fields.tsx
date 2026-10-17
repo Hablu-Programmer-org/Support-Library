@@ -105,7 +105,7 @@ export function StudentFields({
     <>
       <label className={nativeLabelClass}>
         <span className="flex items-center gap-1">
-          Student Name <span className="text-danger" aria-hidden="true">*</span>
+          Student Name <span className="text-slate-400 dark:text-slate-500">(optional)</span>
         </span>
         <input
           className={nativeFieldClass}
@@ -116,7 +116,6 @@ export function StudentFields({
             nameTouchedRef.current = true;
             setNameTouched(true);
           }}
-          required
           minLength={2}
           maxLength={120}
           disabled={isNameDisabled}
@@ -140,7 +139,7 @@ export function StudentFields({
       <div className="flex flex-col gap-1">
         <label className={nativeLabelClass}>
           <span className="flex items-center gap-1">
-            Student Email <span className="text-danger" aria-hidden="true">*</span>
+            Student Email <span className="text-slate-400 dark:text-slate-500">(optional)</span>
           </span>
           <input
             className={nativeFieldClass}
@@ -157,12 +156,12 @@ export function StudentFields({
               onLmsUserIdChange("");
               setLookup(value.trim().length < 5 ? "idle" : "checking");
             }}
-            required
             maxLength={160}
             aria-invalid={emailError ? "true" : "false"}
           />
           <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-            Enter an LMS email to fill in the name automatically.
+            Enter an LMS email to fill in the name automatically. Leave both fields
+            empty to record a general issue without a student.
           </span>
           {emailError && (
             <span className="text-sm text-danger-600 dark:text-danger-400" role="alert">

@@ -87,7 +87,7 @@ test.describe("Issue CRUD (mentor)", () => {
     const form = formFor(page, "Create Issue");
 
     await form.locator('input[name="studentEmail"]').fill("e2e.lms.student@test.com");
-    const studentName = form.getByLabel("Student Name *").first();
+    const studentName = form.getByLabel(/Student Name/).first();
     await expect(studentName).toHaveValue("E2E LMS Student");
     await expect(page.getByText("Found in LMS")).toBeVisible();
     await expect(studentName).toBeVisible();
@@ -242,6 +242,25 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(
       page.getByRole("alert").filter({ hasText: "Use the Archive issue action instead" }),
     ).toBeVisible();
+  });
+
+  test("creates a general issue without any student identity", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create Issue");
+    await form.locator('input[name="title"]').fill("E2E general issue without student");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("A general problem that does not identify any learner.");
+    await form.locator('input[name="solveIssue"]').uncheck();
+
+    // Student Identity is optional: submitting with both fields empty must succeed
+    // and record a general issue rather than failing validation.
+    await submitCreate(page);
+
+    await expect(
+      page.getByRole("heading", { name: "E2E general issue without student" }),
+    ).toBeVisible();
+    await expect(page.getByText("General issue (no student)")).toBeVisible();
   });
 
   test("archives an issue from the detail page", async ({ page }) => {

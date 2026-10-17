@@ -298,7 +298,17 @@ You can also add optional evidence:
 
 Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
 
-Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email.
+**Additional Details (optional)** lets you point the team at the exact place the problem happens:
+
+- Course slug.
+- Batch number.
+- Module slug.
+- Lesson slug.
+- Tags.
+
+Fill these in only if you know them; leaving them empty is fine. Your request always starts as `Open` with normal priority, so you do not choose a status or priority.
+
+Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email. Your identity is taken from your signed-in account automatically.
 
 After you submit, a confirmation page appears and the request goes to the support team. You cannot add replies to it and you cannot see it in the library until the team reviews and publishes it; if they do not publish it, they answer you by email instead.
 

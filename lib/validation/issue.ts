@@ -9,8 +9,8 @@ import {
 } from "./common";
 
 export const supportIssueInputSchema = z.strictObject({
-  studentName: z.string().trim().min(2).max(120),
-  studentEmail: z.string().trim().toLowerCase().email().max(160),
+  studentName: z.string().trim().min(2).max(120).optional(),
+  studentEmail: z.string().trim().toLowerCase().email().max(160).optional(),
   lmsUserId: z.string().trim().max(64).optional(),
   title: z.string().trim().min(5).max(200),
   question: z.string().trim().min(5).max(20_000),
@@ -23,6 +23,22 @@ export const supportIssueInputSchema = z.strictObject({
   priority: z.enum(CASE_PRIORITIES).default("NORMAL"),
   tags: tagsSchema,
   mentorId: objectIdSchema.optional(),
+}).superRefine((issue, ctx) => {
+  if (Boolean(issue.studentName) !== Boolean(issue.studentEmail)) {
+    const path = issue.studentName ? ["studentEmail"] : ["studentName"];
+    ctx.addIssue({
+      code: "custom",
+      path,
+      message: "Provide both student name and email, or leave both empty",
+    });
+  }
+  if (issue.lmsUserId && !issue.studentEmail) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["lmsUserId"],
+      message: "LMS user id requires a student identity",
+    });
+  }
 });
 
 export const supportIssueFilterSchema = z.strictObject({

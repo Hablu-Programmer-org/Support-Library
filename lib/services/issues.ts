@@ -209,8 +209,8 @@ export async function createIssue(
   await dbConnect();
   const actorObjectId = new mongoose.Types.ObjectId(actorId);
 
-  const { studentEmail, ...issueFields } = parsed;
-  const protectedEmail = protectStudentEmail(studentEmail);
+  const { studentEmail, studentName, lmsUserId, ...issueFields } = parsed;
+  const protectedEmail = studentEmail ? protectStudentEmail(studentEmail) : null;
 
   // A student submission is never assigned a mentor — the submitter is the
   // student, not the owner of the case. For MENTOR the mentor is always the
@@ -243,8 +243,14 @@ export async function createIssue(
         : buildIssueSearchText(parsed);
       const [createdIssue] = await SupportIssueModel.create([{
         ...issueFields,
-        studentEmailEncrypted: protectedEmail.encrypted,
-        studentEmailLookup: protectedEmail.lookup,
+        studentName: studentName ?? null,
+        lmsUserId: lmsUserId ?? null,
+        ...(protectedEmail
+          ? {
+              studentEmailEncrypted: protectedEmail.encrypted,
+              studentEmailLookup: protectedEmail.lookup,
+            }
+          : {}),
         status: finalStatus,
         searchText,
         mentorId: effectiveMentorId,
@@ -336,8 +342,8 @@ export async function updateIssue(
   const parsed = supportIssueInputSchema.parse(input);
   await dbConnect();
 
-  const { studentEmail, status, ...issueFields } = parsed;
-  const protectedEmail = protectStudentEmail(studentEmail);
+  const { studentEmail, studentName, lmsUserId, status, ...issueFields } = parsed;
+  const protectedEmail = studentEmail ? protectStudentEmail(studentEmail) : null;
 
   // Editing can never archive an issue: ARCHIVED is only reachable through the
   // dedicated soft-delete flow, which also clears visibility, records the
@@ -355,8 +361,14 @@ export async function updateIssue(
   const updateData: Record<string, unknown> = {
     ...issueFields,
     ...(safeStatus ? { status: safeStatus } : {}),
-    studentEmailEncrypted: protectedEmail.encrypted,
-    studentEmailLookup: protectedEmail.lookup,
+    ...(protectedEmail
+      ? {
+          studentName,
+          studentEmailEncrypted: protectedEmail.encrypted,
+          studentEmailLookup: protectedEmail.lookup,
+        }
+      : {}),
+    ...(lmsUserId ? { lmsUserId } : {}),
     visibility: "INTERNAL",
     publishedAt: null,
     publishedBy: null,
@@ -415,7 +427,20 @@ export async function updateIssue(
         { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
         {
           $set: updateData,
-          $unset: { studentEmail: "", studentEmailHash: "" },
+          $unset: {
+            studentEmail: "",
+            studentEmailHash: "",
+            ...(!protectedEmail
+              ? {
+                  studentName: "",
+                  studentEmailEncrypted: "",
+                  studentEmailLookup: "",
+                  lmsUserId: "",
+                }
+              : !lmsUserId
+                ? { lmsUserId: "" }
+                : {}),
+          },
           $push: {
             publicationHistory: {
               action: "CONTENT_CHANGED",

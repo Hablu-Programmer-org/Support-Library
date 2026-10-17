@@ -139,19 +139,19 @@ export default async function NewIssuePage() {
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   1
                 </span>
-                Enter student email first to auto-fill name from LMS
+                Describe the issue — this is the main part
               </li>
               <li className="flex items-center gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   2
                 </span>
-                Title must be at least 5 characters
+                Add an answer to resolve the issue immediately
               </li>
               <li className="flex items-center gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
                   3
                 </span>
-                Add an answer to resolve the issue immediately
+                Student Identity is optional — add name and email only for a specific student
               </li>
               <li className="flex items-center gap-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">

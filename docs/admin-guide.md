@@ -176,7 +176,7 @@ Admins can see:
 - Batch.
 - Published date.
 - Created date.
-- Student snapshot with student name and email.
+- Student snapshot with student name and email, or `General issue (no student)` when the identity was left empty.
 - Manage issue panel.
 - Publish or unpublish form.
 - Archive danger zone.
@@ -424,12 +424,15 @@ Route: `/dashboard/issues/new`
 
 Admins can create issues the same way mentors can.
 
-Create form sections:
+Create form sections, in order:
 
-- Student Identity.
 - Issue Details.
 - Answer (Optional).
+- Student Identity (optional).
 - Additional Details.
+
+Student identity is optional: leave both name and email empty for a general issue,
+or provide both together. An all-or-none rule prevents a half-recorded learner.
 
 Student identity behavior:
 
@@ -456,8 +459,8 @@ Route: `/dashboard/issues/[id]/edit`
 
 Admins can edit:
 
-- Student name.
-- Student email.
+- Student name (optional).
+- Student email (optional).
 - LMS user ID through LMS lookup/manual form state.
 - Issue title.
 - Problem description.

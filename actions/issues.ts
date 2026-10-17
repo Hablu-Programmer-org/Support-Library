@@ -90,6 +90,9 @@ const parseIssueForm = (formData: FormData) =>
   });
 
 async function bindLmsIdentity(issueData: z.infer<typeof supportIssueInputSchema>) {
+  if (!issueData.studentEmail) {
+    return { ...issueData, lmsUserId: undefined };
+  }
   const lmsUser = await findLmsUserByEmail(issueData.studentEmail);
   if (issueData.lmsUserId && issueData.lmsUserId !== lmsUser?.userId) {
     throw new Error("LMS_IDENTITY_MISMATCH");
@@ -267,10 +270,14 @@ export async function createStudentIssueAction(
         lmsUserId: lmsUser?.userId,
         title: formValue(formData, "title"),
         question: formValue(formData, "question"),
+        courseSlug: formValue(formData, "courseSlug"),
+        batchNo: formValue(formData, "batchNo"),
+        moduleSlug: formValue(formData, "moduleSlug"),
+        contentSlug: formValue(formData, "contentSlug"),
         videoLinks,
         status: "OPEN",
         priority: "NORMAL",
-        tags: [],
+        tags: parseTags(formValue(formData, "tags")),
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -278,13 +285,23 @@ export async function createStudentIssueAction(
         if (
           fieldErrors.title ||
           fieldErrors.question ||
-          fieldErrors.videoLinks
+          fieldErrors.videoLinks ||
+          fieldErrors.courseSlug ||
+          fieldErrors.batchNo ||
+          fieldErrors.moduleSlug ||
+          fieldErrors.contentSlug ||
+          fieldErrors.tags
         ) {
           return {
             fieldErrors: {
               title: fieldErrors.title,
               question: fieldErrors.question,
               videoLinks: fieldErrors.videoLinks,
+              courseSlug: fieldErrors.courseSlug,
+              batchNo: fieldErrors.batchNo,
+              moduleSlug: fieldErrors.moduleSlug,
+              contentSlug: fieldErrors.contentSlug,
+              tags: fieldErrors.tags,
             },
           };
         }
