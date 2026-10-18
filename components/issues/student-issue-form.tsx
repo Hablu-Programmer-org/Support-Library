@@ -10,7 +10,11 @@ import {
 } from "@/components/icons";
 import { Accordion } from "@/components/issues/accordion";
 import { AttachmentField } from "@/components/shared/attachment-field";
-import { nativeFieldClass, nativeTextareaClass } from "@/lib/config/fields";
+import {
+  nativeFieldClass,
+  nativeTextareaClass,
+  nativeTextareaCompactClass,
+} from "@/lib/config/fields";
 
 type StudentIssueFormProps = {
   csrfToken: string;
@@ -160,7 +164,7 @@ export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
               Video links
             </span>
             <textarea
-              className={nativeTextareaClass}
+              className={nativeTextareaCompactClass}
               name="videoLinks"
               value={videoLinks}
               onChange={(event) => setVideoLinks(event.target.value)}
@@ -182,8 +186,7 @@ export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 One per line:{" "}
-                <span className="font-medium">Title|https://link</span>{" "}
-                (optionally add |timestamp and a summary).
+                <span className="font-medium">Title|https://link</span>
               </p>
             )}
           </label>

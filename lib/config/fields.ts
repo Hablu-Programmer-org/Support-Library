@@ -24,5 +24,11 @@ export const nativeSelectClass = `${nativeFieldClass} select-chevron`;
 
 export const nativeTextareaClass = `${nativeFieldClass} min-h-24 resize-y`;
 
+/**
+ * Same as nativeTextareaClass but with a much lower height floor, for compact
+ * multi-line fields that should not reserve a large empty box.
+ */
+export const nativeTextareaCompactClass = `${nativeFieldClass} min-h-11 resize-y`;
+
 export const nativeLabelClass =
   "flex flex-col gap-1.5 text-sm font-medium text-slate-500 dark:text-slate-400";
