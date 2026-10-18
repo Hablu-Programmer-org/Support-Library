@@ -42,6 +42,10 @@ MONGODB_URI: process.env.MONGODB_URI ?? "",
       AUTH_SECRET: process.env.AUTH_SECRET,
       AUTH_URL: baseURL,
       AUTH_TRUST_HOST: "true",
+      // NEXT_PUBLIC_* is inlined at build time; CI sets this at the job level so
+      // the standalone bundle already contains it. Pinned here too so a run
+      // against a pre-built .next still renders the student "My Courses" link.
+      NEXT_PUBLIC_LMS_URL: "https://www.hablu-programmer.com",
       AUTH_GOOGLE_ID: "e2e.invalid.apps.googleusercontent.com",
       AUTH_GOOGLE_SECRET: "e2e-only-placeholder",
       TRUSTED_PROXY_HOPS: "1",

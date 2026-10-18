@@ -46,7 +46,7 @@ export default defineConfig({
       // Pinned rather than inherited so the student-only "My Courses" link
       // renders the same in CI and on a developer machine — a stale
       // .env.local must not silently hide it from the E2E contract.
-      NEXT_PUBLIC_LMS_URL: "https://lms.example.com",
+      NEXT_PUBLIC_LMS_URL: "https://www.hablu-programmer.com",
     },
   },
   projects: [

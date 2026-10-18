@@ -113,7 +113,7 @@ test.describe("Shell: My Courses link (student)", () => {
     const nav = page.locator('header nav[aria-label="Primary"]');
     const myCourses = nav.getByRole("link", { name: "My Courses" });
     await expect(myCourses).toBeVisible();
-    await expect(myCourses).toHaveAttribute("href", "https://lms.example.com/dashboard/my-courses");
+    await expect(myCourses).toHaveAttribute("href", "https://www.hablu-programmer.com/dashboard/my-courses");
     await expect(myCourses).toHaveAttribute("target", "_blank");
     await expect(myCourses).toHaveAttribute("rel", /noopener/);
     // A different origin can never match this app's pathname, and the item is

@@ -30,6 +30,10 @@ jobs:
       AUTH_TRUST_HOST: "true"
       AUTH_URL: http://127.0.0.1:12001
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:12001
+      # Inlined into the client bundle at build time, so it must be present in
+      # the job env (the "Clean production build" step) — setting it only in the
+      # Playwright webServer would be too late for the standalone output.
+      NEXT_PUBLIC_LMS_URL: https://www.hablu-programmer.com
       AUTH_GOOGLE_ID: ci.invalid.apps.googleusercontent.com
       AUTH_GOOGLE_SECRET: ci-only-placeholder
     steps:
