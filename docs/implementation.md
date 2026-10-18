@@ -57,6 +57,22 @@
 - `MAX_LINKS_PER_ITEM` is enforced: `linkLimit()` (`lib/validation/common.ts`) reads
   it per call and both `lib/parse-links.ts` and the video-link Zod schema apply it.
   Valid range 1-50, hard ceiling 50, and a missing/invalid value falls back to 10.
+- **Cross-app nav.** The topbar's `My Courses` item is an external link to the LMS
+  frontend (students only) and renders only when `NEXT_PUBLIC_LMS_URL` is set, so an
+  unconfigured deployment never ships a link that resolves against this app and 404s.
+  External items are plain `<a target="_blank" rel="noopener noreferrer">`, are
+  excluded from the active-href calculation, and carry `aria-label` so their
+  accessible name survives the label text being hidden below `lg` — four student
+  items do not fit next to the brand and account controls with labels shown.
+- **Live support in this app.** `/dashboard/support` is a session-gated page that
+  renders the daily Zoom room (`lib/live-support.ts`, read from the environment on
+  the server) and a client card (`components/live-support/live-support-card.tsx`)
+  which enables Join only inside a support shift. The shift is resolved in
+  `Asia/Dhaka` via `Intl.DateTimeFormat`; the LMS frontend used the device clock,
+  which put a traveller in the wrong window. The join URL, meeting ID and passcode
+  never reach an unsigned browser — the frontend ships the same values in its public
+  bundle. `scripts/check-live-support-sync.ts` (`npm run check:live-support`) guards
+  the schedule, the Bengali schedule wording and the room against the frontend copy.
 
 ## Search Performance Findings
 
@@ -166,3 +182,15 @@ cmd /c "npm run test:e2e"
 - Image resolution cap aligned with Cloudinary Free at 25 MP. PNG/JPEG/GIF/WebP magic-byte validation, the 8000 px side cap and all existing authorization/compensation rules remain.
 - `.env.example`, SECURITY.md, RUNBOOK.md, deployment docs and tests updated.
 - Gates: lint clean; typecheck clean; 16 test files / 138 tests passing; production build clean; attachment Playwright slice 7/7 passing; production dependency audit 0 vulnerabilities. Live provider smoke test awaits real Cloudinary credentials.
+
+### Session log — cross-app nav + live support join page
+- Nav model (`lib/config/nav.ts`) gained `external`. New items: `My Courses` (external, students only, built by `lib/links.ts` from `NEXT_PUBLIC_LMS_URL`) and `Live support` (`/dashboard/support`). Items are `NavItem | null` filtered to `NavItem`, so "no LMS configured" removes the item rather than breaking the link.
+- `lib/links.ts` normalizes the origin (trailing slash dropped, sub-path kept) and returns `null` for anything that is not http(s). `lib/env.ts` validates `NEXT_PUBLIC_LMS_URL` and the `LIVE_SUPPORT_*` values in every environment (production additionally requires HTTPS outside loopback) via a shared `configurableUrlSchema`.
+- Topbar renders external items as `<a target="_blank" rel="noopener noreferrer">`, keeps them out of `activeHrefFor`, and hides labels below `lg` with `aria-label` preserving the accessible name (mobile contract: 390 px shows icons only).
+- `lib/config/live-support.ts` ports `SUPPORT_SHIFTS`, `toBnDigits`, `supportScheduleBn`, `supportHoursBn` from the frontend and adds `shiftMinutes`/`currentShift` computed in `Asia/Dhaka` with an injectable `Date`. `hourCycle: "h23"` avoids the "24:00" midnight encoding. The Bengali sentence is byte-identical to the frontend's.
+- `lib/live-support.ts` (server-only) resolves the Zoom room from `LIVE_SUPPORT_PLATFORM|JOIN_URL|MEETING_ID|PASSCODE`, defaulting to the standing room; the page passes it to the client card only after `requireSession()`.
+- Card avoids a hydration mismatch by starting at `phase = null` and resolving after mount. The closed state drops the `href` (a `pointer-events-none` link is still activated by Enter) and keeps `role="link"`.
+- New unit tests: `__tests__/live-support.test.ts` (Dhaka boundaries 08:00/11:59/12:00/19:29/19:30/23:59/00:00, midnight-as-0, Bengali copy), `__tests__/links.test.ts` (origin normalization/rejection), `__tests__/env.test.ts` extended. New E2E: `e2e/live-support.spec.ts` (guest redirect, in-slot join via `page.clock`, out-of-slot disabled, meeting details), plus a student `My Courses` case in `e2e/shell.spec.ts`; mentor nav count 2 -> 3.
+- `check:live-support` compares shift numbers, the schedule sentence's literal words and the four room values against the frontend; it resolves paths with `fileURLToPath` (the `new URL(...).pathname` form breaks on Windows) and exits non-zero when a check could not run, so it never reports a false match.
+- New env: `NEXT_PUBLIC_LMS_URL`, `LIVE_SUPPORT_PLATFORM`, `LIVE_SUPPORT_JOIN_URL`, `LIVE_SUPPORT_MEETING_ID`, `LIVE_SUPPORT_PASSCODE` — added to `.env.example`, `compose.example.yml`, CI (compose env + production container smoke), `release.ps1`, `playwright.config.ts` (pinned so E2E is deterministic) and the deployment docs.
+- Gates: lint clean; typecheck clean; 18 test files / 159 tests passing; production build clean (`/dashboard/support` dynamic); `check:live-support` green against the frontend checkout.

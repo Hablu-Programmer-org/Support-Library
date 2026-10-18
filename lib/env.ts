@@ -194,6 +194,70 @@ function checkUploadStorage(env: UploadEnv, context: z.core.$RefinementCtx) {
 
 const uploadEnvSchema = z.object(uploadEnvShape).superRefine(checkUploadStorage);
 
+/**
+ * A configurable http(s) URL.
+ *
+ * Production requires HTTPS outside loopback, matching `AUTH_URL`, so a
+ * misconfigured origin cannot silently downgrade a link or a redirect. Callers
+ * add `.optional().or(z.literal(""))` when the value merely enables a feature
+ * and an empty/absent value should mean "disabled" rather than a boot failure.
+ */
+const configurableUrlSchema = () =>
+  z
+    .string()
+    .trim()
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:";
+      } catch {
+        return false;
+      }
+    }, { message: "must be an http(s) URL" })
+    .refine((value) => {
+      if (process.env.NODE_ENV !== "production") return true;
+      try {
+        const url = new URL(value);
+        return url.protocol === "https:" ||
+          (url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname));
+      } catch {
+        return false;
+      }
+    }, { message: "must use HTTPS outside loopback environments" });
+
+/**
+ * Cross-app links to the Hablu Programmer LMS (the main frontend).
+ *
+ * Optional everywhere, because the Support Library can run standalone: when the
+ * value is missing the "My Courses" nav item is simply not rendered, instead of
+ * pointing at a relative URL on this app's own origin (which would 404).
+ *
+ * It is still validated in every environment — a typo here would otherwise show
+ * up as a dead nav link nobody can explain.
+ */
+const crossAppEnvShape = {
+  NEXT_PUBLIC_LMS_URL: configurableUrlSchema().optional().or(z.literal("")),
+};
+
+const crossAppEnvSchema = z.object(crossAppEnvShape);
+
+/**
+ * Live support meeting details.
+ *
+ * Optional everywhere: unset falls back to the standing Zoom room. An invalid
+ * join URL is rejected at boot rather than rendering a button that points at
+ * nothing. The values are server-side only and are rendered to signed-in
+ * users, so they must never be logged.
+ */
+const liveSupportEnvShape = {
+  LIVE_SUPPORT_PLATFORM: z.string().trim().max(40).optional(),
+  LIVE_SUPPORT_JOIN_URL: configurableUrlSchema().optional().or(z.literal("")),
+  LIVE_SUPPORT_MEETING_ID: z.string().trim().max(40).optional(),
+  LIVE_SUPPORT_PASSCODE: z.string().trim().max(40).optional(),
+};
+
+const liveSupportEnvSchema = z.object(liveSupportEnvShape);
+
 const productionEnvSchema = z
   .object({
     MONGODB_URI: mongoUriSchema,
@@ -241,6 +305,16 @@ export function validateEnv() {
   const uploads = uploadEnvSchema.safeParse(process.env);
   if (!uploads.success) {
     throw new Error(`Invalid upload storage environment: ${issueNames(uploads.error)}`);
+  }
+
+  const crossApp = crossAppEnvSchema.safeParse(process.env);
+  if (!crossApp.success) {
+    throw new Error(`Invalid cross-app link environment: ${issueNames(crossApp.error)}`);
+  }
+
+  const liveSupport = liveSupportEnvSchema.safeParse(process.env);
+  if (!liveSupport.success) {
+    throw new Error(`Invalid live support environment: ${issueNames(liveSupport.error)}`);
   }
 
   if (process.env.NODE_ENV !== "production") return;

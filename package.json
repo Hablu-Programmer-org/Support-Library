@@ -25,6 +25,7 @@
     "db:remove-file-links": "tsx scripts/remove-file-links.ts",
     "clean:e2e-artifacts": "tsx scripts/clean-e2e-artifacts.ts",
     "bench:search": "tsx scripts/bench-search.ts",
+    "check:live-support": "tsx scripts/check-live-support-sync.ts",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
     "verify:full": "npm run verify && npm run test:e2e"
   },

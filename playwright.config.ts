@@ -43,6 +43,10 @@ export default defineConfig({
       LMS_MONGODB_DB: testDb,
       AUTH_SECRET: process.env.AUTH_SECRET,
       AUTH_URL: baseURL,
+      // Pinned rather than inherited so the student-only "My Courses" link
+      // renders the same in CI and on a developer machine — a stale
+      // .env.local must not silently hide it from the E2E contract.
+      NEXT_PUBLIC_LMS_URL: "https://lms.example.com",
     },
   },
   projects: [

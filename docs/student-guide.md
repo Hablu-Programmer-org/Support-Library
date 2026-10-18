@@ -2,7 +2,7 @@
 
 This guide explains how students use the Hablu Support Library, what they can read, what they can search, how to submit a support request, and what actions are not available to students.
 
-The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not a live chat system: you submit a request, the team answers you by email, and you cannot reply inside the app.
+The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not an in-app chat: you submit a request, the team answers you by email, and you cannot reply inside the app. Twice a day the team also opens a live support room on Zoom, which you can join from inside this app (section 12a).
 
 ## 1. What The Support Library Is
 
@@ -15,6 +15,8 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached video walkthrough links.
+- Join the daily live support session on Zoom while the support room is open.
+- Open `My Courses` to jump back to your courses in the Hablu Programmer LMS.
 - Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. Attachments are only visible to the support team, not published.
 - Submit a new support request with a title, a description, and optional attachments/video links.
 
@@ -242,11 +244,16 @@ Students see:
 
 - Hablu Support Library brand link.
 - `Issues` navigation link.
+- `Submit an issue` navigation link.
+- `My Courses` navigation link, which opens your courses in the Hablu Programmer LMS in a new tab. It appears only when the deployment has the LMS address configured.
+- `Live support` navigation link.
 - Theme toggle.
 - Account identity.
 - Sign out control.
 
 Students do not see the staff `Dashboard` navigation link.
+
+On narrow screens the navigation labels are hidden and each link shows its icon only. The link names are still announced to screen readers, so the links work the same way at every screen size.
 
 On mobile:
 
@@ -260,6 +267,33 @@ Theme behavior:
 - You can switch between dark and light mode.
 
 Sign out sends you back to `/login`.
+
+## 12a. Live Support
+
+Route: `/dashboard/support`
+
+Twice a day the support team opens a live support room on Zoom:
+
+| Shift | Time (Bangladesh time) |
+| --- | --- |
+| `Morning shift` | 8:00 AM to 12:00 PM |
+| `Night shift` | 7:30 PM to 12:00 AM |
+
+The page shows:
+
+- Which shift is running right now (`Morning shift` or `Night shift`), or that support is closed.
+- The daily support hours in Bengali.
+- A `Join Zoom Meeting` button.
+- The meeting ID and passcode, so you can join from the Zoom app yourself if the button does not work.
+
+How it behaves:
+
+- The join button works only during a support shift. Outside those hours it is disabled and the page tells you to come back during the support hours.
+- The schedule follows Bangladesh time, not the time zone of your device.
+- The page is available to every signed-in user; it is not tied to a course, batch, or payment status.
+- Try the course documentation and videos first. The team helps much faster when you share what you already tried.
+
+There are also `Join live support` links on the request form and on the confirmation page you see after submitting a request.
 
 ## 13. What Students Cannot Do
 
@@ -382,6 +416,7 @@ Unexpected error:
 | A link opens a new tab. | Video links are external resources and are opened separately. |
 | I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
 | My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
+| The live support join button is disabled. | Support is closed. Come back during a support shift: 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time. |
 
 ## 18. Quick Reference
 
@@ -397,6 +432,8 @@ Unexpected error:
 | Toggle theme | Yes | Topbar/account menu |
 | Sign out | Yes | Topbar/account menu |
 | Submit a support request | Yes | `/dashboard/issues/new` |
+| Join live support | Yes, during a support shift | `/dashboard/support` |
+| Open `My Courses` in the LMS | Yes | Topbar, opens a new tab |
 | Create an issue on behalf of a student | No | Staff only |
 | Reply to issue | No | Staff only |
 | Edit issue | No | Staff only |

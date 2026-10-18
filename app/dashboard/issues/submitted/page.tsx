@@ -41,6 +41,12 @@ export default async function IssueSubmittedPage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-600"
+            href="/dashboard/support"
+          >
+            Join live support
+          </Link>
+          <Link
+            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             href="/dashboard/issues/new"
           >
             Submit another request

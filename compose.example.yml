@@ -14,6 +14,10 @@
 #   NEXT_PUBLIC_APP_URL, NODE_ENV
 # Optional: ALLOWED_ORIGINS, ALLOWED_LINK_HOSTS, MAX_LINKS_PER_ITEM,
 #   MAX_UPLOADS_PER_ITEM, MAX_UPLOAD_BYTES
+#   NEXT_PUBLIC_LMS_URL (origin of the main LMS frontend; unset hides the
+#   "My Courses" nav link), LIVE_SUPPORT_PLATFORM, LIVE_SUPPORT_JOIN_URL,
+#   LIVE_SUPPORT_MEETING_ID, LIVE_SUPPORT_PASSCODE (unset = the standing
+#   Zoom room; these are server-side only and must never be logged)
 # Upload storage: set UPLOAD_STORAGE=cloudinary with CLOUDINARY_CLOUD_NAME,
 #   CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET; or configure the documented R2
 #   variables. Leave UPLOAD_STORAGE unset to disable uploads in production.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
+import Link from "next/link";
 
 import { createStudentIssueAction } from "@/actions/issues";
 import {
@@ -340,6 +341,17 @@ export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
         <CheckCircleIcon size={18} />
         {pending ? "Submitting..." : "Submit request"}
       </button>
+
+      <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+        Need help right now?{" "}
+        <Link
+          className="font-medium text-primary hover:underline"
+          href="/dashboard/support"
+        >
+          Join live support
+        </Link>{" "}
+        during the support hours.
+      </p>
     </form>
   );
 }

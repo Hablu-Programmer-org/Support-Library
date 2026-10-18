@@ -35,6 +35,11 @@ const MANAGED_VARS = [
   "CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB",
   "MAX_UPLOADS_PER_ITEM",
   "MAX_UPLOAD_BYTES",
+  "NEXT_PUBLIC_LMS_URL",
+  "LIVE_SUPPORT_PLATFORM",
+  "LIVE_SUPPORT_JOIN_URL",
+  "LIVE_SUPPORT_MEETING_ID",
+  "LIVE_SUPPORT_PASSCODE",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -248,5 +253,76 @@ describe("validateEnv", () => {
     });
 
     expect(() => validateEnv()).toThrow(/AUTH_SECRET/);
+  });
+
+  it("accepts an empty LMS url, which only hides a nav link", () => {
+    setEnv({ NODE_ENV: "development", ...studentEmailVars, NEXT_PUBLIC_LMS_URL: "" });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts a valid LMS url", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      NEXT_PUBLIC_LMS_URL: "https://www.hablu-programmer.com",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("rejects a malformed LMS url outside production", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      NEXT_PUBLIC_LMS_URL: "not-a-url",
+    });
+
+    expect(() => validateEnv()).toThrow(/Invalid cross-app link environment/i);
+  });
+
+  it("rejects a plain-http LMS url in production", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      NEXT_PUBLIC_LMS_URL: "http://hablu-programmer.com",
+    });
+
+    expect(() => validateEnv()).toThrow(/NEXT_PUBLIC_LMS_URL/);
+  });
+
+  it("accepts a loopback LMS url over http in production", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      NEXT_PUBLIC_LMS_URL: "http://localhost:13000",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("accepts a valid live support join url", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      LIVE_SUPPORT_JOIN_URL: "https://zoom.us/j/123456789",
+      LIVE_SUPPORT_PLATFORM: "Zoom",
+      LIVE_SUPPORT_MEETING_ID: "123 456 789",
+      LIVE_SUPPORT_PASSCODE: "abc123",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("rejects a malformed live support join url", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      LIVE_SUPPORT_JOIN_URL: "javascript:alert(1)",
+    });
+
+    expect(() => validateEnv()).toThrow(/Invalid live support environment/i);
   });
 });

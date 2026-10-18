@@ -68,6 +68,23 @@ NODE_ENV=production
 ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
 # Video links per issue/reply: 1-50; invalid/missing falls back to 10
 MAX_LINKS_PER_ITEM=10
+
+# Optional: cross-app nav link to the main LMS frontend (HTTPS required).
+# Unset = the "My Courses" item is not rendered. Baked in at build time by
+# Next.js, so set it before `next build`.
+NEXT_PUBLIC_LMS_URL=https://www.your-domain.com
+```
+
+Optional live support overrides (unset = the standing Zoom room). These are
+resolved on the server and only reach a browser of a signed-in user, so never
+log them. `npm run check:live-support` confirms they still match the LMS
+frontend's own copy.
+
+```env
+LIVE_SUPPORT_PLATFORM=Zoom
+LIVE_SUPPORT_JOIN_URL=https://your-org.zoom.us/j/1234567890?pwd=...
+LIVE_SUPPORT_MEETING_ID=123 456 7890
+LIVE_SUPPORT_PASSCODE=abc123
 ```
 
 ### 3. Google OAuth Setup

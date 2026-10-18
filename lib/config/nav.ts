@@ -1,7 +1,14 @@
 import type { FC } from "react";
 
 import type { IconSvgProps } from "@/components/icons";
-import { CaseIcon, DashboardIcon, SparklesIcon } from "@/components/icons";
+import {
+  BookIcon,
+  CaseIcon,
+  DashboardIcon,
+  SparklesIcon,
+  VideoIcon,
+} from "@/components/icons";
+import { lmsHref } from "@/lib/links";
 import { ROLE_RANK, type UserRole } from "@/lib/roles";
 
 export type NavItem = {
@@ -9,6 +16,8 @@ export type NavItem = {
   href: string;
   /** True for index routes that must not match child paths. */
   exact?: boolean;
+  /** True when `href` leaves this app, so it never carries the active state. */
+  external?: boolean;
   /** Only shows when the current user's role satisfies `minRole`. */
   minRole?: UserRole;
   /** Only shows when the current user's role does not exceed `maxRole`. */
@@ -16,7 +25,22 @@ export type NavItem = {
   icon: FC<IconSvgProps>;
 };
 
-export const NAV_ITEMS: NavItem[] = [
+const myCoursesItem = (): NavItem | null => {
+  const href = lmsHref("/dashboard/my-courses");
+  // Without an LMS origin the link would resolve against this app and 404, so
+  // the item is omitted entirely instead of being rendered broken.
+  if (!href) return null;
+
+  return {
+    label: "My Courses",
+    href,
+    external: true,
+    maxRole: "STUDENT",
+    icon: BookIcon,
+  };
+};
+
+const ROLE_NAV_ITEMS: Array<NavItem | null> = [
   { label: "Dashboard", href: "/dashboard", exact: true, minRole: "MENTOR", icon: DashboardIcon },
   { label: "Issues", href: "/dashboard/issues", icon: CaseIcon },
   {
@@ -26,7 +50,13 @@ export const NAV_ITEMS: NavItem[] = [
     maxRole: "STUDENT",
     icon: SparklesIcon,
   },
+  myCoursesItem(),
+  { label: "Live support", href: "/dashboard/support", icon: VideoIcon },
 ];
+
+export const NAV_ITEMS: NavItem[] = ROLE_NAV_ITEMS.filter(
+  (item): item is NavItem => item !== null,
+);
 
 function withinRole(userRole: UserRole, item: NavItem) {
   if (item.minRole && ROLE_RANK[userRole] < ROLE_RANK[item.minRole]) return false;

@@ -37,9 +37,11 @@ test.describe("Shell: dashboard chrome", () => {
       .poll(async () => slate950Alpha80.includes(await header.evaluate((el) => getComputedStyle(el).backgroundColor)))
       .toBe(true);
 
-    // Inline nav: the two staff links, the active one highlighted and marked.
+    // Inline nav: the staff links (Dashboard, Issues, Live support), the active
+    // one highlighted and marked. "My Courses" is student-only and its LMS
+    // origin is not set for e2e, so it never appears here.
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link")).toHaveCount(2);
+    await expect(nav.getByRole("link")).toHaveCount(3);
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     await expect(nav.getByRole("link", { name: "Issues" })).not.toHaveAttribute("aria-current", "page");
 
@@ -99,6 +101,27 @@ test.describe("Shell: mobile navbar", () => {
 
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
+  });
+});
+
+test.describe("Shell: My Courses link (student)", () => {
+  test.use({ storageState: "e2e/.auth/student.json" });
+
+  test("leaves for the LMS in a new tab and never claims the active state", async ({ page }) => {
+    await page.goto("/dashboard/issues");
+
+    const nav = page.locator('header nav[aria-label="Primary"]');
+    const myCourses = nav.getByRole("link", { name: "My Courses" });
+    await expect(myCourses).toBeVisible();
+    await expect(myCourses).toHaveAttribute("href", "https://lms.example.com/dashboard/my-courses");
+    await expect(myCourses).toHaveAttribute("target", "_blank");
+    await expect(myCourses).toHaveAttribute("rel", /noopener/);
+    // A different origin can never match this app's pathname, and the item is
+    // excluded from the active-href calculation so it stays inert regardless.
+    await expect(myCourses).not.toHaveAttribute("aria-current", "page");
+
+    // The mentor-only Dashboard must not leak into the student nav.
+    await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
   });
 });
 

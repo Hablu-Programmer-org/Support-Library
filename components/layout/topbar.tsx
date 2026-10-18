@@ -30,7 +30,7 @@ const isActive = (pathname: string, item: NavItem) =>
  */
 function activeHrefFor(pathname: string, items: NavItem[]) {
   return items
-    .filter((item) => isActive(pathname, item))
+    .filter((item) => !item.external && isActive(pathname, item))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 }
 
@@ -76,17 +76,18 @@ export function Topbar({ user }: TopbarProps) {
           {navItems.map((item) => {
             const active = item.href === activeHref;
             const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
-                  active
-                    ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
-                    : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"
-                }`}
-                href={item.href}
-              >
+            const className = `group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
+              active
+                ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
+                : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"
+            }`;
+            // Labels stay hidden until `lg`: below that the four items a
+            // student sees (Issues, Submit issue, My Courses, Live support)
+            // plus the brand and account controls do not fit on one row.
+            // `aria-label` keeps the accessible name — and the E2E lookups —
+            // identical at every width.
+            const content = (
+              <>
                 <Icon
                   size={18}
                   className={
@@ -95,7 +96,30 @@ export function Topbar({ user }: TopbarProps) {
                       : "text-slate-400 transition group-hover:text-slate-500 dark:group-hover:text-slate-300"
                   }
                 />
-                {item.label}
+                <span className="hidden lg:inline">{item.label}</span>
+              </>
+            );
+
+            return item.external ? (
+              <a
+                key={item.href}
+                aria-label={item.label}
+                className={className}
+                href={item.href}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {content}
+              </a>
+            ) : (
+              <Link
+                key={item.href}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.label}
+                className={className}
+                href={item.href}
+              >
+                {content}
               </Link>
             );
           })}

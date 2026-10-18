@@ -97,6 +97,7 @@ try {
         "AUTH_GOOGLE_ID=release.invalid.apps.googleusercontent.com"
         "AUTH_GOOGLE_SECRET=release-only-placeholder"
         "NEXT_PUBLIC_APP_URL=https://support.example.com"
+        "NEXT_PUBLIC_LMS_URL=https://lms.example.com"
         "NODE_ENV=production"
     ) | Set-Content -LiteralPath $ComposeEnv -Encoding ASCII
 

@@ -125,6 +125,7 @@ jobs:
           AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com
           AUTH_GOOGLE_SECRET=ci-only-placeholder
           NEXT_PUBLIC_APP_URL=https://support.example.com
+          NEXT_PUBLIC_LMS_URL=https://lms.example.com
           NODE_ENV=production
           EOF
 
@@ -154,6 +155,7 @@ jobs:
             --env AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com \
             --env AUTH_GOOGLE_SECRET=ci-only-placeholder \
             --env TRUSTED_PROXY_HOPS=1 \
+            --env NEXT_PUBLIC_LMS_URL='https://lms.example.com' \
             --env STUDENT_EMAIL_KEY_VERSION=v1 \
             --env STUDENT_EMAIL_ENCRYPTION_KEYS='v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=' \
             --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \
