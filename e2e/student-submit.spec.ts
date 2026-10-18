@@ -36,9 +36,9 @@ test.describe("STUDENT issue submission", () => {
       .locator('textarea[name="videoLinks"]')
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
 
-    // Optional course context travels with the request.
+    // Course context is open by default for students and travels with the request.
     const additional = form.locator("details").filter({ hasText: "Additional Details" });
-    await additional.locator("summary").click();
+    await expect(additional.locator("summary")).toBeVisible();
     await additional.locator('input[name="courseSlug"]').fill("react-beginner");
     await additional.locator('input[name="tags"]').fill("buffering, video");
 

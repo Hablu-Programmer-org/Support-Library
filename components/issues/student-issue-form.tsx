@@ -3,21 +3,26 @@
 import { useActionState, useRef, useState } from "react";
 
 import { createStudentIssueAction } from "@/actions/issues";
+import {
+  CheckCircleIcon,
+  HelpCircleIcon,
+  SettingsIcon,
+} from "@/components/icons";
 import { Accordion } from "@/components/issues/accordion";
-import { CheckCircleIcon, HelpCircleIcon, SettingsIcon } from "@/components/icons";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { nativeFieldClass, nativeTextareaClass } from "@/lib/config/fields";
 
 type StudentIssueFormProps = {
   csrfToken: string;
-  /** Shown so the student can confirm which account the request is filed under. */
-  email?: string | null;
 };
 
-export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
-  const [state, formAction, pending] = useActionState(createStudentIssueAction, {
-    fieldErrors: {},
-  });
+export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
+  const [state, formAction, pending] = useActionState(
+    createStudentIssueAction,
+    {
+      fieldErrors: {},
+    },
+  );
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
   const [videoLinks, setVideoLinks] = useState("");
@@ -70,17 +75,12 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
         </div>
 
         <div className="space-y-4">
-          {email && (
-            <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-              Submitting as <span className="font-medium">{email}</span>. Your identity
-              is taken from your account automatically, so there is nothing to fill in.
-              The support team will reach you at this address.
-            </p>
-          )}
-
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Title <span className="text-danger" aria-hidden="true">*</span>
+              Title{" "}
+              <span className="text-danger" aria-hidden="true">
+                *
+              </span>
             </span>
             <input
               className={nativeFieldClass}
@@ -94,7 +94,10 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               placeholder="e.g., Video lecture is not loading"
             />
             {state.fieldErrors?.title?.[0] ? (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.title[0]}
               </p>
             ) : (
@@ -106,7 +109,10 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Problem details <span className="text-danger" aria-hidden="true">*</span>
+              Issue details{" "}
+              <span className="text-danger" aria-hidden="true">
+                *
+              </span>
             </span>
             <textarea
               className={nativeTextareaClass}
@@ -121,7 +127,10 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               placeholder="Explain what you were doing, what you expected, and what happened instead."
             />
             {state.fieldErrors?.question?.[0] ? (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.question[0]}
               </p>
             ) : (
@@ -133,11 +142,14 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
 
           <div className="flex flex-col gap-1.5">
             <AttachmentField
-              label="Attachments (optional)"
+              label="Attachments"
               description="Images only: PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Attachments are only visible to the support team."
             />
             {state.fieldErrors?.uploads?.[0] && (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.uploads[0]}
               </p>
             )}
@@ -145,7 +157,7 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Video links <span className="text-slate-400 dark:text-slate-500">(optional)</span>
+              Video links
             </span>
             <textarea
               className={nativeTextareaClass}
@@ -153,17 +165,25 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               value={videoLinks}
               onChange={(event) => setVideoLinks(event.target.value)}
               rows={2}
-              aria-invalid={state.fieldErrors?.videoLinks?.[0] ? "true" : "false"}
-              placeholder={"Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"}
+              aria-invalid={
+                state.fieldErrors?.videoLinks?.[0] ? "true" : "false"
+              }
+              placeholder={
+                "Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"
+              }
             />
             {state.fieldErrors?.videoLinks?.[0] ? (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.videoLinks[0]}
               </p>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                One per line: <span className="font-medium">Title|https://link</span> (optionally add
-                |timestamp and a summary).
+                One per line:{" "}
+                <span className="font-medium">Title|https://link</span>{" "}
+                (optionally add |timestamp and a summary).
               </p>
             )}
           </label>
@@ -171,13 +191,14 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
       </div>
 
       <Accordion
-        title="Additional Details (optional)"
+        title="Additional Details"
+        defaultOpen
         icon={<SettingsIcon size={20} />}
         contentClassName="space-y-4"
       >
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          If your problem is about a specific course or lesson, add it here so the
-          team can find the right content faster.
+          Add course or lesson details so the team can find the right content
+          faster.
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
@@ -191,10 +212,15 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               onChange={(event) => setCourseSlug(event.target.value)}
               maxLength={120}
               placeholder="e.g., react-beginner"
-              aria-invalid={state.fieldErrors?.courseSlug?.[0] ? "true" : "false"}
+              aria-invalid={
+                state.fieldErrors?.courseSlug?.[0] ? "true" : "false"
+              }
             />
             {state.fieldErrors?.courseSlug?.[0] && (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.courseSlug[0]}
               </p>
             )}
@@ -216,7 +242,10 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               aria-invalid={state.fieldErrors?.batchNo?.[0] ? "true" : "false"}
             />
             {state.fieldErrors?.batchNo?.[0] && (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.batchNo[0]}
               </p>
             )}
@@ -233,10 +262,15 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               onChange={(event) => setModuleSlug(event.target.value)}
               maxLength={120}
               placeholder="e.g., assets"
-              aria-invalid={state.fieldErrors?.moduleSlug?.[0] ? "true" : "false"}
+              aria-invalid={
+                state.fieldErrors?.moduleSlug?.[0] ? "true" : "false"
+              }
             />
             {state.fieldErrors?.moduleSlug?.[0] && (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.moduleSlug[0]}
               </p>
             )}
@@ -253,10 +287,15 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
               onChange={(event) => setContentSlug(event.target.value)}
               maxLength={120}
               placeholder="e.g., images-lecture"
-              aria-invalid={state.fieldErrors?.contentSlug?.[0] ? "true" : "false"}
+              aria-invalid={
+                state.fieldErrors?.contentSlug?.[0] ? "true" : "false"
+              }
             />
             {state.fieldErrors?.contentSlug?.[0] && (
-              <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              <p
+                className="text-sm text-danger-600 dark:text-danger-400"
+                role="alert"
+              >
                 {state.fieldErrors.contentSlug[0]}
               </p>
             )}
@@ -276,7 +315,10 @@ export function StudentIssueForm({ csrfToken, email }: StudentIssueFormProps) {
             aria-invalid={state.fieldErrors?.tags?.[0] ? "true" : "false"}
           />
           {state.fieldErrors?.tags?.[0] ? (
-            <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+            <p
+              className="text-sm text-danger-600 dark:text-danger-400"
+              role="alert"
+            >
               {state.fieldErrors.tags[0]}
             </p>
           ) : (

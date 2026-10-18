@@ -298,7 +298,7 @@ You can also add optional evidence:
 
 Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
 
-**Additional Details (optional)** lets you point the team at the exact place the problem happens:
+**Additional Details** is open by default and lets you point the team at the exact place the problem happens:
 
 - Course slug.
 - Batch number.

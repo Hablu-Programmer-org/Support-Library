@@ -21,7 +21,7 @@ export default async function NewIssuePage() {
   if (!canManage) {
     return (
       <div className="flex flex-col">
-        <header className="w-full py-3">
+        <header className="w-full px-4 py-3">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
             <Link
               href="/dashboard/issues"
@@ -35,18 +35,21 @@ export default async function NewIssuePage() {
           </div>
         </header>
 
-        <main className="py-6">
-          <div className="mx-auto max-w-2xl space-y-6">
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+          <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <SparklesIcon size={20} className="mt-1 shrink-0 text-slate-400 dark:text-slate-500" />
+                <SparklesIcon
+                  size={20}
+                  className="mt-1 shrink-0 text-slate-400 dark:text-slate-500"
+                />
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Submit a support request
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400">
-                    Describe your problem and the support team will get back to you
-                    by email.
+                    Describe your problem and the support team will get back to
+                    you by email.
                   </p>
                 </div>
               </div>
@@ -64,13 +67,18 @@ export default async function NewIssuePage() {
                 Before you submit
               </h2>
               <ul className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                <li>Search the Support Library first — your answer may already be published.</li>
+                <li>
+                  Search the Support Library first — your answer may already be
+                  published.
+                </li>
                 <li>One problem per request keeps it easy to track.</li>
-                <li>Replies are not available here; the team answers you by email.</li>
+                <li>
+                  Replies are not available here; the team answers you by email.
+                </li>
               </ul>
             </section>
 
-            <StudentIssueForm csrfToken={csrfToken} email={session.user.email} />
+            <StudentIssueForm csrfToken={csrfToken} />
           </div>
         </main>
       </div>
@@ -80,8 +88,8 @@ export default async function NewIssuePage() {
   return (
     <div className="flex flex-col">
       {/* Back link */}
-      <header className="w-full py-3">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+      <header className="w-full px-4 py-3">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           <Link
             href="/dashboard/issues"
             className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -95,12 +103,15 @@ export default async function NewIssuePage() {
       </header>
 
       {/* Main Content */}
-      <main className="py-6">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6">
+        <div className="space-y-6">
           {/* Page Title & Description */}
           <div className="space-y-2">
             <div className="flex items-start gap-3">
-              <SparklesIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
+              <SparklesIcon
+                size={20}
+                className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500"
+              />
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                   New Support Issue
