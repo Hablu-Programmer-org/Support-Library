@@ -43,8 +43,10 @@ Help Center (dashboard sidebar)
    qualify for support (premium, or `jfwd` batch ≤ 4 / `jfsd` batch ≤ 2). The modal
    explains the journey in Bengali and deliberately shows no schedule — the room's
    hours live on the request page, which is the only place that can compute them.
-2. **Enter this app.** `সাপোর্ট লাইব্রেরিতে যান` opens `/dashboard/issues` in the
-   same tab. The first visit needs Google sign-in; roles come from `hp-v2.User`.
+2. **Enter this app.** `সাপোর্ট লাইব্রেরিতে যান` opens `/dashboard/issues` **in a new
+   tab** (`target="_blank"`, `rel="noopener noreferrer"`), so the LMS dashboard stays
+   where it was. The first visit needs Google sign-in; roles come from
+   `hp-v2.User`.
 3. **Search first.** `/dashboard/issues` is the published library: search by
    keyword, filter by tag/status/course/batch/date. An existing answer is the
    fastest fix.
