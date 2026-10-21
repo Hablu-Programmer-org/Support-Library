@@ -125,7 +125,7 @@ cmd /c "npm run check:live-support"           # live support drift guard vs the 
 
 `bench:search` seeds a throwaway collection in the test database and prints a markdown comparison of the search strategies plus a scaling curve. It refuses to run against the development database. Findings: `docs/implementation.md`.
 
-`check:live-support` compares this app's live support schedule, its Bengali schedule wording, and the Zoom room against the LMS frontend's own copies (`frontend/src/lib/config/support.ts` and `site.ts`). The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
+`check:live-support` compares this app's live support schedule, its Bengali schedule wording, and the Zoom room against the LMS frontend's own copies (`frontend/src/lib/config/support.ts` and `site.ts`). The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift _and_ when it could not read both copies, so a green result can be trusted.
 
 ## Verification
 
@@ -212,6 +212,6 @@ DB-backed routes use Node.js runtime. `/api/health/live` checks the process and 
 
 ## License
 
-MIT License — See [LICENSE](LICENSE) for details.
+MIT License — See [LICENSE](LICENSE) for details
 
 Copyright (c) 2026 Hablu Programmer!
