@@ -39,6 +39,15 @@ export type LiveSupportConfig = {
   passcode: string;
 };
 
+/**
+ * Short, human-speakable reference for a request ("B41F9C").
+ *
+ * The tail of the ObjectId is not a secret (the student owns the case and cannot
+ * open the staff view anyway); it exists so a student can say which request they
+ * are in the room for.
+ */
+export const caseRefFor = (id: string) => id.slice(-6).toUpperCase();
+
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 
 export const toBnDigits = (value: string | number) =>
@@ -103,4 +112,21 @@ export function currentShift(date: Date): SupportPhase {
     return "night";
   }
   return "off";
+}
+
+/**
+ * Calendar day (`YYYY-MM-DD`) in the studio's timezone.
+ *
+ * Used as the scope of a live-support join, so "one join per request per day"
+ * means the day a Dhaka-based mentor would call today — not the UTC day, and not
+ * the viewer's device day.
+ */
+export function dayKeyInDhaka(date: Date): string {
+  // `en-CA` formats as YYYY-MM-DD, which is exactly the key shape we index.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: SUPPORT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }

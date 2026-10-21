@@ -64,15 +64,17 @@
   excluded from the active-href calculation, and carry `aria-label` so their
   accessible name survives the label text being hidden below `lg` — four student
   items do not fit next to the brand and account controls with labels shown.
-- **Live support in this app.** `/dashboard/support` is a session-gated page that
-  renders the daily Zoom room (`lib/live-support.ts`, read from the environment on
-  the server) and a client card (`components/live-support/live-support-card.tsx`)
-  which enables Join only inside a support shift. The shift is resolved in
-  `Asia/Dhaka` via `Intl.DateTimeFormat`; the LMS frontend used the device clock,
-  which put a traveller in the wrong window. The join URL, meeting ID and passcode
-  never reach an unsigned browser — the frontend ships the same values in its public
-  bundle. `scripts/check-live-support-sync.ts` (`npm run check:live-support`) guards
-  the schedule, the Bengali schedule wording and the room against the frontend copy.
+- **Live support lives on the request.** Students submit a request and land on
+  `/dashboard/issues/[id]`, their own read-only view (status, their problem, their
+  images and video links, and the team's replies). A per-request panel posts to
+  `joinLiveSupportAction`, which re-checks ownership, the shift, the rate limit and
+  idempotency before it redirects to the room. `/dashboard/support` is staff-only
+  (students are redirected to `/dashboard/my-requests`); the mentor side is the
+  queue at `/dashboard/live-support`. `/dashboard/issues/submitted` is a legacy
+  redirect. `lib/live-support-policy.ts` and `lib/issue-ownership.ts` are the two
+  pure filters that pin ownership; `scripts/check-live-support-sync.ts`
+  (`npm run check:live-support`) guards the schedule, the Bengali schedule wording
+  and asserts the room credentials exist **only** here.
 
 ## Search Performance Findings
 
@@ -145,8 +147,10 @@ cmd /c "npm run test:e2e"
 
 - An unrecognised/absent LMS role maps to `STUDENT` (it can submit a self-scoped
   ticket). Confirm this is the intended fail-safe.
-- A student cannot see the issue they submitted (no list/detail access by design),
-  only the confirmation page. Confirm this product behaviour.
+- ~~A student cannot see the issue they submitted (no list/detail access by design),
+  only the confirmation page.~~ **Resolved 2026-10-21:** a student now reads their
+  own request at `/dashboard/issues/[id]` (owner-scoped by `createdBy`) and lists
+  them at `/dashboard/my-requests`. Other students' unpublished requests stay 404.
 - `studentName` remains in the denormalized `searchText` after publishing, so the
   public library search can match a name to a published issue. Email is already
   excluded. Addressing this changes publish/search semantics and is deferred.

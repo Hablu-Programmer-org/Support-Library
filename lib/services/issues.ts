@@ -3,13 +3,15 @@ import "server-only";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
+import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
+import { buildOwnIssueFilter } from "@/lib/issue-ownership";
 import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import { buildIssueSearchText, buildIssueSearchTextWithReplies, buildSearchRegex } from "@/lib/search";
 import {
   createStudentEmailLookupCandidates,
   normalizeStudentEmail,
   protectStudentEmail,
-  readStudentEmail,
+  readStudentEmailSafe,
 } from "@/lib/student-email-crypto";
 import {
   supportIssueInputSchema,
@@ -66,6 +68,8 @@ export type SupportIssueListItem = {
   tags: string[];
   visibility: IssueVisibility;
   publishedAt?: Date | null;
+  /** Last time the student brought this request into the live room. */
+  lastLiveSupportAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -102,7 +106,15 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   id: String(item._id),
   studentName: String(item.studentName ?? ""),
   studentEmail: includeStudentEmail
-    ? readStudentEmail(item.studentEmailEncrypted, item.studentEmail)
+    ? readStudentEmailSafe(item.studentEmailEncrypted, item.studentEmail, (error) => {
+        // A retired key version or a corrupted ciphertext must not take down the
+        // whole staff page; log the record id and the reason, never the value.
+        console.warn(
+          "[issues] encrypted student email could not be read",
+          String(item._id),
+          error instanceof Error ? error.message : "unknown error",
+        );
+      })
     : null,
   lmsUserId: (item.lmsUserId as string | null) ?? null,
   title: String(item.title),
@@ -118,6 +130,7 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   tags: Array.isArray(item.tags) ? item.tags as string[] : [],
   visibility: item.visibility === "PUBLISHED" ? "PUBLISHED" : "INTERNAL",
   publishedAt: item.publishedAt as Date | null | undefined,
+  lastLiveSupportAt: (item.lastLiveSupportAt as Date | null | undefined) ?? null,
   createdAt: item.createdAt as Date | undefined,
   updatedAt: item.updatedAt as Date | undefined,
 });
@@ -706,6 +719,76 @@ export async function getIssueDetail(id: string) {
   if (!supportIssue) return null;
 
   return toIssueListItem(supportIssue as LeanDoc);
+}
+
+/**
+ * A student's own request, whatever its visibility.
+ *
+ * Scoped by `createdBy` from the session, so a published issue the student does
+ * not own is still answered by the public view, and an unpublished one stays a
+ * 404. Soft-deleted requests are never returned.
+ */
+export async function getOwnIssueDetail(id: string, studentUserId: string) {
+  if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.isValidObjectId(studentUserId)) {
+    return null;
+  }
+  await dbConnect();
+
+  const supportIssue = await SupportIssueModel.findOne({
+    ...buildOwnIssueFilter(studentUserId),
+    _id: new mongoose.Types.ObjectId(id),
+  }).lean();
+  if (!supportIssue) return null;
+
+  // The viewer is the owner: their own email, mentor and audit fields are not
+  // part of this DTO and must not be added.
+  return toIssueListItem(supportIssue as LeanDoc, false);
+}
+
+/** Newest-first list of the student's own requests, bounded for one page. */
+const MAX_OWN_ISSUES = 50;
+export async function listOwnIssues(
+  studentUserId: string,
+  limit = MAX_OWN_ISSUES,
+): Promise<SupportIssueListItem[]> {
+  if (!mongoose.isValidObjectId(studentUserId)) return [];
+  await dbConnect();
+
+  const docs = await SupportIssueModel.find(buildOwnIssueFilter(studentUserId))
+    .sort({ updatedAt: -1 })
+    .limit(Math.min(Math.max(limit, 1), MAX_OWN_ISSUES))
+    .lean();
+
+  return docs.map((doc) => toIssueListItem(doc as LeanDoc, false));
+}
+
+/**
+ * Student-submitted requests that no mentor has been assigned yet.
+ *
+ * `createIssue` deliberately stores `mentorId: null` for a STUDENT actor, while
+ * every staff-created case carries a mentor — so this list is exactly "a student
+ * opened a case and nobody has picked it up". Oldest first, because the longest
+ * wait is the one that needs attention.
+ */
+export async function listStudentRequestsAwaitingStaff(limit = 8) {
+  await dbConnect();
+
+  const docs = await SupportIssueModel.find({
+    deletedAt: null,
+    mentorId: null,
+    status: { $in: [...LIVE_SUPPORT_ELIGIBLE_STATUSES] },
+  })
+    .sort({ createdAt: 1 })
+    .limit(Math.min(Math.max(limit, 1), 50))
+    .select("title status createdAt")
+    .lean();
+
+  return docs.map((doc) => ({
+    id: String(doc._id),
+    title: doc.title,
+    status: doc.status as CaseStatus,
+    createdAt: doc.createdAt as Date | undefined,
+  }));
 }
 
 export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDetail | null> {

@@ -1,12 +1,17 @@
 /**
  * Live support drift guard (local, pre-release).
  *
- * The live support schedule and the Zoom room are configured twice on purpose:
- * the LMS frontend (`frontend/src/lib/config/support.ts` + `site.ts`) owns the
+ * The live support schedule and its Bengali copy are configured twice on
+ * purpose: the LMS frontend (`frontend/src/lib/config/support.ts`) owns the
  * original implementation, and this app keeps its own copy so the Support
  * Library can offer the same join experience without a cross-app dependency.
  *
- * Nothing can compare them at compile time — they are three separate git
+ * The Zoom room itself is configured **once**, here. The LMS only links to
+ * `/dashboard/support`, because a student must have an open request before the
+ * room opens; its public bundle must never carry the join URL, meeting ID or
+ * passcode again. That inversion is asserted below.
+ *
+ * Nothing can compare the apps at compile time — they are three separate git
  * repositories, so neither repo's CI can see the other. This script is the
  * guard: run it from a full local checkout before a release and it fails loudly
  * when the two copies disagree.
@@ -102,6 +107,15 @@ const stringField = (source: string, field: string): string | null => {
   return match ? match[1] : null;
 };
 
+/**
+ * Whether a key is present at all, whatever its value syntax.
+ *
+ * Room credentials must be checked with this rather than `stringField`: a URL
+ * written as a template literal would otherwise slip past a quote-only match.
+ */
+const hasField = (source: string, field: string): boolean =>
+  new RegExp(`\\b${field}\\s*:`).test(source);
+
 function compareShifts() {
   const frontendSource = readFrontend("src/lib/config/support.ts");
   if (!frontendSource) {
@@ -162,6 +176,14 @@ function compareScheduleCopy(frontendSource: string) {
   }
 }
 
+/**
+ * The room must be configured in exactly one app.
+ *
+ * The Support Library resolves the join URL, meeting ID and passcode on the
+ * server and only hands them to an eligible session. If any of them reappear in
+ * the LMS config, the gate can be bypassed by reading the public bundle, so
+ * this check fails the release instead of comparing values.
+ */
 function compareRoom() {
   const frontendSource = readFrontend("src/lib/config/site.ts");
   const localSource = readLocal("lib/live-support.ts");
@@ -171,19 +193,31 @@ function compareRoom() {
   }
 
   const frontendBlock = frontendSource.match(/support\s*:\s*\{[\s\S]*?\n\s*\},/)?.[0] ?? "";
+  if (!frontendBlock) {
+    NOTES.push("Could not read the frontend `support` block from site.ts; compare it manually.");
+    return;
+  }
 
-  for (const field of ["platform", "joinUrl", "meetingId", "passcode"] as const) {
-    const theirs = stringField(frontendBlock, field);
-    const ours = stringField(localSource, field);
-
-    if (!theirs || !ours) {
-      NOTES.push(`Could not read "${field}" from both configs; compare it manually.`);
-      continue;
+  for (const field of ["joinUrl", "notesUrl", "meetingId", "passcode"] as const) {
+    if (hasField(frontendBlock, field)) {
+      FAILURES.push(
+        `frontend site.ts still publishes "support.${field}" — room credentials must stay server-side in support-library`,
+      );
     }
+  }
 
-    if (theirs !== ours) {
-      FAILURES.push(`${field}: frontend="${theirs}" vs support-library="${ours}"`);
-    }
+  const frontendPlatform = stringField(frontendBlock, "platform");
+  const localPlatform = stringField(localSource, "platform");
+  if (!frontendPlatform || !localPlatform) {
+    NOTES.push('Could not read "platform" from both configs; compare it manually.');
+  } else if (frontendPlatform !== localPlatform) {
+    FAILURES.push(`platform: frontend="${frontendPlatform}" vs support-library="${localPlatform}"`);
+  }
+
+  if (!hasField(frontendBlock, "libraryUrl")) {
+    FAILURES.push(
+      "frontend site.ts has no support.libraryUrl — the LMS has no way to reach live support",
+    );
   }
 }
 

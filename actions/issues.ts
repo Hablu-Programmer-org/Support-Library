@@ -339,15 +339,27 @@ export async function createStudentIssueAction(
       return { fieldErrors: { _form: ["Unable to attach the selected files. Please try again later."] } };
     }
 
+    let createdIssue: { id: string };
     try {
-      await createIssue(issueData, guard.session.user.id, "STUDENT", operationId, null, false, uploads);
+      createdIssue = await createIssue(
+        issueData,
+        guard.session.user.id,
+        "STUDENT",
+        operationId,
+        null,
+        false,
+        uploads,
+      );
     } catch {
       return { fieldErrors: { _form: ["Unable to submit the issue. Please try again later."] } };
     }
 
     revalidatePath("/dashboard/issues");
+    revalidatePath("/dashboard/my-requests");
     revalidatePath("/dashboard");
-    redirect("/dashboard/issues/submitted");
+    // The student lands on their own request, which is where the live support
+    // panel for this request lives (and where the team's replies appear).
+    redirect(`/dashboard/issues/${createdIssue.id}?created=1`);
   });
 }
 

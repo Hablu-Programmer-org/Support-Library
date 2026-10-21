@@ -171,3 +171,26 @@ export function readStudentEmail(
     ? normalizeStudentEmail(legacyPlaintext)
     : null;
 }
+
+/**
+ * Display-path variant of `readStudentEmail`.
+ *
+ * A row encrypted under a key version that has been retired from the ring, or a
+ * corrupted ciphertext, must not take down a whole staff list or detail page —
+ * the rest of the case is still readable. The failure is reported to `onError`
+ * so the caller can log it with the record id (never the decrypted value).
+ * Write paths still use the strict version and fail loudly.
+ */
+export function readStudentEmailSafe(
+  encrypted: unknown,
+  legacyPlaintext: unknown,
+  onError?: (error: unknown) => void,
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  try {
+    return readStudentEmail(encrypted, legacyPlaintext, env);
+  } catch (error) {
+    onError?.(error);
+    return null;
+  }
+}

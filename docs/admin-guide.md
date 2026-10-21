@@ -76,17 +76,23 @@ Admins see these primary navigation links:
 
 - `Dashboard` -> `/dashboard`
 - `Issues` -> `/dashboard/issues`
+- `Submit issue` -> `/dashboard/issues/new`
+- `Live support` -> `/dashboard/support`
+- `Support queue` -> `/dashboard/live-support`
 
 Common admin routes:
 
 | Route | Purpose |
 | --- | --- |
-| `/dashboard` | Staff overview, recent unresolved issues, popular tags. Students are redirected to `/dashboard/issues`. |
+| `/dashboard` | Staff overview: totals, `Waiting Now` (today's live-support joins), `Waiting today` (who is in the room and for which request), `Student requests awaiting a mentor` (student-submitted cases with no mentor, oldest first), recent unresolved issues and popular tags. Students are redirected to `/dashboard/issues`. |
 | `/dashboard/issues` | Active issue list and filters. Students see the published library instead of the staff list. |
-| `/dashboard/issues/new` | Create a support issue (staff form). A student sees the simplified self-service form and lands on `/dashboard/issues/submitted`. |
-| `/dashboard/issues/submitted` | Confirmation shown to a student after submitting a request. |
+| `/dashboard/issues/new` | Create a support issue (staff form). A student sees the simplified self-service form and lands on their own request page (`/dashboard/issues/[id]?created=1`). |
+| `/dashboard/issues/submitted` | Legacy confirmation route; redirects to `/dashboard/my-requests`. |
 | `/dashboard/issues/[id]` | Review, reply, publish, unpublish, status update, archive. Students never reach unpublished issues. |
 | `/dashboard/issues/[id]/edit` | Edit issue details. Staff only. |
+| `/dashboard/support` | Staff live support room. Students are redirected to `/dashboard/my-requests` — they join from their own request page instead. |
+| `/dashboard/my-requests` | A student's own requests, newest first; each row opens the request page (status, updates, live support panel). |
+| `/dashboard/live-support` | Live support queue: today's student joins with the request each one brought. Staff only. |
 
 Route access is enforced in server pages/actions. The proxy checks sign-in and active account status, while role permissions are enforced by page guards and server actions.
 

@@ -94,13 +94,16 @@ Dashboard cards:
 | `Support Issues` | Total active support issues. |
 | `Unresolved` | Issues with `OPEN`, `PENDING`, or `FOLLOW_UP` status. |
 | `Issues This Week` | Issues created in the last 7 days. |
+| `Waiting Now` | Students who joined the live support room today. |
 
 Dashboard sections:
 
+- `Waiting today`: who is in the room today, with the request each student brought. This is the same data as the live support queue.
+- `Student requests awaiting a mentor`: student-submitted requests that no mentor has been assigned to yet, oldest first. A student submission is deliberately created without a mentor, so anything in this list came from a student and still needs an owner.
 - `Recent Unresolved Issues`: up to 8 recently updated unresolved issues.
 - `Popular Tags`: top tags linked to the issue list with tag filter applied.
 
-Use the dashboard for quick monitoring. Use the Issues page for detailed searching and work.
+Use the dashboard for quick monitoring. Use the Issues page for detailed searching and work, and `Open live support queue` for the full waiting list.
 
 ## 5. Support Issues List
 
@@ -395,12 +398,16 @@ The issue detail page shows:
 - Attached video links (the problem's evidence), if any.
 - Tags.
 - Responses.
-- Issue context.
+- Issue context (course, batch, publication, creation time, and — for staff — the `Reference` and `Live support` fields).
 - Student snapshot.
 - Manage issue panel.
 - Danger zone archive panel.
 
 Mentors can read all active issues, including internal/unpublished ones.
+
+The `Reference` field is the short code the student reads out in the live room
+(for example `B41F9C`). `Live support` shows the last time the student took this
+request into the room, or a dash if they never did.
 
 ## 17. Student Snapshot
 
@@ -420,6 +427,36 @@ Do not copy student name, email, phone, ID, payment details, or private image co
 - Problem description.
 - Public replies.
 - Link titles/notes/summaries.
+
+## 17a. Live Support Queue
+
+Route: `/dashboard/live-support` (mentors and admins only)
+
+Students join the Zoom room from **their own request page**
+(`/dashboard/issues/[id]`), and only with a request they submitted that is still
+`Open`, `Pending` or `Follow-up`. The queue is how you see who is waiting and what
+for:
+
+- Student name and email.
+- The request reference and title, linked to the internal case.
+- The request's current status.
+- The shift and the time they joined (Bangladesh time).
+- Only today's joins, newest first. Each request appears at most once per shift,
+  so a morning and an evening visit are two rows.
+- A row appears the moment the student presses **Join** on their request page;
+  submitting a request alone does not queue anyone. An empty list during a shift
+  therefore means nobody has entered the room yet.
+- The page checks again every 30 seconds while the tab is visible, and the
+  `Refresh` button updates it immediately.
+
+What to know:
+
+- The list comes from the join record, not from Zoom, so a student who joins
+  directly through a shared meeting link will not appear. Ask for the reference.
+- Students cannot open this page and never see the nav item for it.
+- If a joined request was deleted afterwards, the row stays visible and is marked
+  `(removed)` so the day's history is not rewritten.
+- No passcode, IP address or access token is shown here.
 
 ## 18. Status Workflow
 

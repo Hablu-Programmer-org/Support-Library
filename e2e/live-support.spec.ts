@@ -1,66 +1,248 @@
 import { test, expect } from "@playwright/test";
+import mongoose from "mongoose";
+
+import { dayKeyInDhaka } from "../lib/config/live-support";
+import { dbConnect } from "../lib/db";
+import {
+  LiveSupportJoinModel,
+  SupportIssueModel,
+  SupportReplyModel,
+} from "../models";
+import { formFor, submitAndWait } from "./form-helpers";
+import { STAFF_USERS } from "./fixtures/staff-users";
 
 /**
- * Live support is a read-only join page: it opens the day's Zoom room during a
- * support slot and shows the meeting ID and passcode so a student can dial in
- * manually when the web client fails.
+ * Live support is reached from a request, and only from a request.
+ *
+ * A student submits a request, lands on its own page, and joins the room from
+ * there — the request is fixed by the page, so there is no picker and no room on
+ * any page without an owned request. Staff run the session from
+ * `/dashboard/support` and see who is waiting in the queue.
+ *
+ * The shift matrix (open/closed) is decided on the server and covered by
+ * `__tests__/live-support.test.ts` and `__tests__/live-support-panel.test.tsx`,
+ * because Playwright's clock cannot move the server's clock.
  */
+
+const STUDENT = STAFF_USERS.find((user) => user.role === "STUDENT")!;
+const STUDENT_ID = new mongoose.Types.ObjectId(STUDENT.id);
+
+/** Only this student's requests are removed, and only in the E2E database. */
+async function resetStudentRequests() {
+  await dbConnect();
+  const owned = await SupportIssueModel.find({ createdBy: STUDENT_ID }, "_id").lean();
+  const issueIds = owned.map((issue) => issue._id);
+
+  await Promise.all([
+    SupportReplyModel.deleteMany({ issueId: { $in: issueIds } }),
+    LiveSupportJoinModel.deleteMany({ studentUserId: STUDENT_ID }),
+    SupportIssueModel.deleteMany({ createdBy: STUDENT_ID }),
+  ]);
+}
+
+const REQUEST_URL = /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/;
 
 test.describe("LIVE support: sign-in gate", () => {
   test("sends guests to login, remembering the page they wanted", async ({ page }) => {
     await page.goto("/dashboard/support");
-    // Auth.js appends the intended destination, so a student lands back on the
-    // join page after signing in instead of on the dashboard.
     await expect(page).toHaveURL("/login?callbackUrl=%2Fdashboard%2Fsupport");
   });
 });
 
-test.describe("LIVE support: join panel", () => {
+test.describe("STUDENT: a request is the way into the room", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
 
-  // 02:00 UTC is 08:00 in Dhaka — the first minute of the morning slot.
-  const IN_SLOT = new Date("2026-10-18T02:00:00Z");
-  // 10:00 UTC is 16:00 in Dhaka — between the two slots.
-  const OUT_OF_SLOT = new Date("2026-10-18T10:00:00Z");
+  test.beforeAll(async () => {
+    await resetStudentRequests();
+  });
 
-  test("is reachable from the student nav", async ({ page }) => {
+  test("submitting lands on the request with its live support panel", async ({ page }) => {
+    const title = `E2E live support request ${Date.now()}`;
+
+    await page.goto("/dashboard/issues/new");
+    const requestForm = formFor(page, "Submit request");
+    await requestForm.locator('input[name="title"]').fill(title);
+    await requestForm
+      .locator('textarea[name="question"]')
+      .fill("The mentor needs the reference in the room.");
+    await submitAndWait(page, "Submit request", REQUEST_URL);
+
+    // The confirmation is the request page itself, not a dead end.
+    await expect(page.getByRole("status")).toContainText("Your request has been submitted.");
+    await expect(page.getByRole("heading", { name: title }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live support" }).first()).toBeVisible();
+
+    // The room URL is not part of the document; the panel posts to an action.
+    expect(await page.content()).not.toContain("zoom.us");
+  });
+
+  test("finds the request again in My requests", async ({ page }) => {
+    await page.goto("/dashboard/my-requests");
+
+    await expect(page.getByRole("heading", { name: "My requests" })).toBeVisible();
+    // The request created above is listed with its status and links to itself.
+    // "/dashboard/issues/new" is the header CTA, so the row is the one with a
+    // last-updated line.
+    const row = page
+      .locator('a[href^="/dashboard/issues/"]')
+      .filter({ hasText: "Updated" })
+      .first();
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("Open");
+  });
+
+  test("cannot open another owner's unpublished request", async ({ page, browser }) => {
+    const baseURL = test.info().project.use.baseURL as string;
+    const title = `E2E foreign request ${Date.now()}`;
+
+    // Prepared by an admin, for a student identity that is not the viewer.
+    const adminContext = await browser.newContext({
+      storageState: "e2e/.auth/admin.json",
+      baseURL,
+    });
+    const adminPage = await adminContext.newPage();
+    await adminPage.goto("/dashboard/issues/new");
+    const form = formFor(adminPage, "Create Issue");
+    await form.locator('input[name="studentName"]').fill("E2E Foreign Student");
+    await form.locator('input[name="studentEmail"]').fill(`foreign.${Date.now()}@test.com`);
+    await form.locator('input[name="title"]').fill(title);
+    await form.locator('textarea[name="question"]').fill("Not yours to read.");
+    await submitAndWait(adminPage, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    const issuePath = new URL(adminPage.url()).pathname;
+    await adminContext.close();
+
+    // The owner scope is `createdBy`, so a real student still gets a 404.
+    await page.goto(issuePath);
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+  });
+
+  test("is sent from the staff room page to their requests", async ({ page }) => {
+    await page.goto("/dashboard/support");
+    await expect(page).toHaveURL(/\/dashboard\/my-requests$/);
+  });
+
+  test("has no Live support item in the nav, but has My requests", async ({ page }) => {
     await page.goto("/dashboard/issues");
 
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link", { name: "Live support" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "My requests" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
   });
 
-  test("lets a student join inside a support slot", async ({ page }) => {
-    await page.clock.install({ time: IN_SLOT });
+  test("keeps the staff queue out of reach", async ({ page }) => {
+    await page.goto("/dashboard/live-support");
+    await expect(page).toHaveURL(/\/unauthorized$/);
+  });
+});
+
+test.describe("STAFF: they run the room", () => {
+  test.use({ storageState: "e2e/.auth/admin.json" });
+
+  let studentRequestPath = "";
+
+  test.beforeAll(async () => {
+    await dbConnect();
+    const issue = await SupportIssueModel.create({
+      title: "E2E staff view request",
+      question: "Seeded so staff can open a student-owned request.",
+      searchText: "e2e staff view request seeded",
+      createdBy: STUDENT_ID,
+      status: "OPEN",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+    });
+    studentRequestPath = `/dashboard/issues/${String(issue._id)}`;
+  });
+
+  test("joins without a request and sees no student panel", async ({ page }) => {
     await page.goto("/dashboard/support");
 
     await expect(page.getByRole("heading", { name: "Live support" })).toBeVisible();
-    await expect(page.getByText("Live support is open right now.")).toBeVisible();
-
-    const join = page.getByRole("link", { name: "Live Support Center (Zoom)" });
-    await expect(join).toHaveAttribute("aria-disabled", "false");
-    await expect(join).toHaveAttribute("href", /^https:\/\//);
+    await expect(page.getByText(/You are joining as staff/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Waiting students" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Live Support Center (Zoom)" })).toHaveCount(1);
   });
 
-  test("blocks the join and explains why outside a support slot", async ({ page }) => {
-    await page.clock.install({ time: OUT_OF_SLOT });
-    await page.goto("/dashboard/support");
+  test("sees the student request without the student's join panel", async ({ page }) => {
+    // Staff read the internal case view; the student's request-page panel must
+    // never appear there (the join path belongs to the owner).
+    await page.goto(studentRequestPath);
 
-    await expect(
-      page.getByText("Live support is closed right now. Please join during a support slot."),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Issue context" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live support" })).toHaveCount(0);
+  });
+});
 
-    const join = page.getByRole("link", { name: "Live Support Center (Zoom)" });
-    await expect(join).toHaveAttribute("aria-disabled", "true");
+test.describe("LIVE support: staff queue", () => {
+  test.use({ storageState: "e2e/.auth/admin.json" });
+
+  let caseRef = "";
+
+  test.beforeAll(async () => {
+    await dbConnect();
+
+    // Seeded rather than clicked, because a real join needs an open shift and
+    // the server clock cannot be moved from Playwright.
+    const issue = await SupportIssueModel.create({
+      title: "E2E live support queue request",
+      question: "Seeded to assert the waiting list.",
+      searchText: "e2e live support queue request seeded",
+      createdBy: STUDENT_ID,
+      status: "OPEN",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+    });
+    caseRef = String(issue._id).slice(-6).toUpperCase();
+
+    await LiveSupportJoinModel.create({
+      issueId: issue._id,
+      studentUserId: STUDENT_ID,
+      shift: "morning",
+      dayKey: dayKeyInDhaka(new Date()),
+      joinedAt: new Date(),
+    });
   });
 
-  test("shows the meeting id and passcode for a manual dial-in", async ({ page }) => {
-    await page.clock.install({ time: IN_SLOT });
-    await page.goto("/dashboard/support");
+  test("lists who is waiting and which request they brought", async ({ page }) => {
+    await page.goto("/dashboard/live-support");
 
-    await expect(page.getByText("Meeting ID", { exact: true })).toBeVisible();
-    await expect(page.getByText("Passcode", { exact: true })).toBeVisible();
-    // Both values are selectable so they can be copied into the Zoom app.
-    await expect(page.locator("main .select-all").first()).not.toBeEmpty();
+    await expect(page.getByRole("heading", { name: "Live support queue" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
+    await expect(page.getByText("E2E live support queue request")).toBeVisible();
+    await expect(page.getByText(caseRef)).toBeVisible();
+    await expect(page.getByRole("link", { name: "E2E live support queue request" })).toBeVisible();
+    // The queue is kept current without a manual reload.
+    await expect(page.getByRole("button", { name: /Refresh/ })).toBeVisible();
+  });
+
+  test("shows the waiting student on the staff dashboard", async ({ page }) => {
+    await page.goto("/dashboard");
+
+    await expect(page.getByText("Waiting Now")).toBeVisible();
+    await expect(page.getByText("Waiting today")).toBeVisible();
+
+    // The same request shows up in both staff views: the room queue and the
+    // "no mentor yet" list.
+    const queue = page.getByRole("region", { name: "Waiting today" });
+    await expect(queue.getByText("E2E live support queue request")).toBeVisible();
+
+    const awaiting = page.getByRole("region", {
+      name: "Student requests awaiting a mentor",
+    });
+    await expect(awaiting.getByText("E2E live support queue request")).toBeVisible();
+  });
+
+  test("marks the issue as waiting in the staff issues list", async ({ page }) => {
+    await page.goto("/dashboard/issues");
+
+    await expect(page.getByText("Waiting in live support").first()).toBeVisible();
+  });
+
+  test("is reached from the staff room page", async ({ page }) => {
+    await page.goto("/dashboard/support");
+    await page.getByRole("link", { name: "Waiting students" }).click();
+
+    await expect(page.getByRole("heading", { name: "Live support queue" })).toBeVisible();
   });
 });

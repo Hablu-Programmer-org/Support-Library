@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS = [
   "ATTACHMENT_UPLOAD",
   "ATTACHMENT_DELETE",
   "OAUTH_CALLBACK",
+  "ISSUE_LIVE_SUPPORT_JOIN",
 ] as const;
 
 export const AUDIT_RESULTS = ["SUCCEEDED", "DENIED"] as const;

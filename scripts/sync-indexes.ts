@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { dbConnect } from "../lib/db";
 import {
   AuditEventModel,
+  LiveSupportJoinModel,
   RateLimitBucketModel,
   SupportIssueModel,
   SupportReplyModel,
@@ -17,6 +18,7 @@ const models = [
   UserModel,
   SupportIssueModel,
   SupportReplyModel,
+  LiveSupportJoinModel,
   AuditEventModel,
   RateLimitBucketModel,
 ];

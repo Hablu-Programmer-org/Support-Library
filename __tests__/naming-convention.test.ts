@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AuditEventModel,
+  LiveSupportJoinModel,
   RateLimitBucketModel,
   SupportIssueModel,
   SupportReplyModel,
@@ -25,6 +26,7 @@ const localModels = [
   UserModel,
   SupportIssueModel,
   SupportReplyModel,
+  LiveSupportJoinModel,
   AuditEventModel,
   RateLimitBucketModel,
 ];

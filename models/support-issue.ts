@@ -79,6 +79,12 @@ const supportIssueSchema = new mongoose.Schema(
     deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     createOperationId: { type: String, default: null },
     createOperationHash: { type: String, default: null },
+    /**
+     * Last time the student took this request into the live room. Written with
+     * `timestamps: false` on purpose — see `recordLiveSupportJoin`: bumping
+     * `updatedAt` here would invalidate every staff edit's optimistic revision.
+     */
+    lastLiveSupportAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -89,6 +95,21 @@ const supportIssueSchema = new mongoose.Schema(
 supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
 supportIssueSchema.index({ visibility: 1, updatedAt: -1 });
 supportIssueSchema.index({ createdAt: -1 });
+// Backs the live-support gate: "my open requests", newest first.
+supportIssueSchema.index(
+  { createdBy: 1, deletedAt: 1, status: 1, updatedAt: -1 },
+  { name: "student_own_issues" },
+);
+// Backs "My requests": every request the student owns, newest first.
+supportIssueSchema.index(
+  { createdBy: 1, deletedAt: 1, updatedAt: -1 },
+  { name: "student_own_requests" },
+);
+// Backs the staff "student requests awaiting a mentor" list (mentorId is null).
+supportIssueSchema.index(
+  { mentorId: 1, deletedAt: 1, status: 1, createdAt: 1 },
+  { name: "awaiting_mentor" },
+);
 supportIssueSchema.index(
   { "studentEmailLookup.keyVersion": 1, "studentEmailLookup.digest": 1 },
   { name: "student_email_lookup" },

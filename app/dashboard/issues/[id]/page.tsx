@@ -8,6 +8,7 @@ import {
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import { PublishIssueForm } from "@/components/issues/publish-issue-form";
+import { StudentRequestView } from "@/components/issues/student-request-view";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
@@ -22,9 +23,10 @@ import {
   WarningTriangleIcon,
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
+import { caseRefFor } from "@/lib/config/live-support";
 import { nativeSelectClass } from "@/lib/config/fields";
 import { canMutate, isAdmin } from "@/lib/roles";
-import { getIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
+import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
@@ -56,14 +58,40 @@ const formatDate = (date?: Date | null) =>
 
 export default async function IssueDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ created?: string }>;
 }) {
   const { id } = await params;
+  const { created } = (await searchParams) ?? {};
   const session = await requireSession();
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
   const canPublish = isAdmin(session.user.role ?? "STUDENT");
   const staffIssue = canEdit ? await getIssueDetail(id) : null;
+
+  if (!staffIssue) {
+    // A student may read their own request whatever its visibility. Anyone else
+    // still falls through to the published library or a 404, so an unpublished
+    // case never opens up. Ownership comes from `createdBy`, not the URL.
+    const ownedIssue = await getOwnIssueDetail(id, session.user.id);
+    if (ownedIssue) {
+      const [replies, csrfToken] = await Promise.all([
+        listReplies(ownedIssue.id, true),
+        generateCsrfToken(session.user.id),
+      ]);
+
+      return (
+        <StudentRequestView
+          created={created === "1"}
+          csrfToken={csrfToken}
+          issue={ownedIssue}
+          replies={replies}
+        />
+      );
+    }
+  }
+
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
@@ -198,6 +226,15 @@ export default async function IssueDetailPage({
                 label="Created"
                 value={formatDate(supportIssue.createdAt)}
               />
+              {staffIssue && (
+                <Info label="Reference" value={caseRefFor(supportIssue.id)} />
+              )}
+              {staffIssue && (
+                <Info
+                  label="Live support"
+                  value={formatDate(staffIssue.lastLiveSupportAt)}
+                />
+              )}
             </dl>
           </section>
 

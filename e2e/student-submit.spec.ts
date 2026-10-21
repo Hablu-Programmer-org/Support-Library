@@ -42,10 +42,8 @@ test.describe("STUDENT issue submission", () => {
     await additional.locator('input[name="courseSlug"]').fill("react-beginner");
     await additional.locator('input[name="tags"]').fill("buffering, video");
 
-    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
-    await expect(
-      page.getByRole("heading", { name: "Your request has been submitted" }),
-    ).toBeVisible();
+    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await expect(page.getByRole("status")).toContainText("Your request has been submitted.");
     await expect(pageErrors).toEqual([]);
 
     // The submitted case is internal, so it must not appear in the library list.

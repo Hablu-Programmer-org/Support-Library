@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState } from "react";
 
-import {
-  currentShift,
-  supportHoursBn,
-  supportScheduleBn,
-  type LiveSupportConfig,
-  type SupportPhase,
-} from "@/lib/config/live-support";
+import { joinLiveSupportAction, type JoinLiveSupportState } from "@/actions/live-support";
 import { cn } from "@/lib/cn";
+import { supportHoursBn, supportScheduleBn, type SupportPhase } from "@/lib/config/live-support";
 
 type LiveSupportCardProps = {
-  config: LiveSupportConfig;
+  platform: string;
+  /** Manual dial-in fallback; absent while the room is closed. */
+  meetingId?: string;
+  passcode?: string;
+  /** Resolved on the server: the browser clock is display only. */
+  shift: SupportPhase;
+  csrfToken: string;
 };
 
 const SHIFT_LABELS: Record<Exclude<SupportPhase, "off">, string> = {
@@ -22,54 +23,51 @@ const SHIFT_LABELS: Record<Exclude<SupportPhase, "off">, string> = {
 
 const ORDER: Array<Exclude<SupportPhase, "off">> = ["morning", "night"];
 
+const INITIAL_STATE: JoinLiveSupportState = {};
+
 /**
- * Join panel for the daily live support session.
+ * Staff join panel for the daily live support session.
  *
- * The phase starts as `null` and is resolved after mount: the schedule depends
- * on the viewer's clock, so rendering it during SSR would make the first client
- * render disagree with the server HTML whenever the two disagree about the
- * current shift. A one-frame "closed" state is cheaper than a hydration error.
+ * Students never see this page: they join from their own request, where the
+ * request is fixed by the page. Staff run the session, so they need no request
+ * and are not queued. The room URL is never held here — submitting the form runs
+ * a server action that re-checks the shift and only then redirects.
  */
-export function LiveSupportCard({ config }: LiveSupportCardProps) {
-  const [phase, setPhase] = useState<SupportPhase | null>(null);
-
-  useEffect(() => {
-    const update = () => setPhase(currentShift(new Date()));
-    update();
-
-    const interval = setInterval(update, 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isOpen = phase !== null && phase !== "off";
-  const joinLabel = `Live Support Center (${config.platform})`;
+export function LiveSupportCard({
+  platform,
+  meetingId,
+  passcode,
+  shift,
+  csrfToken,
+}: LiveSupportCardProps) {
+  const [state, formAction, pending] = useActionState(joinLiveSupportAction, INITIAL_STATE);
+  const isOpen = shift !== "off";
+  const joinLabel = `Live Support Center (${platform})`;
   const joinClass = cn(
     "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
-    isOpen
+    isOpen && !pending
       ? "bg-primary text-white hover:bg-primary-600"
       : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
   );
-  const joinText = <>Join {config.platform} Meeting</>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        {ORDER.map((shift) => (
-          // Display-only chips (they carry no action), so they are inert:
-          // `disabled` keeps them out of the tab order entirely.
+        {ORDER.map((item) => (
+          // Display-only chips (they carry no action), so they are inert.
           <button
-            key={shift}
+            key={item}
             type="button"
-            aria-label={`${SHIFT_LABELS[shift]} button`}
+            aria-label={`${SHIFT_LABELS[item]} button`}
             className={cn(
               "rounded-full px-6 py-2.5 text-sm font-semibold transition",
-              phase === shift
+              shift === item
                 ? "bg-primary text-white"
                 : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
             )}
             disabled
           >
-            {SHIFT_LABELS[shift]}
+            {SHIFT_LABELS[item]}
           </button>
         ))}
       </div>
@@ -81,9 +79,7 @@ export function LiveSupportCard({ config }: LiveSupportCardProps) {
           </p>
         ) : (
           <p className="font-medium text-danger-700 dark:text-danger-300">
-            {phase === null
-              ? "Checking support hours…"
-              : "Live support is closed right now. Please join during a support slot."}
+            Live support is closed right now. Please join during a support slot.
           </p>
         )}
         <p className="text-slate-500 dark:text-slate-400">
@@ -94,56 +90,54 @@ export function LiveSupportCard({ config }: LiveSupportCardProps) {
         </p>
       </div>
 
-      {isOpen ? (
-        <a
-          aria-disabled="false"
+      <p className="text-sm text-slate-600 dark:text-slate-300">
+        You are joining as staff — no request is required and you will not appear in the waiting
+        list.
+      </p>
+
+      <form action={formAction} className="space-y-3">
+        <input type="hidden" name="csrfToken" value={csrfToken} />
+
+        <button
+          type="submit"
           aria-label={joinLabel}
+          aria-disabled={!isOpen || pending}
           className={joinClass}
-          href={config.joinUrl}
-          rel="noopener noreferrer"
-          target="_blank"
+          disabled={!isOpen || pending}
         >
-          {joinText}
-        </a>
-      ) : (
-        // Closed state drops the href on purpose: `pointer-events-none` only
-        // stops the mouse, so a link left in the tab order would still open the
-        // room when a keyboard user presses Enter. The explicit role keeps the
-        // accessible role stable ("link") across both states.
-        <span
-          aria-disabled="true"
-          aria-label={joinLabel}
-          className={joinClass}
-          role="link"
-          tabIndex={-1}
-        >
-          {joinText}
-        </span>
+          {pending ? "Opening the room…" : `Join ${platform} Meeting`}
+        </button>
+
+        {state.error && (
+          <p
+            role="alert"
+            className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300"
+          >
+            {state.error}
+          </p>
+        )}
+      </form>
+
+      {isOpen && meetingId && passcode && (
+        <div className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-4 py-3">
+            <span className="text-sm text-slate-500 dark:text-slate-400">Meeting ID</span>
+            <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
+              {meetingId}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 py-3">
+            <span className="text-sm text-slate-500 dark:text-slate-400">Passcode</span>
+            <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
+              {passcode}
+            </span>
+          </div>
+        </div>
       )}
 
-      <div className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        <div className="flex items-center justify-between gap-4 py-3">
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            Meeting ID
-          </span>
-          <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-            {config.meetingId}
-          </span>
-        </div>
-        <div className="flex items-center justify-between gap-4 py-3">
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            Passcode
-          </span>
-          <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-            {config.passcode}
-          </span>
-        </div>
-      </div>
-
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Before joining, try the course documentation and videos first — the team
-        can help much faster when you share what you already tried. Total daily
-        support time: {supportHoursBn()}.
+        Say the request reference out loud when you let the student in. Total daily support time:{" "}
+        {supportHoursBn()}.
       </p>
     </div>
   );

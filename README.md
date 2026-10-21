@@ -1,6 +1,6 @@
 # Hablu Support Library
 
-Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, private image attachments or external video links, and close issues when solved. Students can submit their own requests with optional attachments/video links and read published answers.
+Staff-first support library for Hablu Programmer. Mentors can record student support issues, add answers, private image attachments or external video links, and close issues when solved. Students can submit their own requests with optional attachments/video links, read published answers, follow their own request, and join the daily live support room from it.
 
 The interface is English throughout, with Inter typography and English date formatting. Issue and reply content can still be written and searched in any language.
 
@@ -48,10 +48,107 @@ The interface is English throughout, with Inter typography and English date form
 - **Security headers**: CSP, HSTS, X-Frame-Options, etc.
 - **Container hardening**: Non-root, read-only FS, dropped capabilities
 
+## Workflow
+
+A student reaches live support **through a request**, and only through a request:
+the LMS help center starts the journey, this app does the work.
+
+Full detail — student and staff journeys, live support rules, edge cases and a
+file map: **[docs/workflow.md](docs/workflow.md)**.
+
+```text
+hablu-programmer.com                        support.hablu-programmer.com
+────────────────────                        ─────────────────────────────
+Help Center (dashboard sidebar)
+  "সাপোর্ট কীভাবে পাবেন"        ──────────►  /dashboard/issues
+  [ সাপোর্ট লাইব্রেরিতে যান ]                 search published answers
+                                              │  found → read the answer, done
+                                              │  new   → Submit issue
+                                              ▼
+                                     /dashboard/issues/new
+                                       title · problem · images · video links
+                                              ▼  submit
+                                     /dashboard/issues/{id}?created=1
+                                       status · reference · own files · team replies
+                                       Live support panel → [ Join Zoom Meeting ]
+                                              ▼  join (server action)
+                                     live-support-joins row ──► staff queue
+```
+
+### Student
+
+1. In the LMS, open **Help Center** in the dashboard sidebar (shown to premium
+   students and selected batches). The modal explains the journey in Bengali and
+   states no schedule — the room's hours are only shown on the request page.
+2. Press **"সাপোর্ট লাইব্রেরিতে যান"**; it opens `/dashboard/issues` in this app
+   (first visit: Google sign-in).
+3. **Search before asking** — the library searches published titles, problems,
+   tags and course slugs. An existing answer is the fastest fix.
+4. Nothing matches → **Submit an issue**. Identity comes from the session (never
+   the form); optional evidence is up to 3 private images (PNG/JPEG/GIF/WebP,
+   5 MB each) and external HTTPS video links.
+5. Submission lands on the student's **own request page**
+   (`/dashboard/issues/{id}?created=1`) with a success banner: status, the short
+   reference (`B41F9C`), everything they submitted, the team's replies
+   (read-only) — and the **Live support** panel.
+6. The panel offers **Join Zoom Meeting** only while the request is `OPEN`,
+   `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or
+   19:30–24:00, Asia/Dhaka, resolved on the server). Meeting ID and passcode are
+   rendered only in that state.
+7. Joining runs a server action that re-checks ownership, the shift and the
+   per-user budget, records one join per request per shift per day, audits it,
+   and only then redirects into the room.
+8. **My requests** lists the student's own requests so the page is reachable
+   again; `Solved`/`Archived` requests show the panel closed and offer no join.
+
+### Staff
+
+| Where | What |
+| --- | --- |
+| `/dashboard` | `Waiting Now` (today's joins), `Waiting today` (who is in the room and which request they brought), `Student requests awaiting a mentor` (student submissions with no mentor, oldest first), recent unresolved issues, popular tags |
+| `/dashboard/issues` | Staff list with filters; issues joined today carry a `Waiting in live support` chip |
+| `/dashboard/issues/{id}` | Full case: replies, status, archive, publish/unpublish (admin only), `Reference`, and `Live support` (last join) |
+| `/dashboard/support` | Staff join for the room; staff need no request and never appear in the queue |
+| `/dashboard/live-support` | Today's queue, newest first, with a 30-second auto-refresh and a manual `Refresh` button |
+
+**How staff notice a waiting student:** `Waiting Now` / `Waiting today` on the
+dashboard, the `Waiting in live support` chip in the issue list, or the queue page
+itself. A row is created when the student presses **Join**, not when the request
+is submitted.
+
+### Rules and edge cases
+
+| Situation | Result |
+| --- | --- |
+| Outside a support shift | Join disabled; meeting ID / passcode absent from the response |
+| Request `SOLVED` / `ARCHIVED` | No join; the student is asked to submit a new request |
+| Another student's unpublished request | `404` (ownership is `createdBy` from the session) |
+| Another student's published issue | Read-only library view |
+| Double submit within one shift | One join row (unique `{issueId, dayKey, shift}`) |
+| Second visit in the other shift | A separate row with the correct shift and time |
+| Duplicate issue submission | One issue (operation id + unique index) |
+| Soft-deleted request | Queue row stays marked `(removed)`; gone from the student's list |
+| Empty queue during a shift | Nobody has pressed Join yet |
+| Legacy `/dashboard/issues/submitted` | Redirects to `My requests` |
+
+### Cross-app notes
+
+- Roles come from `hp-v2.User` on sign-in and on every refresh; this app signs in
+  with Google only, so an LMS password account needs a Google sign-in here.
+- The room credentials (join URL, meeting ID, passcode) exist **only** in this
+  app, resolved server-side. The LMS bundle carries none of them.
+- The shift is decided on the server in `Asia/Dhaka`; the LMS keeps the canonical
+  schedule copy (`frontend/src/lib/config/support.ts`) that
+  `npm run check:live-support` compares against this app.
+- Joins live in `live-support-joins` with a 180-day TTL; `support-issues` keeps
+  `lastLiveSupportAt`, written without touching `updatedAt` so staff revisions
+  stay valid.
+
 ## Documentation
 
 | Document                                                 | Description                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------- |
+| [Support Workflow](docs/workflow.md)                     | End-to-end student and staff journey, live support rules    |
 | [Self-Hosted Deployment](docs/self-hosted-deployment.md) | Deploy to Docker Compose, Vercel, Railway, Render, Coolify |
 | [LMS Integration](docs/lms-integration.md)               | Schema requirements, role mapping, custom adapters         |
 | [VPS Deployment](docs/vps-deployment.md)                 | Production runbook for VPS + Traefik                       |
@@ -125,7 +222,7 @@ cmd /c "npm run check:live-support"           # live support drift guard vs the 
 
 `bench:search` seeds a throwaway collection in the test database and prints a markdown comparison of the search strategies plus a scaling curve. It refuses to run against the development database. Findings: `docs/implementation.md`.
 
-`check:live-support` compares this app's live support schedule, its Bengali schedule wording, and the Zoom room against the LMS frontend's own copies (`frontend/src/lib/config/support.ts` and `site.ts`). The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
+`check:live-support` compares this app's live support schedule and its Bengali schedule wording against the LMS frontend's own copy (`frontend/src/lib/config/support.ts`), and inverts the room check: the Zoom join URL, meeting ID and passcode must exist **only** here (resolved server-side), must never reappear in the LMS `support` config, and the LMS must keep a `support.libraryUrl` pointing students at this app. The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
 
 ## Verification
 
@@ -170,11 +267,12 @@ cmd /c "npm run test:e2e"
 - Mentor creates support issues with an optional first answer (text, image attachments, video links)
 - If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
 - Mentor adds replies with private image attachments and external video links
-- STUDENT (students) can submit a new issue with optional attachments/video links — identity comes from the session, never the form — and read published issues, but never unpublished ones, and can never reply
-- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to a confirmation page instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, or replies
+- STUDENT (students) can submit a new issue with optional attachments/video links — identity comes from the session, never the form — read published issues, and read their **own** request (owner-scoped, anything its visibility), but never another student's unpublished one, and can never reply
+- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to their own request page (status, team replies, live support panel) instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, or replies
+- Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
-- Dashboard shows real DB counts and recent unresolved issues for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues, students see Issues/Submit issue (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
+- Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
+- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My requests (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
 - Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Submit a support request", and students browse published answers directly without the staff dashboard
 
 ## Design System
@@ -204,7 +302,6 @@ DB-backed routes use Node.js runtime. `/api/health/live` checks the process and 
 
 ## Deferred
 
-- Student ticket tracking (students cannot yet view or follow up on their own submissions in the app)
 - Public knowledge base
 - AI-assisted search/answers
 - Service-level integration tests
