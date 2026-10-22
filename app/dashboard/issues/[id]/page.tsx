@@ -25,6 +25,7 @@ import {
   WarningTriangleIcon,
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
+import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { canMutate, isAdmin } from "@/lib/roles";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
@@ -50,7 +51,10 @@ const priorityLabels: Record<string, string> = {
 
 const formatDate = (date?: Date | null) =>
   date
-    ? new Intl.DateTimeFormat("en-US", {
+    ? new Intl.DateTimeFormat("en-GB", {
+        // Support runs on Dhaka time; formatting on the server's clock (UTC in the
+        // container) made "last live support" look hours off from the queue.
+        timeZone: SUPPORT_TIME_ZONE,
         dateStyle: "medium",
         timeStyle: "short",
       }).format(new Date(date))
@@ -232,16 +236,6 @@ export default async function IssueDetailPage({
               </h2>
             </div>
             <dl className="mt-3 space-y-3 text-sm">
-              <Info label="Course" value={supportIssue.courseSlug} />
-              <Info label="Batch" value={supportIssue.batchNo?.toString()} />
-              <Info
-                label="Published"
-                value={formatDate(supportIssue.publishedAt)}
-              />
-              <Info
-                label="Created"
-                value={formatDate(supportIssue.createdAt)}
-              />
               {staffIssue && (
                 <Info
                   label="Reference"
@@ -258,6 +252,16 @@ export default async function IssueDetailPage({
                   }
                 />
               )}
+              <Info label="Course" value={supportIssue.courseSlug} />
+              <Info label="Batch" value={supportIssue.batchNo?.toString()} />
+              <Info
+                label="Published"
+                value={formatDate(supportIssue.publishedAt)}
+              />
+              <Info
+                label="Created"
+                value={formatDate(supportIssue.createdAt)}
+              />
               {staffIssue && (
                 <Info
                   label="Live support"
