@@ -6,7 +6,7 @@ import {
   caseRefFor,
   dayKeyInDhaka,
 } from "@/lib/config/live-support";
-import type { CaseStatus } from "@/lib/constants";
+import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
 import { dbConnect } from "@/lib/db";
 import {
   LiveSupportJoinModel,
@@ -100,10 +100,20 @@ export async function recordLiveSupportJoin(
   return { dayKey, joinedAt: join.joinedAt, created };
 }
 
-/** Who is waiting in the room right now (staff dashboard / queue badge). */
-export async function countLiveSupportJoins(dayKey: string): Promise<number> {
-  await dbConnect();
-  return LiveSupportJoinModel.countDocuments({ dayKey });
+/**
+ * How many of today's joins still have an unresolved request.
+ *
+ * A join row survives after the case is solved, so the "waiting" count has to
+ * look at the status too — otherwise a solved case keeps inflating it all day.
+ */
+export function countStillWaiting(
+  entries: Array<{ issueStatus: CaseStatus | null }>,
+): number {
+  return entries.filter(
+    (entry) =>
+      entry.issueStatus !== null &&
+      (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(entry.issueStatus),
+  ).length;
 }
 
 /** Issue ids with a join today, for a "waiting" marker in staff lists. */

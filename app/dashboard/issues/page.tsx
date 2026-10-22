@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
+import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { dayKeyInDhaka } from "@/lib/config/live-support";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
@@ -172,11 +173,14 @@ export default async function IssuesPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="font-semibold">{supportIssue.title}</h2>
                         <StatusBadge status={supportIssue.status} />
-                        {waitingIds.has(supportIssue.id) && (
-                          <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
-                            Waiting in live support
-                          </span>
-                        )}
+                        {waitingIds.has(supportIssue.id) &&
+                          LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
+                            supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
+                          ) && (
+                            <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
+                              Waiting in live support
+                            </span>
+                          )}
                       </div>
                       <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
                         {supportIssue.question}

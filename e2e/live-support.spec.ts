@@ -202,6 +202,26 @@ test.describe("LIVE support: staff queue", () => {
       dayKey: dayKeyInDhaka(new Date()),
       joinedAt: new Date(),
     });
+
+    // A join row outlives the case: seed a solved request that was also taken to
+    // the room today, so the list can prove it is no longer called "waiting".
+    const solved = await SupportIssueModel.create({
+      title: "E2E solved live support request",
+      question: "Seeded to assert a solved case is not marked waiting.",
+      searchText: "e2e solved live support request seeded",
+      createdBy: STUDENT_ID,
+      status: "SOLVED",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+    });
+
+    await LiveSupportJoinModel.create({
+      issueId: solved._id,
+      studentUserId: STUDENT_ID,
+      shift: "morning",
+      dayKey: dayKeyInDhaka(new Date()),
+      joinedAt: new Date(),
+    });
   });
 
   test("lists who is waiting and which request they brought", async ({ page }) => {
@@ -237,6 +257,18 @@ test.describe("LIVE support: staff queue", () => {
     await page.goto("/dashboard/issues");
 
     await expect(page.getByText("Waiting in live support").first()).toBeVisible();
+  });
+
+  test("stops calling a case waiting once it is solved", async ({ page }) => {
+    await page.goto(`/dashboard/issues?q=${encodeURIComponent("solved live support request")}`);
+
+    const row = page
+      .locator("a")
+      .filter({ hasText: "E2E solved live support request" })
+      .first();
+    await expect(row).toBeVisible();
+    // The join happened today, but a solved request is not waiting for anyone.
+    await expect(row.getByText("Waiting in live support")).toHaveCount(0);
   });
 
   test("is reached from the staff room page", async ({ page }) => {

@@ -11,7 +11,7 @@ import { requireSession } from "@/lib/auth-guard";
 import { dayKeyInDhaka, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { canMutate } from "@/lib/roles";
 import { listStudentRequestsAwaitingStaff } from "@/lib/services/issues";
-import { countLiveSupportJoins, listLiveSupportQueue } from "@/lib/services/live-support-joins";
+import { countStillWaiting, listLiveSupportQueue } from "@/lib/services/live-support-joins";
 
 export const dynamic = "force-dynamic";
 
@@ -29,14 +29,16 @@ export default async function DashboardPage() {
   if (!canMutate(session.user.role ?? "STUDENT")) redirect("/dashboard/issues");
 
   const dayKey = dayKeyInDhaka(new Date());
-  const [stats, recentIssues, topTags, waiting, waitingCount, awaitingMentor] = await Promise.all([
+  const [stats, recentIssues, topTags, waiting, awaitingMentor] = await Promise.all([
     getDashboardStats(false),
     getRecentUnresolvedIssues(8, false),
     getTopTags(10, false),
     listLiveSupportQueue(dayKey),
-    countLiveSupportJoins(dayKey),
     listStudentRequestsAwaitingStaff(8),
   ]);
+  // A join row survives after a case is solved, so the card counts only those
+  // requests that are still unresolved (the list below stays a full log).
+  const waitingNow = countStillWaiting(waiting);
 
   return (
     <div className="space-y-8">
@@ -58,9 +60,9 @@ export default async function DashboardPage() {
         <StatCard hint="Open, pending or follow-up" label="Unresolved" value={stats.unresolvedIssues} />
         <StatCard hint="New issues in the last 7 days" label="Issues This Week" value={stats.weeklyIssues} />
         <StatCard
-          hint="Students in the room today"
+          hint="Unresolved requests with a student in the room"
           label="Waiting Now"
-          value={waitingCount}
+          value={waitingNow}
         />
       </div>
 

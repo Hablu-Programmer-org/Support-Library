@@ -106,7 +106,7 @@ Help Center (dashboard sidebar)
 | Where | What |
 | --- | --- |
 | `/dashboard` | `Waiting Now` (today's joins), `Waiting today` (who is in the room and which request they brought), `Student requests awaiting a mentor` (student submissions with no mentor, oldest first), recent unresolved issues, popular tags |
-| `/dashboard/issues` | Staff list with filters; issues joined today carry a `Waiting in live support` chip |
+| `/dashboard/issues` | Staff list with filters; an **unresolved** issue joined today carries a `Waiting in live support` chip |
 | `/dashboard/issues/{id}` | Full case: replies, status, archive, publish/unpublish (admin only), `Reference`, and `Live support` (last join) |
 | `/dashboard/support` | Staff join for the room; staff need no request and never appear in the queue |
 | `/dashboard/live-support` | Today's queue, newest first, with a 30-second auto-refresh and a manual `Refresh` button |
@@ -114,7 +114,7 @@ Help Center (dashboard sidebar)
 **How staff notice a waiting student:** `Waiting Now` / `Waiting today` on the
 dashboard, the `Waiting in live support` chip in the issue list, or the queue page
 itself. A row is created when the student presses **Join**, not when the request
-is submitted.
+is submitted, and the chip only stays while the request is still unresolved.
 
 ### Rules and edge cases
 
