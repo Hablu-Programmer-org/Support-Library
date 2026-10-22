@@ -37,11 +37,13 @@ test.describe("Shell: dashboard chrome", () => {
       .poll(async () => slate950Alpha80.includes(await header.evaluate((el) => getComputedStyle(el).backgroundColor)))
       .toBe(true);
 
-    // Inline nav: the staff links (Dashboard, Issues, Live support), the active
-    // one highlighted and marked. "My Courses" is student-only and its LMS
-    // origin is not set for e2e, so it never appears here.
+    // Inline nav: the staff links (Dashboard, Issues, Live support, Support
+    // queue), the active one highlighted and marked. "My Courses" is
+    // student-only and its LMS origin is not set for e2e, so it never appears
+    // here.
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link")).toHaveCount(3);
+    await expect(nav.getByRole("link")).toHaveCount(4);
+    await expect(nav.getByRole("link", { name: "Support queue" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     await expect(nav.getByRole("link", { name: "Issues" })).not.toHaveAttribute("aria-current", "page");
 
@@ -122,6 +124,13 @@ test.describe("Shell: My Courses link (student)", () => {
 
     // The mentor-only Dashboard must not leak into the student nav.
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
+    // Students reach the room from their own request, so the staff room page and
+    // the queue are not in their nav; their requests are.
+    await expect(nav.getByRole("link", { name: "My requests" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
+    // Issues, Submit issue, My requests, My Courses.
+    await expect(nav.getByRole("link")).toHaveCount(4);
   });
 });
 

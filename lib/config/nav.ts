@@ -5,7 +5,9 @@ import {
   BookIcon,
   CaseIcon,
   DashboardIcon,
+  FileTextIcon,
   SparklesIcon,
+  UserIcon,
   VideoIcon,
 } from "@/components/icons";
 import { lmsHref } from "@/lib/links";
@@ -50,8 +52,30 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
     maxRole: "STUDENT",
     icon: SparklesIcon,
   },
+  // Students reach live support from their own request, so the way back is the
+  // list of requests rather than a separate room page.
+  {
+    label: "My requests",
+    href: "/dashboard/my-requests",
+    maxRole: "STUDENT",
+    icon: FileTextIcon,
+  },
   myCoursesItem(),
-  { label: "Live support", href: "/dashboard/support", icon: VideoIcon },
+  // Staff only: students join from a specific request.
+  {
+    label: "Live support",
+    href: "/dashboard/support",
+    minRole: "MENTOR",
+    icon: VideoIcon,
+  },
+  // Staff-only: the students waiting in the room, with the request each one
+  // brought. Students never see this item (and the page double-guards it).
+  {
+    label: "Support queue",
+    href: "/dashboard/live-support",
+    minRole: "MENTOR",
+    icon: UserIcon,
+  },
 ];
 
 export const NAV_ITEMS: NavItem[] = ROLE_NAV_ITEMS.filter(

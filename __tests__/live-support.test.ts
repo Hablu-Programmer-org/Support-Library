@@ -2,7 +2,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  caseRefFor,
   currentShift,
+  dayKeyInDhaka,
   shiftMinutes,
   supportHoursBn,
   supportScheduleBn,
@@ -71,8 +73,7 @@ describe("SUPPORT_SHIFTS", () => {
   });
 });
 
-describe("Bengali schedule copy", () => {
-  it("converts digits to Bengali numerals", () => {
+describe("Bengali schedule copy", () => {  it("converts digits to Bengali numerals", () => {
     expect(toBnDigits("12")).toBe("১২");
     expect(toBnDigits(730)).toBe("৭৩০");
   });
@@ -88,5 +89,32 @@ describe("Bengali schedule copy", () => {
 
   it("adds up the daily hours", () => {
     expect(supportHoursBn()).toBe("৮ ঘণ্টা ৩০ মিনিট");
+  });
+});
+
+describe("dayKeyInDhaka", () => {
+  it("uses the studio's calendar day, not the UTC day", () => {
+    // 02:00 UTC on the 18th is 08:00 on the 18th in Dhaka.
+    expect(dayKeyInDhaka(dhaka(2, 0))).toBe("2026-10-18");
+  });
+
+  it("rolls over at Dhaka midnight, six hours before UTC does", () => {
+    // 18:00 UTC is 00:00 on the 19th in Dhaka.
+    expect(dayKeyInDhaka(dhaka(18, 0))).toBe("2026-10-19");
+    // 17:59 UTC is still 23:59 on the 18th in Dhaka.
+    expect(dayKeyInDhaka(dhaka(17, 59))).toBe("2026-10-18");
+  });
+
+  it("keeps the two shifts of one Dhaka day on the same key", () => {
+    // 08:00 and 20:00 Dhaka are both part of the 18th, so a student who joins
+    // twice — morning and night — collides on the same idempotency key.
+    expect(dayKeyInDhaka(dhaka(2, 0))).toBe("2026-10-18");
+    expect(dayKeyInDhaka(dhaka(14, 0))).toBe("2026-10-18");
+  });
+});
+
+describe("caseRefFor", () => {
+  it("is the short, upper-case tail a student can read out loud", () => {
+    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).toBe("B9C0D1");
   });
 });

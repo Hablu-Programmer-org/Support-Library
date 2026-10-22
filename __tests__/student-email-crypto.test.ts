@@ -52,6 +52,39 @@ describe("student email cryptography", () => {
   });
 });
 
+describe("readStudentEmailSafe (display path)", () => {
+  const envelopeWithRetiredKey = {
+    ciphertext: "AAAA",
+    iv: "BBBB",
+    authTag: "CCCC",
+    keyVersion: "v99",
+  };
+
+  it("returns the email when the envelope decrypts", () => {
+    const protectedEmail = crypto.protectStudentEmail("student@example.com", env);
+    expect(
+      crypto.readStudentEmailSafe(protectedEmail.encrypted, undefined, undefined, env),
+    ).toBe("student@example.com");
+  });
+
+  it("returns null and reports the failure for a retired key version", () => {
+    const onError = vi.fn();
+
+    // A single unreadable row must not take down a staff page: the rest of the
+    // case stays readable and the failure is logged with the record id.
+    expect(
+      crypto.readStudentEmailSafe(envelopeWithRetiredKey, undefined, onError, env),
+    ).toBeNull();
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("still reads the legacy plaintext when there is no envelope", () => {
+    expect(crypto.readStudentEmailSafe(undefined, " Legacy@Example.COM ")).toBe(
+      "legacy@example.com",
+    );
+  });
+});
+
 describe("student email migration helpers", () => {
   it("classifies complete records as idempotent no-ops", () => {
     const protectedEmail = crypto.protectStudentEmail("student@example.com", env);

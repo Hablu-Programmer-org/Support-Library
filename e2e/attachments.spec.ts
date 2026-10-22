@@ -52,7 +52,7 @@ test.describe("uploaded attachments", () => {
       ),
     ).toEqual(["attachment.png"]);
 
-    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/submitted$/);
+    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
     await expect(pageErrors).toEqual([]);
 
     // Staff pick up the case and the selected image is visible as an attachment.

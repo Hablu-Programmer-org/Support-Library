@@ -245,8 +245,8 @@ Students see:
 - Hablu Support Library brand link.
 - `Issues` navigation link.
 - `Submit an issue` navigation link.
+- `My requests` navigation link, which lists the requests you submitted and opens them.
 - `My Courses` navigation link, which opens your courses in the Hablu Programmer LMS in a new tab. It appears only when the deployment has the LMS address configured.
-- `Live support` navigation link.
 - Theme toggle.
 - Account identity.
 - Sign out control.
@@ -270,7 +270,7 @@ Sign out sends you back to `/login`.
 
 ## 12a. Live Support
 
-Route: `/dashboard/support`
+Live support is joined **from your own request**, not from a separate page.
 
 Twice a day the support team opens a live support room on Zoom:
 
@@ -279,21 +279,23 @@ Twice a day the support team opens a live support room on Zoom:
 | `Morning shift` | 8:00 AM to 12:00 PM |
 | `Night shift` | 7:30 PM to 12:00 AM |
 
-The page shows:
+The flow:
 
-- Which shift is running right now (`Morning shift` or `Night shift`), or that support is closed.
-- The daily support hours in Bengali.
-- A `Join Zoom Meeting` button.
-- The meeting ID and passcode, so you can join from the Zoom app yourself if the button does not work.
+1. Submit a request (**Submit an issue**), or open one you already submitted from **My requests**.
+2. You land on the request page. It shows the status, the reference (for example `B41F9C`), what you wrote, your images and video links, and any update the team has written.
+3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Zoom Meeting` button, plus the meeting ID and passcode in case you want to dial in from the Zoom app yourself.
+4. Say the request reference when you join — the mentor sees the same reference in the waiting list.
 
-How it behaves:
+Rules that matter:
 
-- The join button works only during a support shift. Outside those hours it is disabled and the page tells you to come back during the support hours.
-- The schedule follows Bangladesh time, not the time zone of your device.
-- The page is available to every signed-in user; it is not tied to a course, batch, or payment status.
+- **You need an open request to join.** If you have none, there is nothing to join from; submit one first.
+- Only requests that are `Open`, `Pending` or `Follow-up` can be taken to the room. Once a request is `Solved` or `Archived`, the panel says so and offers no join button — submit a new request if the problem comes back.
+- The shift and the open/closed decision follow Bangladesh time on the server, not the clock of your device.
+- Each request appears in the mentor's waiting list once per shift, so a double click cannot queue you twice. Coming back in the other shift adds a separate entry.
+- The page is not tied to a course, batch, or payment status — every signed-in student can use it.
 - Try the course documentation and videos first. The team helps much faster when you share what you already tried.
 
-There are also `Join live support` links on the request form and on the confirmation page you see after submitting a request.
+The LMS frontend's help center also links here, to `/dashboard/issues`, with the same reminder to search first.
 
 ## 13. What Students Cannot Do
 
@@ -306,12 +308,10 @@ Students cannot:
 - Archive or delete an issue.
 - Publish or unpublish an issue.
 - Change an issue status.
-- Add a reply.
-- Edit a reply.
-- Delete a reply.
+- Add, edit or delete a reply. Replies are read-only for students, on your own request page and on published issues.
 - Choose which student an issue is filed for.
 - Use the mentor filter.
-- See internal/unpublished issues.
+- See internal/unpublished issues that are not yours. You can read the requests **you** submitted, published issues, and nothing else.
 - See student personal information saved on support issues.
 
 If you try to open a staff-only page, you may be redirected to `/unauthorized`.
@@ -344,7 +344,7 @@ Fill these in only if you know them; leaving them empty is fine. Your request al
 
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email. Your identity is taken from your signed-in account automatically.
 
-After you submit, a confirmation page appears and the request goes to the support team. You cannot add replies to it and you cannot see it in the library until the team reviews and publishes it; if they do not publish it, they answer you by email instead.
+After you submit, you land on **your request page**. It shows the status (`Open`), the request reference, everything you wrote, your images and video links, and a **Live support** panel you can use while the room is open. Updates the team writes appear on the same page; they also answer by email. You cannot add replies there, and other students cannot read your request unless the team publishes it to the Student Library.
 
 If you submit the same request twice, only one request is created.
 
@@ -416,7 +416,9 @@ Unexpected error:
 | A link opens a new tab. | Video links are external resources and are opened separately. |
 | I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
 | My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
-| The live support join button is disabled. | Support is closed. Come back during a support shift: 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time. |
+| The live support join button is disabled. | Either support is closed (come back 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
+| The live support panel offers no join button. | Either support is closed (come back 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
+| I cannot find my request again. | Open **My requests** in the topbar; each row opens the request and its live support panel. |
 
 ## 18. Quick Reference
 
@@ -432,7 +434,9 @@ Unexpected error:
 | Toggle theme | Yes | Topbar/account menu |
 | Sign out | Yes | Topbar/account menu |
 | Submit a support request | Yes | `/dashboard/issues/new` |
-| Join live support | Yes, during a support shift | `/dashboard/support` |
+| My requests | Yes | `/dashboard/my-requests` |
+| Read one of your requests and the team's updates | Yes, your own only | `/dashboard/issues/[id]` |
+| Join live support | Yes, from an unresolved request, during a support shift | The request page |
 | Open `My Courses` in the LMS | Yes | Topbar, opens a new tab |
 | Create an issue on behalf of a student | No | Staff only |
 | Reply to issue | No | Staff only |

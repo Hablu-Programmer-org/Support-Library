@@ -8,7 +8,9 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
+import { dayKeyInDhaka } from "@/lib/config/live-support";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
+import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
@@ -81,10 +83,14 @@ export default async function IssuesPage({
     { publicOnly },
   );
 
-  const [{ courseSlugs, batchNos }, mentors] = await Promise.all([
+  const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] = await Promise.all([
     listIssueFilterOptions(publicOnly),
     canManage ? listAssignableMentors() : Promise.resolve([]),
+    canManage
+      ? listJoinIssueIdsForDay(dayKeyInDhaka(new Date()))
+      : Promise.resolve([] as string[]),
   ]);
+  const waitingIds = new Set(waitingIssueIds);
 
   const canDelete = canManage; // Same roles can delete
   const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
@@ -166,6 +172,11 @@ export default async function IssuesPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="font-semibold">{supportIssue.title}</h2>
                         <StatusBadge status={supportIssue.status} />
+                        {waitingIds.has(supportIssue.id) && (
+                          <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
+                            Waiting in live support
+                          </span>
+                        )}
                       </div>
                       <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
                         {supportIssue.question}

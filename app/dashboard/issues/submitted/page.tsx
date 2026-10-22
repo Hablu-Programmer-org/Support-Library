@@ -1,64 +1,14 @@
-import { CheckCircleIcon } from "@/components/icons";
-import { requireSession } from "@/lib/auth-guard";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Confirmation shown after a student submits an issue.
+ * Legacy confirmation route.
  *
- * Students never see the internal issue view (unpublished cases are staff-only),
- * so the submit flow ends here instead of redirecting to the case detail page.
+ * Submission now lands the student on their own request page, where the status,
+ * the team's replies and the live support panel live. This route is kept so an
+ * old link or bookmark still resolves instead of 404-ing.
  */
-export default async function IssueSubmittedPage() {
-  const session = await requireSession();
-
-  return (
-    <div className="mx-auto w-full max-w-2xl py-10">
-      <div className="p-8 text-center">
-        <span
-          aria-hidden="true"
-          className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-success-100 text-success-700 dark:bg-success-950/50 dark:text-success-300"
-        >
-          <CheckCircleIcon size={28} />
-        </span>
-
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-          Your request has been submitted
-        </h1>
-        <p className="mt-3 text-slate-600 dark:text-slate-400">
-          The Hablu Programmer support team has received your issue
-          {session.user.email ? (
-            <>
-              {" "}
-              and will reply to <span className="font-medium">{session.user.email}</span>.
-            </>
-          ) : (
-            " and will get back to you shortly."
-          )}
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-600"
-            href="/dashboard/support"
-          >
-            Join live support
-          </Link>
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            href="/dashboard/issues/new"
-          >
-            Submit another request
-          </Link>
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            href="/dashboard/issues"
-          >
-            Browse the Support Library
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
+export default function IssueSubmittedPage() {
+  redirect("/dashboard/my-requests");
 }
