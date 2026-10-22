@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 
 import {
   deleteIssueActionSimple,
@@ -12,6 +13,7 @@ import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { ReplyComposer } from "@/components/issues/reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
+import { CopyValue } from "@/components/shared/copy-value";
 import { LinkList } from "@/components/shared/link-list";
 import {
   ArrowLeftIcon,
@@ -225,7 +227,16 @@ export default async function IssueDetailPage({
                 value={formatDate(supportIssue.createdAt)}
               />
               {staffIssue && (
-                <Info label="Reference" value={caseRefFor(supportIssue.id)} />
+                <Info
+                  label="Reference"
+                  valueNode={
+                    <CopyValue
+                      label="reference"
+                      value={caseRefFor(supportIssue.id)}
+                      variant="chip"
+                    />
+                  }
+                />
               )}
               {staffIssue && (
                 <Info
@@ -248,7 +259,11 @@ export default async function IssueDetailPage({
                 {staffIssue.studentName || "General issue (no student)"}
               </p>
               <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
-                {staffIssue.studentEmail ?? "No student identity recorded"}
+                {staffIssue.studentEmail ? (
+                  <CopyValue label="student email" value={staffIssue.studentEmail} />
+                ) : (
+                  "No student identity recorded"
+                )}
               </p>
             </section>
           )}
@@ -317,14 +332,22 @@ export default async function IssueDetailPage({
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | null }) {
+function Info({
+  label,
+  value,
+  valueNode,
+}: {
+  label: string;
+  value?: string | null;
+  valueNode?: ReactNode;
+}) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </dt>
       <dd className="mt-1 wrap-break-word font-medium text-slate-800 dark:text-slate-200">
-        {value || "Not specified"}
+        {valueNode ?? value ?? "Not specified"}
       </dd>
     </div>
   );

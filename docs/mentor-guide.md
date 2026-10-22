@@ -406,15 +406,19 @@ The issue detail page shows:
 Mentors can read all active issues, including internal/unpublished ones.
 
 The `Reference` field is the short code the student reads out in the live room
-(for example `B41F9C`). `Live support` shows the last time the student took this
-request into the room, or a dash if they never did.
+(for example `B41F9C`). It is highlighted so it stands out, and it can be copied
+with a double-click or with the copy icon beside it. `Live support` shows the last
+time the student took this request into the room, or a dash if they never did.
+
+Attached images open in a preview dialog on the same page (Escape or the backdrop
+closes it); the dialog also offers `Open original` for a full-size view.
 
 ## 17. Student Snapshot
 
 The `Student snapshot` panel shows:
 
 - Student name.
-- Student email.
+- Student email (copy it with a double-click or the copy icon beside it — handy for a reply email).
 
 When no student identity was recorded, the panel shows `General issue (no student)`
 and `No student identity recorded` instead.

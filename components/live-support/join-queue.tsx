@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { StatusBadge } from "@/components/issues/status-badge";
+import { CopyValue } from "@/components/shared/copy-value";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import type { LiveSupportQueueEntry } from "@/lib/services/live-support-joins";
@@ -76,9 +77,7 @@ export function LiveSupportJoinQueue({
                 )}
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
-                <span className="select-all font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {entry.caseRef}
-                </span>{" "}
+                <CopyValue label="request reference" value={entry.caseRef} variant="chip" />{" "}
                 {entry.issueDeleted ? (
                   <span className="text-slate-500 dark:text-slate-400">
                     {entry.issueTitle} (removed)

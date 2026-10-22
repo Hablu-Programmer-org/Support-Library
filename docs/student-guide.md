@@ -284,7 +284,7 @@ The flow:
 1. Submit a request (**Submit an issue**), or open one you already submitted from **My requests**.
 2. You land on the request page. It shows the status, the reference (for example `B41F9C`), what you wrote, your images and video links, and any update the team has written.
 3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Zoom Meeting` button, plus the meeting ID and passcode in case you want to dial in from the Zoom app yourself.
-4. Say the request reference when you join — the mentor sees the same reference in the waiting list.
+4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
 
 Rules that matter:
 
@@ -327,7 +327,7 @@ The form asks for two things:
 
 You can also add optional evidence:
 
-- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library.
+- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library. On your request page, click an attached image to preview it in a dialog without leaving the page.
 - **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
 
 Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.

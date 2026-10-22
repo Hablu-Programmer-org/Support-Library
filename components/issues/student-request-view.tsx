@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "@/components/icons";
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
+import { CopyValue } from "@/components/shared/copy-value";
 import { LinkList } from "@/components/shared/link-list";
 import { caseRefFor, currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { getLiveSupportConfig } from "@/lib/live-support";
@@ -72,9 +73,7 @@ export function StudentRequestView({
       <header className="space-y-3 border-b border-slate-200 pb-6 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <StatusBadge status={issue.status} />
-          <span className="select-all font-mono text-xs font-semibold">
-            {caseRefFor(issue.id)}
-          </span>
+          <CopyValue label="request reference" value={caseRefFor(issue.id)} variant="chip" />
           <span>Submitted {timestamp(issue.createdAt)}</span>
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
@@ -106,8 +105,8 @@ export function StudentRequestView({
         <dl className="mt-3 space-y-3 border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-slate-500 dark:text-slate-400">Reference</dt>
-            <dd className="select-all font-semibold text-slate-900 dark:text-white">
-              {caseRefFor(issue.id)}
+            <dd className="font-semibold text-slate-900 dark:text-white">
+              <CopyValue label="request reference" value={caseRefFor(issue.id)} />
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4">
