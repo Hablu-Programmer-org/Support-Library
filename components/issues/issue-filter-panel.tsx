@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
-import { ChevronDownIcon, SearchIcon } from "@/components/icons";
+import { IssueSearchField } from "@/components/issues/issue-search-field";
 import { nativeFieldClass, nativeLabelClass, nativeSelectClass } from "@/lib/config/fields";
 
 const statusLabels: Record<string, string> = {
@@ -170,26 +170,7 @@ function FilterFields({
 }
 
 function PanelHeader({ defaults, open, onToggle }: { defaults: IssueFilterDefaults; open: boolean; onToggle: () => void }) {
-  return (
-    <div className="relative">
-      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-      <input
-        className={`${nativeFieldClass} px-10`}
-        defaultValue={defaults.q}
-        name="q"
-        placeholder="Search by problem, keyword or 6-digit reference"
-      />
-      <button
-        aria-expanded={open}
-        aria-label="Advanced filters"
-        className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-        onClick={onToggle}
-        type="button"
-      >
-        <ChevronDownIcon className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} size={18} />
-      </button>
-    </div>
-  );
+  return <IssueSearchField defaults={defaults} open={open} onToggle={onToggle} />;
 }
 
 function PanelSkeleton() {

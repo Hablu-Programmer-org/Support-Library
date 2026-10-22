@@ -59,6 +59,26 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
   });
 
+  test("searches while typing, without pressing Enter", async ({ page }) => {
+    const title = `E2E auto search ${Date.now()}`;
+
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create Issue");
+    await form.locator('input[name="studentName"]').fill("E2E Auto Search Student");
+    await form.locator('input[name="studentEmail"]').fill(`e2e.auto.${Date.now()}@test.com`);
+    await form.locator('input[name="title"]').fill(title);
+    await form.locator('textarea[name="question"]').fill("Typing should find me.");
+    await submitCreate(page);
+
+    await page.goto("/dashboard/issues");
+    const search = page.locator('input[name="q"]:visible').first();
+    await search.pressSequentially(title.slice(0, 12));
+
+    // No Enter and no Filter click: the debounced input navigates by itself.
+    await page.waitForURL(/[?&]q=/, { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+
   test("creates an issue, replies, and updates status", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");

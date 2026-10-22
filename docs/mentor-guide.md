@@ -145,7 +145,9 @@ Mentor filters:
 
 Important filter details:
 
+- The search box finds issues **while you type** — about half a second after you pause, the list updates by itself. Enter still works if you prefer it.
 - A query that is exactly six digits is treated as a request reference, so a mentor who hears `274819` in the room can paste it straight into the search box. This only applies to staff search; the student-facing library search stays text-only.
+- The other filters (tag, status, course, batch, mentor, dates, sort) apply when you press `Filter`.
 - Date filters use issue creation date, not update date or published date.
 - Course and batch dropdowns are built from active issues that actually have those values.
 - Mentor dropdown uses active local staff users with `MENTOR` or `ADMIN` role.

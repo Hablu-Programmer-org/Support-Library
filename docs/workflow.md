@@ -81,7 +81,7 @@ Help Center (dashboard sidebar)
 | Screen | What it gives staff |
 | --- | --- |
 | `/dashboard` | `Waiting Now` (today's joins), `Waiting today` (student, reference, request link, status, shift, time), `Student requests awaiting a mentor` (student submissions with no mentor, oldest first), recent unresolved issues, popular tags |
-| `/dashboard/issues` | Staff list with filters; an **unresolved** issue joined today carries a `Waiting in live support` chip (a solved case keeps its join row but is no longer "waiting"); staff can search by the six-digit reference; `New Issue` creates a case on a student's behalf |
+| `/dashboard/issues` | Staff list with filters; the search box updates the list as you type; an **unresolved** issue joined today carries a `Waiting in live support` chip (a solved case keeps its join row but is no longer "waiting"); staff can search by the six-digit reference; `New Issue` creates a case on a student's behalf |
 | `/dashboard/issues/{id}` | Full case: problem, attachments, replies (compose/edit/delete), status, archive, publish/unpublish (admin only, PII review required), `Reference` and `Live support` (last join time) |
 | `/dashboard/support` | Staff join for the room; no request required, staff never appear in the queue |
 | `/dashboard/live-support` | Today's queue, newest first, with a 30-second auto-refresh while the tab is visible and a manual `Refresh` button |
