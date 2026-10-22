@@ -290,7 +290,7 @@ Theme-restricted pages keep their exact base `background-color` utilities (`head
 
 Production uses standalone Next.js runtime and operations images from GHCR, both selected by immutable digest. `CI` runs indexes against an isolated database, a clean standalone build assertion, production E2E, Compose validation, and a container smoke test. `Publish GHCR image` publishes only a commit with successful CI; `Deploy production` downloads that publish run's metadata artifact and requires approval through the protected `production` environment. There is no manual CI bypass. See [VPS Deployment](docs/vps-deployment.md) for the exact release path and [Self-Hosted Deployment](docs/self-hosted-deployment.md) for generic hosting.
 
-Dependabot opens reviewable npm, Actions, and Docker update pull requests. Updates are not auto-merged.
+Dependabot opens reviewable npm, Actions, and Docker update pull requests **monthly** (at most three open), and **major version bumps are ignored** — those are done by hand as part of the dependency-upgrade workstream. Updates are never auto-merged. Security alerts and security-update PRs are separate repository settings and stay enabled.
 
 Auth callback URL:
 

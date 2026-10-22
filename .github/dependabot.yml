@@ -1,14 +1,26 @@
+# Dependabot — deliberately quiet.
+#
+# Monthly, at most three open PRs, and **major bumps are ignored**: a production
+# app should not be nudged into mongoose 9 / eslint 10 / Node 26 by a bot, and the
+# repository already has a planned dependency-upgrade workstream. Patch and minor
+# updates still arrive (that is where security fixes land), each one gated by CI,
+# and majors are bumped deliberately by hand when that workstream runs.
+#
+# Security advisories are independent of this file: enable "Dependabot alerts" and
+# "Dependabot security updates" in the repository settings, which keep opening PRs
+# for vulnerable packages even though major version updates are ignored here.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: UTC
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     versioning-strategy: increase
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
     groups:
       production-minor-patch:
         dependency-type: production
@@ -23,11 +35,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-      time: "04:30"
-      timezone: UTC
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
     groups:
       actions-minor-patch:
         patterns:
@@ -38,8 +47,10 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-      time: "05:00"
-      timezone: UTC
-    open-pull-requests-limit: 5
+      interval: monthly
+    open-pull-requests-limit: 3
+    ignore:
+      # Node runtime majors are a planned migration, not a bot PR.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
