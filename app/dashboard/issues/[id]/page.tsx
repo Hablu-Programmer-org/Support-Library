@@ -19,6 +19,7 @@ import {
   ArrowLeftIcon,
   FileTextIcon,
   MessageSquareIcon,
+  PencilIcon,
   SettingsIcon,
   UserIcon,
   WarningTriangleIcon,
@@ -121,15 +122,31 @@ export default async function IssueDetailPage({
             </span>
           )}
         </div>
-        <h1 className="max-w-4xl text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-          {supportIssue.title}
-        </h1>
-        <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-          Updated{" "}
-          <time dateTime={supportIssue.updatedAt?.toISOString()}>
-            {formatDate(supportIssue.updatedAt)}
-          </time>
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="max-w-4xl text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
+              {supportIssue.title}
+            </h1>
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              Updated{" "}
+              <time dateTime={supportIssue.updatedAt?.toISOString()}>
+                {formatDate(supportIssue.updatedAt)}
+              </time>
+            </p>
+          </div>
+
+          {canEdit && (
+            // Editing the case is a page-level action: keep it beside the title so
+            // it stays reachable before the sidebar is scrolled into view.
+            <Link
+              href={`/dashboard/issues/${supportIssue.id}/edit`}
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              <PencilIcon size={16} />
+              Edit issue details
+            </Link>
+          )}
+        </div>
       </header>
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -282,13 +299,6 @@ export default async function IssueDetailPage({
                 )}
                 status={supportIssue.status}
               />
-
-              <Link
-                href={`/dashboard/issues/${supportIssue.id}/edit`}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                Edit issue details
-              </Link>
 
               {canPublish && (
                 <PublishIssueForm

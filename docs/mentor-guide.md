@@ -532,6 +532,9 @@ Side effects:
 
 Route: `/dashboard/issues/[id]/edit`
 
+Open it with the **`Edit issue details`** button in the issue page header, beside the
+title (it is a page-level action, not part of the `Manage issue` panel).
+
 Mentors can edit:
 
 - Student identity fields.
