@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, formFor, submitAndWait } from "./form-helpers";
 
 /**
  * Uploaded image attachments: stored server-side, never published, and served only
@@ -25,6 +25,8 @@ test.describe("uploaded attachments", () => {
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
+    // The course is required once the account has LMS enrolments.
+    await chooseStudentCourse(form);
 
     const png = Buffer.alloc(24);
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0);
@@ -108,6 +110,7 @@ test.describe("uploaded attachments", () => {
     await form
       .locator('textarea[name="question"]')
       .fill("My selected image is actually text.");
+    await chooseStudentCourse(form);
 
     await form
       .locator('input[name="uploads"]')

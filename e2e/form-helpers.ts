@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /**
  * Next.js App Router streaming plus React hydration can transiently leave a
@@ -11,6 +11,24 @@ export function formFor(page: Page, submitLabel: string) {
     .locator("form")
     .filter({ has: page.getByRole("button", { name: submitLabel, exact: true }) })
     .first();
+}
+
+/**
+ * Pick the course on a student request form.
+ *
+ * The course is required whenever the student's LMS account has enrolments, and
+ * the batch fills itself. The select does not render at all for an account with
+ * no enrolment, so this is a no-op there.
+ */
+export async function chooseStudentCourse(form: Locator) {
+  const select = form.locator('select[name="courseSlug"]');
+  if ((await select.count()) === 0) return;
+
+  const options = await select.locator("option").count();
+  if (options > 1) {
+    // Index 0 is the "Select your course" placeholder.
+    await select.selectOption({ index: 1 });
+  }
 }
 
 /**
