@@ -510,6 +510,7 @@ Important:
 - Students can read responses only after an admin publishes the issue.
 - Adding a response to a published issue removes it from the Student Library until admin review.
 - Public responses should never include student PII.
+- **If the response cannot be saved, the reason appears in red under the form** (a rejected image, the rate limit, a stale page that needs a reload). The response you wrote stays in the box, so you can fix the problem and press `Add response` again — the page itself is never replaced by an error screen.
 
 ## 20. Edit Or Delete Replies
 
@@ -525,6 +526,7 @@ UI behavior:
 - Delete asks for confirmation: `Delete this reply? This cannot be undone.`
 - Edit supports the reply body **and** its video links. The textarea is pre-filled with the stored links, one per line in the same `title|https://url|timestamp|summary` format; clearing it removes every link, and saving replaces the list in one go.
 - If the textarea contains text that is not a usable HTTPS link, the save is rejected instead of silently dropping it.
+- A save that fails (rate limit, a stale page) reports the reason inside the editor and keeps your text; the editor closes only after the save succeeds.
 
 Important limitation:
 

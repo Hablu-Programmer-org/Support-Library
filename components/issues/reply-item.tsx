@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
-import { deleteReplyAction, editReplyAction } from "@/actions/replies";
+import { deleteReplyAction, editReplyAction, type ReplyFormState } from "@/actions/replies";
 import { PencilIcon, TrashIcon } from "@/components/icons";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
@@ -13,6 +13,13 @@ import type { SupportReplyListItem } from "@/lib/services/replies";
 const secondaryButtonClass =
   "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800";
 
+const INITIAL_STATE: ReplyFormState = {};
+
+/**
+ * Edit and delete report failures as form state, not as a thrown error: a
+ * rate-limited or stale request used to replace the whole case page with the
+ * error boundary, taking the half-written edit with it.
+ */
 export function ReplyItem({
   issueId,
   reply,
@@ -25,6 +32,26 @@ export function ReplyItem({
   csrfToken?: string;
 }) {
   const [editing, setEditing] = useState(false);
+  const [editState, editFormAction, editPending] = useActionState(
+    editReplyAction.bind(null, issueId, reply.id),
+    INITIAL_STATE,
+  );
+  const [deleteState, deleteFormAction] = useActionState(
+    deleteReplyAction.bind(null, issueId, reply.id),
+    INITIAL_STATE,
+  );
+
+  // The editor closes on a confirmed save, so a failure leaves the text in place
+  // with the reason beside it. Adjusted during render (React's documented
+  // pattern for deriving state from a new result) rather than in an effect.
+  const [savedMessage, setSavedMessage] = useState<string | undefined>(undefined);
+  if (editState.message !== savedMessage) {
+    setSavedMessage(editState.message);
+    if (editState.message) setEditing(false);
+  }
+
+  const editError = editState.fieldErrors?._form?.[0] ?? editState.fieldErrors?.videoLinks?.[0];
+  const deleteError = deleteState.fieldErrors?._form?.[0];
 
   return (
     <article
@@ -60,7 +87,7 @@ export function ReplyItem({
               <PencilIcon size={16} />
             </button>
             <form
-              action={deleteReplyAction.bind(null, issueId, reply.id)}
+              action={deleteFormAction}
               onSubmit={(event) => {
                 if (
                   !window.confirm("Delete this reply? This cannot be undone.")
@@ -88,12 +115,15 @@ export function ReplyItem({
       </p>
       <LinkList videoLinks={reply.videoLinks} />
       <AttachmentList uploads={reply.uploads} />
+
+      {deleteError && (
+        <p role="alert" className="mt-2 border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300">
+          {deleteError}
+        </p>
+      )}
+
       {canEdit && editing && (
-        <form
-          action={editReplyAction.bind(null, issueId, reply.id)}
-          onSubmit={() => setEditing(false)}
-          className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800"
-        >
+        <form action={editFormAction} className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <label className={nativeLabelClass}>
             Edit Reply <span className="text-danger">*</span>
@@ -119,6 +149,11 @@ export function ReplyItem({
           <p className="text-xs text-slate-500 dark:text-slate-400">
             One per line: title|https://url|timestamp|summary. Leave empty to remove all links.
           </p>
+          {editError && (
+            <p role="alert" className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300">
+              {editError}
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
@@ -129,9 +164,10 @@ export function ReplyItem({
             </button>
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-600"
+              disabled={editPending}
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save
+              {editPending ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
