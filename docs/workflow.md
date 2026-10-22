@@ -78,6 +78,17 @@ Help Center (dashboard sidebar)
    requests (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
 
+> **Temporary shortcut (owner request — to be removed).** For students, the
+> issues page also shows a **Join live support** button next to **Submit an
+> issue**. It opens a popup that explains a request comes first and still offers
+> a direct join. That join **skips the request requirement** but keeps CSRF, the
+> server-resolved shift, the shared `live-support.join` budget (10 / 10 min) and
+> an audit row (`LIVE_SUPPORT_QUICK_JOIN`); it creates **no queue row**, so the
+> student does not appear in staff `Waiting today`. Remove
+> `components/live-support/quick-live-support-button.tsx`,
+> `joinLiveSupportQuickAction` and the audit pair once every student submits a
+> request first. Search for `TEMPORARY quick join`.
+
 ## 4. Staff journey
 
 | Screen | What it gives staff |
@@ -115,7 +126,8 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
   server; the LMS bundle carries none of them.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
-- **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; issue,
+- **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; the
+  temporary request-less quick join writes `LIVE_SUPPORT_QUICK_JOIN`; issue,
   reply and publication changes are audited as before.
 - **Indexes**: `student_own_requests`, `student_own_issues`, `awaiting_mentor`,
   `live-support-joins-issue-day-shift-unique`, `live-support-joins-day-joined`
@@ -127,6 +139,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
+| Request-less quick join | Popup explains the request-first path; the join skips the request requirement but still needs a shift and is audited |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
 | Another student's published issue | Read-only library view |

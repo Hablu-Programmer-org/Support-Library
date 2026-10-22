@@ -4,12 +4,14 @@ import { DeleteButton } from "@/components/issues/delete-button";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { StatusBadge } from "@/components/issues/status-badge";
+import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
-import { dayKeyInDhaka } from "@/lib/config/live-support";
+import { currentShift, dayKeyInDhaka } from "@/lib/config/live-support";
+import { getLiveSupportConfig } from "@/lib/live-support";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { listAssignableMentors } from "@/lib/services/staff";
@@ -95,6 +97,12 @@ export default async function IssuesPage({
 
   const canDelete = canManage; // Same roles can delete
   const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
+  // TEMPORARY quick join: students only, and they get their own CSRF token so
+  // the staff delete token is never reused for a student action.
+  const showQuickJoin = canSubmit && !canManage;
+  const quickJoinCsrfToken = showQuickJoin ? await generateCsrfToken(session.user.id) : "";
+  const quickJoinShift = currentShift(new Date());
+  const quickJoinPlatform = getLiveSupportConfig().platform;
   const q = resolvedSearchParams?.q ?? "";
   const tag = resolvedSearchParams?.tag ?? "";
   const status = resolvedSearchParams?.status ?? "";
@@ -124,12 +132,21 @@ export default async function IssuesPage({
       <PageHeader
         action={
           canSubmit && (
-            <Link
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
-              href="/dashboard/issues/new"
-            >
-              {canManage ? "New Issue" : "Submit an issue"}
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
+                href="/dashboard/issues/new"
+              >
+                {canManage ? "New Issue" : "Submit an issue"}
+              </Link>
+              {showQuickJoin && (
+                <QuickLiveSupportButton
+                  csrfToken={quickJoinCsrfToken}
+                  platform={quickJoinPlatform}
+                  shift={quickJoinShift}
+                />
+              )}
+            </div>
           )
         }
         description="Find support issues by problem, tag, status or keyword."

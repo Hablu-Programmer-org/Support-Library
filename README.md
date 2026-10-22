@@ -101,6 +101,14 @@ Help Center (dashboard sidebar)
 8. **My requests** lists the student's own requests so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
+> **Temporary shortcut (to be removed).** Students also see **Join live support**
+> next to **Submit an issue** on `/dashboard/issues`. The popup explains the
+> request-first path and still offers a direct join. That join skips the request
+> requirement but keeps CSRF, the server-resolved shift, the `live-support.join`
+> budget and an audit row (`LIVE_SUPPORT_QUICK_JOIN`); it creates no queue row.
+> Delete `components/live-support/quick-live-support-button.tsx`,
+> `joinLiveSupportQuickAction` and the audit pair to remove it.
+
 ### Staff
 
 | Where | What |

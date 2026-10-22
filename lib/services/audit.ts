@@ -12,7 +12,13 @@ import {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditResult = (typeof AUDIT_RESULTS)[number];
-export type AuditResourceType = "SupportIssue" | "SupportReply" | "SupportAttachment" | "OAuthCallback";
+export type AuditResourceType =
+  | "SupportIssue"
+  | "SupportReply"
+  | "SupportAttachment"
+  | "OAuthCallback"
+  // TEMPORARY quick join (no request involved). Remove with the shortcut.
+  | "LiveSupportQuickJoin";
 
 export interface AuditEventContext {
   ip?: string;
