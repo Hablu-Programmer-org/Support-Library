@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
-  changeIssueStatusActionSimple,
   deleteIssueActionSimple,
 } from "@/actions/issues";
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
-import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
+import { IssueStatusForm } from "@/components/issues/issue-status-form";
 import { PublishIssueForm } from "@/components/issues/publish-issue-form";
 import { StudentRequestView } from "@/components/issues/student-request-view";
 import { IssueTimeline } from "@/components/issues/issue-timeline";
@@ -24,7 +23,6 @@ import {
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
 import { caseRefFor } from "@/lib/config/live-support";
-import { nativeSelectClass } from "@/lib/config/fields";
 import { canMutate, isAdmin } from "@/lib/roles";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
@@ -260,44 +258,15 @@ export default async function IssueDetailPage({
               <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
                 Manage issue
               </h2>
-              <form
-                action={changeIssueStatusActionSimple.bind(
-                  null,
-                  supportIssue.id,
+              <IssueStatusForm
+                csrfToken={csrfToken}
+                expectedUpdatedAt={supportIssue.updatedAt?.toISOString() ?? ""}
+                issueId={supportIssue.id}
+                options={CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
+                  (status) => ({ value: status, label: statusLabels[status] }),
                 )}
-                className="mt-3 space-y-3"
-              >
-                <input type="hidden" name="csrfToken" value={csrfToken} />
-                <input
-                  type="hidden"
-                  name="expectedUpdatedAt"
-                  value={supportIssue.updatedAt?.toISOString() ?? ""}
-                />
-                <label
-                  htmlFor="issue-status"
-                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
-                >
-                  Status
-                </label>
-                <select
-                  id="issue-status"
-                  name="status"
-                  defaultValue={supportIssue.status}
-                  className={nativeSelectClass}
-                >
-                  {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
-                    (status) => (
-                      <option key={status} value={status}>
-                        {statusLabels[status]}
-                      </option>
-                    ),
-                  )}
-                </select>
-                <PendingSubmitButton
-                  label="Update status"
-                  pendingLabel="Updating..."
-                />
-              </form>
+                status={supportIssue.status}
+              />
 
               <Link
                 href={`/dashboard/issues/${supportIssue.id}/edit`}

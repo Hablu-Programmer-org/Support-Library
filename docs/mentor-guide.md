@@ -470,7 +470,7 @@ Statuses:
 | `Follow-up` | Needs additional check or later response. |
 | `Archived` | Not set from status dropdown; archive action handles this. |
 
-Mentors can update status from the issue detail page.
+Mentors can update status from the issue detail page: pick a value in the `Status` list and it saves immediately — there is no separate update button. An `Updating status…` hint appears while the change is being written.
 
 The status dropdown excludes `Archived`. To archive, use the danger-zone archive action.
 

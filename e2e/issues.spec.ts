@@ -60,9 +60,9 @@ test.describe("Issue CRUD (mentor)", () => {
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toBeVisible();
 
-    const statusForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Update status", exact: true }) }).first();
+    const statusForm = page.locator("form").filter({ has: page.locator("#issue-status") }).first();
+    // Picking a status saves immediately; there is no separate button to press.
     await statusForm.locator('select[name="status"]').selectOption("SOLVED");
-    await statusForm.getByRole("button", { name: "Update status", exact: true }).click();
     await expect(page.locator("span").filter({ hasText: /^Solved$/ }).first()).toBeVisible();
 
     // Edit controls are author-scoped: this mentor owns the reply added above.

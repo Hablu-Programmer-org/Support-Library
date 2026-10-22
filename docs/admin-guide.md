@@ -400,6 +400,7 @@ Statuses:
 
 Status dropdown behavior:
 
+- Choosing a value saves it immediately; there is no update button. An `Updating status…` hint shows while the write is in flight.
 - `ARCHIVED` is not selectable in the normal status dropdown.
 - To archive, use the archive action.
 - Status-only changes do not clear `publishedAt` or `publishedBy`.
