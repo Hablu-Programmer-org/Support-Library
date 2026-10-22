@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { CloseIcon } from "@/components/icons";
+import { CloseIcon, SearchIcon } from "@/components/icons";
 
 type Attachment = {
   id: string;
@@ -53,9 +53,14 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
 
   return (
     <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        Attachments
-      </h4>
+      <div className="flex items-baseline justify-between gap-2">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Attachments
+        </h4>
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+          Click to preview
+        </span>
+      </div>
       <ul className="grid gap-3 sm:grid-cols-2">
         {uploads.map((upload) => {
           const src = `/api/attachments/${upload.id}`;
@@ -65,7 +70,8 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                 type="button"
                 onClick={() => setOpenId(upload.id)}
                 aria-label={`Preview ${upload.originalName}`}
-                className="block w-full cursor-zoom-in overflow-hidden rounded-md border border-slate-200 bg-slate-50 transition hover:border-primary/60 dark:border-slate-700 dark:bg-slate-950"
+                title="Open preview"
+                className="group relative block w-full cursor-zoom-in overflow-hidden rounded-md border border-slate-200 bg-slate-50 transition hover:border-primary/60 hover:shadow-sm focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-950"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -75,6 +81,22 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                   decoding="async"
                   className="mx-auto h-40 w-full object-contain"
                 />
+                {/* Always-visible affordance: hover does not exist on touch. */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-slate-950/60 text-white shadow-sm"
+                >
+                  <SearchIcon size={13} />
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                >
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/85 px-3 py-1 text-xs font-semibold text-white">
+                    <SearchIcon size={13} />
+                    Preview
+                  </span>
+                </span>
               </button>
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span
@@ -103,9 +125,9 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
             type="button"
             aria-label="Close preview"
             onClick={() => setOpenId(null)}
-            className="absolute inset-0 h-full w-full cursor-default bg-slate-950/80 backdrop-blur-sm"
+            className="attachment-backdrop-in absolute inset-0 h-full w-full cursor-default bg-slate-950/80 backdrop-blur-sm"
           />
-          <div className="relative z-10 w-full max-w-4xl space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+          <div className="attachment-preview-in relative z-10 w-full max-w-4xl space-y-3 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <p className="min-w-0 truncate text-sm font-medium text-slate-100">
                 {open.originalName}
@@ -136,7 +158,9 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
               alt={open.originalName}
               className="mx-auto max-h-[75vh] w-auto max-w-full object-contain"
             />
-            <p className="text-center text-xs text-slate-400">{formatByteSize(open.byteSize)}</p>
+            <p className="text-center text-xs text-slate-400">
+              {formatByteSize(open.byteSize)}
+            </p>
           </div>
         </div>
       )}
