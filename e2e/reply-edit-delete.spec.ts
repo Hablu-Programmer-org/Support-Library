@@ -49,6 +49,27 @@ test.describe("Reply edit and delete interactions", () => {
     await expect(reply).toContainText("edited");
   });
 
+  test("editing a reply can add and clear video links", async ({ page }) => {
+    const reply = await createIssueWithReply(page, "Reply with a walkthrough", Date.now().toString());
+    const line = "Walkthrough|https://youtu.be/e2e-demo|01:30|Shows the fix";
+
+    await reply.getByRole("button", { name: "Edit", exact: true }).click();
+    await reply.locator('textarea[name="videoLinks"]').fill(line);
+    await reply.getByRole("button", { name: "Save" }).click();
+
+    const link = reply.getByRole("link", { name: "Walkthrough" });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", "https://youtu.be/e2e-demo");
+
+    // The editor is pre-filled with the stored links, and clearing them removes
+    // the list from the reply.
+    await reply.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(reply.locator('textarea[name="videoLinks"]')).toHaveValue(line);
+    await reply.locator('textarea[name="videoLinks"]').fill("");
+    await reply.getByRole("button", { name: "Save" }).click();
+    await expect(reply.getByRole("link", { name: "Walkthrough" })).toHaveCount(0);
+  });
+
   test("delete only removes the reply after confirming", async ({ page }) => {
     test.setTimeout(120000);
     const reply = await createIssueWithReply(page, "Reply to delete", Date.now().toString());

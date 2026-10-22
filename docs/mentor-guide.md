@@ -508,12 +508,14 @@ UI behavior:
 
 - Edit/delete buttons show only when you can mutate that reply.
 - Delete asks for confirmation: `Delete this reply? This cannot be undone.`
-- Edit supports reply body only.
+- Edit supports the reply body **and** its video links. The textarea is pre-filled with the stored links, one per line in the same `title|https://url|timestamp|summary` format; clearing it removes every link, and saving replaces the list in one go.
+- If the textarea contains text that is not a usable HTTPS link, the save is rejected instead of silently dropping it.
 
 Important limitation:
 
-- Existing video links and attachments cannot be edited through the reply edit UI.
-- If a video link is wrong, add a corrected follow-up reply or delete the reply and create a new one.
+- Uploaded images on a reply still cannot be edited through the reply edit UI;
+  video links can.
+- If an attached image is wrong, add a corrected follow-up reply or delete the reply and create a new one.
 
 Side effects:
 

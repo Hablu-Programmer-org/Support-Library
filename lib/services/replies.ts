@@ -251,6 +251,7 @@ export async function editReply(
   body: string,
   actorId: string,
   actorRole?: UserRole | null,
+  videoLinks?: SupportReplyInput["videoLinks"],
 ) {
   if (!mongoose.Types.ObjectId.isValid(issueId) || !mongoose.Types.ObjectId.isValid(replyId)) {
     return null;
@@ -272,9 +273,15 @@ export async function editReply(
       return null;
     }
 
+    // Video links are replace-only: the edit form always posts the full list, so
+    // omitting the field leaves the stored links untouched and an empty string
+    // clears them.
+    const update: Record<string, unknown> = { body: body.trim(), editedAt: new Date() };
+    if (videoLinks !== undefined) update.videoLinks = videoLinks;
+
     const reply = await SupportReplyModel.findOneAndUpdate(
       filter,
-      { body: body.trim(), editedAt: new Date() },
+      update,
       { new: true, runValidators: true, session },
     ).lean();
     if (!reply) return null;

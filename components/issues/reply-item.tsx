@@ -7,6 +7,7 @@ import { PencilIcon, TrashIcon } from "@/components/icons";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
+import { formatVideoLinks } from "@/lib/format-links";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
 const secondaryButtonClass =
@@ -105,6 +106,19 @@ export function ReplyItem({
               className={nativeTextareaClass}
             />
           </label>
+          <label className={nativeLabelClass}>
+            Video links
+            <textarea
+              name="videoLinks"
+              defaultValue={formatVideoLinks(reply.videoLinks)}
+              rows={3}
+              placeholder="Walkthrough|https://youtu.be/abc123|01:30|What it shows"
+              className={nativeTextareaClass}
+            />
+          </label>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            One per line: title|https://url|timestamp|summary. Leave empty to remove all links.
+          </p>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"

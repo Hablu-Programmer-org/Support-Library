@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { parseVideoLinks } from "@/lib/parse-links";
+import { formatVideoLinks } from "@/lib/format-links";
 
 describe("parseVideoLinks", () => {
   it("returns an empty array when no value is provided", () => {
@@ -35,6 +36,43 @@ describe("parseVideoLinks", () => {
   it("caps at 10 links", () => {
     const lines = Array.from({ length: 12 }, (_, i) => `https://youtu.be/${i}`).join("\n");
     expect(parseVideoLinks(lines)).toHaveLength(10);
+  });
+});
+
+describe("formatVideoLinks", () => {
+  it("renders nothing for an empty list", () => {
+    expect(formatVideoLinks([])).toBe("");
+    expect(formatVideoLinks(undefined)).toBe("");
+  });
+
+  it("drops trailing empty fields", () => {
+    expect(formatVideoLinks([{ title: "Walkthrough", url: "https://youtu.be/demo" }])).toBe(
+      "Walkthrough|https://youtu.be/demo",
+    );
+  });
+
+  it("keeps timestamp and summary when present", () => {
+    expect(
+      formatVideoLinks([
+        {
+          title: "Walkthrough",
+          url: "https://youtu.be/demo",
+          timestamp: "01:20",
+          summary: "Covers the fix",
+        },
+      ]),
+    ).toBe("Walkthrough|https://youtu.be/demo|01:20|Covers the fix");
+  });
+
+  it("round-trips through the parser used by the forms", () => {
+    const stored = [
+      { title: "Walkthrough", url: "https://youtu.be/demo", timestamp: "01:20", summary: "Covers the fix" },
+      { title: "Second", url: "https://youtu.be/second" },
+    ];
+
+    // The edit form shows `format` and posts the textarea back into `parse`; the
+    // stored links must survive that loop unchanged.
+    expect(parseVideoLinks(formatVideoLinks(stored))).toEqual(stored);
   });
 });
 

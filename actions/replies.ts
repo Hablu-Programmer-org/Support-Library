@@ -78,22 +78,37 @@ export async function editReplyAction(issueId: string, replyId: string, formData
     const guard = await assertRole("ADMIN", "MENTOR");
     if (!guard.ok) redirect("/unauthorized");
 
+    let reply: Awaited<ReturnType<typeof editReply>>;
     try {
       const body = z.string().trim().min(1).max(20_000).parse(formValue(formData, "body"));
+      // Same parser as the composer: a non-empty textarea that yields no usable
+      // link is a mistake worth reporting, not a silent clear.
+      const rawVideoLinks = formValue(formData, "videoLinks");
+      const videoLinks = parseVideoLinks(rawVideoLinks);
+      if (rawVideoLinks && videoLinks.length === 0) {
+        throw new Error(
+          "Video links could not be read. Use one per line: title|https://url",
+        );
+      }
+
       await consumeRateLimit("reply.edit", guard.session.user.id, {
         action: "REPLY_EDIT",
         resourceType: "SupportReply",
         resourceId: replyId,
       });
-      const reply = await editReply(
+      reply = await editReply(
         issueId,
         replyId,
         body,
         guard.session.user.id,
         guard.session.user.role,
+        videoLinks,
       );
       if (!reply) throw new Error("Denied");
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("Video links could not be read")) {
+        throw error;
+      }
       throw new Error("Unable to edit the response. Please try again later.");
     }
     revalidatePath("/dashboard");

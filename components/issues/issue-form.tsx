@@ -9,6 +9,7 @@ import { Accordion } from "@/components/issues/accordion";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { formatByteSize } from "@/components/shared/attachment-list";
+import { formatVideoLinks } from "@/lib/format-links";
 import {
   CheckCircleIcon,
   FileTextIcon,
@@ -84,23 +85,6 @@ type FormData = {
   solutionVideoLinks: string;
   solveIssue: boolean;
 };
-
-function formatVideoLinks(
-  links?: {
-    title: string;
-    url: string;
-    timestamp?: string | null;
-    summary?: string | null;
-  }[],
-) {
-  return (links ?? [])
-    .map((link) => {
-      const parts = [link.title, link.url, link.timestamp ?? "", link.summary ?? ""];
-      while (parts.length > 2 && !parts[parts.length - 1]) parts.pop();
-      return parts.join("|");
-    })
-    .join("\n");
-}
 
 function ErrorMessage({ error }: { error?: string }) {
   if (!error) return null;
