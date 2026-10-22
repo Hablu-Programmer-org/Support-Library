@@ -26,7 +26,7 @@ describe("PublishIssueForm", () => {
     expect(unchecked.get("csrfToken")).toBe("csrf-token");
     expect(unchecked.get("reviewedAt")).toBe("2026-10-12T12:00:00.000Z");
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /reviewed this issue/i }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /student personal information/i }));
     expect(new FormData(form!).get("reviewConfirmed")).toBe("true");
   });
 

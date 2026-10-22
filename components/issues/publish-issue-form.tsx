@@ -49,11 +49,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken =
           value="true"
           className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500"
         />
-        <span>
-          I have reviewed this issue and confirmed no student personal information
-          (name, email, phone, ID, etc.) is present in the title, problem
-          description, attached video links, or public replies.
-        </span>
+        <span>No student personal information in this issue.</span>
       </label>
       {state.fieldErrors?.reviewConfirmed && (
         <p className="text-sm text-danger-600 dark:text-danger-400 ml-6" role="alert">

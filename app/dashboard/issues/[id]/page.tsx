@@ -298,9 +298,11 @@ export default async function IssueDetailPage({
                 Manage issue
               </h2>
               <IssueStatusForm
+                autoPublish={canPublish}
                 csrfToken={csrfToken}
                 expectedUpdatedAt={supportIssue.updatedAt?.toISOString() ?? ""}
                 issueId={supportIssue.id}
+                isPublished={supportIssue.visibility === "PUBLISHED"}
                 options={CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
                   (status) => ({ value: status, label: statusLabels[status] }),
                 )}
