@@ -85,6 +85,12 @@ const supportIssueSchema = new mongoose.Schema(
      * `updatedAt` here would invalidate every staff edit's optimistic revision.
      */
     lastLiveSupportAt: { type: Date, default: null },
+    /**
+     * Six-digit, digits-only reference the student reads out in the live room.
+     * Derived from the id at creation so staff can search for it; rows created
+     * before this field existed are filled by `npm run db:backfill-case-refs`.
+     */
+    caseRef: { type: String, default: null, match: /^\d{6}$/ },
   },
   {
     timestamps: true,
@@ -95,6 +101,8 @@ const supportIssueSchema = new mongoose.Schema(
 supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
 supportIssueSchema.index({ visibility: 1, updatedAt: -1 });
 supportIssueSchema.index({ createdAt: -1 });
+// Backs the staff "find my request by reference" search.
+supportIssueSchema.index({ caseRef: 1 }, { name: "case_ref" });
 // Backs the live-support gate: "my open requests", newest first.
 supportIssueSchema.index(
   { createdBy: 1, deletedAt: 1, status: 1, updatedAt: -1 },

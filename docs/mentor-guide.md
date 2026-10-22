@@ -133,7 +133,7 @@ Mentor filters:
 
 | Filter | Meaning |
 | --- | --- |
-| `Search` | Search issue fields and searchable reply text. |
+| `Search` | Search issue fields, searchable reply text, **or a six-digit reference** (e.g. `274819`). |
 | `Tag` | Show issues with a tag. |
 | `Status` | Show issues by status. |
 | `Course` | Show issues with a course slug. |
@@ -145,6 +145,7 @@ Mentor filters:
 
 Important filter details:
 
+- A query that is exactly six digits is treated as a request reference, so a mentor who hears `274819` in the room can paste it straight into the search box. This only applies to staff search; the student-facing library search stays text-only.
 - Date filters use issue creation date, not update date or published date.
 - Course and batch dropdowns are built from active issues that actually have those values.
 - Mentor dropdown uses active local staff users with `MENTOR` or `ADMIN` role.

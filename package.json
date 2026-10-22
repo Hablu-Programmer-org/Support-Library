@@ -28,7 +28,8 @@
     "check:live-support": "tsx scripts/check-live-support-sync.ts",
     "release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
-    "verify:full": "npm run verify && npm run test:e2e"
+    "verify:full": "npm run verify && npm run test:e2e",
+    "db:backfill-case-refs": "tsx scripts/backfill-case-refs.ts"
   },
   "dependencies": {
     "aws4fetch": "^1.0.20",

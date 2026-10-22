@@ -177,7 +177,7 @@ function PanelHeader({ defaults, open, onToggle }: { defaults: IssueFilterDefaul
         className={`${nativeFieldClass} px-10`}
         defaultValue={defaults.q}
         name="q"
-        placeholder="Search by problem or keyword"
+        placeholder="Search by problem, keyword or 6-digit reference"
       />
       <button
         aria-expanded={open}

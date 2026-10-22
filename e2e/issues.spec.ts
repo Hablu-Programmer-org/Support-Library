@@ -38,6 +38,27 @@ test.describe("Issue CRUD (mentor)", () => {
     });
   }
 
+  test("finds a case by its six-digit reference", async ({ page }) => {
+    const title = `E2E reference search ${Date.now()}`;
+
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create Issue");
+    await form.locator('input[name="studentName"]').fill("E2E Ref Student");
+    await form.locator('input[name="studentEmail"]').fill(`e2e.ref.${Date.now()}@test.com`);
+    await form.locator('input[name="title"]').fill(title);
+    await form.locator('textarea[name="question"]').fill("Find me by reference.");
+    await submitCreate(page);
+
+    const reference = (
+      await page.locator('[title="Double-click to copy reference"]').first().innerText()
+    ).trim();
+    expect(reference).toMatch(/^\d{6}$/);
+
+    // Staff can now search by the same digits the student reads out in the room.
+    await page.goto(`/dashboard/issues?q=${reference}`);
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+
   test("creates an issue, replies, and updates status", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");

@@ -13,6 +13,7 @@ import {
   protectStudentEmail,
   readStudentEmailSafe,
 } from "@/lib/student-email-crypto";
+import { caseRefFor } from "@/lib/config/live-support";
 import {
   supportIssueInputSchema,
   type SupportIssueFilter,
@@ -166,10 +167,15 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) filter.mentorId = params.mentorId;
   const normalizedQuery = normalizeStudentEmail(params.q ?? "");
   const isExactEmailQuery = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedQuery);
+  // Staff can find a case by the six digits the student reads out in the room.
+  // Published (student-facing) search stays text-only, so one student cannot probe
+  // another student's reference.
+  const referenceQuery =
+    !publicOnly && /^\d{6}$/.test((params.q ?? "").trim()) ? (params.q ?? "").trim() : null;
   const searchRegex = buildSearchRegex(params.q);
   if (!publicOnly && isExactEmailQuery) {
     filter.$or = createStudentEmailLookupCandidates(normalizedQuery);
-  } else if (searchRegex) {
+  } else if (searchRegex || referenceQuery) {
     if (publicOnly) {
       filter.$or = [
         { title: searchRegex },
@@ -178,7 +184,10 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
         { courseSlug: searchRegex },
       ];
     } else {
-      filter.searchText = searchRegex;
+      filter.$or = [
+        ...(referenceQuery ? [{ caseRef: referenceQuery }] : []),
+        ...(searchRegex ? [{ searchText: searchRegex }] : []),
+      ];
     }
   }
   if (params.from || params.to) {
@@ -254,7 +263,12 @@ export async function createIssue(
       const searchText = initialReply
         ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
         : buildIssueSearchText(parsed);
+      // Generate the id up front so the reference can be stored with the row: the
+      // student reads it out, and staff search for it by value.
+      const issueId = new mongoose.Types.ObjectId();
       const [createdIssue] = await SupportIssueModel.create([{
+        _id: issueId,
+        caseRef: caseRefFor(issueId.toHexString()),
         ...issueFields,
         studentName: studentName ?? null,
         lmsUserId: lmsUserId ?? null,

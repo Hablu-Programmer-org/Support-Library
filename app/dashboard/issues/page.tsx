@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
-import { dayKeyInDhaka } from "@/lib/config/live-support";
+import { caseRefFor, dayKeyInDhaka } from "@/lib/config/live-support";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { listAssignableMentors } from "@/lib/services/staff";
@@ -187,6 +187,10 @@ export default async function IssuesPage({
                       </p>
                       {canManage && (
                         <p className="text-xs text-slate-500 dark:text-slate-400">
+                          <span className="font-mono font-semibold">
+                            {caseRefFor(supportIssue.id)}
+                          </span>
+                          {" · "}
                           {supportIssue.studentName || "Unknown student"}
                           {supportIssue.studentEmail
                             ? ` · ${supportIssue.studentEmail}`
