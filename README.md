@@ -309,6 +309,6 @@ DB-backed routes use Node.js runtime. `/api/health/live` checks the process and 
 
 ## License
 
-MIT License — See [LICENSE](LICENSE) for details.
+MIT License — See [LICENSE](LICENSE) for details
 
 Copyright (c) 2026 Hablu Programmer!
