@@ -622,8 +622,12 @@ Mentors cannot:
 Admins must confirm:
 
 ```text
-I have reviewed this issue and confirmed no student personal information (name, email, phone, ID, etc.) is present in the title, problem description, attached video links, or public replies.
+No student personal information in this issue.
 ```
+
+Mentors can mark an issue `SOLVED`, but that only changes the status; it never
+publishes. An admin publishes, either from the publish form or by confirming the
+same short text while solving.
 
 If issue content changes after admin review, publish can fail until the admin refreshes and reviews again.
 

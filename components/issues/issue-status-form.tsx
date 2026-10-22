@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { changeIssueStatusActionSimple } from "@/actions/issues";
+import { changeIssueStatusAction, type FormState } from "@/actions/issues";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import type { CaseStatus } from "@/lib/constants";
 import { nativeSelectClass } from "@/lib/config/fields";
+
+const INITIAL_STATE: FormState = {};
 
 function PendingHint() {
   const { pending } = useFormStatus();
@@ -31,6 +33,9 @@ function PendingHint() {
  * publication still needs the same PII review as the publish form, choosing it
  * swaps the auto-submit for a short confirmation plus an explicit
  * `Save and publish` button.
+ *
+ * A rejected save (rate limit, a stale revision) reports its reason under the
+ * picker instead of replacing the page with the error boundary.
  */
 export function IssueStatusForm({
   issueId,
@@ -52,11 +57,16 @@ export function IssueStatusForm({
   isPublished?: boolean;
 }) {
   const [confirmingSolve, setConfirmingSolve] = useState(false);
+  const [state, formAction] = useActionState(
+    changeIssueStatusAction.bind(null, issueId),
+    INITIAL_STATE,
+  );
   const needsConfirmation = autoPublish && !isPublished;
+  const statusError = state.fieldErrors?._form?.[0] ?? state.fieldErrors?.status?.[0];
 
   return (
     <form
-      action={changeIssueStatusActionSimple.bind(null, issueId)}
+      action={formAction}
       className="mt-3 space-y-2"
     >
       <input type="hidden" name="csrfToken" value={csrfToken} />
@@ -70,8 +80,9 @@ export function IssueStatusForm({
       </label>
       <select
         // Re-sync the picker when the server-confirmed status changes, so a
-        // failed save cannot leave a value selected that was never stored.
-        key={status}
+        // failed save cannot leave a value selected that was never stored. A
+        // rejected save flips the key too, which puts the stored value back.
+        key={`${status}-${statusError ? "failed" : "saved"}`}
         id="issue-status"
         name="status"
         defaultValue={status}
@@ -91,6 +102,12 @@ export function IssueStatusForm({
           </option>
         ))}
       </select>
+
+      {statusError && (
+        <p role="alert" className="text-sm text-danger-700 dark:text-danger-300">
+          {statusError}
+        </p>
+      )}
 
       {confirmingSolve && needsConfirmation && (
         <div className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">

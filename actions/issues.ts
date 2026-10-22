@@ -501,16 +501,11 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
   });
 }
 
-// Backward-compatible wrapper for simple forms (status update, delete)
-export async function changeIssueStatusActionSimple(id: string, formData: FormData) {
-  const result = await changeIssueStatusAction(id, undefined, formData);
-  if (result.fieldErrors) {
-    // For simple forms, throw to trigger error boundary or redirect with error
-    throw new Error(result.fieldErrors._form?.[0] ?? "Failed to update status");
-  }
-}
-
-export async function deleteIssueAction(id: string, formData: FormData): Promise<FormState> {
+export async function deleteIssueAction(
+  id: string,
+  _prevState: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
   return withCsrfProtection(formData, async () => {
     const guard = await assertRole("ADMIN", "MENTOR");
     if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
@@ -532,14 +527,6 @@ export async function deleteIssueAction(id: string, formData: FormData): Promise
   });
 }
 
-// Backward-compatible wrapper for simple delete forms
-export async function deleteIssueActionSimple(id: string, formData: FormData) {
-  const result = await deleteIssueAction(id, formData);
-  if (result.fieldErrors) {
-    throw new Error(result.fieldErrors._form?.[0] ?? "Failed to delete issue");
-  }
-}
-
 export async function publishIssueAction(
   id: string,
   _prevState: FormState,
@@ -553,7 +540,7 @@ export async function publishIssueAction(
     const reviewConfirmed = formData.get("reviewConfirmed");
 
     if (reviewConfirmed !== "true") {
-      return { fieldErrors: { reviewConfirmed: ["Please confirm you have reviewed the issue for student personal information"] } };
+      return { fieldErrors: { reviewConfirmed: ["Confirm this issue has no student personal information"] } };
     }
 
     const parsedReviewedAt = z.string().datetime().safeParse(reviewedAt);
@@ -583,10 +570,14 @@ export async function publishIssueAction(
   });
 }
 
-export async function unpublishIssueAction(id: string, formData: FormData) {
+export async function unpublishIssueAction(
+  id: string,
+  _prevState: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
   return withCsrfProtection(formData, async (formData) => {
     const guard = await assertRole("ADMIN");
-    if (!guard.ok) redirect("/unauthorized");
+    if (!guard.ok) return { fieldErrors: { _form: ["Unauthorized"] } };
 
     let supportIssue;
     try {
@@ -597,10 +588,17 @@ export async function unpublishIssueAction(id: string, formData: FormData) {
       });
       const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
       supportIssue = await unpublishIssue(id, guard.session.user.id, new Date(expectedUpdatedAt));
-    } catch {
-      throw new Error("Unable to unpublish the issue. Please try again later.");
+    } catch (error) {
+      // Report it in the form: throwing replaced the whole case page with the
+      // error boundary for something as ordinary as a rate limit.
+      console.error("[issues] unpublish failed", id, error);
+      return {
+        fieldErrors: { _form: ["Unable to remove the issue from the library. Please try again later."] },
+      };
     }
-    if (!supportIssue) throw new Error("Issue changed since you opened it. Refresh and try again.");
+    if (!supportIssue) {
+      return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
+    }
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);

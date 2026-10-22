@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import {
-  deleteIssueActionSimple,
+  deleteIssueAction,
 } from "@/actions/issues";
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
 import { IssueStatusForm } from "@/components/issues/issue-status-form";
@@ -340,7 +340,7 @@ export default async function IssueDetailPage({
                 library. Archive it only when no further action is needed.
               </p>
               <ArchiveIssueButton
-                action={deleteIssueActionSimple.bind(null, supportIssue.id)}
+                action={deleteIssueAction.bind(null, supportIssue.id)}
                 csrfToken={csrfToken}
               />
             </section>

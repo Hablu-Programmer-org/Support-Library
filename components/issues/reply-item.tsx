@@ -129,7 +129,7 @@ export function ReplyItem({
             Edit Reply <span className="text-danger">*</span>
             <textarea
               name="body"
-              defaultValue={reply.body}
+              defaultValue={editState.values?.body ?? reply.body}
               rows={4}
               required
               maxLength={20_000}
@@ -140,7 +140,7 @@ export function ReplyItem({
             Video links
             <textarea
               name="videoLinks"
-              defaultValue={formatVideoLinks(reply.videoLinks)}
+              defaultValue={editState.values?.videoLinks ?? formatVideoLinks(reply.videoLinks)}
               rows={3}
               placeholder="Walkthrough|https://youtu.be/abc123|01:30|What it shows"
               className={nativeTextareaClass}

@@ -23,10 +23,15 @@ const initialState: FormState = {
 export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken = "" }: PublishFormProps) {
   const publishAction = publishIssueAction.bind(null, issueId);
   const [state, formAction] = useActionState(publishAction, initialState);
+  const [unpublishState, unpublishFormAction] = useActionState(
+    unpublishIssueAction.bind(null, issueId),
+    initialState,
+  );
+  const unpublishError = unpublishState.fieldErrors?._form?.[0];
 
   if (isPublished) {
     return (
-      <form action={unpublishIssueAction.bind(null, issueId)} className="mt-3">
+      <form action={unpublishFormAction} className="mt-3">
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="expectedUpdatedAt" value={reviewedAt} />
         <PendingSubmitButton
@@ -34,6 +39,11 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken =
           pendingLabel="Removing..."
           variant="secondary"
         />
+        {unpublishError && (
+          <p className="mt-2 text-sm text-danger-600 dark:text-danger-400" role="alert">
+            {unpublishError}
+          </p>
+        )}
       </form>
     );
   }

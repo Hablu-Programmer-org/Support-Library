@@ -49,8 +49,22 @@ export async function generateCsrfToken(userId: string): Promise<string> {
   return createCsrfToken(userId, csrfSecret());
 }
 
-export async function validateCsrfToken(token: string): Promise<boolean> {
+export type CsrfCheck = "ok" | "no-session" | "invalid";
+
+/**
+ * Why a token was rejected, not just whether it was.
+ *
+ * A form that was rendered before the session ended (or before an
+ * `AUTH_SECRET` change) is not an attack: the caller can send the user to sign
+ * in again instead of failing the request. Only a bad signature with a live
+ * session is treated as tampering.
+ */
+export async function checkCsrfToken(token: string): Promise<CsrfCheck> {
   const session = await auth();
-  if (!session?.user?.id || session.user.isActive === false) return false;
-  return verifyCsrfToken(token, session.user.id, csrfSecret());
+  if (!session?.user?.id || session.user.isActive === false) return "no-session";
+  return verifyCsrfToken(token, session.user.id, csrfSecret()) ? "ok" : "invalid";
+}
+
+export async function validateCsrfToken(token: string): Promise<boolean> {
+  return (await checkCsrfToken(token)) === "ok";
 }

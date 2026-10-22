@@ -1,20 +1,46 @@
 "use client";
 
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
+import type { FormState } from "@/actions/issues";
 import { TrashIcon } from "@/components/icons";
 
-export function ArchiveIssueButton({ action, csrfToken }: { action: (formData: FormData) => Promise<void>; csrfToken: string }) {
+const INITIAL_STATE: FormState = {};
+
+/**
+ * Archive button for the danger zone.
+ *
+ * State-based like the row delete button: a rejected archive reports its reason
+ * under the button instead of taking the whole case page down with it.
+ */
+export function ArchiveIssueButton({
+  action,
+  csrfToken,
+}: {
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  csrfToken: string;
+}) {
+  const [state, formAction] = useActionState(action, INITIAL_STATE);
+  const error = state.fieldErrors?._form?.[0];
+
   return (
-    <form
-      action={action}
-      onSubmit={(event) => {
-        if (!window.confirm("Archive this issue? It will disappear from active lists.")) event.preventDefault();
-      }}
-    >
-      <input type="hidden" name="csrfToken" value={csrfToken} />
-      <ArchiveSubmitButton />
-    </form>
+    <>
+      <form
+        action={formAction}
+        onSubmit={(event) => {
+          if (!window.confirm("Archive this issue? It will disappear from active lists.")) event.preventDefault();
+        }}
+      >
+        <input type="hidden" name="csrfToken" value={csrfToken} />
+        <ArchiveSubmitButton />
+      </form>
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-danger-700 dark:text-danger-300">
+          {error}
+        </p>
+      )}
+    </>
   );
 }
 

@@ -102,6 +102,10 @@ export async function consumeRateLimit(
     }
   } catch (error) {
     if (error instanceof MutationRateLimitError) throw error;
+    // Keep the real cause: wrapping everything into "rate limit unavailable"
+    // hides a database problem behind a generic message, and this log line is
+    // the only place it can be seen in production.
+    console.error("[rate-limit] bucket write failed", scope, error);
     throw new RateLimitUnavailableError();
   }
 }
@@ -141,6 +145,7 @@ export async function consumeRateLimitByKey(
     }
   } catch (error) {
     if (error instanceof MutationRateLimitError) throw error;
+    console.error("[rate-limit] bucket write failed", scope, key, error);
     throw new RateLimitUnavailableError();
   }
 }

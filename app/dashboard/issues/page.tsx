@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deleteIssueActionSimple } from "@/actions/issues";
+import { deleteIssueAction } from "@/actions/issues";
 import { DeleteButton } from "@/components/issues/delete-button";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
@@ -234,7 +234,7 @@ export default async function IssuesPage({
                   </Link>
                   {canDelete && (
                     <DeleteButton
-                      action={deleteIssueActionSimple.bind(
+                      action={deleteIssueAction.bind(
                         null,
                         supportIssue.id,
                       )}

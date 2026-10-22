@@ -47,12 +47,12 @@ test.describe("STUDENT content gating", () => {
     await page.getByRole("button", { name: "Publish to library" }).click();
     await expect(
       page.getByRole("alert").filter({
-        hasText: "Please confirm you have reviewed the issue for student personal information",
+        hasText: "Confirm this issue has no student personal information",
       }),
     ).toBeVisible();
     await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
 
-    await page.getByRole("checkbox", { name: /reviewed this issue/ }).check();
+    await page.getByRole("checkbox", { name: /student personal information/i }).check();
     await page.getByRole("button", { name: "Publish to library" }).click();
     await expect(page).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
     await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
@@ -86,7 +86,7 @@ test.describe("STUDENT content gating", () => {
     await studentPage.goto(issuePath);
     await expect(studentPage.getByRole("heading", { name: "404" })).toBeVisible();
 
-    await page.getByRole("checkbox", { name: /reviewed this issue/ }).check();
+    await page.getByRole("checkbox", { name: /student personal information/i }).check();
     await page.getByRole("button", { name: "Publish to library" }).click();
     await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
 

@@ -39,7 +39,9 @@ describe("CSRF tokens", () => {
   it("requires a valid token before invoking a protected action", async () => {
     const action = vi.fn(async () => "mutated");
     const missing = new FormData();
-    await expect(withCsrfProtection(missing, action)).rejects.toThrow("CSRF token missing");
+    // With a live session a missing token is treated as tampering, exactly like
+    // a bad signature; only the no-session case redirects to sign in.
+    await expect(withCsrfProtection(missing, action)).rejects.toThrow("Invalid CSRF token");
 
     const invalid = new FormData();
     invalid.set("csrfToken", "invalid");

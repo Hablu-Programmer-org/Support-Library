@@ -362,7 +362,7 @@ Students do not see:
 
 Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, status, priority, course, batch, tags, visibility, and dates. Private image attachments are excluded.
 
-Staff must review an issue before publishing it to the student library. The publish confirmation covers the title, problem description, video links, and public replies.
+Staff must review an issue before publishing it to the student library. The review is a single short confirmation that no student personal information is present in the title, problem, video links, or replies.
 
 ## 15. Why A Link May Show 404
 
