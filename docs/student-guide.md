@@ -282,7 +282,7 @@ Twice a day the support team opens a live support room on Zoom:
 The flow:
 
 1. Submit a request (**Submit an issue**), or open one you already submitted from **My requests**.
-2. You land on the request page. It shows the status, the reference (for example `B41F9C`), what you wrote, your images and video links, and any update the team has written.
+2. You land on the request page. It shows the status, a six-digit reference (for example `274819`), what you wrote, your images and video links, and any update the team has written.
 3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Zoom Meeting` button, plus the meeting ID and passcode in case you want to dial in from the Zoom app yourself.
 4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
 

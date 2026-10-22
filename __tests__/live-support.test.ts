@@ -114,7 +114,24 @@ describe("dayKeyInDhaka", () => {
 });
 
 describe("caseRefFor", () => {
-  it("is the short, upper-case tail a student can read out loud", () => {
-    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).toBe("B9C0D1");
+  it("is six digits a student can read out loud", () => {
+    const ref = caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1");
+
+    expect(ref).toMatch(/^\d{6}$/);
+  });
+
+  it("is stable for the same issue and differs across issues", () => {
+    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).toBe(
+      caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1"),
+    );
+    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).not.toBe(
+      caseRefFor("66f1a2b3c4d5e6f7a8b9c0d9"),
+    );
+  });
+
+  it("never contains letters, which are easy to mishear", () => {
+    for (const id of ["a", "000000000000000000000001", "66f1a2b3c4d5e6f7a8b9c0d1"]) {
+      expect(caseRefFor(id)).toMatch(/^\d{6}$/);
+    }
   });
 });

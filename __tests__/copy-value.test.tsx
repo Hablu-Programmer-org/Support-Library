@@ -20,11 +20,11 @@ afterEach(() => {
 
 describe("CopyValue", () => {
   it("copies on double-click", () => {
-    render(<CopyValue label="request reference" value="37AB02" />);
+    render(<CopyValue label="request reference" value="274819" />);
 
-    fireEvent.doubleClick(screen.getByText("37AB02"));
+    fireEvent.doubleClick(screen.getByText("274819"));
 
-    expect(writeText).toHaveBeenCalledWith("37AB02");
+    expect(writeText).toHaveBeenCalledWith("274819");
   });
 
   it("copies from the button beside the value", () => {
@@ -36,9 +36,9 @@ describe("CopyValue", () => {
   });
 
   it("keeps the value visible and selectable", () => {
-    render(<CopyValue label="request reference" value="37AB02" variant="chip" />);
+    render(<CopyValue label="request reference" value="274819" variant="chip" />);
 
-    const value = screen.getByText("37AB02");
+    const value = screen.getByText("274819");
     expect(value.className).toContain("select-all");
   });
 });

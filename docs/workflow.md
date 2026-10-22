@@ -59,9 +59,9 @@ Help Center (dashboard sidebar)
    - rate limit 5 / 10 min, duplicate submit creates one issue.
 5. **Own request page.** Submission redirects to
    `/dashboard/issues/{id}?created=1` with a success banner. The page shows the
-   status, the short reference (last six characters of the id, upper-case — e.g.
-   `B41F9C`), what the student wrote, their images and video links, and the team's
-   replies read-only. It never shows staff fields, mentor, audit or publication
+   status, the six-digit reference (for example `274819`), what the student wrote,
+   their images and video links, and the team's replies read-only. It never shows
+   staff fields, mentor, audit or publication
    history.
 6. **Live support panel.** `Join Zoom Meeting` appears only when the request is
    `OPEN`, `PENDING` or `FOLLOW_UP` **and** a shift is open in `Asia/Dhaka`

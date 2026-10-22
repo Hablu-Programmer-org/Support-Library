@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import mongoose from "mongoose";
 
-import { dayKeyInDhaka } from "../lib/config/live-support";
+import { caseRefFor, dayKeyInDhaka } from "../lib/config/live-support";
 import { dbConnect } from "../lib/db";
 import {
   LiveSupportJoinModel,
@@ -193,7 +193,7 @@ test.describe("LIVE support: staff queue", () => {
       priority: "NORMAL",
       visibility: "INTERNAL",
     });
-    caseRef = String(issue._id).slice(-6).toUpperCase();
+    caseRef = caseRefFor(String(issue._id));
 
     await LiveSupportJoinModel.create({
       issueId: issue._id,

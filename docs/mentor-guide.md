@@ -405,10 +405,11 @@ The issue detail page shows:
 
 Mentors can read all active issues, including internal/unpublished ones.
 
-The `Reference` field is the short code the student reads out in the live room
-(for example `B41F9C`). It is highlighted so it stands out, and it can be copied
-with a double-click or with the copy icon beside it. `Live support` shows the last
-time the student took this request into the room, or a dash if they never did.
+The `Reference` field is the six-digit code the student reads out in the live room
+(for example `274819`); digits only, because letters are easy to mishear.
+It is highlighted so it stands out, and it can be copied with a double-click or
+with the copy icon beside it. `Live support` shows the last time the student took
+this request into the room, or a dash if they never did.
 
 Attached images open in a preview dialog on the same page (Escape or the backdrop
 closes it); the dialog also offers `Open original` for a full-size view.

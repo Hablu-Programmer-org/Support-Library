@@ -89,7 +89,7 @@ Help Center (dashboard sidebar)
    5 MB each) and external HTTPS video links.
 5. Submission lands on the student's **own request page**
    (`/dashboard/issues/{id}?created=1`) with a success banner: status, the short
-   reference (`B41F9C`), everything they submitted, the team's replies
+   reference (`274819`), everything they submitted, the team's replies
    (read-only) — and the **Live support** panel.
 6. The panel offers **Join Zoom Meeting** only while the request is `OPEN`,
    `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or

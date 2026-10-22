@@ -40,13 +40,23 @@ export type LiveSupportConfig = {
 };
 
 /**
- * Short, human-speakable reference for a request ("B41F9C").
+ * Short, human-speakable reference for a request.
  *
- * The tail of the ObjectId is not a secret (the student owns the case and cannot
- * open the staff view anyway); it exists so a student can say which request they
- * are in the room for.
+ * Six digits, derived deterministically from the issue id: a student reads it out
+ * loud in the live room ("two seven four eight one nine"), and the mentor matches
+ * it against the queue. Letters were dropped on purpose — a mixed code such as
+ * `B41F9C` is easy to mishear in Bengali/English, while digits are not. The value
+ * is unique enough for a day's queue (~1e6 space) and never changes for an issue.
  */
-export const caseRefFor = (id: string) => id.slice(-6).toUpperCase();
+export const caseRefFor = (id: string) => {
+  // FNV-1a over the id keeps the output stable and well spread without a DB field.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < id.length; index += 1) {
+    hash ^= id.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return String(hash % 1_000_000).padStart(6, "0");
+};
 
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 
