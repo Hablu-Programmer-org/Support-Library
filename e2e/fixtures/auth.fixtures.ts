@@ -54,6 +54,32 @@ async function upsertStaffUser(user: (typeof STAFF_USERS)[number]) {
       { upsert: true },
     ),
   ]);
+
+  // Students need an LMS enrolment: the request form lists courses from
+  // `EnrolledCourse` and fills the batch from it.
+  if (user.role === "STUDENT") {
+    const lmsUsers = lmsClient.db(lmsDb).collection("User");
+    const lmsUser = await lmsUsers.findOne({ email: user.email }, { projection: { _id: 1 } });
+    if (!lmsUser?._id) throw new Error(`LMS user missing for ${user.email}`);
+
+    await lmsClient.db(lmsDb).collection("Course").updateOne(
+      { slug: "jfwd" },
+      {
+        $set: { slug: "jfwd", name: "Journey Of Frontend Web Development" },
+        $setOnInsert: { _id: new mongoose.Types.ObjectId() },
+      },
+      { upsert: true },
+    );
+
+    await lmsClient.db(lmsDb).collection("EnrolledCourse").updateOne(
+      { userId: lmsUser._id, courseSlug: "jfwd" },
+      {
+        $set: { batchNo: 2, status: "running", email: user.email },
+        $setOnInsert: { _id: new mongoose.Types.ObjectId() },
+      },
+      { upsert: true },
+    );
+  }
 }
 
 async function createSessionToken(user: (typeof STAFF_USERS)[number]) {

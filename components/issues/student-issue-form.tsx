@@ -12,15 +12,18 @@ import { Accordion } from "@/components/issues/accordion";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import {
   nativeFieldClass,
+  nativeSelectClass,
   nativeTextareaClass,
   nativeTextareaCompactClass,
 } from "@/lib/config/fields";
 
 type StudentIssueFormProps = {
   csrfToken: string;
+  /** The student's LMS enrolments; the batch is derived from the chosen course. */
+  courses: Array<{ slug: string; name: string; batchNo: number }>;
 };
 
-export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
+export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) {
   const [state, formAction, pending] = useActionState(
     createStudentIssueAction,
     {
@@ -31,11 +34,11 @@ export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
   const [question, setQuestion] = useState("");
   const [videoLinks, setVideoLinks] = useState("");
   const [courseSlug, setCourseSlug] = useState("");
-  const [batchNo, setBatchNo] = useState("");
   const [moduleSlug, setModuleSlug] = useState("");
   const [contentSlug, setContentSlug] = useState("");
   const [tags, setTags] = useState("");
   const operationIdRef = useRef<HTMLInputElement>(null);
+  const selectedCourse = courses.find((course) => course.slug === courseSlug) ?? null;
 
   const ensureOperationId = () => {
     if (operationIdRef.current && !operationIdRef.current.value) {
@@ -200,60 +203,64 @@ export function StudentIssueForm({ csrfToken }: StudentIssueFormProps) {
         contentClassName="space-y-4"
       >
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Add course or lesson details so the team can find the right content
-          faster.
+          Tell the team which course the problem belongs to. The batch is filled in from your
+          enrolment, and lesson details help them find the right content faster.
         </p>
+
+        {courses.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Course <span className="text-danger">*</span>
+              </span>
+              <select
+                className={nativeSelectClass}
+                name="courseSlug"
+                required
+                value={courseSlug}
+                onChange={(event) => setCourseSlug(event.target.value)}
+                aria-invalid={state.fieldErrors?.courseSlug?.[0] ? "true" : "false"}
+              >
+                <option value="">Select your course</option>
+                {courses.map((course) => (
+                  <option key={course.slug} value={course.slug}>
+                    {course.name}
+                    {course.batchNo > 0 ? ` — batch ${course.batchNo}` : ""}
+                  </option>
+                ))}
+              </select>
+              {state.fieldErrors?.courseSlug?.[0] && (
+                <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+                  {state.fieldErrors.courseSlug[0]}
+                </p>
+              )}
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Batch
+              </span>
+              <input
+                className={`${nativeFieldClass} cursor-not-allowed opacity-70`}
+                value={selectedCourse?.batchNo ? String(selectedCourse.batchNo) : ""}
+                placeholder="Select a course first"
+                readOnly
+                tabIndex={-1}
+                aria-label="Batch (filled from your enrolment)"
+              />
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Filled automatically from your course enrolment.
+              </span>
+            </label>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200">
+            We could not find a course on your LMS account. You can still submit this request — the
+            team will ask for the course if it matters.
+          </p>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Course slug
-            </span>
-            <input
-              className={nativeFieldClass}
-              name="courseSlug"
-              value={courseSlug}
-              onChange={(event) => setCourseSlug(event.target.value)}
-              maxLength={120}
-              placeholder="e.g., react-beginner"
-              aria-invalid={
-                state.fieldErrors?.courseSlug?.[0] ? "true" : "false"
-              }
-            />
-            {state.fieldErrors?.courseSlug?.[0] && (
-              <p
-                className="text-sm text-danger-600 dark:text-danger-400"
-                role="alert"
-              >
-                {state.fieldErrors.courseSlug[0]}
-              </p>
-            )}
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Batch number
-            </span>
-            <input
-              className={nativeFieldClass}
-              name="batchNo"
-              type="number"
-              min={1}
-              max={9999}
-              value={batchNo}
-              onChange={(event) => setBatchNo(event.target.value)}
-              placeholder="e.g., 1"
-              aria-invalid={state.fieldErrors?.batchNo?.[0] ? "true" : "false"}
-            />
-            {state.fieldErrors?.batchNo?.[0] && (
-              <p
-                className="text-sm text-danger-600 dark:text-danger-400"
-                role="alert"
-              >
-                {state.fieldErrors.batchNo[0]}
-              </p>
-            )}
-          </label>
-
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Module slug

@@ -7,6 +7,7 @@ import { IssueForm } from "@/components/issues/issue-form";
 import { StudentIssueForm } from "@/components/issues/student-issue-form";
 import { QuickTips } from "@/components/issues/quick-tips";
 import { requireIssueCreator } from "@/lib/auth-guard";
+import { listStudentCourses } from "@/lib/lms";
 import { canMutate } from "@/lib/roles";
 import Link from "next/link";
 import { generateCsrfToken } from "@/lib/csrf";
@@ -19,6 +20,8 @@ export default async function NewIssuePage() {
   const csrfToken = await generateCsrfToken(session.user.id);
 
   if (!canManage) {
+    const courses = await listStudentCourses(session.user.email);
+
     return (
       <div className="flex flex-col">
         <header className="w-full px-4 py-3">
@@ -78,7 +81,7 @@ export default async function NewIssuePage() {
               </ul>
             </section>
 
-            <StudentIssueForm csrfToken={csrfToken} />
+            <StudentIssueForm courses={courses} csrfToken={csrfToken} />
           </div>
         </main>
       </div>

@@ -7,7 +7,7 @@ import { z } from "zod";
 import mongoose from "mongoose";
 
 import { assertRole } from "@/lib/auth-guard";
-import { findLmsUserByEmail } from "@/lib/lms";
+import { findLmsUserByEmail, listStudentCourses } from "@/lib/lms";
 import { normalizeEmail } from "@/lib/email";
 import { operationIdSchema } from "@/lib/mutation-security";
 import { parseVideoLinks } from "@/lib/parse-links";
@@ -264,14 +264,35 @@ export async function createStudentIssueAction(
       }
 
       const lmsUser = await findLmsUserByEmail(email);
+      // The course (and therefore the batch) comes from the student's LMS
+      // enrolments, never from the form: a crafted POST cannot claim another
+      // course or batch.
+      const courses = await listStudentCourses(email);
+      let courseSlug: string | undefined;
+      let batchNo: number | undefined;
+
+      if (courses.length > 0) {
+        const chosen = formValue(formData, "courseSlug");
+        const enrolled = courses.find((course) => course.slug === chosen);
+        if (!enrolled) {
+          return {
+            fieldErrors: {
+              courseSlug: ["Select the course this problem is about."],
+            },
+          };
+        }
+        courseSlug = enrolled.slug;
+        batchNo = enrolled.batchNo > 0 ? enrolled.batchNo : undefined;
+      }
+
       issueData = supportIssueInputSchema.parse({
         studentName,
         studentEmail: email,
         lmsUserId: lmsUser?.userId,
         title: formValue(formData, "title"),
         question: formValue(formData, "question"),
-        courseSlug: formValue(formData, "courseSlug"),
-        batchNo: formValue(formData, "batchNo"),
+        courseSlug,
+        batchNo,
         moduleSlug: formValue(formData, "moduleSlug"),
         contentSlug: formValue(formData, "contentSlug"),
         videoLinks,

@@ -334,13 +334,13 @@ Upload a video to an HTTPS video service first, then paste its link. If you type
 
 **Additional Details** is open by default and lets you point the team at the exact place the problem happens:
 
-- Course slug.
-- Batch number.
+- **Course** — required. The list comes from your Hablu Programmer account, so it only shows the courses you are actually enrolled in.
+- **Batch** — filled automatically from that enrolment; you cannot type a different one.
 - Module slug.
 - Lesson slug.
 - Tags.
 
-Fill these in only if you know them; leaving them empty is fine. Your request always starts as `Open` with normal priority, so you do not choose a status or priority.
+Fill the lesson fields in only if you know them; leaving them empty is fine. If your account has no course enrolment, the form says so and still lets you submit — the team will ask if the course matters. Your request always starts as `Open` with normal priority, so you do not choose a status or priority.
 
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email. Your identity is taken from your signed-in account automatically.
 

@@ -52,9 +52,11 @@ Help Center (dashboard sidebar)
    fastest fix.
 4. **Submit if new.** `Submit an issue` (`/dashboard/issues/new`):
    - title (≥ 5 chars) and problem (≥ 5 chars);
+   - **required course** picked from the student's LMS enrolments, with the batch
+     filled from the same enrolment (the server re-derives both);
    - optional evidence: up to 3 private images (PNG/JPEG/GIF/WebP, 5 MB each) and
      external HTTPS video links;
-   - optional course/batch/module/content/tags;
+   - optional module/content/tags;
    - identity comes from the session, never the form;
    - rate limit 5 / 10 min, duplicate submit creates one issue.
 5. **Own request page.** Submission redirects to

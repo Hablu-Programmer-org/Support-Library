@@ -373,7 +373,13 @@ Students open these links in a new browser tab.
 
 Additional Details is collapsed by default on the new issue page.
 
-Use it to add:
+On a **student request**, the course is a required dropdown built from that
+student's LMS enrolments and the batch is filled from the same enrolment — the
+server re-derives both, so a tampered form cannot claim another course or batch.
+If the account has no enrolment the form says so and submits without course
+context.
+
+On the **staff form**, use Additional Details to add:
 
 - Course slug.
 - Batch number.

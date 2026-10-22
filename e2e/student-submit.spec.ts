@@ -36,10 +36,14 @@ test.describe("STUDENT issue submission", () => {
       .locator('textarea[name="videoLinks"]')
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
 
-    // Course context is open by default for students and travels with the request.
+    // Course context is open by default; the list comes from the LMS enrolments
+    // and the batch fills itself once a course is picked.
     const additional = form.locator("details").filter({ hasText: "Additional Details" });
     await expect(additional.locator("summary")).toBeVisible();
-    await additional.locator('input[name="courseSlug"]').fill("react-beginner");
+    const courseSelect = additional.locator('select[name="courseSlug"]');
+    await expect(courseSelect).toBeVisible();
+    await courseSelect.selectOption("jfwd");
+    await expect(additional.locator('input[aria-label="Batch (filled from your enrolment)"]')).toHaveValue("2");
     await additional.locator('input[name="tags"]').fill("buffering, video");
 
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
@@ -67,7 +71,7 @@ test.describe("STUDENT issue submission", () => {
     await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
     await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
     await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
-    await expect(adminPage.getByText("react-beginner")).toBeVisible();
+    await expect(adminPage.getByText("jfwd")).toBeVisible();
 
     await adminContext.close();
   });
