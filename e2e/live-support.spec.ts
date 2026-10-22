@@ -233,9 +233,13 @@ test.describe("LIVE support: staff queue", () => {
 
     await expect(page.getByRole("heading", { name: "Live support queue" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
-    await expect(page.getByText("E2E live support queue request")).toBeVisible();
-    await expect(page.getByText(caseRef)).toBeVisible();
-    await expect(page.getByRole("link", { name: "E2E live support queue request" })).toBeVisible();
+    // `.first()` because the streamed page can briefly hold the row twice while
+    // the loading boundary swaps out (the settled DOM has it once).
+    await expect(page.getByText("E2E live support queue request").first()).toBeVisible();
+    await expect(page.getByText(caseRef).first()).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "E2E live support queue request" }).first(),
+    ).toBeVisible();
     // The queue is kept current without a manual reload.
     await expect(page.getByRole("button", { name: /Refresh/ })).toBeVisible();
   });
@@ -254,7 +258,7 @@ test.describe("LIVE support: staff queue", () => {
     const awaiting = page.getByRole("region", {
       name: "Student requests awaiting a mentor",
     });
-    await expect(awaiting.getByText("E2E live support queue request")).toBeVisible();
+    await expect(awaiting.getByText("E2E live support queue request").first()).toBeVisible();
   });
 
   test("marks the issue as waiting in the staff issues list", async ({ page }) => {
