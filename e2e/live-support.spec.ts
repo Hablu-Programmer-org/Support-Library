@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import mongoose from "mongoose";
 
-import { caseRefFor, dayKeyInDhaka } from "../lib/config/live-support";
+import { dayKeyInDhaka } from "../lib/config/live-support";
 import { dbConnect } from "../lib/db";
 import {
   LiveSupportJoinModel,
@@ -192,8 +192,9 @@ test.describe("LIVE support: staff queue", () => {
       status: "OPEN",
       priority: "NORMAL",
       visibility: "INTERNAL",
+      caseRef: "900001",
     });
-    caseRef = caseRefFor(String(issue._id));
+    caseRef = "900001";
 
     await LiveSupportJoinModel.create({
       issueId: issue._id,
@@ -213,6 +214,7 @@ test.describe("LIVE support: staff queue", () => {
       status: "SOLVED",
       priority: "NORMAL",
       visibility: "INTERNAL",
+      caseRef: "900002",
     });
 
     await LiveSupportJoinModel.create({
@@ -245,7 +247,7 @@ test.describe("LIVE support: staff queue", () => {
     // The same request shows up in both staff views: the room queue and the
     // "no mentor yet" list.
     const queue = page.getByRole("region", { name: "Waiting today" });
-    await expect(queue.getByText("E2E live support queue request")).toBeVisible();
+    await expect(queue.getByText("E2E live support queue request").first()).toBeVisible();
 
     const awaiting = page.getByRole("region", {
       name: "Student requests awaiting a mentor",

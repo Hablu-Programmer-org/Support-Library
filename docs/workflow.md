@@ -59,7 +59,7 @@ Help Center (dashboard sidebar)
    - rate limit 5 / 10 min, duplicate submit creates one issue.
 5. **Own request page.** Submission redirects to
    `/dashboard/issues/{id}?created=1` with a success banner. The page shows the
-   status, the six-digit reference (for example `274819`), what the student wrote,
+   status, the six-digit reference (for example `000123`), what the student wrote,
    their images and video links, and the team's replies read-only. It never shows
    staff fields, mentor, audit or publication
    history.
@@ -98,6 +98,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Eligibility | Only `OPEN`, `PENDING`, `FOLLOW_UP` requests owned by the student |
 | Idempotency | Unique `{issueId, dayKey, shift}`: a double submit keeps one row, a second visit in the other shift is a new row |
 | Queue scope | Today only (`dayKey` in Asia/Dhaka), newest first, bounded to 200 rows |
+| Reference | Six digits, allocated in order by an atomic counter inside the create transaction (`000001`, `000002`, …) — unique, digits-only, searchable |
 | Retention | Join rows expire after 180 days |
 | Privacy | The queue shows student name/email, reference, request title, status, shift and time — never a passcode, IP or token |
 | Availability display | Meeting ID/passcode are absent from the response while the room is closed |

@@ -25,7 +25,6 @@ import {
   WarningTriangleIcon,
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
-import { caseRefFor } from "@/lib/config/live-support";
 import { canMutate, isAdmin } from "@/lib/roles";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
@@ -247,11 +246,15 @@ export default async function IssueDetailPage({
                 <Info
                   label="Reference"
                   valueNode={
-                    <CopyValue
-                      label="reference"
-                      value={caseRefFor(supportIssue.id)}
-                      variant="chip"
-                    />
+                    staffIssue.caseRef ? (
+                      <CopyValue
+                        label="reference"
+                        value={staffIssue.caseRef}
+                        variant="chip"
+                      />
+                    ) : (
+                      "—"
+                    )
                   }
                 />
               )}

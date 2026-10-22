@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
-import { caseRefFor, currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { listOwnIssues } from "@/lib/services/issues";
 
@@ -72,9 +72,11 @@ export default async function MyRequestsPage() {
                     )}
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    <span className="select-all font-mono font-semibold">
-                      {caseRefFor(issue.id)}
-                    </span>{" "}
+                    {issue.caseRef ? (
+                      <span className="select-all font-mono font-semibold">{issue.caseRef}</span>
+                    ) : (
+                      <span aria-hidden="true">—</span>
+                    )}{" "}
                     · Updated {timestamp(issue.updatedAt)}
                   </p>
                 </div>

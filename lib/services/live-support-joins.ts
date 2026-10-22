@@ -3,7 +3,6 @@ import "server-only";
 import mongoose from "mongoose";
 
 import {
-  caseRefFor,
   dayKeyInDhaka,
 } from "@/lib/config/live-support";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
@@ -127,7 +126,7 @@ export type LiveSupportQueueEntry = {
   id: string;
   joinedAt: Date;
   shift: LiveSupportShiftName;
-  caseRef: string;
+  caseRef: string | null;
   issueId: string;
   issueTitle: string;
   issueStatus: CaseStatus | null;
@@ -156,7 +155,7 @@ export async function listLiveSupportQueue(dayKey: string): Promise<LiveSupportQ
   const userIds = [...new Set(joins.map((join) => String(join.studentUserId)))];
 
   const [issues, users] = await Promise.all([
-    SupportIssueModel.find({ _id: { $in: issueIds } }, "title status deletedAt").lean(),
+    SupportIssueModel.find({ _id: { $in: issueIds } }, "title status caseRef deletedAt").lean(),
     UserModel.find({ _id: { $in: userIds } }, "name email").lean(),
   ]);
 
@@ -171,7 +170,7 @@ export async function listLiveSupportQueue(dayKey: string): Promise<LiveSupportQ
       id: String(join._id),
       joinedAt: join.joinedAt,
       shift: join.shift,
-      caseRef: caseRefFor(String(join.issueId)),
+      caseRef: (issue?.caseRef as string | null | undefined) ?? null,
       issueId: String(join.issueId),
       issueTitle: issue?.title ?? "Request removed",
       issueStatus: issue ? (issue.status as CaseStatus) : null,

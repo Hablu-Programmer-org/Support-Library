@@ -13,7 +13,6 @@ import {
   protectStudentEmail,
   readStudentEmailSafe,
 } from "@/lib/student-email-crypto";
-import { caseRefFor } from "@/lib/config/live-support";
 import {
   supportIssueInputSchema,
   type SupportIssueFilter,
@@ -21,6 +20,7 @@ import {
   type SupportReplyInput,
 } from "@/lib/validation";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { nextCaseRef } from "@/lib/services/case-ref";
 import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
@@ -71,6 +71,8 @@ export type SupportIssueListItem = {
   publishedAt?: Date | null;
   /** Last time the student brought this request into the live room. */
   lastLiveSupportAt?: Date | null;
+  /** Six-digit sequential reference (null only for rows awaiting the backfill). */
+  caseRef?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -132,6 +134,7 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   visibility: item.visibility === "PUBLISHED" ? "PUBLISHED" : "INTERNAL",
   publishedAt: item.publishedAt as Date | null | undefined,
   lastLiveSupportAt: (item.lastLiveSupportAt as Date | null | undefined) ?? null,
+  caseRef: (item.caseRef as string | null | undefined) ?? null,
   createdAt: item.createdAt as Date | undefined,
   updatedAt: item.updatedAt as Date | undefined,
 });
@@ -263,12 +266,11 @@ export async function createIssue(
       const searchText = initialReply
         ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
         : buildIssueSearchText(parsed);
-      // Generate the id up front so the reference can be stored with the row: the
-      // student reads it out, and staff search for it by value.
-      const issueId = new mongoose.Types.ObjectId();
+      // Sequential and unique; allocated inside this transaction so an aborted
+      // create does not burn a number.
+      const caseRef = await nextCaseRef(session);
       const [createdIssue] = await SupportIssueModel.create([{
-        _id: issueId,
-        caseRef: caseRefFor(issueId.toHexString()),
+        caseRef,
         ...issueFields,
         studentName: studentName ?? null,
         lmsUserId: lmsUserId ?? null,

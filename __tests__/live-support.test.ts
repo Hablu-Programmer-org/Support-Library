@@ -2,9 +2,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  caseRefFor,
   currentShift,
   dayKeyInDhaka,
+  formatCaseRef,
   shiftMinutes,
   supportHoursBn,
   supportScheduleBn,
@@ -113,25 +113,13 @@ describe("dayKeyInDhaka", () => {
   });
 });
 
-describe("caseRefFor", () => {
+describe("formatCaseRef", () => {
   it("is six digits a student can read out loud", () => {
-    const ref = caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1");
-
-    expect(ref).toMatch(/^\d{6}$/);
-  });
-
-  it("is stable for the same issue and differs across issues", () => {
-    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).toBe(
-      caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1"),
-    );
-    expect(caseRefFor("66f1a2b3c4d5e6f7a8b9c0d1")).not.toBe(
-      caseRefFor("66f1a2b3c4d5e6f7a8b9c0d9"),
-    );
+    expect(formatCaseRef(1)).toBe("000001");
+    expect(formatCaseRef(274819)).toBe("274819");
   });
 
   it("never contains letters, which are easy to mishear", () => {
-    for (const id of ["a", "000000000000000000000001", "66f1a2b3c4d5e6f7a8b9c0d1"]) {
-      expect(caseRefFor(id)).toMatch(/^\d{6}$/);
-    }
+    expect(formatCaseRef(123456)).toMatch(/^\d{6}$/);
   });
 });

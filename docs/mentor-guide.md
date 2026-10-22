@@ -133,7 +133,7 @@ Mentor filters:
 
 | Filter | Meaning |
 | --- | --- |
-| `Search` | Search issue fields, searchable reply text, **or a six-digit reference** (e.g. `274819`). |
+| `Search` | Search issue fields, searchable reply text, **or a six-digit reference** (e.g. `000123`). |
 | `Tag` | Show issues with a tag. |
 | `Status` | Show issues by status. |
 | `Course` | Show issues with a course slug. |
@@ -146,7 +146,7 @@ Mentor filters:
 Important filter details:
 
 - The search box finds issues **while you type** — about half a second after you pause, the list updates by itself. Enter still works if you prefer it.
-- A query that is exactly six digits is treated as a request reference, so a mentor who hears `274819` in the room can paste it straight into the search box. This only applies to staff search; the student-facing library search stays text-only.
+- A query that is exactly six digits is treated as a request reference, so a mentor who hears `000123` in the room can paste it straight into the search box. This only applies to staff search; the student-facing library search stays text-only.
 - The other filters (tag, status, course, batch, mentor, dates, sort) apply when you press `Filter`.
 - Date filters use issue creation date, not update date or published date.
 - Course and batch dropdowns are built from active issues that actually have those values.
@@ -408,11 +408,12 @@ The issue detail page shows:
 
 Mentors can read all active issues, including internal/unpublished ones.
 
-The `Reference` field is the six-digit code the student reads out in the live room
-(for example `274819`); digits only, because letters are easy to mishear.
-It is highlighted so it stands out, and it can be copied with a double-click or
-with the copy icon beside it. `Live support` shows the last time the student took
-this request into the room, or a dash if they never did.
+The `Reference` field is the six-digit number the student reads out in the live room
+(for example `000123`). Numbers are allocated in order, one per request, so they
+are digits-only, unique, and easy to say. It is highlighted so it stands out, and
+it can be copied with a double-click or with the copy icon beside it.
+`Live support` shows the last time the student took this request into the room, or
+a dash if they never did.
 
 Attached images open in a preview dialog on the same page (Escape or the backdrop
 closes it); the dialog also offers `Open original` for a full-size view.

@@ -77,7 +77,11 @@ export function LiveSupportJoinQueue({
                 )}
               </p>
               <p className="text-sm text-slate-700 dark:text-slate-300">
-                <CopyValue label="request reference" value={entry.caseRef} variant="chip" />{" "}
+                {entry.caseRef ? (
+                  <CopyValue label="request reference" value={entry.caseRef} variant="chip" />
+                ) : (
+                  <span aria-hidden="true">—</span>
+                )}{" "}
                 {entry.issueDeleted ? (
                   <span className="text-slate-500 dark:text-slate-400">
                     {entry.issueTitle} (removed)

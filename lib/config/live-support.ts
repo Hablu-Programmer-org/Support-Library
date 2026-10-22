@@ -39,24 +39,18 @@ export type LiveSupportConfig = {
   passcode: string;
 };
 
+/** The sequence that numbers support requests. */
+export const CASE_REF_COUNTER_ID = "support-issue";
+
 /**
  * Short, human-speakable reference for a request.
  *
- * Six digits, derived deterministically from the issue id: a student reads it out
- * loud in the live room ("two seven four eight one nine"), and the mentor matches
- * it against the queue. Letters were dropped on purpose — a mixed code such as
- * `B41F9C` is easy to mishear in Bengali/English, while digits are not. The value
- * is unique enough for a day's queue (~1e6 space) and never changes for an issue.
+ * The value is sequential and stored on the issue (`caseRef`, allocated by
+ * `nextCaseRef`), so it can be read out loud, searched by value, and never
+ * collides. This helper only formats a raw sequence number; anything that shows a
+ * reference reads the stored field.
  */
-export const caseRefFor = (id: string) => {
-  // FNV-1a over the id keeps the output stable and well spread without a DB field.
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < id.length; index += 1) {
-    hash ^= id.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return String(hash % 1_000_000).padStart(6, "0");
-};
+export const formatCaseRef = (sequence: number) => String(sequence).padStart(6, "0");
 
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 
