@@ -86,7 +86,38 @@ jobs:
         run: npm test
 
       - name: Production dependency audit
-        run: npm audit --omit=dev --audit-level=high
+        shell: bash
+        run: |
+          # An audit failure must mean "a high-severity production vulnerability",
+          # not "npm's advisory endpoint had a bad minute". The bulk advisory API
+          # does return 503s (and CI saw one), so retry transport errors with
+          # backoff while still failing fast on a real finding.
+          set -uo pipefail
+
+          for attempt in 1 2 3 4 5; do
+            output=$(npm audit --omit=dev --audit-level=high 2>&1)
+            code=$?
+            printf '%s\n' "$output"
+
+            if [ "$code" -eq 0 ]; then
+              exit 0
+            fi
+
+            if printf '%s' "$output" | grep -qiE \
+              'service unavailable|audit endpoint returned an error|econnreset|etimedout|eai_again|network|socket hang up'; then
+              delay=$((attempt * 15))
+              echo "::warning::npm audit endpoint unavailable (attempt ${attempt}/5); retrying in ${delay}s"
+              sleep "$delay"
+              continue
+            fi
+
+            # Anything else (vulnerabilities found, malformed lockfile, ...) is a
+            # real result and must fail the job.
+            exit "$code"
+          done
+
+          echo "::error::npm audit could not reach the advisory database after 5 attempts"
+          exit 1
 
       - name: Apply and verify database indexes
         env:
