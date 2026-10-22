@@ -166,11 +166,38 @@ function createR2Store(config: R2Config): UploadStore {
 }
 
 let cachedStore: { mode: UploadStorageMode; store: UploadStore | null } | null = null;
+let disabledReasonLogged = false;
+
+/**
+ * Why uploads are disabled, without leaking any value.
+ *
+ * The UI only says "uploads are not enabled on this server", which is correct but
+ * impossible to act on from the browser. This prints once per process which
+ * switch is off, so a missing production env var is obvious from the logs.
+ */
+function logDisabledReason(mode: UploadStorageMode) {
+  if (mode !== "disabled" || disabledReasonLogged) return;
+  disabledReasonLogged = true;
+  console.warn("[uploads] disabled", {
+    UPLOAD_STORAGE: (process.env.UPLOAD_STORAGE ?? "").trim() || "(unset)",
+    cloudinary: {
+      cloudName: Boolean((process.env.CLOUDINARY_CLOUD_NAME ?? "").trim()),
+      apiKey: Boolean((process.env.CLOUDINARY_API_KEY ?? "").trim()),
+      apiSecret: Boolean((process.env.CLOUDINARY_API_SECRET ?? "").trim()),
+    },
+    r2: {
+      bucket: Boolean((process.env.R2_BUCKET ?? "").trim()),
+      accessKeyId: Boolean((process.env.R2_ACCESS_KEY_ID ?? "").trim()),
+    },
+    nodeEnv: process.env.NODE_ENV,
+  });
+}
 
 /** Returns the store for the active backend, or `null` when uploads are disabled. */
 export function getUploadStore(): UploadStore | null {
   const mode = uploadStorageMode();
   if (cachedStore?.mode === mode) return cachedStore.store;
+  logDisabledReason(mode);
   const store =
     mode === "r2"
       ? createR2Store(readR2Config()!)

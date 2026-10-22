@@ -17,6 +17,17 @@ Create `root_default` before the first deployment and pre-authenticate Docker to
 
 Create `/opt/hablu-support-library/shared/.env.production` owned by the deploy user, mode `0600` (use root only when root is the deploy user). Populate the runtime names from `.env.example` with production values, including separate `MONGODB_URI` and `LMS_MONGODB_URI` credentials, `AUTH_URL=https://support.hablu-programmer.com`, and `NODE_ENV=production`. Never store this file in GitHub or copy it during deployment.
 
+**Attachments are off unless you configure a store.** `UPLOAD_STORAGE` is unset by default and therefore resolves to `disabled` in production; the form then answers `File uploads are not enabled on this server. Attach a link instead.` To enable private image attachments, also put these in the same file and restart:
+
+```dotenv
+UPLOAD_STORAGE=cloudinary
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+`compose.production.yml` loads the whole file through `env_file`, so no Compose change is needed. When something is still off, the server log prints one `[uploads] disabled` line naming the missing switch (values are never logged). Verify with one private attachment round trip after the restart.
+
 ## External setup
 
 - Atlas: use one credential with `readWrite` only on the support database and a separate credential with `read` only on `hp-v2`; do not grant cluster-admin or cross-database write roles. Allow only the VPS egress IP in Atlas Network Access.
