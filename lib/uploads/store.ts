@@ -93,7 +93,7 @@ const memoryStore: UploadStore = {
 };
 
 /**
- * Object keys are entirely server-generated (`attachments/YYYY/MM/<uuid>.<ext>`,
+ * Object keys are entirely server-generated (`hablu/support/attachments/YYYY/MM/<uuid>.<ext>`,
  * see `lib/uploads/keys.ts`), so this only guards against a corrupted or
  * tampered key turning into an unexpected bucket path.
  */

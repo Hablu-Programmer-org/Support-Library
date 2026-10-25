@@ -39,7 +39,8 @@ const ENV_KEYS = [
 const originalEnv = { ...process.env };
 
 const config = { cloudName: "hablu", apiKey: "123456", apiSecret: "secret-value" };
-const publicId = "attachments/2026/10/123e4567-e89b-42d3-a456-426614174000";
+const publicId = "hablu/support/attachments/2026/10/123e4567-e89b-42d3-a456-426614174000";
+const legacyPublicId = "attachments/2026/10/123e4567-e89b-42d3-a456-426614174000";
 const storedKey = `v1719307544/${publicId}.png`;
 
 function response(overrides: Partial<UploadApiResponse> = {}): UploadApiResponse {
@@ -112,7 +113,15 @@ describe("Cloudinary configuration and keys", () => {
     expect(isValidCloudinaryKey(storedKey)).toBe(true);
     expect(isValidCloudinaryKey(`${publicId}.png`)).toBe(false);
     expect(isValidCloudinaryKey("v1/../secret.png")).toBe(false);
-    expect(isValidCloudinaryKey("v0/attachments/2026/10/123e4567-e89b-42d3-a456-426614174000.png")).toBe(false);
+    expect(isValidCloudinaryKey("v0/hablu/support/attachments/2026/10/123e4567-e89b-42d3-a456-426614174000.png")).toBe(false);
+    expect(isValidCloudinaryKey("v1/hablu/support/attachments/2026/10/not-a-uuid.png")).toBe(false);
+    expect(isValidCloudinaryKey("v1/hablu/courses/thumbnails/123e4567-e89b-42d3-a456-426614174000.png")).toBe(false);
+  });
+
+  it("still accepts the legacy attachments root written before the folder change", () => {
+    // Older issue/reply documents store these keys; dropping support would make
+    // those attachments unreadable and undeletable.
+    expect(isValidCloudinaryKey(`v1719307544/${legacyPublicId}.png`)).toBe(true);
     expect(isValidCloudinaryKey("v1/attachments/2026/10/not-a-uuid.png")).toBe(false);
   });
 });
@@ -135,7 +144,11 @@ describe("Cloudinary store", () => {
       expect.objectContaining({
         resource_type: "image",
         type: "authenticated",
-        public_id: publicId,
+        // The Console folder is created by `folder`; `public_id` stays the bare
+        // final segment so the path is never duplicated.
+        folder: "hablu/support/attachments/2026/10",
+        public_id: "123e4567-e89b-42d3-a456-426614174000",
+        tags: ["support-attachment"],
         allowed_formats: ["png", "jpg", "jpeg", "webp", "gif"],
         overwrite: true,
         unique_filename: false,
@@ -248,7 +261,9 @@ describe("Cloudinary store", () => {
             done();
           },
           final(done) {
-            ingestedPublicId = String(options.public_id);
+            // Cloudinary echoes the folder-prefixed id, even though only the
+            // final segment was sent as `public_id`.
+            ingestedPublicId = `${options.folder}/${options.public_id}`;
             callback(undefined, response({
               public_id: ingestedPublicId,
               bytes: png.byteLength,
@@ -263,6 +278,30 @@ describe("Cloudinary store", () => {
     );
 
     expect(upload.key).toBe(`v1719307544/${ingestedPublicId}.png`);
-    expect(ingestedPublicId).toMatch(/^attachments\/\d{4}\/\d{2}\/[a-f0-9-]{36}$/);
+    expect(ingestedPublicId).toMatch(/^hablu\/support\/attachments\/\d{4}\/\d{2}\/[a-f0-9-]{36}$/);
+  });
+
+  it("fails an upload whose returned public id does not match the requested folder", async () => {
+    sdk.uploadStream.mockImplementation(
+      (options: UploadApiOptions, callback: UploadResponseCallback) =>
+        new Writable({
+          write(_chunk, _encoding, done) {
+            done();
+          },
+          final(done) {
+            // Simulate a provider that ignored `folder`: the id lost its prefix.
+            callback(undefined, response({
+              public_id: String(options.public_id),
+              bytes: 5,
+            }));
+            done();
+          },
+        }),
+    );
+    sdk.destroy.mockResolvedValue({ result: "ok" });
+    const store = createCloudinaryStore(config);
+
+    await expect(store.put(`${publicId}.png`, Buffer.from("hello"), "image/png"))
+      .rejects.toThrow(/inconsistent upload metadata/i);
   });
 });

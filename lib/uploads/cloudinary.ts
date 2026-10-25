@@ -14,9 +14,17 @@ export type CloudinaryConfig = {
 const REQUEST_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 2;
 const TRANSIENT_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
-const ORIGINAL_KEY = /^(attachments\/\d{4}\/\d{2}\/[a-f0-9-]{36})\.(png|jpg|webp|gif)$/;
-const STORED_KEY = /^v([1-9]\d*)\/(attachments\/\d{4}\/\d{2}\/[a-f0-9-]{36})\.(png|jpg|webp|gif)$/;
+/**
+ * Shared upload path shape. Both roots are accepted: `hablu/support/attachments`
+ * is what new uploads use, while `attachments/...` keys written before that
+ * folder existed are still stored in issue/reply documents and must keep being
+ * readable and deletable.
+ */
+const KEY_PATH = String.raw`(?:hablu/support/attachments|attachments)/\d{4}/\d{2}/[a-f0-9-]{36}`;
+const ORIGINAL_KEY = new RegExp(`^(${KEY_PATH})\\.(png|jpg|webp|gif)$`);
+const STORED_KEY = new RegExp(`^v([1-9]\\d*)/(${KEY_PATH})\\.(png|jpg|webp|gif)$`);
 const ALLOWED_FORMATS = ["png", "jpg", "jpeg", "webp", "gif"] as const;
+const UPLOAD_TAGS = ["support-attachment"] as const;
 
 type ImageFormat = "png" | "jpg" | "webp" | "gif";
 
@@ -101,12 +109,23 @@ function upload(
   publicId: string,
   body: Buffer,
 ): Promise<UploadApiResponse> {
+  // Cloudinary's `folder` parameter is what creates the Console folder and what
+  // prefixes the public id in *both* folder modes: on fixed-folder accounts it
+  // prepends to the public id, on dynamic-folder accounts it sets the asset
+  // folder and the public-id prefix. Sending the path twice would therefore
+  // duplicate it, so the public id itself is only the final segment.
+  const separator = publicId.lastIndexOf("/");
+  const folder = publicId.slice(0, separator);
+  const name = publicId.slice(separator + 1);
+
   return new Promise((resolve, reject) => {
     const stream = client.uploader.upload_stream(
       {
         resource_type: "image",
         type: "authenticated",
-        public_id: publicId,
+        folder,
+        public_id: name,
+        tags: [...UPLOAD_TAGS],
         allowed_formats: [...ALLOWED_FORMATS],
         overwrite: true,
         unique_filename: false,

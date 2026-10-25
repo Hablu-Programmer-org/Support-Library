@@ -260,7 +260,7 @@ Images are the only supported attachment type. The Server Action body limit (`ex
 
 Backends, chosen by `UPLOAD_STORAGE` (unset -> `disabled` in production, `memory` in dev):
 - `r2` (Cloudflare R2): needs `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (optional `R2_ENDPOINT`). Requires a payment method on the Cloudflare account.
-- `cloudinary` (free plan needs no card): needs `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. Assets use the `authenticated` delivery type and are retrieved only through the authorized app proxy. Free accounts accept images up to 10 MiB and 25 MP; the app's defaults are 5 MiB and 25 MP. A paid plan with a larger file limit may explicitly set `CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true` together with its larger `MAX_UPLOAD_BYTES`.
+- `cloudinary` (free plan needs no card): needs `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET`. Assets use the `authenticated` delivery type and are retrieved only through the authorized app proxy. New uploads land in the Console folder `hablu/support/attachments/<YYYY>/<MM>` (older `attachments/<YYYY>/<MM>` keys remain valid and must not be renamed). Free accounts accept images up to 10 MiB and 25 MP; the app's defaults are 5 MiB and 25 MP. A paid plan with a larger file limit may explicitly set `CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true` together with its larger `MAX_UPLOAD_BYTES`.
 - `memory`: in-process, lost on restart, rejected in production unless `UPLOAD_STORAGE_ALLOW_EPHEMERAL=true` (E2E/preview only).
 - `disabled` (default in production): uploads are turned off.
 

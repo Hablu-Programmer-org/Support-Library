@@ -171,7 +171,7 @@ describe("image sniffing", () => {
 describe("object keys and display names", () => {
   it("generates a date-partitioned, collision-free key that ignores the client filename", () => {
     const key = buildUploadObjectKey("png", new Date("2026-03-04T12:00:00Z"));
-    expect(key).toMatch(/^attachments\/2026\/03\/[0-9a-f-]{36}\.png$/);
+    expect(key).toMatch(/^hablu\/support\/attachments\/2026\/03\/[0-9a-f-]{36}\.png$/);
     expect(buildUploadObjectKey("png")).not.toBe(buildUploadObjectKey("png"));
   });
 
@@ -262,7 +262,7 @@ describe("ingesting uploads", () => {
       height: 6,
       uploadedBy: "actor-1",
     });
-    expect(upload.key).toMatch(/^attachments\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.png$/);
+    expect(upload.key).toMatch(/^hablu\/support\/attachments\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.png$/);
 
     const stored = await getUploadStore()!.get(upload.key);
     expect(stored?.contentType).toBe("image/png");

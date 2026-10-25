@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto";
 
 /**
+ * Folder root for support-library attachments, aligned with the web app's
+ * `hablu/...` Cloudinary layout (`hablu/courses/thumbnails`).
+ *
+ * Static on purpose: nothing user-supplied may reach the storage path.
+ */
+export const UPLOAD_FOLDER = "hablu/support/attachments";
+
+/**
  * Builds the storage object key for one upload.
  *
  * A backend may return a backend-specific key after writing; that returned value
@@ -9,14 +17,20 @@ import { randomUUID } from "node:crypto";
  * The key is entirely server-generated: the client filename never reaches the
  * bucket path, so a hostile name (`../../etc/passwd`, a 4 KB unicode string, a
  * name that collides with another object) can only ever be a display label. The
- * date prefix keeps the bucket navigable and gives lifecycle rules something to
- * match on; the random UUID makes the key unguessable and collision-free.
+ * folder prefix groups the app's objects with the rest of the `hablu` media, the
+ * date split keeps the Console and the bucket navigable (and gives lifecycle
+ * rules something to match on), and the random UUID makes the key unguessable
+ * and collision-free.
+ *
+ * Legacy keys written before the `hablu/support/attachments` root existed
+ * (`attachments/YYYY/MM/<uuid>.<ext>`) stay valid: they are still in Mongo and
+ * must remain readable and deletable.
  */
 export function buildUploadObjectKey(extension: string, now: Date = new Date()): string {
   const year = now.getUTCFullYear();
   const month = String(now.getUTCMonth() + 1).padStart(2, "0");
   const safeExtension = /^[a-z0-9]{1,8}$/.test(extension) ? extension : "bin";
-  return `attachments/${year}/${month}/${randomUUID()}.${safeExtension}`;
+  return `${UPLOAD_FOLDER}/${year}/${month}/${randomUUID()}.${safeExtension}`;
 }
 
 /** Maximum length of the display filename persisted with an upload. */

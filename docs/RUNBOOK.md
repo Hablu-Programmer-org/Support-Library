@@ -94,7 +94,7 @@ release evidence.
 3. Redeploy; the new key is picked up at boot (`readR2Config` reads env at process start).
 4. Revoke the old key only after every running instance has restarted.
 
-Rotating the bucket or account ID requires migrating every object key (keys are stored in Mongo), so prefer rotating credentials only. Object keys are immutable and never contain the client filename.
+Rotating the bucket or account ID requires migrating every object key (keys are stored in Mongo), so prefer rotating credentials only. Object keys are immutable and never contain the client filename. New objects use the `hablu/support/attachments/<YYYY>/<MM>/` prefix; objects written earlier under `attachments/<YYYY>/<MM>/` stay readable as-is.
 
 ## Cloudinary key rotation and quota recovery
 
@@ -104,3 +104,14 @@ Rotating the bucket or account ID requires migrating every object key (keys are 
 4. Revoke the old key only after all instances use the replacement.
 
 Cloudinary Free has 25 credits, a 10 MiB per-image limit and a 25 MP resolution limit. Check Console usage when writes or reads are rejected. The app defaults to 5 MiB and fails startup if a Cloudinary deployment configures more than 10 MiB unless `CLOUDINARY_ALLOW_FILE_SIZE_OVER_10_MIB=true` explicitly acknowledges a plan that supports it. Do not use that flag to bypass an actual account limit.
+
+### Where support attachments live in Cloudinary
+
+New uploads are stored as `hablu/support/attachments/<YYYY>/<MM>/<uuid>.<ext>` (tag `support-attachment`), so the Console tree sits next to the web app's `hablu/courses/thumbnails`. The upload passes Cloudinary's `folder` parameter, which is what creates the Console folder in both fixed- and dynamic-folder accounts; the public id is only the final segment, so the path is never duplicated.
+
+Assets use the `authenticated` delivery type: the Console cannot preview or open them without a signed URL. Verify them through the app proxy (`/api/attachments/<id>`), not from the Console.
+
+Keys written before this layout (`attachments/<YYYY>/<MM>/<uuid>.<ext>`) are kept as-is and remain readable and deletable. Do **not** rename them in the Console: the Cloudinary public id is part of the key stored in Mongo, so a rename breaks that attachment. Re-homing old assets would need a script that renames via the Admin API **and** rewrites every `uploads[].key`, which is deliberately out of scope.
+
+**Known edge:** the upload is rejected as "inconsistent upload metadata" if the provider reports a different byte count than the bytes sent. Cloudinary stores ordinary photographs and screenshots byte-for-byte (verified live with a 62 KB / 532 KB PNG and a 107 KB JPEG), but it normalizes degenerate images — a 70-byte 1×1 PNG came back as 68 bytes. That is fail-closed by design: the download route compares `byteSize` with the object it received, so accepting the write would produce an attachment that fails later. If such a file is ever reported by a user, the fix is to persist the provider-reported size, not to relax the check silently.
+

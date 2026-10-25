@@ -179,6 +179,14 @@ cmd /c "npm run test:e2e"
 - Defense-in-depth: cap bypass fixed (was: only incoming batch counted).
 - Gates: lint, typecheck, test (124), build all green.
 
+### Session log — Cloudinary Console folder `hablu/support/attachments`
+- New uploads now use the key `hablu/support/attachments/<YYYY>/<MM>/<uuid>.<ext>` (was `attachments/<YYYY>/<MM>/...`), so the Console tree sits beside the web app's `hablu/courses/thumbnails` instead of a flat root.
+- `upload()` now sends Cloudinary's `folder` parameter (Console folder + public-id prefix in both fixed- and dynamic-folder accounts) with the public id reduced to the final segment, plus the `support-attachment` tag. `assertUploadResult` still compares the provider-returned id to the full key, so an account that ignores `folder` fails the upload instead of silently writing a wrong key.
+- Backward compatibility: `ORIGINAL_KEY` / `STORED_KEY` accept both the new and the legacy `attachments/...` root, so keys already stored in issue/reply documents stay readable and deletable. No data migration; legacy assets are deliberately not renamed (their public id is part of the persisted key).
+- Docs: RUNBOOK gained a "Where support attachments live in Cloudinary" section; the self-hosted deployment notes mention the folder and the authenticated-preview caveat.
+- Tests: key-shape expectations updated in `uploads.test.ts`; `cloudinary.test.ts` gained folder/public-id/tag assertions, a legacy-key acceptance case, and a mismatch case where the provider drops the folder prefix.
+- Gates: see session-close report.
+
 ### Session log — Cloudinary authenticated-image backend
 - Added `lib/uploads/cloudinary.ts` using the official server SDK. Uploads are `image` + `authenticated`; upload metadata is verified before persisting a versioned key, downloads use SDK-signed URLs behind the app proxy, and deletes use the exact matching tuple with invalidation requested.
 - `store.ts`: `cloudinary` mode added; the previous experimental no-card backend and its setup script/tests removed. R2 and memory remain available.
