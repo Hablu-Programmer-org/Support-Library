@@ -75,16 +75,18 @@ MAX_LINKS_PER_ITEM=10
 NEXT_PUBLIC_LMS_URL=https://www.your-domain.com
 ```
 
-Optional live support overrides (unset = the standing Zoom room). These are
-resolved on the server and only reach a browser of a signed-in user, so never
-log them. `npm run check:live-support` confirms they still match the LMS
+Live support (the daily room). The room has **no built-in default**: on Google
+Meet the join URL is the key to the room, so production refuses to start without
+it and the values are never committed to git. They are resolved on the server and
+only reach a browser of a signed-in user, so never log them.
+`npm run check:live-support` confirms the platform still matches the LMS
 frontend's own copy.
 
 ```env
-LIVE_SUPPORT_PLATFORM=Zoom
-LIVE_SUPPORT_JOIN_URL=https://your-org.zoom.us/j/1234567890?pwd=...
-LIVE_SUPPORT_MEETING_ID=123 456 7890
-LIVE_SUPPORT_PASSCODE=abc123
+LIVE_SUPPORT_PLATFORM=Google Meet
+LIVE_SUPPORT_JOIN_URL=https://meet.google.com/xxx-xxxx-xxx
+LIVE_SUPPORT_MEETING_ID=xxx-xxxx-xxx
+# Google Meet has no passcode; leave LIVE_SUPPORT_PASSCODE unset.
 ```
 
 ### 3. Google OAuth Setup

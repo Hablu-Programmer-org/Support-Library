@@ -32,7 +32,7 @@ Help Center (dashboard sidebar)
                                               ▼  submit
                                      /dashboard/issues/{id}?created=1
                                        status · reference · own files · team replies
-                                       Live support panel → [ Join Zoom Meeting ]
+                                       Live support panel → [ Join Google Meet ]
                                               ▼  join (server action)
                                      live-support-joins row ──► staff queue
 ```
@@ -65,11 +65,11 @@ Help Center (dashboard sidebar)
    their images and video links, and the team's replies read-only. It never shows
    staff fields, mentor, audit or publication
    history.
-6. **Live support panel.** `Join Zoom Meeting` appears only when the request is
+6. **Live support panel.** `Join Google Meet` appears only when the request is
    `OPEN`, `PENDING` or `FOLLOW_UP` **and** a shift is open in `Asia/Dhaka`
-   (08:00–12:00 or 19:30–24:00). Meeting ID and passcode are rendered only in that
-   state. A `SOLVED`/`ARCHIVED` request explains that it is closed and offers no
-   join.
+   (08:00–12:00 or 19:30–24:00). The meeting code is rendered only in that state
+   (Google Meet has no passcode row). A `SOLVED`/`ARCHIVED` request explains that
+   it is closed and offers no join.
 7. **Join.** The button submits a server action that re-checks ownership of the
    request, the shift, and the per-user budget (`live-support.join`, 10 / 10 min),
    records one join per request per shift per day, audits it, and only then
@@ -114,7 +114,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Reference | Six digits, allocated in order by an atomic counter inside the create transaction (`000001`, `000002`, …) — unique, digits-only, searchable |
 | Retention | Join rows expire after 180 days |
 | Privacy | The queue shows student name/email, reference, request title, status, shift and time — never a passcode, IP or token |
-| Availability display | Meeting ID/passcode are absent from the response while the room is closed |
+| Availability display | The meeting code is absent from the response while the room is closed |
 
 ## 6. Data and security notes
 
@@ -126,9 +126,10 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
   server; the LMS bundle carries none of them.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
-- **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; the
-  temporary request-less quick join writes `LIVE_SUPPORT_QUICK_JOIN`; issue,
-  reply and publication changes are audited as before.
+- **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; issue,
+  reply and publication changes are audited as before. The temporary
+  request-less `LIVE_SUPPORT_QUICK_JOIN` path was removed with the Google Meet
+  switch, so every unaudited way into the room is gone too.
 - **Indexes**: `student_own_requests`, `student_own_issues`, `awaiting_mentor`,
   `live-support-joins-issue-day-shift-unique`, `live-support-joins-day-joined`
   (plus the TTL). The deploy pipeline runs `db:indexes --apply --create-only` then
@@ -139,7 +140,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
-| Request-less quick join | Popup explains the request-first path; the join skips the request requirement but still needs a shift and is audited |
+| No open request | No join panel; submit one first (the request-less shortcut was removed) |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
 | Another student's published issue | Read-only library view |
@@ -157,7 +158,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPPORT_LIBRARY_URL` | LMS frontend | Base URL for the Help Center CTA (defaults to `https://support.hablu-programmer.com`) |
 | `NEXT_PUBLIC_LMS_URL` | this app | `My Courses` link back to the LMS (omitted when unset) |
-| `LIVE_SUPPORT_PLATFORM` / `_JOIN_URL` / `_MEETING_ID` / `_PASSCODE` | this app | The room |
+| `LIVE_SUPPORT_PLATFORM` / `_JOIN_URL` / `_MEETING_ID` / `_PASSCODE` | this app | The room. The join URL is a credential on Google Meet, so it has **no source default** and production refuses to boot without it; `_PASSCODE` is Zoom-only |
 | `npm run check:live-support` | this app | Fails when the schedule copy drifts or when any room credential reappears in the LMS config |
 
 ## 9. Where to change things
@@ -176,7 +177,9 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 
 1. The LMS premium/batch rule only hides the Help Center button; this app does not
    enforce it (feature-inventory 12.18).
-2. An eligible student can share the room URL; per-shift room rotation or Zoom
-   Registration API would be needed to prevent that.
+2. An eligible student can share the Meet link; Google Meet has no passcode and,
+   on a personal account, no waiting room. Rotating the room is an environment
+   change (`hablu-env set support LIVE_SUPPORT_JOIN_URL`), not a code change;
+   Workspace hosts can additionally require knock-to-join.
 3. Two attachment Playwright specs fail on the Cloudinary path (pre-existing).
 4. This app signs in with Google only; LMS password accounts need a second sign-in.

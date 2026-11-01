@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /**
  * Staff view of the live support room: who took a request in, and when.
  *
- * The students themselves are in Zoom, which this app cannot see, so this page
+ * The students themselves are in Google Meet, which this app cannot see, so this page
  * is the bridge between "a student joined" and "the mentor knows which request
  * they are there for". A row is created when the student presses Join, not when
  * the request is submitted — so an empty page during a shift means nobody has

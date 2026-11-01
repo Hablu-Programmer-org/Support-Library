@@ -2,7 +2,7 @@
 
 This guide explains how students use the Hablu Support Library, what they can read, what they can search, how to submit a support request, and what actions are not available to students.
 
-The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not an in-app chat: you submit a request, the team answers you by email, and you cannot reply inside the app. Twice a day the team also opens a live support room on Zoom, which you can join from inside this app (section 12a).
+The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not an in-app chat: you submit a request, the team answers you by email, and you cannot reply inside the app. Twice a day the team also opens a live support room on Google Meet, which you can join from inside this app (section 12a).
 
 ## 1. What The Support Library Is
 
@@ -15,7 +15,7 @@ You can use it to:
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
 - Open attached video walkthrough links.
-- Join the daily live support session on Zoom while the support room is open.
+- Join the daily live support session on Google Meet while the support room is open.
 - Open `My Courses` to jump back to your courses in the Hablu Programmer LMS.
 - Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. Attachments are only visible to the support team, not published.
 - Submit a new support request with a title, a description, and optional attachments/video links.
@@ -273,7 +273,7 @@ Sign out sends you back to `/login`.
 
 Live support is joined **from your own request**, not from a separate page.
 
-Twice a day the support team opens a live support room on Zoom:
+Twice a day the support team opens a live support room on Google Meet:
 
 | Shift | Time (Bangladesh time) |
 | --- | --- |
@@ -284,7 +284,7 @@ The flow:
 
 1. Submit a request (**Submit an issue**), or open one you already submitted from **My requests**.
 2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images and video links, and any update the team has written.
-3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Zoom Meeting` button, plus the meeting ID and passcode in case you want to dial in from the Zoom app yourself.
+3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Google Meet` button, plus the meeting code in case you want to enter it in the Meet app yourself. Meet may ask you to sign in with your Google account first.
 4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
 
 Rules that matter:

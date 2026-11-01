@@ -448,7 +448,7 @@ Do not copy student name, email, phone, ID, payment details, or private image co
 
 Route: `/dashboard/live-support` (mentors and admins only)
 
-Students join the Zoom room from **their own request page**
+Students join the Google Meet room from **their own request page**
 (`/dashboard/issues/[id]`), and only with a request they submitted that is still
 `Open`, `Pending` or `Follow-up`. The queue is how you see who is waiting and what
 for:
@@ -467,8 +467,11 @@ for:
 
 What to know:
 
-- The list comes from the join record, not from Zoom, so a student who joins
-  directly through a shared meeting link will not appear. Ask for the reference.
+- The list comes from the join record, not from Google Meet, so a student who
+  joins directly through a shared meeting link will not appear. Ask for the
+  reference. Google Meet has no passcode, so a shared link is the whole key to the
+  room — keep the meeting link out of public channels and rotate it with
+  `hablu-env set support LIVE_SUPPORT_JOIN_URL` if it leaks.
 - Students cannot open this page and never see the nav item for it.
 - If a joined request was deleted afterwards, the row stays visible and is marked
   `(removed)` so the day's history is not rewritten.

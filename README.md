@@ -70,7 +70,7 @@ Help Center (dashboard sidebar)
                                               ▼  submit
                                      /dashboard/issues/{id}?created=1
                                        status · reference · own files · team replies
-                                       Live support panel → [ Join Zoom Meeting ]
+                                       Live support panel → [ Join Google Meet ]
                                               ▼  join (server action)
                                      live-support-joins row ──► staff queue
 ```
@@ -91,23 +91,21 @@ Help Center (dashboard sidebar)
    (`/dashboard/issues/{id}?created=1`) with a success banner: status, the short
    reference (`000123`), everything they submitted, the team's replies
    (read-only) — and the **Live support** panel.
-6. The panel offers **Join Zoom Meeting** only while the request is `OPEN`,
+6. The panel offers **Join Google Meet** only while the request is `OPEN`,
    `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or
-   19:30–24:00, Asia/Dhaka, resolved on the server). Meeting ID and passcode are
-   rendered only in that state.
+   19:30–24:00, Asia/Dhaka, resolved on the server). The meeting code is rendered
+   only in that state; Google Meet has no passcode row. Meet may ask the student
+   to sign in with their Google account.
 7. Joining runs a server action that re-checks ownership, the shift and the
    per-user budget, records one join per request per shift per day, audits it,
    and only then redirects into the room.
 8. **My requests** lists the student's own requests so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
-> **Temporary shortcut (to be removed).** Students also see **Join live support**
-> next to **Submit an issue** on `/dashboard/issues`. The popup explains the
-> request-first path and still offers a direct join. That join skips the request
-> requirement but keeps CSRF, the server-resolved shift, the `live-support.join`
-> budget and an audit row (`LIVE_SUPPORT_QUICK_JOIN`); it creates no queue row.
-> Delete `components/live-support/quick-live-support-button.tsx`,
-> `joinLiveSupportQuickAction` and the audit pair to remove it.
+> **No request-less shortcut.** The old "Join live support" button next to
+> **Submit an issue** was removed with the 2026-11-01 Google Meet switch: Meet
+> has no waiting room, so an untracked join left no queue row and no case to
+> follow up. The request page is the only way in.
 
 ### Staff
 
@@ -230,7 +228,7 @@ cmd /c "npm run check:live-support"           # live support drift guard vs the 
 
 `bench:search` seeds a throwaway collection in the test database and prints a markdown comparison of the search strategies plus a scaling curve. It refuses to run against the development database. Findings: `docs/implementation.md`.
 
-`check:live-support` compares this app's live support schedule and its Bengali schedule wording against the LMS frontend's own copy (`frontend/src/lib/config/support.ts`), and inverts the room check: the Zoom join URL, meeting ID and passcode must exist **only** here (resolved server-side), must never reappear in the LMS `support` config, and the LMS must keep a `support.libraryUrl` pointing students at this app. The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
+`check:live-support` compares this app's live support schedule and its Bengali schedule wording against the LMS frontend's own copy (`frontend/src/lib/config/support.ts`), and inverts the room check: the join URL, meeting code and passcode must exist **only** here (resolved server-side from `LIVE_SUPPORT_*`, never in source), must never reappear in the LMS `support` config, and the LMS must keep a `support.libraryUrl` pointing students at this app. It also pins the platform label to the LMS copy. The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
 
 ## Verification
 
