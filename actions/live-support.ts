@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import mongoose from "mongoose";
 import { redirect } from "next/navigation";
@@ -112,7 +112,7 @@ export async function joinLiveSupportAction(
 
     const issue = await SupportIssueModel.findOne(
       {
-        // Same scope the gate page uses â€” one query shape for eligibility.
+        // Same scope the gate page uses — one query shape for eligibility.
         ...buildEligibleIssueFilter(actorId),
         _id: new mongoose.Types.ObjectId(issueId),
       },

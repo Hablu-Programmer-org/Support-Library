@@ -126,7 +126,7 @@ is submitted, and the chip only stays while the request is still unresolved.
 
 | Situation | Result |
 | --- | --- |
-| Outside a support shift | Join disabled; meeting ID / passcode absent from the response |
+| Outside a support shift | Join disabled; the meeting code is absent from the response |
 | Request `SOLVED` / `ARCHIVED` | No join; the student is asked to submit a new request |
 | Another student's unpublished request | `404` (ownership is `createdBy` from the session) |
 | Another student's published issue | Read-only library view |
@@ -141,8 +141,10 @@ is submitted, and the chip only stays while the request is still unresolved.
 
 - Roles come from `hp-v2.User` on sign-in and on every refresh; this app signs in
   with Google only, so an LMS password account needs a Google sign-in here.
-- The room credentials (join URL, meeting ID, passcode) exist **only** in this
-  app, resolved server-side. The LMS bundle carries none of them.
+- The room credentials (join URL, meeting code, and a passcode on platforms that
+  have one) exist **only** in this app, resolved server-side from the
+  environment. The LMS bundle carries none of them, and git carries no room at
+  all.
 - The shift is decided on the server in `Asia/Dhaka`; the LMS keeps the canonical
   schedule copy (`frontend/src/lib/config/support.ts`) that
   `npm run check:live-support` compares against this app.

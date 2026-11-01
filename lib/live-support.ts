@@ -25,11 +25,11 @@ import {
  */
 
 /**
- * `undefined` (unset) falls back; an explicitly empty value means "none".
+ * An unset value and an explicitly empty value both mean "absent".
  *
- * The old reader fell back on empty too, which meant setting
+ * The old reader fell back on empty, which meant setting
  * `LIVE_SUPPORT_PASSCODE=""` for Google Meet silently restored the previous
- * platform's passcode. Empty must mean "absent".
+ * platform's passcode. Empty must mean "absent", never "use the default".
  */
 const readOptional = (value: string | undefined): string | null => {
   const trimmed = (value ?? "").trim();

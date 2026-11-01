@@ -16,9 +16,7 @@ export type AuditResourceType =
   | "SupportIssue"
   | "SupportReply"
   | "SupportAttachment"
-  | "OAuthCallback"
-  // TEMPORARY quick join (no request involved). Remove with the shortcut.
-  | "LiveSupportQuickJoin";
+  | "OAuthCallback";
 
 export interface AuditEventContext {
   ip?: string;

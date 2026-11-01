@@ -78,16 +78,10 @@ Help Center (dashboard sidebar)
    requests (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
 
-> **Temporary shortcut (owner request — to be removed).** For students, the
-> issues page also shows a **Join live support** button next to **Submit an
-> issue**. It opens a popup that explains a request comes first and still offers
-> a direct join. That join **skips the request requirement** but keeps CSRF, the
-> server-resolved shift, the shared `live-support.join` budget (10 / 10 min) and
-> an audit row (`LIVE_SUPPORT_QUICK_JOIN`); it creates **no queue row**, so the
-> student does not appear in staff `Waiting today`. Remove
-> `components/live-support/quick-live-support-button.tsx`,
-> `joinLiveSupportQuickAction` and the audit pair once every student submits a
-> request first. Search for `TEMPORARY quick join`.
+> **No request-less shortcut.** For students, the issues page no longer offers a
+> direct **Join live support** button. It was removed with the 2026-11-01 Google
+> Meet switch: Meet has no waiting room, so a request-less join produced no queue
+> row and no case to follow up. The request page is the only way into the room.
 
 ## 4. Staff journey
 
