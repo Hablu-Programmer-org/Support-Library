@@ -39,13 +39,13 @@ describe("getLiveSupportConfig", () => {
 
   it("reads the room from the environment", () => {
     process.env.LIVE_SUPPORT_PLATFORM = "Google Meet";
-    process.env.LIVE_SUPPORT_JOIN_URL = " https://meet.google.com/moe-ooac-amo ";
-    process.env.LIVE_SUPPORT_MEETING_ID = "moe-ooac-amo";
+    process.env.LIVE_SUPPORT_JOIN_URL = " https://meet.google.com/abc-defg-hij ";
+    process.env.LIVE_SUPPORT_MEETING_ID = "abc-defg-hij";
 
     const config = getLiveSupportConfig();
 
-    expect(config.joinUrl).toBe("https://meet.google.com/moe-ooac-amo");
-    expect(config.meetingId).toBe("moe-ooac-amo");
+    expect(config.joinUrl).toBe("https://meet.google.com/abc-defg-hij");
+    expect(config.meetingId).toBe("abc-defg-hij");
     expect(config.passcode).toBeNull();
     expect(isLiveSupportConfigured(config)).toBe(true);
   });

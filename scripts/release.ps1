@@ -99,8 +99,8 @@ try {
         "NEXT_PUBLIC_APP_URL=https://support.example.com"
         "NEXT_PUBLIC_LMS_URL=https://lms.example.com"
         "LIVE_SUPPORT_PLATFORM=Google Meet"
-        "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/moe-ooac-amo"
-        "LIVE_SUPPORT_MEETING_ID=moe-ooac-amo"
+        "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/abc-defg-hij"
+        "LIVE_SUPPORT_MEETING_ID=abc-defg-hij"
         "NODE_ENV=production"
     ) | Set-Content -LiteralPath $ComposeEnv -Encoding ASCII
 
@@ -117,7 +117,7 @@ try {
     Invoke-Gate "Runtime container smoke" {
         # NODE_ENV=production makes the container validate the live support room
         # at boot, so the room has to be passed here too.
-        docker run --rm --detach --name "support-library-release-$PID" --publish 127.0.0.1:12002:12000 --env NODE_ENV=production --env "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026" --env "LIVE_SUPPORT_PLATFORM=Google Meet" --env "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/moe-ooac-amo" --env "LIVE_SUPPORT_MEETING_ID=moe-ooac-amo" $Image
+        docker run --rm --detach --name "support-library-release-$PID" --publish 127.0.0.1:12002:12000 --env NODE_ENV=production --env "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026" --env "LIVE_SUPPORT_PLATFORM=Google Meet" --env "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/abc-defg-hij" --env "LIVE_SUPPORT_MEETING_ID=abc-defg-hij" $Image
     }
     try {
         $Healthy = $false

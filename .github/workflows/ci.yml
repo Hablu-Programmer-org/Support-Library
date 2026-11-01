@@ -162,8 +162,8 @@ jobs:
           NEXT_PUBLIC_APP_URL=https://support.example.com
           NEXT_PUBLIC_LMS_URL=https://lms.example.com
           LIVE_SUPPORT_PLATFORM=Google Meet
-          LIVE_SUPPORT_JOIN_URL=https://meet.google.com/moe-ooac-amo
-          LIVE_SUPPORT_MEETING_ID=moe-ooac-amo
+          LIVE_SUPPORT_JOIN_URL=https://meet.google.com/abc-defg-hij
+          LIVE_SUPPORT_MEETING_ID=abc-defg-hij
           NODE_ENV=production
           EOF
 
@@ -195,8 +195,8 @@ jobs:
             --env TRUSTED_PROXY_HOPS=1 \
             --env NEXT_PUBLIC_LMS_URL='https://lms.example.com' \
             --env LIVE_SUPPORT_PLATFORM='Google Meet' \
-            --env LIVE_SUPPORT_JOIN_URL='https://meet.google.com/moe-ooac-amo' \
-            --env LIVE_SUPPORT_MEETING_ID='moe-ooac-amo' \
+            --env LIVE_SUPPORT_JOIN_URL='https://meet.google.com/abc-defg-hij' \
+            --env LIVE_SUPPORT_MEETING_ID='abc-defg-hij' \
             --env STUDENT_EMAIL_KEY_VERSION=v1 \
             --env STUDENT_EMAIL_ENCRYPTION_KEYS='v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=' \
             --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \

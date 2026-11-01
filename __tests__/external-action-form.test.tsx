@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ExternalActionForm } from "@/components/shared/external-action-form";
 import type { ExternalRedirectState } from "@/lib/external-redirect";
 
-const ROOM_URL = "https://meet.google.com/moe-ooac-amo";
+const ROOM_URL = "https://meet.google.com/abc-defg-hij";
 
 type FakeTab = {
   closed: boolean;

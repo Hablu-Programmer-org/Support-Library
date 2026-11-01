@@ -14,7 +14,7 @@ import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
 const baseProps = {
   issueId: "66f1a2b3c4d5e6f7a8b9c0d1",
   platform: "Google Meet",
-  meetingId: "moe-ooac-amo",
+  meetingId: "abc-defg-hij",
   passcode: null,
   configured: true,
   csrfToken: "csrf-token",

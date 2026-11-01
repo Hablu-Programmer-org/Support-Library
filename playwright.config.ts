@@ -52,8 +52,8 @@ export default defineConfig({
       // .env.local, and the production build used by playwright.12001 refuses
       // to boot without a room.
       LIVE_SUPPORT_PLATFORM: "Google Meet",
-      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
-      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
+      LIVE_SUPPORT_MEETING_ID: "abc-defg-hij",
     },
   },
   projects: [

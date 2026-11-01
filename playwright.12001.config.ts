@@ -49,8 +49,8 @@ MONGODB_URI: process.env.MONGODB_URI ?? "",
       // The production build validates the live support room at boot, so the
       // room must be pinned here; without it the standalone server exits.
       LIVE_SUPPORT_PLATFORM: "Google Meet",
-      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
-      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
+      LIVE_SUPPORT_MEETING_ID: "abc-defg-hij",
       AUTH_GOOGLE_ID: "e2e.invalid.apps.googleusercontent.com",
       AUTH_GOOGLE_SECRET: "e2e-only-placeholder",
       TRUSTED_PROXY_HOPS: "1",

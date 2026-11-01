@@ -69,7 +69,7 @@ const productionVars = {
   // Production refuses to boot without the room, so the valid baseline carries
   // one; the "requires the room" case below deletes it on purpose.
   LIVE_SUPPORT_PLATFORM: "Google Meet",
-  LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+  LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
 };
 
 const studentEmailVars = {
@@ -122,7 +122,7 @@ describe("validateEnv", () => {
     setEnv({
       NODE_ENV: "production",
       ...studentEmailVars,
-      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
     });
 
     expect(() => validateEnv()).toThrow(/Invalid production environment/i);
@@ -316,9 +316,9 @@ describe("validateEnv", () => {
     setEnv({
       NODE_ENV: "development",
       ...studentEmailVars,
-      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
       LIVE_SUPPORT_PLATFORM: "Google Meet",
-      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
+      LIVE_SUPPORT_MEETING_ID: "abc-defg-hij",
     });
 
     expect(() => validateEnv()).not.toThrow();
@@ -347,8 +347,8 @@ describe("validateEnv", () => {
       ...studentEmailVars,
       ...productionVars,
       LIVE_SUPPORT_PLATFORM: "Google Meet",
-      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
-      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
+      LIVE_SUPPORT_MEETING_ID: "abc-defg-hij",
     });
 
     expect(() => validateEnv()).not.toThrow();

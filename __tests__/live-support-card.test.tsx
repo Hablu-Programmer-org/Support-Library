@@ -9,7 +9,7 @@ import { LiveSupportCard } from "@/components/live-support/live-support-card";
 
 const baseProps = {
   platform: "Google Meet",
-  meetingId: "moe-ooac-amo",
+  meetingId: "abc-defg-hij",
   passcode: null,
   configured: true,
   csrfToken: "csrf-token",
