@@ -67,7 +67,8 @@ Help Center (dashboard sidebar)
    history.
 6. **Live support panel.** `Join Live support` appears only when the request is
    `OPEN`, `PENDING` or `FOLLOW_UP` **and** a shift is open in `Asia/Dhaka`
-   (08:00–12:00 or 19:30–24:00). The meeting code is rendered only in that state
+   (09:00–13:00 or 18:30–22:00). Requests can be submitted 24/7. The meeting code
+   is rendered only in that state
    (the current room platform has no passcode row). A `SOLVED`/`ARCHIVED` request
    explains that it is closed and offers no join.
 7. **Join.** The button submits a server action that re-checks ownership of the
@@ -87,7 +88,9 @@ Help Center (dashboard sidebar)
 > `LIVE_SUPPORT_QUICK_JOIN` audit row still apply, but it records **no** queue
 > row — the student does not appear in staff `Waiting today` and has no reference
 > to read out. The request page above stays the tracked path: it queues the
-> student and gives the mentor a case to follow up.
+> student and gives the mentor a case to follow up. The same announcement
+> (2026-11-01) makes a submitted request a prerequisite in the guidance, so this
+> shortcut is an escape hatch only and its hint nudges students to submit first.
 
 ## 4. Staff journey
 
@@ -107,7 +110,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 
 | Rule | Detail |
 | --- | --- |
-| Shift | Morning 08:00–12:00, night 19:30–24:00, resolved on the server in `Asia/Dhaka` |
+| Shift | Morning 09:00–13:00, night 18:30–22:00, resolved on the server in `Asia/Dhaka` (requests are accepted 24/7) |
 | Eligibility | Only `OPEN`, `PENDING`, `FOLLOW_UP` requests owned by the student |
 | Idempotency | Unique `{issueId, dayKey, shift}`: a double submit keeps one row, a second visit in the other shift is a new row |
 | Queue scope | Today only (`dayKey` in Asia/Dhaka), newest first, bounded to 200 rows |

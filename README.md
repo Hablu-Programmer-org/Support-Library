@@ -92,8 +92,9 @@ Help Center (dashboard sidebar)
    reference (`000123`), everything they submitted, the team's replies
    (read-only) — and the **Live support** panel.
 6. The panel offers **Join Live support** only while the request is `OPEN`,
-   `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or
-   19:30–24:00, Asia/Dhaka, resolved on the server). The meeting code is rendered
+   `PENDING` or `FOLLOW_UP` **and** a support shift is open (09:00–13:00 or
+   18:30–22:00, Asia/Dhaka, resolved on the server). Requests themselves can be
+   submitted 24/7. The meeting code is rendered
    only in that state; the current room platform has no passcode row. The
    student may be asked to sign in before the room lets them in. The button
    **opens the room in a new tab**, so the request page stays open.
@@ -111,7 +112,9 @@ Help Center (dashboard sidebar)
 > `LIVE_SUPPORT_QUICK_JOIN` audit row still apply) but creates no queue row, so
 > the student is not in `Waiting today` and has no reference. The request page
 > above stays the tracked path — it queues the student and gives staff a case to
-> follow up.
+> follow up. The same owner's announcement (2026-11-01) tells students to submit
+> a request **before** live support, so the shortcut's hint nudges them there;
+> the button is kept as an escape hatch and is not the documented journey.
 
 ### Staff
 

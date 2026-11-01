@@ -88,6 +88,9 @@ export function LiveSupportPanel({
             ? "Take this request into the support room and share your screen with the mentor."
             : "This request is closed, so it can no longer be taken to the room. Submit a new request if the problem comes back."}
         </p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Requests can be submitted 24/7; the room is open only during a support shift.
+        </p>
       </div>
 
       <div className="flex items-center gap-3">

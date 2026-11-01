@@ -21,38 +21,49 @@ const dhaka = (utcHour: number, utcMinute = 0) =>
   new Date(Date.UTC(2026, 9, 18, utcHour, utcMinute));
 
 describe("currentShift", () => {
-  it("opens the morning shift at exactly 08:00 Dhaka", () => {
-    expect(currentShift(dhaka(2, 0))).toBe("morning");
+  it("stays closed just before the morning shift opens", () => {
+    // 02:59 UTC is 08:59 in Dhaka.
+    expect(currentShift(dhaka(2, 59))).toBe("off");
   });
 
-  it("keeps the morning shift until 12:00 is not yet reached", () => {
-    expect(currentShift(dhaka(5, 59))).toBe("morning");
+  it("opens the morning shift at exactly 09:00 Dhaka", () => {
+    expect(currentShift(dhaka(3, 0))).toBe("morning");
   });
 
-  it("closes exactly at noon", () => {
-    expect(currentShift(dhaka(6, 0))).toBe("off");
+  it("keeps the morning shift until 13:00 is not yet reached", () => {
+    expect(currentShift(dhaka(6, 59))).toBe("morning");
+  });
+
+  it("closes exactly at 13:00", () => {
+    expect(currentShift(dhaka(7, 0))).toBe("off");
   });
 
   it("stays closed through the afternoon", () => {
-    expect(currentShift(dhaka(10, 0))).toBe("off");
+    expect(currentShift(dhaka(11, 0))).toBe("off");
   });
 
-  it("opens the night shift at exactly 19:30 Dhaka", () => {
-    expect(currentShift(dhaka(13, 30))).toBe("night");
+  it("stays closed just before the night shift opens", () => {
+    // 12:29 UTC is 18:29 in Dhaka.
+    expect(currentShift(dhaka(12, 29))).toBe("off");
   });
 
-  it("keeps the night shift until midnight is not yet reached", () => {
-    expect(currentShift(dhaka(17, 59))).toBe("night");
+  it("opens the night shift at exactly 18:30 Dhaka", () => {
+    expect(currentShift(dhaka(12, 30))).toBe("night");
   });
 
-  it("closes at midnight and never spills into the next day", () => {
+  it("keeps the night shift until 22:00 is not yet reached", () => {
+    expect(currentShift(dhaka(15, 59))).toBe("night");
+  });
+
+  it("closes at 22:00 and never spills into the next day", () => {
+    expect(currentShift(dhaka(16, 0))).toBe("off");
     expect(currentShift(dhaka(18, 0))).toBe("off");
   });
 
   it("uses the studio timezone rather than the device's", () => {
-    // 02:00 UTC is 08:00 in Dhaka: on a UTC machine the device clock says the
+    // 03:00 UTC is 09:00 in Dhaka: on a UTC machine the device clock says the
     // room is closed, so this only passes when the shift is resolved in Dhaka.
-    expect(currentShift(dhaka(2, 0))).not.toBe("off");
+    expect(currentShift(dhaka(3, 0))).not.toBe("off");
   });
 });
 
@@ -67,9 +78,9 @@ describe("shiftMinutes", () => {
 });
 
 describe("SUPPORT_SHIFTS", () => {
-  it("covers the windows the owner confirmed", () => {
-    expect(SUPPORT_SHIFTS.morning).toEqual({ start: 8 * 60, end: 12 * 60 });
-    expect(SUPPORT_SHIFTS.night).toEqual({ start: 19 * 60 + 30, end: 24 * 60 });
+  it("covers the windows the owner announced on 2026-11-01", () => {
+    expect(SUPPORT_SHIFTS.morning).toEqual({ start: 9 * 60, end: 13 * 60 });
+    expect(SUPPORT_SHIFTS.night).toEqual({ start: 18 * 60 + 30, end: 22 * 60 });
   });
 });
 
@@ -83,12 +94,12 @@ describe("Bengali schedule copy", () => {  it("converts digits to Bengali numera
     // copy whichever app they open. `scripts/check-live-support-sync.ts`
     // compares the same words in the two source files.
     expect(supportScheduleBn).toBe(
-      "সকাল ৮ টা থেকে দুপুর ১২ টা এবং সন্ধ্যা ৭:৩০ থেকে রাত ১২ টা",
+      "সকাল ৯ টা থেকে দুপুর ১ টা এবং সন্ধ্যা ৬:৩০ থেকে রাত ১০ টা",
     );
   });
 
   it("adds up the daily hours", () => {
-    expect(supportHoursBn()).toBe("৮ ঘণ্টা ৩০ মিনিট");
+    expect(supportHoursBn()).toBe("৭ ঘণ্টা ৩০ মিনিট");
   });
 });
 
@@ -106,10 +117,10 @@ describe("dayKeyInDhaka", () => {
   });
 
   it("keeps the two shifts of one Dhaka day on the same key", () => {
-    // 08:00 and 20:00 Dhaka are both part of the 18th, so a student who joins
+    // 09:30 and 19:00 Dhaka are both part of the 18th, so a student who joins
     // twice — morning and night — collides on the same idempotency key.
-    expect(dayKeyInDhaka(dhaka(2, 0))).toBe("2026-10-18");
-    expect(dayKeyInDhaka(dhaka(14, 0))).toBe("2026-10-18");
+    expect(dayKeyInDhaka(dhaka(3, 30))).toBe("2026-10-18");
+    expect(dayKeyInDhaka(dhaka(13, 0))).toBe("2026-10-18");
   });
 });
 

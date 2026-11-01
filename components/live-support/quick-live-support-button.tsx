@@ -39,6 +39,11 @@ const errorClass =
  * button only decides what is clickable. The room URL never reaches this
  * component — the action re-checks the shift, the role and the budget and only
  * then returns the URL, which `ExternalActionForm` opens in a new tab.
+ *
+ * The 2026-11-01 announcement asks students to submit a request *before* live
+ * support. The request page is still the supported path; this button is kept as
+ * an escape hatch, and its hint nudges the request-first journey instead of
+ * telling students they need nothing.
  */
 export function QuickLiveSupportButton({
   shift,
@@ -69,7 +74,7 @@ export function QuickLiveSupportButton({
         fields={{ csrfToken }}
         hint={
           configured && isOpen
-            ? "Opens in a new tab, so this list stays open. No request is needed."
+            ? "Opens in a new tab, so this list stays open. Tip: submit an issue first so a mentor can follow your case."
             : undefined
         }
         hintClassName="text-right"

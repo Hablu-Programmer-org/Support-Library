@@ -132,7 +132,11 @@ export default async function IssuesPage({
             </div>
           )
         }
-        description="Find support issues by problem, tag, status or keyword."
+        description={
+          canManage
+            ? "Find support issues by problem, tag, status or keyword."
+            : "Search first — requests can be submitted 24/7, live support runs only during a shift."
+        }
         title={canManage ? "Support Issues" : "Student Support Library"}
       />
 

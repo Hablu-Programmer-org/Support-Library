@@ -203,6 +203,11 @@ export async function joinLiveSupportAction(
  * student is **not** in the staff queue ("Waiting today") and has no reference to
  * read out. Anything that changes that would have to make a case, i.e. become
  * the request-backed action.
+ *
+ * The owner's announcement (2026-11-01) makes a submitted request a prerequisite
+ * in the guidance, and the request page is the documented path. This shortcut is
+ * kept deliberately (owner decision) as an escape hatch, so it still enters the
+ * room without a case; its UI hint now nudges students to submit first.
  */
 export async function joinLiveSupportQuickAction(
   _prevState: ExternalRedirectState,

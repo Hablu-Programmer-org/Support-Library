@@ -76,7 +76,20 @@ export default async function NewIssuePage() {
                 </li>
                 <li>One problem per request keeps it easy to track.</li>
                 <li>
-                  Replies are not available here; the team answers you by email.
+                  Add a screenshot, the exact error message and what you already
+                  tried — that is what lets the team solve it quickly.
+                </li>
+                <li>
+                  Live support needs this request first: the mentor opens your
+                  case from the reference on the request page.
+                </li>
+                <li>
+                  Requests can be submitted 24/7; live support runs only during a
+                  support shift.
+                </li>
+                <li>
+                  The team replies by email, and every answer also appears on the
+                  request page — check it for updates.
                 </li>
               </ul>
             </section>

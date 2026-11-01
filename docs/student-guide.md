@@ -277,8 +277,11 @@ Twice a day the support team opens a live support room:
 
 | Shift | Time (Bangladesh time) |
 | --- | --- |
-| `Morning shift` | 8:00 AM to 12:00 PM |
-| `Night shift` | 7:30 PM to 12:00 AM |
+| `Morning shift` | 9:00 AM to 1:00 PM |
+| `Night shift` | 6:30 PM to 10:00 PM |
+
+Requests themselves can be submitted at any time — the Support Library is open
+24/7. Only the live room follows the shift table above.
 
 The flow:
 
@@ -417,8 +420,8 @@ Unexpected error:
 | A link opens a new tab. | Video links are external resources and are opened separately. |
 | I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
 | My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
-| The live support join button is disabled. | Either support is closed (come back 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
-| The live support panel offers no join button. | Either support is closed (come back 8:00 AM-12:00 PM or 7:30 PM-12:00 AM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
+| The live support join button is disabled. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
+| The live support panel offers no join button. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
 | I cannot find my request again. | Open **My requests** in the topbar; each row opens the request and its live support panel. |
 
 ## 18. Quick Reference

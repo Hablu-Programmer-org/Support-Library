@@ -17,10 +17,16 @@ const MINUTES_IN_DAY = 24 * 60;
 /** The timezone the support shifts are defined in. */
 export const SUPPORT_TIME_ZONE = "Asia/Dhaka";
 
-/** Shift windows as minutes since local midnight in `SUPPORT_TIME_ZONE`. */
+/**
+ * Shift windows as minutes since local midnight in `SUPPORT_TIME_ZONE`.
+ *
+ * Owner announcement (2026-11-01): morning 09:00–13:00, night 18:30–22:00.
+ * The previous 08:00–12:00 / 19:30–24:00 pair is retired; the LMS copy in
+ * `frontend/src/lib/config/support.ts` carries the same numbers.
+ */
 export const SUPPORT_SHIFTS = {
-  morning: { start: 8 * 60, end: 12 * 60 },
-  night: { start: 19 * 60 + 30, end: MINUTES_IN_DAY },
+  morning: { start: 9 * 60, end: 13 * 60 },
+  night: { start: 18 * 60 + 30, end: 22 * 60 },
 } as const;
 
 export type SupportShift = keyof typeof SUPPORT_SHIFTS;
@@ -108,7 +114,7 @@ const formatTime = (minutes: number) => {
   return toBnDigits(minute ? `${hour}:${String(minute).padStart(2, "0")}` : hour);
 };
 
-/** "সকাল ৮ টা থেকে দুপুর ১২ টা এবং সন্ধ্যা ৭:৩০ থেকে রাত ১২ টা" */
+/** "সকাল ৯ টা থেকে দুপুর ১ টা এবং সন্ধ্যা ৬:৩০ থেকে রাত ১০ টা" */
 export const supportScheduleBn = `সকাল ${formatTime(SUPPORT_SHIFTS.morning.start)} টা থেকে দুপুর ${formatTime(SUPPORT_SHIFTS.morning.end)} টা এবং সন্ধ্যা ${formatTime(SUPPORT_SHIFTS.night.start)} থেকে রাত ${formatTime(SUPPORT_SHIFTS.night.end)} টা`;
 
 /** Total daily support duration, e.g. "৮ ঘণ্টা ৩০ মিনিট". */
@@ -146,7 +152,7 @@ export function shiftMinutes(date: Date): number {
 /**
  * Which shift an instant falls in, in the studio's timezone.
  *
- * The window is half-open — `start <= t < end` — so exactly 12:00 counts as
+ * The window is half-open — `start <= t < end` — so exactly 13:00 counts as
  * off-shift, not as the morning session still running.
  */
 export function currentShift(date: Date): SupportPhase {
