@@ -1,3 +1,5 @@
+import { parseRichText } from "@/lib/rich-text";
+
 type VideoLink = {
   title: string;
   url: string;
@@ -30,11 +32,17 @@ export function LinkList({ videoLinks }: { videoLinks: VideoLink[] }) {
               rel="noopener noreferrer"
               className="text-sm font-medium text-primary hover:underline"
             >
-              {link.title}
+              {/* The title is already a link, so link syntax stays literal here. */}
+              {parseRichText(link.title, { links: false })}
             </a>
             <div className="text-xs text-slate-500 dark:text-slate-400">
               {link.timestamp ? `${link.timestamp} · ` : ""}{hostLabel(link.url)}
-              {link.summary ? ` · ${link.summary}` : ""}
+              {link.summary ? (
+                <>
+                  {" · "}
+                  {parseRichText(link.summary)}
+                </>
+              ) : null}
             </div>
           </li>
         ))}

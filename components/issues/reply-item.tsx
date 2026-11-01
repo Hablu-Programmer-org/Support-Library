@@ -138,7 +138,7 @@ export function ReplyItem({
               className={nativeTextareaClass}
             />
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-              Use **text** for bold.
+              Use **text** for bold and [label](https://example.com) for a link.
             </span>
           </label>
           <label className={nativeLabelClass}>

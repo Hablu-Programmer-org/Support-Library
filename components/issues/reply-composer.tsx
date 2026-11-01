@@ -91,7 +91,7 @@ export function ReplyComposer({
           rows={5}
           required
           maxLength={20_000}
-          description="Use **text** for bold."
+          description="Use **text** for bold and [label](https://example.com) for a link."
           defaultValue={state.values?.body ?? ""}
         />
         <details className="border-t border-slate-200 pt-3 dark:border-slate-800">
