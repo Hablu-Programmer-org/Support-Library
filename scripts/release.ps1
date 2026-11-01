@@ -98,6 +98,9 @@ try {
         "AUTH_GOOGLE_SECRET=release-only-placeholder"
         "NEXT_PUBLIC_APP_URL=https://support.example.com"
         "NEXT_PUBLIC_LMS_URL=https://lms.example.com"
+        "LIVE_SUPPORT_PLATFORM=Google Meet"
+        "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/moe-ooac-amo"
+        "LIVE_SUPPORT_MEETING_ID=moe-ooac-amo"
         "NODE_ENV=production"
     ) | Set-Content -LiteralPath $ComposeEnv -Encoding ASCII
 
@@ -112,7 +115,9 @@ try {
     Invoke-Gate "Runtime image build" { docker build --target runner --build-arg "DEPLOYMENT_VERSION=$(git rev-parse HEAD)" --tag $Image . }
     Invoke-Gate "Operations image build" { docker build --target ops --tag "support-library-ops-release:$NormalizedVersion" . }
     Invoke-Gate "Runtime container smoke" {
-        docker run --rm --detach --name "support-library-release-$PID" --publish 127.0.0.1:12002:12000 --env NODE_ENV=production --env "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026" $Image
+        # NODE_ENV=production makes the container validate the live support room
+        # at boot, so the room has to be passed here too.
+        docker run --rm --detach --name "support-library-release-$PID" --publish 127.0.0.1:12002:12000 --env NODE_ENV=production --env "AUTH_SECRET=Release-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026" --env "LIVE_SUPPORT_PLATFORM=Google Meet" --env "LIVE_SUPPORT_JOIN_URL=https://meet.google.com/moe-ooac-amo" --env "LIVE_SUPPORT_MEETING_ID=moe-ooac-amo" $Image
     }
     try {
         $Healthy = $false

@@ -7,17 +7,24 @@ vi.mock("@/actions/live-support", () => ({
 
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
 
+/**
+ * The live room is Google Meet: no passcode, and the manual-entry row is the
+ * meeting code. The room URL itself must never reach the markup.
+ */
 const baseProps = {
   issueId: "66f1a2b3c4d5e6f7a8b9c0d1",
-  platform: "Zoom",
-  meetingId: "880 2727 5113",
-  passcode: "YNL4me",
+  platform: "Google Meet",
+  meetingId: "moe-ooac-amo",
+  passcode: null,
+  configured: true,
   csrfToken: "csrf-token",
   status: "OPEN" as const,
 };
 
 const joinButton = () =>
-  screen.getByRole("button", { name: "Live Support Center (Zoom)" }) as HTMLButtonElement;
+  screen.getByRole("button", {
+    name: "Live Support Center (Google Meet)",
+  }) as HTMLButtonElement;
 
 describe("LiveSupportPanel", () => {
   it("submits this page's request with a CSRF token", () => {
@@ -34,24 +41,27 @@ describe("LiveSupportPanel", () => {
     expect(container.querySelector("select")).toBeNull();
 
     expect(joinButton().disabled).toBe(false);
-    expect(screen.getByText("Meeting ID")).not.toBeNull();
+    expect(joinButton().textContent).toBe("Join Google Meet");
+    expect(screen.getByText("Meeting code")).not.toBeNull();
+    // Google Meet has no passcode row at all.
+    expect(screen.queryByText("Passcode")).toBeNull();
   });
 
   it("never renders the meeting link itself", () => {
     const { container } = render(<LiveSupportPanel {...baseProps} shift="night" />);
 
-    expect(container.innerHTML.toLowerCase()).not.toContain("zoom.us");
+    expect(container.innerHTML.toLowerCase()).not.toContain("meet.google.com");
     expect(container.querySelector('a[href^="https://"]')).toBeNull();
   });
 
-  it("blocks the join outside a support slot and hides the dial-in details", () => {
+  it("blocks the join outside a support slot and hides the meeting code", () => {
     render(<LiveSupportPanel {...baseProps} shift="off" />);
 
     expect(
       screen.getByText("Live support is closed right now. Please join during a support slot."),
     ).not.toBeNull();
     expect(joinButton().disabled).toBe(true);
-    expect(screen.queryByText("Meeting ID")).toBeNull();
+    expect(screen.queryByText("Meeting code")).toBeNull();
     expect(screen.queryByText("Passcode")).toBeNull();
   });
 
@@ -61,8 +71,38 @@ describe("LiveSupportPanel", () => {
     expect(
       screen.getByText(/This request is closed, so it can no longer be taken to the room/),
     ).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Live Support Center (Zoom)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Live Support Center (Google Meet)" })).toBeNull();
     // A closed request also gets no dial-in details: the room is not for it.
-    expect(screen.queryByText("Meeting ID")).toBeNull();
+    expect(screen.queryByText("Meeting code")).toBeNull();
+  });
+
+  it("fails closed when the deployment has no room configured", () => {
+    const { container } = render(
+      <LiveSupportPanel {...baseProps} configured={false} shift="morning" />,
+    );
+
+    expect(
+      screen.getByText("The support room is not configured for this deployment yet."),
+    ).not.toBeNull();
+    expect(container.querySelector("form")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Live Support Center (Google Meet)" })).toBeNull();
+  });
+
+  it("still renders a passcode for a platform that has one", () => {
+    render(
+      <LiveSupportPanel
+        {...baseProps}
+        meetingId="880 4127 4100"
+        passcode="abc123"
+        platform="Zoom"
+        shift="morning"
+      />,
+    );
+
+    expect(screen.getByText("Meeting ID")).not.toBeNull();
+    expect(screen.getByText("Passcode")).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Live Support Center (Zoom)" }).textContent,
+    ).toBe("Join Zoom");
   });
 });

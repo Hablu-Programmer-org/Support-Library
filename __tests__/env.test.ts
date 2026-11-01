@@ -66,6 +66,10 @@ const productionVars = {
   AUTH_URL: "https://support.example.com",
   AUTH_TRUST_HOST: "true",
   TRUSTED_PROXY_HOPS: "1",
+  // Production refuses to boot without the room, so the valid baseline carries
+  // one; the "requires the room" case below deletes it on purpose.
+  LIVE_SUPPORT_PLATFORM: "Google Meet",
+  LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
 };
 
 const studentEmailVars = {
@@ -114,7 +118,12 @@ describe("validateEnv", () => {
   });
 
   it("rejects missing production secrets in production", () => {
-    setEnv({ NODE_ENV: "production", ...studentEmailVars });
+    // The room is supplied so the failure is the missing secrets, not the room.
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+    });
 
     expect(() => validateEnv()).toThrow(/Invalid production environment/i);
   });
@@ -307,10 +316,9 @@ describe("validateEnv", () => {
     setEnv({
       NODE_ENV: "development",
       ...studentEmailVars,
-      LIVE_SUPPORT_JOIN_URL: "https://zoom.us/j/123456789",
-      LIVE_SUPPORT_PLATFORM: "Zoom",
-      LIVE_SUPPORT_MEETING_ID: "123 456 789",
-      LIVE_SUPPORT_PASSCODE: "abc123",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_PLATFORM: "Google Meet",
+      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
     });
 
     expect(() => validateEnv()).not.toThrow();
@@ -324,5 +332,36 @@ describe("validateEnv", () => {
     });
 
     expect(() => validateEnv()).toThrow(/Invalid live support environment/i);
+  });
+
+  it("requires the room in production", () => {
+    setEnv({ NODE_ENV: "production", ...studentEmailVars, ...productionVars });
+    delete process.env.LIVE_SUPPORT_JOIN_URL;
+
+    expect(() => validateEnv()).toThrow(/LIVE_SUPPORT_JOIN_URL/);
+  });
+
+  it("accepts a Google Meet room in production", () => {
+    setEnv({
+      NODE_ENV: "production",
+      ...studentEmailVars,
+      ...productionVars,
+      LIVE_SUPPORT_PLATFORM: "Google Meet",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
+    });
+
+    expect(() => validateEnv()).not.toThrow();
+  });
+
+  it("rejects a room whose host does not match the platform", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      LIVE_SUPPORT_PLATFORM: "Google Meet",
+      LIVE_SUPPORT_JOIN_URL: "https://us05web.zoom.us/j/88041274100",
+    });
+
+    expect(() => validateEnv()).toThrow(/meet\.google\.com/);
   });
 });

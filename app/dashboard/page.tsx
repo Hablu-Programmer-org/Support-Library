@@ -9,6 +9,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { getDashboardStats, getRecentUnresolvedIssues, getTopTags } from "@/lib/services/analytics";
 import { requireSession } from "@/lib/auth-guard";
 import { dayKeyInDhaka, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import { canMutate } from "@/lib/roles";
 import { listStudentRequestsAwaitingStaff } from "@/lib/services/issues";
 import { countStillWaiting, listLiveSupportQueue } from "@/lib/services/live-support-joins";
@@ -95,7 +96,7 @@ export default async function DashboardPage() {
               <li key={issue.id}>
                 <Link
                   className="flex flex-col gap-2 py-3 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-slate-800/60"
-                  href={`/dashboard/issues/${issue.id}`}
+                  href={buildIssueDetailHref(issue.id, "/dashboard")}
                 >
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-cyan-700 dark:text-cyan-300">{issue.title}</span>
@@ -122,7 +123,7 @@ export default async function DashboardPage() {
                 <Link
                   key={item.id}
                   className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition hover:border-cyan-500 dark:border-slate-800"
-                  href={`/dashboard/issues/${item.id}`}
+                  href={buildIssueDetailHref(item.id, "/dashboard")}
                 >
                   <span className="font-medium text-cyan-600 dark:text-cyan-400">{item.title}</span>
                   <StatusBadge status={item.status} />

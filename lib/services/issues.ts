@@ -105,6 +105,12 @@ export type IssueListParams = SupportIssueFilter & {
   limit?: number;
 };
 
+/**
+ * Hard ceiling on pagination. Matches `MAX_PAGE` in `lib/issue-list-params.ts`;
+ * a bigger page is a typo or an attempt to force a collection-wide `skip`.
+ */
+const MAX_ISSUE_PAGE = 10_000;
+
 const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssueListItem => ({
   id: String(item._id),
   studentName: String(item.studentName ?? ""),
@@ -691,7 +697,13 @@ export async function listIssues(
 ) {
   await dbConnect();
 
-  const page = Math.max(1, params.page ?? 1);
+  // `?page=abc` used to reach the driver as NaN (`Math.max(1, NaN)` is NaN) and
+  // failed the query; a huge page made `skip` scan the whole collection. Both are
+  // caller-controlled, so normalize here instead of trusting the page component.
+  const requestedPage = Number(params.page);
+  const page = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, Math.trunc(requestedPage)), MAX_ISSUE_PAGE)
+    : 1;
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
   const filter = buildIssueFilter(params, options.publicOnly === true);
   const skip = (page - 1) * limit;

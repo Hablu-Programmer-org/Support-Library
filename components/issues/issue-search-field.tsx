@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { ChevronDownIcon, SearchIcon } from "@/components/icons";
 import { nativeFieldClass } from "@/lib/config/fields";
-import type { IssueFilterDefaults } from "@/components/issues/issue-filter-panel";
+import { buildIssueListHref, type IssueFilterDefaults } from "@/lib/issue-list-params";
 
 const DEBOUNCE_MS = 400;
 
@@ -44,25 +44,15 @@ export function IssueSearchField({
     if (next === lastApplied.current) return;
 
     const timer = window.setTimeout(() => {
-      const params = new URLSearchParams();
-      if (next) params.set("q", next);
-      if (defaults.tag) params.set("tag", defaults.tag);
-      if (defaults.status) params.set("status", defaults.status);
-      if (defaults.courseSlug) params.set("courseSlug", defaults.courseSlug);
-      if (defaults.batchNo) params.set("batchNo", defaults.batchNo);
-      if (defaults.mentorId) params.set("mentorId", defaults.mentorId);
-      if (defaults.dateFrom) params.set("from", defaults.dateFrom);
-      if (defaults.dateTo) params.set("to", defaults.dateTo);
-      if (defaults.sort !== "newest") params.set("sort", defaults.sort);
+      // A search always restarts at page 1: the old page number would point at a
+      // different result set. Everything else in the URL is kept.
+      const href = buildIssueListHref({ ...defaults, q: next, page: 1 });
 
-      const query = params.toString();
       lastApplied.current = next;
       // `replace`, not `push`: a search should not fill the back button with one
-      // history entry per pause. Page number is dropped on purpose (back to page 1).
+      // history entry per pause.
       startTransition(() => {
-        router.replace(query ? `/dashboard/issues?${query}` : "/dashboard/issues", {
-          scroll: false,
-        });
+        router.replace(href, { scroll: false });
       });
     }, DEBOUNCE_MS);
 

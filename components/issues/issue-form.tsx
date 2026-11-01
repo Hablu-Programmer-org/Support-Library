@@ -65,6 +65,8 @@ type IssueFormProps = {
   };
   minimal?: boolean;
   csrfToken?: string;
+  /** List URL to return to after an edit is saved (keeps filter + page). */
+  returnTo?: string;
 };
 
 type FormData = {
@@ -248,7 +250,12 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
   };
 }
 
-export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: IssueFormProps) {
+export function IssueForm({
+  supportIssue,
+  minimal = false,
+  csrfToken = "",
+  returnTo,
+}: IssueFormProps) {
   const action = supportIssue
     ? updateIssueAction.bind(null, supportIssue.id)
     : createIssueAction;
@@ -316,6 +323,7 @@ export function IssueForm({ supportIssue, minimal = false, csrfToken = "" }: Iss
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
       {supportIssue && <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt ?? ""} />}
       <input type="hidden" name="csrfToken" value={csrfToken} id="csrfToken" />
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       {state.fieldErrors?._form?.[0] && (
         <p
           className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-300"

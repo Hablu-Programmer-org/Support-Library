@@ -165,6 +165,7 @@ The list is paginated:
 - Up to 20 issues are shown per page.
 - The footer shows `Page X of Y · Total N`.
 - `Previous` and `Next` links keep the current search/filter settings.
+- Opening an issue does not lose your place: the issue page has a `Back to results` link that returns to the same page of results. An issue opened directly from a link or bookmark shows `Back to Issues` instead.
 
 If no issue matches your filters, the page shows `No issues found.`
 

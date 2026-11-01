@@ -14,8 +14,6 @@ export const AUDIT_ACTIONS = [
   "ATTACHMENT_DELETE",
   "OAUTH_CALLBACK",
   "ISSUE_LIVE_SUPPORT_JOIN",
-  // TEMPORARY quick join (no request involved). Remove with the shortcut.
-  "LIVE_SUPPORT_QUICK_JOIN",
 ] as const;
 
 export const AUDIT_RESULTS = ["SUCCEEDED", "DENIED"] as const;
@@ -31,8 +29,6 @@ const auditEventSchema = new mongoose.Schema(
         "SupportReply",
         "SupportAttachment",
         "OAuthCallback",
-        // TEMPORARY quick join (no request involved). Remove with the shortcut.
-        "LiveSupportQuickJoin",
       ],
       required: true,
     },

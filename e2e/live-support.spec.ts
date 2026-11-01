@@ -75,7 +75,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await expect(page.getByRole("heading", { name: "Live support" }).first()).toBeVisible();
 
     // The room URL is not part of the document; the panel posts to an action.
-    expect(await page.content()).not.toContain("zoom.us");
+    expect(await page.content()).not.toContain("meet.google.com");
   });
 
   test("finds the request again in My requests", async ({ page }) => {
@@ -163,7 +163,9 @@ test.describe("STAFF: they run the room", () => {
     await expect(page.getByRole("heading", { name: "Live support" })).toBeVisible();
     await expect(page.getByText(/You are joining as staff/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Waiting students" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Live Support Center (Zoom)" })).toHaveCount(1);
+    await expect(
+      page.getByRole("button", { name: "Live Support Center (Google Meet)" }),
+    ).toHaveCount(1);
   });
 
   test("sees the student request without the student's join panel", async ({ page }) => {

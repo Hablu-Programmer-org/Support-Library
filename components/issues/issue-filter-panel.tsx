@@ -5,6 +5,11 @@ import { useState, useEffect } from "react";
 
 import { IssueSearchField } from "@/components/issues/issue-search-field";
 import { nativeFieldClass, nativeLabelClass, nativeSelectClass } from "@/lib/config/fields";
+import {
+  ISSUE_SORTS,
+  type IssueFilterDefaults,
+  type IssueSort,
+} from "@/lib/issue-list-params";
 
 const statusLabels: Record<string, string> = {
   OPEN: "Open",
@@ -14,25 +19,10 @@ const statusLabels: Record<string, string> = {
   ARCHIVED: "Archived",
 };
 
-const ISSUE_SORTS = ["newest", "oldest", "priority"] as const;
-export type IssueSort = (typeof ISSUE_SORTS)[number];
-
 const sortLabels: Record<IssueSort, string> = {
   newest: "Newest first",
   oldest: "Oldest first",
   priority: "Priority",
-};
-
-export type IssueFilterDefaults = {
-  q: string;
-  tag: string;
-  status: string;
-  courseSlug: string;
-  batchNo: string;
-  mentorId: string;
-  dateFrom: string;
-  dateTo: string;
-  sort: IssueSort;
 };
 
 type IssueFilterPanelProps = {
@@ -59,8 +49,8 @@ function FilterFields({
     defaults.courseSlug,
     defaults.batchNo,
     defaults.mentorId,
-    defaults.dateFrom,
-    defaults.dateTo,
+    defaults.from,
+    defaults.to,
   ].filter(Boolean).length;
 
   return (
@@ -136,12 +126,12 @@ function FilterFields({
 
         <label className={nativeLabelClass}>
           From date
-          <input className={nativeFieldClass} defaultValue={defaults.dateFrom} name="from" type="date" />
+          <input className={nativeFieldClass} defaultValue={defaults.from} name="from" type="date" />
         </label>
 
         <label className={nativeLabelClass}>
           To date
-          <input className={nativeFieldClass} defaultValue={defaults.dateTo} name="to" type="date" />
+          <input className={nativeFieldClass} defaultValue={defaults.to} name="to" type="date" />
         </label>
       </div>
 
@@ -202,8 +192,8 @@ export function IssueFilterPanel({
     defaults.courseSlug,
     defaults.batchNo,
     defaults.mentorId,
-    defaults.dateFrom,
-    defaults.dateTo,
+    defaults.from,
+    defaults.to,
   ].filter(Boolean).length;
   const [open, setOpen] = useState(activeCount > 0 || defaults.sort !== "newest");
 

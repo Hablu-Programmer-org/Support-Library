@@ -6,10 +6,13 @@
  * original implementation, and this app keeps its own copy so the Support
  * Library can offer the same join experience without a cross-app dependency.
  *
- * The Zoom room itself is configured **once**, here. The LMS only links to
+ * The room itself is configured **once**, here, through the `LIVE_SUPPORT_*`
+ * environment variables — and it has no source default, because on Google Meet
+ * the join URL is the key to the room. The LMS only links to
  * `/dashboard/support`, because a student must have an open request before the
- * room opens; its public bundle must never carry the join URL, meeting ID or
- * passcode again. That inversion is asserted below.
+ * room opens; its public bundle must never carry the join URL, meeting code or
+ * passcode again. That inversion is asserted below. Whether the URL and the
+ * platform name agree is enforced at boot by `lib/env.ts`.
  *
  * Nothing can compare the apps at compile time — they are three separate git
  * repositories, so neither repo's CI can see the other. This script is the
@@ -107,6 +110,12 @@ const stringField = (source: string, field: string): string | null => {
   return match ? match[1] : null;
 };
 
+/** First `const NAME = "..."` value in a source file. */
+const constantString = (source: string, name: string): string | null => {
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*"([^"]*)"`));
+  return match ? match[1] : null;
+};
+
 /**
  * Whether a key is present at all, whatever its value syntax.
  *
@@ -186,9 +195,9 @@ function compareScheduleCopy(frontendSource: string) {
  */
 function compareRoom() {
   const frontendSource = readFrontend("src/lib/config/site.ts");
-  const localSource = readLocal("lib/live-support.ts");
+  const localSource = readLocal("lib/config/live-support.ts");
   if (!frontendSource || !localSource) {
-    NOTES.push("Could not read both meeting configs; compare the Zoom room manually.");
+    NOTES.push("Could not read both meeting configs; compare the room manually.");
     return;
   }
 
@@ -207,7 +216,7 @@ function compareRoom() {
   }
 
   const frontendPlatform = stringField(frontendBlock, "platform");
-  const localPlatform = stringField(localSource, "platform");
+  const localPlatform = constantString(localSource, "LIVE_SUPPORT_PLATFORM");
   if (!frontendPlatform || !localPlatform) {
     NOTES.push('Could not read "platform" from both configs; compare it manually.');
   } else if (frontendPlatform !== localPlatform) {

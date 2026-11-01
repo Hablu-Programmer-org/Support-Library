@@ -24,6 +24,11 @@
 - Reply edit/delete: inline edit UI plus author-or-ADMIN guard in the service layer
 - Reply-body search: `searchText` is rebuilt from case fields + every non-deleted reply (no stale/dropped slugs)
 - Cases list filters: course, batch, mentor, date range, preserving filters across pagination
+- List context round-trip: a case opened from a filtered page carries `returnTo`
+  (validated + rebuilt in `lib/issue-list-params.ts`), so `Back to results` and
+  every redirecting action (reply, edit, publish, archive) return to the same
+  filter and page; out-of-range/junk `page` values are normalized instead of
+  failing the query
 - Analytics: course and batch breakdowns, mentor activity table, weekly case count, ADMIN/MENTOR-only access
 - Create-solution-from-case: prefilled draft from the case and its latest reply, INTERNAL by default
 - `bench:search` benchmark script and the recorded findings below

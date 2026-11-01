@@ -14,13 +14,21 @@ interface PublishFormProps {
   reviewedAt: string;
   isPublished: boolean;
   csrfToken?: string;
+  /** List URL to return to after publishing / unpublishing. */
+  returnTo?: string;
 }
 
 const initialState: FormState = {
   fieldErrors: {},
 };
 
-export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken = "" }: PublishFormProps) {
+export function PublishIssueForm({
+  issueId,
+  reviewedAt,
+  isPublished,
+  csrfToken = "",
+  returnTo,
+}: PublishFormProps) {
   const publishAction = publishIssueAction.bind(null, issueId);
   const [state, formAction] = useActionState(publishAction, initialState);
   const [unpublishState, unpublishFormAction] = useActionState(
@@ -34,6 +42,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken =
       <form action={unpublishFormAction} className="mt-3">
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="expectedUpdatedAt" value={reviewedAt} />
+        {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
         <PendingSubmitButton
           label="Remove from library"
           pendingLabel="Removing..."
@@ -52,6 +61,7 @@ export function PublishIssueForm({ issueId, reviewedAt, isPublished, csrfToken =
     <form action={formAction} className="mt-3 space-y-3">
       <input type="hidden" name="reviewedAt" value={reviewedAt} />
       <input type="hidden" name="csrfToken" value={csrfToken} />
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       <label className="flex items-start gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
         <input
           type="checkbox"

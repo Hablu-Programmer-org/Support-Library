@@ -29,15 +29,47 @@ export type SupportShift = keyof typeof SUPPORT_SHIFTS;
 export type SupportPhase = SupportShift | "off";
 
 /**
+ * The platform the room runs on, shown in copy and button labels.
+ *
+ * This is the only live support value with a source default: it is not a secret.
+ * The room itself (join URL, meeting code, passcode) has **no** default, so a
+ * leaked room can be rotated by changing the environment and no credential is
+ * ever committed. `scripts/check-live-support-sync.ts` compares this constant
+ * with the LMS frontend's `siteConfig.support.platform`.
+ */
+export const LIVE_SUPPORT_PLATFORM = "Google Meet";
+
+/**
  * Where and how to join. Resolved server-side from the environment so the join
  * URL never reaches a browser that has no session (see `lib/live-support.ts`).
+ *
+ * Google Meet has no passcode: an absent value is `null`, not an empty string,
+ * so the UI can drop the row instead of rendering an empty one.
  */
 export type LiveSupportConfig = {
   platform: string;
-  joinUrl: string;
-  meetingId: string;
-  passcode: string;
+  /** The room itself. `null` when the deployment has not configured it. */
+  joinUrl: string | null;
+  /** Shown for manual entry; part of the join URL, so also server-side only. */
+  meetingId: string | null;
+  /** Zoom-style only. `null` for platforms that have no passcode. */
+  passcode: string | null;
 };
+
+/** Google Meet needs a "meeting code"; Zoom calls the same thing a meeting ID. */
+export const isGoogleMeet = (platform: string) => /meet/i.test(platform);
+
+/**
+ * "Join Google Meet" / "Join Zoom".
+ *
+ * Deliberately not `Join ${platform} Meeting`: that renders "Join Google Meet
+ * Meeting" on Meet, and the platform name reads naturally as the product.
+ */
+export const joinLabel = (platform: string) => `Join ${platform}`;
+
+/** Label for the manual-entry row, matched to the platform's own vocabulary. */
+export const meetingCodeLabel = (platform: string) =>
+  isGoogleMeet(platform) ? "Meeting code" : "Meeting ID";
 
 /** The sequence that numbers support requests. */
 export const CASE_REF_COUNTER_ID = "support-issue";

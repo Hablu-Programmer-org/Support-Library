@@ -2,6 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
+import { LIVE_SUPPORT_PLATFORM } from "@/lib/config/live-support";
+
 const mongoUriSchema = z
   .string()
   .min(1)
@@ -206,6 +208,7 @@ const configurableUrlSchema = () =>
   z
     .string()
     .trim()
+    .max(2048, { message: "must be at most 2048 characters" })
     .refine((value) => {
       try {
         const url = new URL(value);
@@ -244,10 +247,14 @@ const crossAppEnvSchema = z.object(crossAppEnvShape);
 /**
  * Live support meeting details.
  *
- * Optional everywhere: unset falls back to the standing Zoom room. An invalid
- * join URL is rejected at boot rather than rendering a button that points at
- * nothing. The values are server-side only and are rendered to signed-in
- * users, so they must never be logged.
+ * The room has no source default: on Google Meet the join URL *is* the key, and
+ * a committed default would both leak the room and make every environment
+ * advertise it. Production therefore requires `LIVE_SUPPORT_JOIN_URL`; other
+ * environments may omit it and the UI renders a closed panel.
+ *
+ * The platform and the join URL must agree, so a half-finished change (label
+ * updated, URL not) fails at boot instead of opening the wrong room. Values are
+ * server-side only and are rendered to signed-in users, so never log them.
  */
 const liveSupportEnvShape = {
   LIVE_SUPPORT_PLATFORM: z.string().trim().max(40).optional(),
@@ -256,7 +263,49 @@ const liveSupportEnvShape = {
   LIVE_SUPPORT_PASSCODE: z.string().trim().max(40).optional(),
 };
 
-const liveSupportEnvSchema = z.object(liveSupportEnvShape);
+const liveSupportEnvSchema = z
+  .object(liveSupportEnvShape)
+  .superRefine((value, context) => {
+    const rawUrl = (value.LIVE_SUPPORT_JOIN_URL ?? "").trim();
+
+    if (!rawUrl) {
+      if (process.env.NODE_ENV === "production") {
+        context.addIssue({
+          code: "custom",
+          path: ["LIVE_SUPPORT_JOIN_URL"],
+          message:
+            "is required in production — the live support room has no source default, so set it as an environment variable",
+        });
+      }
+      return;
+    }
+
+    let host: string;
+    try {
+      host = new URL(rawUrl).hostname.toLowerCase();
+    } catch {
+      // `configurableUrlSchema` already reports the malformed value.
+      return;
+    }
+
+    const platform = (value.LIVE_SUPPORT_PLATFORM ?? "").trim() || LIVE_SUPPORT_PLATFORM;
+
+    if (/meet/i.test(platform) && host !== "meet.google.com") {
+      context.addIssue({
+        code: "custom",
+        path: ["LIVE_SUPPORT_JOIN_URL"],
+        message: 'must be a "meet.google.com" link when LIVE_SUPPORT_PLATFORM is Google Meet',
+      });
+    }
+
+    if (/zoom/i.test(platform) && !/(^|\.)zoom\.us$/.test(host)) {
+      context.addIssue({
+        code: "custom",
+        path: ["LIVE_SUPPORT_JOIN_URL"],
+        message: 'must be a "*.zoom.us" link when LIVE_SUPPORT_PLATFORM is Zoom',
+      });
+    }
+  });
 
 const productionEnvSchema = z
   .object({

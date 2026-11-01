@@ -46,6 +46,11 @@ MONGODB_URI: process.env.MONGODB_URI ?? "",
       // the standalone bundle already contains it. Pinned here too so a run
       // against a pre-built .next still renders the student "My Courses" link.
       NEXT_PUBLIC_LMS_URL: "https://www.hablu-programmer.com",
+      // The production build validates the live support room at boot, so the
+      // room must be pinned here; without it the standalone server exits.
+      LIVE_SUPPORT_PLATFORM: "Google Meet",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
       AUTH_GOOGLE_ID: "e2e.invalid.apps.googleusercontent.com",
       AUTH_GOOGLE_SECRET: "e2e-only-placeholder",
       TRUSTED_PROXY_HOPS: "1",

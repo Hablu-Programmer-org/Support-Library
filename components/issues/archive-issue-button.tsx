@@ -17,9 +17,12 @@ const INITIAL_STATE: FormState = {};
 export function ArchiveIssueButton({
   action,
   csrfToken,
+  returnTo,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   csrfToken: string;
+  /** List URL to return to once the issue is archived. */
+  returnTo?: string;
 }) {
   const [state, formAction] = useActionState(action, INITIAL_STATE);
   const error = state.fieldErrors?._form?.[0];
@@ -33,6 +36,7 @@ export function ArchiveIssueButton({
         }}
       >
         <input type="hidden" name="csrfToken" value={csrfToken} />
+        {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
         <ArchiveSubmitButton />
       </form>
       {error && (

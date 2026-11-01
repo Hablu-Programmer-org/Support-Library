@@ -26,6 +26,11 @@ import {
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
 import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import {
+  ISSUES_PATH,
+  buildIssueEditHref,
+  parseIssueListReturnTo,
+} from "@/lib/issue-list-params";
 import { canMutate, isAdmin } from "@/lib/roles";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
@@ -65,13 +70,24 @@ export default async function IssueDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ created?: string }>;
+  searchParams?: Promise<{ created?: string; returnTo?: string }>;
 }) {
   const { id } = await params;
-  const { created } = (await searchParams) ?? {};
+  const { created, returnTo: rawReturnTo } = (await searchParams) ?? {};
   const session = await requireSession();
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
   const canPublish = isAdmin(session.user.role ?? "STUDENT");
+  // The list URL the viewer arrived from (filters + page), validated and rebuilt
+  // server-side. `null` means "no list context" — a direct link, a bookmark or a
+  // dashboard-home row — and the back link falls back to the plain list.
+  const returnTo = parseIssueListReturnTo(rawReturnTo, { canManage: canEdit });
+  const backHref = returnTo ?? ISSUES_PATH;
+  const backLabel =
+    returnTo === "/dashboard"
+      ? "Back to dashboard"
+      : returnTo
+        ? "Back to results"
+        : "Back to Issues";
   const staffIssue = canEdit ? await getIssueDetail(id) : null;
 
   if (!staffIssue) {
@@ -105,11 +121,11 @@ export default async function IssueDetailPage({
   return (
     <div className="mx-auto w-full max-w-6xl py-6">
       <Link
-        href="/dashboard/issues"
+        href={backHref}
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
       >
         <ArrowLeftIcon size={18} />
-        Back to Issues
+        {backLabel}
       </Link>
 
       <header className="mb-8 border-b border-slate-200 pb-8 dark:border-slate-800">
@@ -142,7 +158,7 @@ export default async function IssueDetailPage({
             // Editing the case is a page-level action: keep it beside the title so
             // it stays reachable before the sidebar is scrolled into view.
             <Link
-              href={`/dashboard/issues/${supportIssue.id}/edit`}
+              href={buildIssueEditHref(supportIssue.id, returnTo)}
               className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               <PencilIcon size={16} />
@@ -220,7 +236,11 @@ export default async function IssueDetailPage({
               </div>
               {canEdit && (
                 <div className="py-6">
-                  <ReplyComposer issueId={supportIssue.id} csrfToken={csrfToken} />
+                  <ReplyComposer
+                    issueId={supportIssue.id}
+                    csrfToken={csrfToken}
+                    returnTo={returnTo ?? undefined}
+                  />
                 </div>
               )}
             </div>
@@ -315,6 +335,7 @@ export default async function IssueDetailPage({
                   reviewedAt={supportIssue.updatedAt?.toISOString() ?? ""}
                   isPublished={supportIssue.visibility === "PUBLISHED"}
                   csrfToken={csrfToken}
+                  returnTo={returnTo ?? undefined}
                 />
               )}
             </section>
@@ -342,6 +363,7 @@ export default async function IssueDetailPage({
               <ArchiveIssueButton
                 action={deleteIssueAction.bind(null, supportIssue.id)}
                 csrfToken={csrfToken}
+                returnTo={returnTo ?? undefined}
               />
             </section>
           )}

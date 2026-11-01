@@ -5,6 +5,9 @@ import { useActionState } from "react";
 import { joinLiveSupportAction, type JoinLiveSupportState } from "@/actions/live-support";
 import { cn } from "@/lib/cn";
 import {
+  isGoogleMeet,
+  joinLabel,
+  meetingCodeLabel,
   supportHoursBn,
   supportScheduleBn,
   type SupportPhase,
@@ -17,9 +20,16 @@ type LiveSupportPanelProps = {
   platform: string;
   /** Resolved on the server: the browser clock is display only. */
   shift: SupportPhase;
-  /** Manual dial-in fallback; absent while the room is closed. */
-  meetingId?: string;
-  passcode?: string;
+  /**
+   * Manual entry fallback; absent while the room is closed.
+   *
+   * Google Meet has no passcode, so both values are optional and are rendered
+   * as separate rows — an absent passcode must not hide the meeting code.
+   */
+  meetingId?: string | null;
+  passcode?: string | null;
+  /** Whether this deployment has a room URL to redirect to. */
+  configured: boolean;
   csrfToken: string;
 };
 
@@ -47,14 +57,15 @@ export function LiveSupportPanel({
   shift,
   meetingId,
   passcode,
+  configured,
   csrfToken,
 }: LiveSupportPanelProps) {
   const [state, formAction, pending] = useActionState(joinLiveSupportAction, INITIAL_STATE);
   const isOpen = shift !== "off";
   const isEligible = (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(status);
-  const canJoin = isOpen && isEligible && !pending;
+  const canJoin = isOpen && isEligible && configured && !pending;
 
-  const joinLabel = `Live Support Center (${platform})`;
+  const buttonLabel = `Live Support Center (${platform})`;
   const joinClass = cn(
     "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
     canJoin
@@ -111,6 +122,11 @@ export function LiveSupportPanel({
             Live support is closed right now. Please join during a support slot.
           </p>
         )}
+        {!configured && (
+          <p className="font-medium text-danger-700 dark:text-danger-300">
+            The support room is not configured for this deployment yet.
+          </p>
+        )}
         <p className="text-slate-500 dark:text-slate-400">
           Daily hours:{" "}
           <span className="font-medium text-slate-700 dark:text-slate-300">
@@ -119,19 +135,19 @@ export function LiveSupportPanel({
         </p>
       </div>
 
-      {isEligible && (
+      {isEligible && configured && (
         <form action={formAction} className="space-y-3">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="issueId" value={issueId} />
 
           <button
             type="submit"
-            aria-label={joinLabel}
+            aria-label={buttonLabel}
             aria-disabled={!isOpen || pending}
             className={joinClass}
             disabled={!isOpen || pending}
           >
-            {pending ? "Opening the room…" : `Join ${platform} Meeting`}
+            {pending ? "Opening the room…" : joinLabel(platform)}
           </button>
 
           {state.error && (
@@ -145,21 +161,33 @@ export function LiveSupportPanel({
         </form>
       )}
 
-      {isEligible && isOpen && meetingId && passcode && (
+      {isEligible && isOpen && configured && (meetingId || passcode) && (
         <div className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-          <div className="flex items-center justify-between gap-4 py-3">
-            <span className="text-sm text-slate-500 dark:text-slate-400">Meeting ID</span>
-            <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-              {meetingId}
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-4 py-3">
-            <span className="text-sm text-slate-500 dark:text-slate-400">Passcode</span>
-            <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-              {passcode}
-            </span>
-          </div>
+          {meetingId && (
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                {meetingCodeLabel(platform)}
+              </span>
+              <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
+                {meetingId}
+              </span>
+            </div>
+          )}
+          {passcode && (
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="text-sm text-slate-500 dark:text-slate-400">Passcode</span>
+              <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
+                {passcode}
+              </span>
+            </div>
+          )}
         </div>
+      )}
+
+      {isEligible && isOpen && configured && isGoogleMeet(platform) && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {platform} may ask you to sign in with your Google account before it lets you in.
+        </p>
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-400">

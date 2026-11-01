@@ -9,6 +9,11 @@ import mongoose from "mongoose";
 import { assertRole } from "@/lib/auth-guard";
 import { findLmsUserByEmail, listStudentCourses } from "@/lib/lms";
 import { normalizeEmail } from "@/lib/email";
+import {
+  buildIssueDetailHref,
+  parseIssueListReturnTo,
+  sanitizeIssueListReturnTo,
+} from "@/lib/issue-list-params";
 import { operationIdSchema } from "@/lib/mutation-security";
 import { parseVideoLinks } from "@/lib/parse-links";
 import { shouldPublishOnSolve } from "@/lib/issue-publication";
@@ -35,12 +40,34 @@ import {
   type IngestedUpload,
 } from "@/lib/uploads/ingest";
 import { CASE_STATUSES, type CaseStatus } from "@/models";
+import { canMutate, type UserRole } from "@/lib/roles";
 import { withCsrfProtection } from "@/lib/safe-action";
 
 export type FormState = {
   fieldErrors?: Record<string, string[] | undefined>;
   message?: string;
 };
+
+/**
+ * Where to send the viewer after a mutation on an issue.
+ *
+ * `returnTo` is a hidden field filled from the list page, which makes it
+ * user-editable input that ends up in a redirect. It is parsed against an
+ * allowlist and rebuilt by the helper — never echoed back — so a crafted value
+ * cannot turn a saved reply into an open redirect. A missing or invalid value
+ * keeps the previous behaviour: stay on the case page.
+ */
+const issueDetailHrefAfterMutation = (
+  issueId: string,
+  formData: FormData,
+  role: UserRole | undefined,
+) =>
+  buildIssueDetailHref(
+    issueId,
+    parseIssueListReturnTo(formData.get("returnTo"), {
+      canManage: canMutate(role ?? "STUDENT"),
+    }),
+  );
 
 const formValue = (formData: FormData, key: string) => {
   const value = formData.get(key);
@@ -451,7 +478,7 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
 
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
-    redirect(`/dashboard/issues/${id}`);
+    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
   });
 }
 
@@ -523,7 +550,12 @@ export async function deleteIssueAction(
     }
     if (!supportIssue) return { fieldErrors: { _form: ["Issue not found"] } };
     revalidatePath("/dashboard/issues");
-    redirect("/dashboard/issues");
+    // Archiving from the list must land back on the same filtered page, not page 1.
+    redirect(
+      sanitizeIssueListReturnTo(formData.get("returnTo"), {
+        canManage: canMutate(guard.session.user.role ?? "STUDENT"),
+      }),
+    );
   });
 }
 
@@ -566,7 +598,7 @@ export async function publishIssueAction(
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
-    redirect(`/dashboard/issues/${id}`);
+    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
   });
 }
 
@@ -602,6 +634,6 @@ export async function unpublishIssueAction(
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
-    redirect(`/dashboard/issues/${id}`);
+    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
   });
 }

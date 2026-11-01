@@ -157,6 +157,7 @@ Pagination:
 
 - 20 issues per page.
 - `Previous` and `Next` preserve filters.
+- Opening an issue keeps the filter and page: `Back to results` returns to the same page (a direct link or a bookmark falls back to `Back to Issues`), and replying, editing or archiving no longer resets the list.
 - Empty result shows `No issues found.`
 
 ## 7. Open Issue Detail For Review

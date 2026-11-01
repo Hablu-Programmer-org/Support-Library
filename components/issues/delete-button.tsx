@@ -20,11 +20,14 @@ export function DeleteButton({
   csrfToken,
   disabled = false,
   className = "",
+  returnTo,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   csrfToken: string;
   disabled?: boolean;
   className?: string;
+  /** List URL to return to after the row is removed (keeps filter + page). */
+  returnTo?: string;
 }) {
   const [state, formAction] = useActionState(action, INITIAL_STATE);
   const error = state.fieldErrors?._form?.[0];
@@ -40,6 +43,7 @@ export function DeleteButton({
         }}
       >
         <input type="hidden" name="csrfToken" value={csrfToken} />
+        {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
         <DeleteSubmitButton disabled={disabled} />
       </form>
       {error && (

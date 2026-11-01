@@ -1,17 +1,23 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { deleteIssueAction } from "@/actions/issues";
 import { DeleteButton } from "@/components/issues/delete-button";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { StatusBadge } from "@/components/issues/status-badge";
-import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
-import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
-import { currentShift, dayKeyInDhaka } from "@/lib/config/live-support";
-import { getLiveSupportConfig } from "@/lib/live-support";
+import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
+import { dayKeyInDhaka } from "@/lib/config/live-support";
+import {
+  buildIssueDetailHref,
+  buildIssueListHref,
+  hasActiveIssueFilters,
+  parseIssueListFilters,
+  toIssueDateRange,
+} from "@/lib/issue-list-params";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { listAssignableMentors } from "@/lib/services/staff";
@@ -19,9 +25,6 @@ import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
-
-const ISSUE_SORTS = ["newest", "oldest", "priority"] as const;
-type IssueSort = (typeof ISSUE_SORTS)[number];
 
 export default async function IssuesPage({
   searchParams,
@@ -47,44 +50,36 @@ export default async function IssuesPage({
   // Submitting a request is a separate, narrower right that students also hold.
   const canSubmit = canCreateIssue(session.user.role);
   const publicOnly = !canManage;
-  const page = Number(resolvedSearchParams?.page ?? "1");
-  const sort: IssueSort = ISSUE_SORTS.includes(
-    resolvedSearchParams?.sort as IssueSort,
-  )
-    ? (resolvedSearchParams?.sort as IssueSort)
-    : "newest";
 
-  // The filter schema expects ISO datetimes, but a date input yields YYYY-MM-DD.
-  // `from` starts at midnight, `to` ends at end-of-day, both in UTC.
-  const from = resolvedSearchParams?.from
-    ? `${resolvedSearchParams.from}T00:00:00.000Z`
-    : undefined;
-  const to = resolvedSearchParams?.to
-    ? `${resolvedSearchParams.to}T23:59:59.999Z`
-    : undefined;
+  // One parser for the URL state: it drops invalid values (so `?page=abc` or
+  // `?status=NOPE` render the default list instead of throwing) and produces the
+  // exact shape the filter panel and the detail page's `returnTo` use.
+  const filters = parseIssueListFilters(resolvedSearchParams, { canManage });
+  const { from, to } = toIssueDateRange(filters);
 
   const issues = await listIssues(
     {
-      q: resolvedSearchParams?.q,
-      status: CASE_STATUSES.includes(resolvedSearchParams?.status as never)
-        ? (resolvedSearchParams?.status as never)
-        : undefined,
-      tag: resolvedSearchParams?.tag,
-      courseSlug: resolvedSearchParams?.courseSlug || undefined,
-      batchNo: resolvedSearchParams?.batchNo
-        ? Number(resolvedSearchParams.batchNo)
-        : undefined,
-      mentorId: canManage
-        ? resolvedSearchParams?.mentorId || undefined
-        : undefined,
+      q: filters.q || undefined,
+      status: filters.status ? (filters.status as CaseStatus) : undefined,
+      tag: filters.tag || undefined,
+      courseSlug: filters.courseSlug || undefined,
+      batchNo: filters.batchNo ? Number(filters.batchNo) : undefined,
+      mentorId: filters.mentorId || undefined,
       from,
       to,
-      sort,
-      page,
+      sort: filters.sort,
+      page: filters.page,
       limit: 20,
     },
     { publicOnly },
   );
+
+  // A stale link, a typo, or deleting the only row on the last page leaves no
+  // rows to show. Send the viewer to the last real page instead of rendering
+  // "Page 99 of 3" with dead Previous/Next buttons.
+  if (issues.total > 0 && filters.page > issues.totalPages) {
+    redirect(buildIssueListHref(filters, { page: issues.totalPages }));
+  }
 
   const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] = await Promise.all([
     listIssueFilterOptions(publicOnly),
@@ -97,35 +92,12 @@ export default async function IssuesPage({
 
   const canDelete = canManage; // Same roles can delete
   const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
-  // TEMPORARY quick join: students only, and they get their own CSRF token so
-  // the staff delete token is never reused for a student action.
-  const showQuickJoin = canSubmit && !canManage;
-  const quickJoinCsrfToken = showQuickJoin ? await generateCsrfToken(session.user.id) : "";
-  const quickJoinShift = currentShift(new Date());
-  const quickJoinPlatform = getLiveSupportConfig().platform;
-  const q = resolvedSearchParams?.q ?? "";
-  const tag = resolvedSearchParams?.tag ?? "";
-  const status = resolvedSearchParams?.status ?? "";
-  const courseSlug = resolvedSearchParams?.courseSlug ?? "";
-  const batchNo = resolvedSearchParams?.batchNo ?? "";
-  const mentorId = canManage ? (resolvedSearchParams?.mentorId ?? "") : "";
-  const dateFrom = resolvedSearchParams?.from ?? "";
-  const dateTo = resolvedSearchParams?.to ?? "";
 
-  const pageHref = (nextPage: number) => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (status) params.set("status", status);
-    if (tag) params.set("tag", tag);
-    if (courseSlug) params.set("courseSlug", courseSlug);
-    if (batchNo) params.set("batchNo", batchNo);
-    if (mentorId) params.set("mentorId", mentorId);
-    if (dateFrom) params.set("from", dateFrom);
-    if (dateTo) params.set("to", dateTo);
-    if (sort !== "newest") params.set("sort", sort);
-    params.set("page", String(nextPage));
-    return `/dashboard/issues?${params.toString()}`;
-  };
+  // The list URL travelling with every row: a detail page hands it back so
+  // "Back to results" (and every action that redirects) returns to this exact
+  // filter/page instead of resetting to page 1.
+  const listHref = buildIssueListHref(filters);
+  const returnTo = hasActiveIssueFilters(filters) || filters.page > 1 ? listHref : undefined;
 
   return (
     <div className="space-y-6">
@@ -139,13 +111,6 @@ export default async function IssuesPage({
               >
                 {canManage ? "New Issue" : "Submit an issue"}
               </Link>
-              {showQuickJoin && (
-                <QuickLiveSupportButton
-                  csrfToken={quickJoinCsrfToken}
-                  platform={quickJoinPlatform}
-                  shift={quickJoinShift}
-                />
-              )}
             </div>
           )
         }
@@ -157,15 +122,15 @@ export default async function IssuesPage({
         batchNos={batchNos}
         courseSlugs={courseSlugs}
         defaults={{
-          q,
-          tag,
-          status,
-          courseSlug,
-          batchNo,
-          mentorId,
-          dateFrom,
-          dateTo,
-          sort,
+          q: filters.q,
+          tag: filters.tag,
+          status: filters.status,
+          courseSlug: filters.courseSlug,
+          batchNo: filters.batchNo,
+          mentorId: filters.mentorId,
+          from: filters.from,
+          to: filters.to,
+          sort: filters.sort,
         }}
         mentors={mentors}
         showMentor={canManage}
@@ -183,7 +148,7 @@ export default async function IssuesPage({
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
               >
                   <Link
-                    href={`/dashboard/issues/${supportIssue.id}`}
+                    href={buildIssueDetailHref(supportIssue.id, returnTo)}
                     className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
                   >
                     <div className="space-y-1">
@@ -240,6 +205,7 @@ export default async function IssuesPage({
                       )}
                       csrfToken={csrfToken}
                       className="shrink-0"
+                      returnTo={listHref}
                     />
                   )}
                 </div>
@@ -256,7 +222,7 @@ export default async function IssuesPage({
           {issues.page > 1 && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={pageHref(issues.page - 1)}
+              href={buildIssueListHref(filters, { page: issues.page - 1 })}
             >
               Previous
             </Link>
@@ -264,7 +230,7 @@ export default async function IssuesPage({
           {issues.page < issues.totalPages && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={pageHref(issues.page + 1)}
+              href={buildIssueListHref(filters, { page: issues.page + 1 })}
             >
               Next
             </Link>

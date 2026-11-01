@@ -29,7 +29,7 @@ export default async function LiveSupportPage() {
   const shift = currentShift(new Date());
   const csrfToken = await generateCsrfToken(session.user.id);
   // The dial-in values follow the shift, so a closed room carries no room details.
-  const { platform, meetingId, passcode } = getLiveSupportConfig();
+  const { platform, meetingId, passcode, joinUrl } = getLiveSupportConfig();
   const roomOpen = shift !== "off";
 
   return (
@@ -47,9 +47,10 @@ export default async function LiveSupportPage() {
         title="Live support"
       />
       <LiveSupportCard
+        configured={Boolean(joinUrl)}
         csrfToken={csrfToken}
-        meetingId={roomOpen ? meetingId : undefined}
-        passcode={roomOpen ? passcode : undefined}
+        meetingId={roomOpen ? meetingId : null}
+        passcode={roomOpen ? passcode : null}
         platform={platform}
         shift={shift}
       />

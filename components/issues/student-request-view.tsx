@@ -44,7 +44,7 @@ export function StudentRequestView({
   created: boolean;
 }) {
   const shift = currentShift(new Date());
-  const { platform, meetingId, passcode } = getLiveSupportConfig();
+  const { platform, meetingId, passcode, joinUrl } = getLiveSupportConfig();
   const roomOpen = shift !== "off";
 
   return (
@@ -161,10 +161,11 @@ export function StudentRequestView({
       </section>
 
       <LiveSupportPanel
+        configured={Boolean(joinUrl)}
         csrfToken={csrfToken}
         issueId={issue.id}
-        meetingId={roomOpen ? meetingId : undefined}
-        passcode={roomOpen ? passcode : undefined}
+        meetingId={roomOpen ? meetingId : null}
+        passcode={roomOpen ? passcode : null}
         platform={platform}
         shift={shift}
         status={issue.status}

@@ -165,6 +165,7 @@ Pagination:
 
 - 20 issues per page.
 - `Previous` and `Next` preserve filters.
+- Opening an issue keeps the filter and page: the case page's `Back to results` link returns to the same page of results (a direct link or a bookmark falls back to `Back to Issues`).
 - Empty result shows `No issues found.`
 
 ## 7. Mentor Search vs Student Search

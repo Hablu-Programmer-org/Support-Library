@@ -6,8 +6,10 @@ import { z } from "zod";
 
 import type { FormState } from "@/actions/issues";
 import { assertRole } from "@/lib/auth-guard";
+import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
 import { MutationConflictError, operationIdSchema } from "@/lib/mutation-security";
 import { parseVideoLinks } from "@/lib/parse-links";
+import { canMutate } from "@/lib/roles";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import {
   MutationRateLimitError,
@@ -164,7 +166,16 @@ export async function addReplyAction(
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
   revalidatePath(`/dashboard/issues/${issueId}`);
-  redirect(`/dashboard/issues/${issueId}`);
+  // Keep the list context the case was opened from: the reply must not silently
+  // reset the viewer's filters and page.
+  redirect(
+    buildIssueDetailHref(
+      issueId,
+      parseIssueListReturnTo(formData.get("returnTo"), {
+        canManage: canMutate(guard.session.user.role ?? "STUDENT"),
+      }),
+    ),
+  );
 }
 
 export async function editReplyAction(

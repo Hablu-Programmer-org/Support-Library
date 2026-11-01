@@ -47,6 +47,13 @@ export default defineConfig({
       // renders the same in CI and on a developer machine — a stale
       // .env.local must not silently hide it from the E2E contract.
       NEXT_PUBLIC_LMS_URL: "https://www.hablu-programmer.com",
+      // Pinned for the same reason: the live support panel's labels and the
+      // "no room URL in the document" assertions must not depend on a local
+      // .env.local, and the production build used by playwright.12001 refuses
+      // to boot without a room.
+      LIVE_SUPPORT_PLATFORM: "Google Meet",
+      LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/moe-ooac-amo",
+      LIVE_SUPPORT_MEETING_ID: "moe-ooac-amo",
     },
   },
   projects: [

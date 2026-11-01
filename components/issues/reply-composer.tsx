@@ -30,7 +30,16 @@ const firstError = (state: ReplyFormState) =>
   state.fieldErrors?.body?.[0] ??
   state.fieldErrors?.videoLinks?.[0];
 
-export function ReplyComposer({ issueId, csrfToken = "" }: { issueId: string; csrfToken?: string }) {
+export function ReplyComposer({
+  issueId,
+  csrfToken = "",
+  returnTo,
+}: {
+  issueId: string;
+  csrfToken?: string;
+  /** List URL to return to after the reply is saved (filters + page). */
+  returnTo?: string;
+}) {
   const [state, formAction] = useActionState(addReplyAction.bind(null, issueId), INITIAL_STATE);
   const formRef = useRef<HTMLFormElement>(null);
   const operationIdRef = useRef<HTMLInputElement>(null);
@@ -73,6 +82,7 @@ export function ReplyComposer({ issueId, csrfToken = "" }: { issueId: string; cs
       >
         <input ref={operationIdRef} type="hidden" name="operationId" />
         <input type="hidden" name="csrfToken" value={csrfToken} />
+        {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
         {/* `defaultValue` from the returned state: React resets the form after a
             form action runs, which would otherwise wipe a failed response. */}
         <TextAreaField
