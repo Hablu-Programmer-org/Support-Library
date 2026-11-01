@@ -95,10 +95,13 @@ Help Center (dashboard sidebar)
    `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or
    19:30–24:00, Asia/Dhaka, resolved on the server). The meeting code is rendered
    only in that state; Google Meet has no passcode row. Meet may ask the student
-   to sign in with their Google account.
+   to sign in with their Google account. The button **opens the room in a new
+   tab**, so the request page stays open.
 7. Joining runs a server action that re-checks ownership, the shift and the
    per-user budget, records one join per request per shift per day, audits it,
-   and only then redirects into the room.
+   and only then returns the room URL. The client opens that URL in a new tab;
+   if the browser blocks the popup (or JavaScript is off) an **Open Google Meet**
+   link appears instead — still a new tab.
 8. **My requests** lists the student's own requests so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 

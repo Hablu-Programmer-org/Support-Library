@@ -73,7 +73,9 @@ Help Center (dashboard sidebar)
 7. **Join.** The button submits a server action that re-checks ownership of the
    request, the shift, and the per-user budget (`live-support.join`, 10 / 10 min),
    records one join per request per shift per day, audits it, and only then
-   redirects into the room.
+   returns the room URL. The client opens it **in a new tab** (the request page
+   stays open); a blocked popup or JavaScript-off falls back to an
+   `Open Google Meet` link, which is also a new tab.
 8. **Come back.** `My requests` (`/dashboard/my-requests`) lists the student's own
    requests (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
@@ -117,7 +119,10 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 - **Eligibility** is always the shared filter in `lib/live-support-policy.ts`, used
   by the join action so the read path and the write path cannot drift.
 - **Room credentials** exist only in this app (`LIVE_SUPPORT_*`), resolved on the
-  server; the LMS bundle carries none of them.
+  server; the LMS bundle carries none of them. The join action returns the URL
+  only to an authorized, eligible session — it is never part of the initial HTML.
+  The client opens it in a new tab with `opener` severed, and an
+  `Open Google Meet` link is always available when a popup is blocked.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
 - **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; issue,
@@ -134,6 +139,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
+| Popup blocked / tab closed | `Open Google Meet` link is rendered instead (still a new tab) |
 | No open request | No join panel; submit one first (the request-less shortcut was removed) |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
@@ -166,6 +172,24 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Eligibility / ownership filters | `lib/live-support-policy.ts`, `lib/issue-ownership.ts` |
 | Join write path | `actions/live-support.ts`, `lib/services/live-support-joins.ts` |
 | Schedule | `lib/config/live-support.ts` (and the LMS copy, guarded) |
+| External link opened in a new tab | `lib/external-redirect.ts` + `components/shared/external-action-form.tsx` |
+
+## 9a. Pattern — open a server-checked external link in a new tab
+
+Use this whenever an action ends at an external destination (a video room, a
+payment page, a signed download):
+
+1. The action **returns** `{ url }` (never `redirect()`), and only after every
+   authorization check. Build it with `externalRedirect(url, error)` from
+   `lib/external-redirect.ts`, which rejects anything that is not absolute HTTPS.
+2. Render `ExternalActionForm` with that action, the hidden fields and the labels.
+   It opens a tab inside the click gesture (severed `opener`), navigates it when
+   the result arrives, closes it on error, and always renders a real
+   `target="_blank" rel="noopener noreferrer"` fallback link — so a blocked
+   popup, a closed tab or JavaScript off still end in a new tab.
+
+Do not put the destination in the component, in props from the server page, or
+in the initial HTML: the action result is the only allowed carrier.
 
 ## 10. Open items
 

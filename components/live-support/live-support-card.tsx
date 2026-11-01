@@ -1,13 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
-
-import { joinLiveSupportAction, type JoinLiveSupportState } from "@/actions/live-support";
+import { joinLiveSupportAction } from "@/actions/live-support";
+import { ExternalActionForm } from "@/components/shared/external-action-form";
 import { cn } from "@/lib/cn";
 import {
   isGoogleMeet,
   joinLabel,
   meetingCodeLabel,
+  openLabel,
   supportHoursBn,
   supportScheduleBn,
   type SupportPhase,
@@ -36,7 +36,15 @@ const SHIFT_LABELS: Record<Exclude<SupportPhase, "off">, string> = {
 
 const ORDER: Array<Exclude<SupportPhase, "off">> = ["morning", "night"];
 
-const INITIAL_STATE: JoinLiveSupportState = {};
+const joinClass = cn(
+  "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition",
+  "bg-primary text-white hover:bg-primary-600",
+  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
+  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200",
+  "dark:disabled:bg-slate-800 dark:disabled:text-slate-400",
+);
+
+const errorClass = "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300";
 
 /**
  * Staff join panel for the daily live support session.
@@ -44,7 +52,8 @@ const INITIAL_STATE: JoinLiveSupportState = {};
  * Students never see this page: they join from their own request, where the
  * request is fixed by the page. Staff run the session, so they need no request
  * and are not queued. The room URL is never held here — submitting the form runs
- * a server action that re-checks the shift and only then redirects.
+ * a server action that re-checks the shift and only then returns the URL, which
+ * `ExternalActionForm` opens in a new tab (the queue tab stays open).
  */
 export function LiveSupportCard({
   platform,
@@ -54,16 +63,8 @@ export function LiveSupportCard({
   shift,
   csrfToken,
 }: LiveSupportCardProps) {
-  const [state, formAction, pending] = useActionState(joinLiveSupportAction, INITIAL_STATE);
   const isOpen = shift !== "off";
-  const canJoin = isOpen && configured && !pending;
   const buttonLabel = `Live Support Center (${platform})`;
-  const joinClass = cn(
-    "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
-    canJoin
-      ? "bg-primary text-white hover:bg-primary-600"
-      : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
-  );
 
   return (
     <div className="space-y-6">
@@ -116,28 +117,18 @@ export function LiveSupportCard({
       </p>
 
       {configured && (
-        <form action={formAction} className="space-y-3">
-          <input type="hidden" name="csrfToken" value={csrfToken} />
-
-          <button
-            type="submit"
-            aria-label={buttonLabel}
-            aria-disabled={!isOpen || pending}
-            className={joinClass}
-            disabled={!isOpen || pending}
-          >
-            {pending ? "Opening the room…" : joinLabel(platform)}
-          </button>
-
-          {state.error && (
-            <p
-              role="alert"
-              className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300"
-            >
-              {state.error}
-            </p>
-          )}
-        </form>
+        <ExternalActionForm
+          action={joinLiveSupportAction}
+          ariaLabel={buttonLabel}
+          className={joinClass}
+          disabled={!isOpen}
+          errorClassName={errorClass}
+          fallbackLabel={openLabel(platform)}
+          fields={{ csrfToken }}
+          hint="Opens in a new tab, so the queue stays open next to the room."
+          label={joinLabel(platform)}
+          pendingLabel={`Opening ${platform}…`}
+        />
       )}
 
       {isOpen && configured && (meetingId || passcode) && (

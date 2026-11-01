@@ -67,6 +67,9 @@ export const isGoogleMeet = (platform: string) => /meet/i.test(platform);
  */
 export const joinLabel = (platform: string) => `Join ${platform}`;
 
+/** Fallback link text when the new tab could not be opened automatically. */
+export const openLabel = (platform: string) => `Open ${platform}`;
+
 /** Label for the manual-entry row, matched to the platform's own vocabulary. */
 export const meetingCodeLabel = (platform: string) =>
   isGoogleMeet(platform) ? "Meeting code" : "Meeting ID";

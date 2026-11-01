@@ -450,8 +450,9 @@ Route: `/dashboard/live-support` (mentors and admins only)
 
 Students join the Google Meet room from **their own request page**
 (`/dashboard/issues/[id]`), and only with a request they submitted that is still
-`Open`, `Pending` or `Follow-up`. The queue is how you see who is waiting and what
-for:
+`Open`, `Pending` or `Follow-up`. Pressing **Join Google Meet** opens the room in
+a **new tab**, so the student keeps the page (and you keep this queue) open in the
+other one. The queue is how you see who is waiting and what for:
 
 - Student name and email.
 - The request reference and title, linked to the internal case.
@@ -472,7 +473,9 @@ What to know:
   reference. Google Meet has no passcode, so a shared link is the whole key to the
   room — keep the meeting link out of public channels and rotate it with
   `hablu-env set support LIVE_SUPPORT_JOIN_URL` if it leaks.
-- Students cannot open this page and never see the nav item for it.
+- Students cannot open this page and never see the nav item for it. Your own
+  **Join Google Meet** on `/dashboard/support` also opens in a new tab, so keep
+  this queue in the other tab.
 - If a joined request was deleted afterwards, the row stays visible and is marked
   `(removed)` so the day's history is not rewritten.
 - No passcode, IP address or access token is shown here.
