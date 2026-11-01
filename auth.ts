@@ -80,7 +80,6 @@ const markStaffInactive = async (email: string) => {
 };
 
 const config = {
-  session: { strategy: "jwt" as const, maxAge: 8 * 60 * 60 },
   pages: { signIn: "/login", error: "/login" },
   providers: [Google],
   callbacks: {

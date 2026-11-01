@@ -94,7 +94,7 @@ async function createSessionToken(user: (typeof STAFF_USERS)[number]) {
     },
     secret: secret,
     salt: sessionTokenCookieName,
-    maxAge: 60 * 60 * 24,
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 

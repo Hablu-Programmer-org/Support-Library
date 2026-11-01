@@ -37,7 +37,7 @@ We will acknowledge receipt within 48 hours and provide a preliminary assessment
 
 ### Authentication
 - **Auth.js v5** with Google OAuth only
-- **JWT sessions** (8-hour expiry, HTTP-only cookies)
+- **JWT sessions** (30-day expiry, HTTP-only cookies; role/active status still re-validated against the LMS on every authenticated request)
 - **Role mapping** from external LMS database (read-only)
 - **CSRF protection** on all Server Actions (session-bound expiring HMAC tokens, timing-safe validation)
 
