@@ -32,7 +32,7 @@ Help Center (dashboard sidebar)
                                               ▼  submit
                                      /dashboard/issues/{id}?created=1
                                        status · reference · own files · team replies
-                                       Live support panel → [ Join Google Meet ]
+                                       Live support panel → [ Join Live support ]
                                               ▼  join (server action)
                                      live-support-joins row ──► staff queue
 ```
@@ -65,25 +65,25 @@ Help Center (dashboard sidebar)
    their images and video links, and the team's replies read-only. It never shows
    staff fields, mentor, audit or publication
    history.
-6. **Live support panel.** `Join Google Meet` appears only when the request is
+6. **Live support panel.** `Join Live support` appears only when the request is
    `OPEN`, `PENDING` or `FOLLOW_UP` **and** a shift is open in `Asia/Dhaka`
    (08:00–12:00 or 19:30–24:00). The meeting code is rendered only in that state
-   (Google Meet has no passcode row). A `SOLVED`/`ARCHIVED` request explains that
-   it is closed and offers no join.
+   (the current room platform has no passcode row). A `SOLVED`/`ARCHIVED` request
+   explains that it is closed and offers no join.
 7. **Join.** The button submits a server action that re-checks ownership of the
    request, the shift, and the per-user budget (`live-support.join`, 10 / 10 min),
    records one join per request per shift per day, audits it, and only then
    returns the room URL. The client opens it **in a new tab** (the request page
    stays open); a blocked popup or JavaScript-off falls back to an
-   `Open Google Meet` link, which is also a new tab.
+   `Open Live support` link, which is also a new tab.
 8. **Come back.** `My requests` (`/dashboard/my-requests`) lists the student's own
    requests (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
 
 > **No request-less shortcut.** For students, the issues page no longer offers a
-> direct **Join live support** button. It was removed with the 2026-11-01 Google
-> Meet switch: Meet has no waiting room, so a request-less join produced no queue
-> row and no case to follow up. The request page is the only way into the room.
+> direct join button. It was removed with the 2026-11-01 room switch: the room
+> platform has no waiting room, so a request-less join produced no queue row and
+> no case to follow up. The request page is the only way into the room.
 
 ## 4. Staff journey
 
@@ -122,13 +122,13 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
   server; the LMS bundle carries none of them. The join action returns the URL
   only to an authorized, eligible session — it is never part of the initial HTML.
   The client opens it in a new tab with `opener` severed, and an
-  `Open Google Meet` link is always available when a popup is blocked.
+  `Open Live support` link is always available when a popup is blocked.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
 - **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; issue,
   reply and publication changes are audited as before. The temporary
-  request-less `LIVE_SUPPORT_QUICK_JOIN` path was removed with the Google Meet
-  switch, so every unaudited way into the room is gone too.
+  request-less `LIVE_SUPPORT_QUICK_JOIN` path was removed with the 2026-11-01
+  room switch, so every unaudited way into the room is gone too.
 - **Indexes**: `student_own_requests`, `student_own_issues`, `awaiting_mentor`,
   `live-support-joins-issue-day-shift-unique`, `live-support-joins-day-joined`
   (plus the TTL). The deploy pipeline runs `db:indexes --apply --create-only` then
@@ -139,7 +139,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
-| Popup blocked / tab closed | `Open Google Meet` link is rendered instead (still a new tab) |
+| Popup blocked / tab closed | `Open Live support` link is rendered instead (still a new tab) |
 | No open request | No join panel; submit one first (the request-less shortcut was removed) |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
@@ -158,8 +158,8 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPPORT_LIBRARY_URL` | LMS frontend | Base URL for the Help Center CTA (defaults to `https://support.hablu-programmer.com`) |
 | `NEXT_PUBLIC_LMS_URL` | this app | `My Courses` link back to the LMS (omitted when unset) |
-| `LIVE_SUPPORT_PLATFORM` / `_JOIN_URL` / `_MEETING_ID` / `_PASSCODE` | this app | The room. The join URL is a credential on Google Meet, so it has **no source default** and production refuses to boot without it; `_PASSCODE` is Zoom-only |
-| `npm run check:live-support` | this app | Fails when the schedule copy drifts or when any room credential reappears in the LMS config |
+| `LIVE_SUPPORT_PLATFORM` / `_JOIN_URL` / `_MEETING_ID` / `_PASSCODE` | this app | The room. The join URL is a credential, so it has **no source default** and production refuses to boot without it; the platform value must match the URL host (checked at boot) and is not shown in the join CTA; `_PASSCODE` is Zoom-only |
+| `npm run check:live-support` | this app | Fails when the schedule copy or the join CTA wording drifts, or when any room credential reappears in the LMS config |
 
 ## 9. Where to change things
 
@@ -195,7 +195,7 @@ in the initial HTML: the action result is the only allowed carrier.
 
 1. The LMS premium/batch rule only hides the Help Center button; this app does not
    enforce it (feature-inventory 12.18).
-2. An eligible student can share the Meet link; Google Meet has no passcode and,
+2. An eligible student can share the room link; the room has no passcode and,
    on a personal account, no waiting room. Rotating the room is an environment
    change (`hablu-env set support LIVE_SUPPORT_JOIN_URL`), not a code change;
    Workspace hosts can additionally require knock-to-join.

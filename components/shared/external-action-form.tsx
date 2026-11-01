@@ -15,9 +15,9 @@ type ExternalActionFormProps = {
   action: ExternalAction;
   /** Hidden fields (CSRF token, record id, …). */
   fields?: Record<string, string>;
-  /** Visible button text, e.g. "Join Google Meet". */
+  /** Visible button text, e.g. "Join Live support". */
   label: string;
-  /** Button text while the action runs, e.g. "Opening Google Meet…". */
+  /** Button text while the action runs, e.g. "Opening Live support…". */
   pendingLabel: string;
   /** Text of the fallback link when the tab could not be opened. */
   fallbackLabel: string;

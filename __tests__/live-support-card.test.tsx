@@ -17,24 +17,26 @@ const baseProps = {
 
 describe("LiveSupportCard", () => {
   it("uses the generic new-tab form and keeps the queue open", () => {
-    render(<LiveSupportCard {...baseProps} shift="morning" />);
+    const { container } = render(<LiveSupportCard {...baseProps} shift="morning" />);
 
     const button = screen.getByRole("button", {
-      name: "Live Support Center (Google Meet)",
+      name: "Join Live support",
     }) as HTMLButtonElement;
 
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe("Join Google Meet");
+    expect(button.textContent).toBe("Join Live support");
     expect(screen.getByText(/queue stays open next to the room/)).not.toBeNull();
     expect(screen.getByText("Meeting code")).not.toBeNull();
     expect(screen.queryByText("Passcode")).toBeNull();
+    // The platform name is an identifier, not copy: it must not be rendered.
+    expect(container.textContent).not.toContain("Google Meet");
   });
 
   it("disables the join outside a shift and hides the room details", () => {
     render(<LiveSupportCard {...baseProps} shift="off" />);
 
     const button = screen.getByRole("button", {
-      name: "Live Support Center (Google Meet)",
+      name: "Join Live support",
     }) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);
@@ -47,6 +49,6 @@ describe("LiveSupportCard", () => {
     expect(
       screen.getByText("The support room is not configured for this deployment yet."),
     ).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Live Support Center (Google Meet)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Join Live support" })).toBeNull();
   });
 });

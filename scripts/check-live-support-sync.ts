@@ -11,8 +11,9 @@
  * the join URL is the key to the room. The LMS only links to
  * `/dashboard/support`, because a student must have an open request before the
  * room opens; its public bundle must never carry the join URL, meeting code or
- * passcode again. That inversion is asserted below. Whether the URL and the
- * platform name agree is enforced at boot by `lib/env.ts`.
+ * passcode again. That inversion is asserted below, together with the join CTA
+ * wording ("Join Live support"), so the two apps cannot drift. Whether the URL
+ * and the platform name agree is enforced at boot by `lib/env.ts`.
  *
  * Nothing can compare the apps at compile time — they are three separate git
  * repositories, so neither repo's CI can see the other. This script is the
@@ -33,7 +34,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SUPPORT_SHIFTS } from "../lib/config/live-support";
+import { LIVE_SUPPORT_CTA, SUPPORT_SHIFTS } from "../lib/config/live-support";
 
 // `fileURLToPath` rather than `new URL(...).pathname`: on Windows the raw
 // pathname keeps a leading slash ("/D:/..."), which `resolve` then mangles.
@@ -104,23 +105,11 @@ const numericFields = (source: string, field: string): number[] => {
   return values;
 };
 
-/** First `key: "..."` value in a source file. */
-const stringField = (source: string, field: string): string | null => {
-  const match = source.match(new RegExp(`${field}\\s*:\\s*"([^"]*)"`));
-  return match ? match[1] : null;
-};
-
-/** First `const NAME = "..."` value in a source file. */
-const constantString = (source: string, name: string): string | null => {
-  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*"([^"]*)"`));
-  return match ? match[1] : null;
-};
-
 /**
  * Whether a key is present at all, whatever its value syntax.
  *
- * Room credentials must be checked with this rather than `stringField`: a URL
- * written as a template literal would otherwise slip past a quote-only match.
+ * Room credentials must be checked with this rather than a quote-only match: a
+ * URL written as a template literal would otherwise slip past it.
  */
 const hasField = (source: string, field: string): boolean =>
   new RegExp(`\\b${field}\\s*:`).test(source);
@@ -186,6 +175,42 @@ function compareScheduleCopy(frontendSource: string) {
 }
 
 /**
+ * The join CTA must read the same in both apps.
+ *
+ * The label is deliberately platform-agnostic ("Join Live support"), so the
+ * platform name is no longer compared: the LMS no longer publishes it at all.
+ * What can still drift is the wording a student sees, so the LMS help-center
+ * copy is the source of truth on its side and `LIVE_SUPPORT_CTA.join` on ours.
+ */
+function compareJoinLabel() {
+  const frontendSource = readFrontend("src/components/pages/help-center/index.tsx");
+  if (!frontendSource) {
+    NOTES.push(
+      "frontend help-center copy not found — run this from a checkout where the frontend repo sits next to support-library.",
+    );
+    return;
+  }
+
+  const theirs = frontendSource.match(/“Join ([^”]+)”/)?.[1];
+  if (!theirs) {
+    NOTES.push("Could not read the join label from the LMS help-center copy; compare it manually.");
+    return;
+  }
+
+  if (`Join ${theirs}` !== LIVE_SUPPORT_CTA.join) {
+    FAILURES.push(
+      `join label: frontend="Join ${theirs}" vs support-library="${LIVE_SUPPORT_CTA.join}"`,
+    );
+  }
+
+  for (const stale of ["Join Google Meet", "Open Google Meet"]) {
+    if (frontendSource.includes(stale)) {
+      FAILURES.push(`LMS help-center still says "${stale}"`);
+    }
+  }
+}
+
+/**
  * The room must be configured in exactly one app.
  *
  * The Support Library resolves the join URL, meeting ID and passcode on the
@@ -215,14 +240,6 @@ function compareRoom() {
     }
   }
 
-  const frontendPlatform = stringField(frontendBlock, "platform");
-  const localPlatform = constantString(localSource, "LIVE_SUPPORT_PLATFORM");
-  if (!frontendPlatform || !localPlatform) {
-    NOTES.push('Could not read "platform" from both configs; compare it manually.');
-  } else if (frontendPlatform !== localPlatform) {
-    FAILURES.push(`platform: frontend="${frontendPlatform}" vs support-library="${localPlatform}"`);
-  }
-
   if (!hasField(frontendBlock, "libraryUrl")) {
     FAILURES.push(
       "frontend site.ts has no support.libraryUrl — the LMS has no way to reach live support",
@@ -232,6 +249,7 @@ function compareRoom() {
 
 compareShifts();
 compareRoom();
+compareJoinLabel();
 
 for (const note of NOTES) console.warn(`! ${note}`);
 

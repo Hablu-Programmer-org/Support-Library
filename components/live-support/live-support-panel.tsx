@@ -4,10 +4,8 @@ import { joinLiveSupportAction } from "@/actions/live-support";
 import { ExternalActionForm } from "@/components/shared/external-action-form";
 import { cn } from "@/lib/cn";
 import {
-  isGoogleMeet,
-  joinLabel,
+  LIVE_SUPPORT_CTA,
   meetingCodeLabel,
-  openLabel,
   supportHoursBn,
   supportScheduleBn,
   type SupportPhase,
@@ -23,8 +21,9 @@ type LiveSupportPanelProps = {
   /**
    * Manual entry fallback; absent while the room is closed.
    *
-   * Google Meet has no passcode, so both values are optional and are rendered
-   * as separate rows — an absent passcode must not hide the meeting code.
+   * The current room platform has no passcode, so both values are optional and
+   * are rendered as separate rows — an absent passcode must not hide the
+   * meeting code.
    */
   meetingId?: string | null;
   passcode?: string | null;
@@ -71,7 +70,6 @@ export function LiveSupportPanel({
 }: LiveSupportPanelProps) {
   const isOpen = shift !== "off";
   const isEligible = (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(status);
-  const buttonLabel = `Live Support Center (${platform})`;
 
   return (
     <section
@@ -138,15 +136,14 @@ export function LiveSupportPanel({
       {isEligible && configured && (
         <ExternalActionForm
           action={joinLiveSupportAction}
-          ariaLabel={buttonLabel}
           className={joinClass}
           disabled={!isOpen}
           errorClassName={errorClass}
-          fallbackLabel={openLabel(platform)}
+          fallbackLabel={LIVE_SUPPORT_CTA.open}
           fields={{ csrfToken, issueId }}
           hint="Opens in a new tab, so this request page stays open."
-          label={joinLabel(platform)}
-          pendingLabel={`Opening ${platform}…`}
+          label={LIVE_SUPPORT_CTA.join}
+          pendingLabel={LIVE_SUPPORT_CTA.pending}
         />
       )}
 
@@ -173,9 +170,9 @@ export function LiveSupportPanel({
         </div>
       )}
 
-      {isEligible && isOpen && configured && isGoogleMeet(platform) && (
+      {isEligible && isOpen && configured && (
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          {platform} may ask you to sign in with your Google account before it lets you in.
+          You may be asked to sign in before the room lets you in.
         </p>
       )}
 

@@ -76,6 +76,8 @@ test.describe("STUDENT: a request is the way into the room", () => {
 
     // The room URL is not part of the document; the panel posts to an action.
     expect(await page.content()).not.toContain("meet.google.com");
+    // The platform is an identifier, not copy: the panel says "Join Live support".
+    expect(await page.content()).not.toContain("Google Meet");
   });
 
   test("finds the request again in My requests", async ({ page }) => {
@@ -164,7 +166,7 @@ test.describe("STAFF: they run the room", () => {
     await expect(page.getByText(/You are joining as staff/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Waiting students" })).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Live Support Center (Google Meet)" }),
+      page.getByRole("button", { name: "Join Live support" }),
     ).toHaveCount(1);
   });
 

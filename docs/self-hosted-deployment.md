@@ -78,15 +78,17 @@ NEXT_PUBLIC_LMS_URL=https://www.your-domain.com
 Live support (the daily room). The room has **no built-in default**: on Google
 Meet the join URL is the key to the room, so production refuses to start without
 it and the values are never committed to git. They are resolved on the server and
-only reach a browser of a signed-in user, so never log them.
-`npm run check:live-support` confirms the platform still matches the LMS
-frontend's own copy.
+only reach a browser of a signed-in user, so never log them. The platform value is
+an identifier, not copy: the join button says "Join Live support", and the value
+must match the room URL host (checked at boot).
+`npm run check:live-support` confirms the schedule, the join CTA wording and the
+room-credential placement still match the LMS frontend's own copy.
 
 ```env
 LIVE_SUPPORT_PLATFORM=Google Meet
 LIVE_SUPPORT_JOIN_URL=https://meet.google.com/xxx-xxxx-xxx
 LIVE_SUPPORT_MEETING_ID=xxx-xxxx-xxx
-# Google Meet has no passcode; leave LIVE_SUPPORT_PASSCODE unset.
+# This platform has no passcode; leave LIVE_SUPPORT_PASSCODE unset.
 ```
 
 ### 3. Google OAuth Setup

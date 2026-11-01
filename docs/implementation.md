@@ -78,8 +78,9 @@
   queue at `/dashboard/live-support`. `/dashboard/issues/submitted` is a legacy
   redirect. `lib/live-support-policy.ts` and `lib/issue-ownership.ts` are the two
   pure filters that pin ownership; `scripts/check-live-support-sync.ts`
-  (`npm run check:live-support`) guards the schedule, the Bengali schedule wording
-  and asserts the room credentials exist **only** here.
+  (`npm run check:live-support`) guards the schedule, the Bengali schedule wording,
+  the join CTA wording ("Join Live support") and asserts the room credentials
+  exist **only** here.
 
 ## Search Performance Findings
 
@@ -208,6 +209,14 @@ cmd /c "npm run test:e2e"
 - `lib/live-support.ts` (server-only) resolves the room from `LIVE_SUPPORT_PLATFORM|JOIN_URL|MEETING_ID|PASSCODE`; the page passes it to the client card only after `requireSession()`. (2026-11-01: the room moved to Google Meet and the source default was removed — the join URL is a credential, so production requires it and rotation is an env change.)
 - Card avoids a hydration mismatch by starting at `phase = null` and resolving after mount. The closed state drops the `href` (a `pointer-events-none` link is still activated by Enter) and keeps `role="link"`.
 - New unit tests: `__tests__/live-support.test.ts` (Dhaka boundaries 08:00/11:59/12:00/19:29/19:30/23:59/00:00, midnight-as-0, Bengali copy), `__tests__/links.test.ts` (origin normalization/rejection), `__tests__/env.test.ts` extended. New E2E: `e2e/live-support.spec.ts` (guest redirect, in-slot join via `page.clock`, out-of-slot disabled, meeting details), plus a student `My Courses` case in `e2e/shell.spec.ts`; mentor nav count 2 -> 3.
-- `check:live-support` compares shift numbers, the schedule sentence's literal words and the four room values against the frontend; it resolves paths with `fileURLToPath` (the `new URL(...).pathname` form breaks on Windows) and exits non-zero when a check could not run, so it never reports a false match.
+- `check:live-support` compares shift numbers, the schedule sentence's literal words, the join CTA wording and the four room values against the frontend; it resolves paths with `fileURLToPath` (the `new URL(...).pathname` form breaks on Windows) and exits non-zero when a check could not run, so it never reports a false match.
 - New env: `NEXT_PUBLIC_LMS_URL`, `LIVE_SUPPORT_PLATFORM`, `LIVE_SUPPORT_JOIN_URL`, `LIVE_SUPPORT_MEETING_ID`, `LIVE_SUPPORT_PASSCODE` — added to `.env.example`, `compose.example.yml`, CI (compose env + production container smoke), `release.ps1`, `playwright.config.ts` (pinned so E2E is deterministic) and the deployment docs.
 - Gates: lint clean; typecheck clean; 18 test files / 159 tests passing; production build clean (`/dashboard/support` dynamic); `check:live-support` green against the frontend checkout.
+
+### Session log — join CTA renamed to "Join Live support" (2026-11-01)
+- `lib/config/live-support.ts` now exports `LIVE_SUPPORT_CTA` (`join` / `pending` / `open`) and no longer exports the platform-derived `joinLabel`/`openLabel` helpers. The platform value stays an identifier only: `LIVE_SUPPORT_PLATFORM` still drives `meetingCodeLabel` ("Meeting code" vs "Meeting ID") and the boot-time URL/host validation in `lib/env.ts`.
+- `components/live-support/live-support-panel.tsx` and `live-support-card.tsx` use the shared labels, drop the `aria-label` (the visible label is now the accessible name), and replace the platform-specific sign-in hint with "You may be asked to sign in before the room lets you in." The platform name no longer appears in the rendered panel.
+- `scripts/check-live-support-sync.ts` gained `compareJoinLabel()`: the LMS help-center copy must say `Join Live support` (same wording as `LIVE_SUPPORT_CTA.join`) and must not contain `Join Google Meet` / `Open Google Meet`. The platform comparison was removed with the LMS `siteConfig.support.platform` field; the room-credential and `libraryUrl` checks are unchanged and the script still exits non-zero when a check could not run.
+- Tests: `__tests__/live-support-config.test.ts` pins the three labels and asserts they never name a platform; the panel/card tests assert the label, the platform-independent wording (Zoom still gets "Meeting ID"/"Passcode") and that "Google Meet" is not rendered; `external-action-form.test.tsx` fixtures use the new wording; `e2e/live-support.spec.ts` looks for `Join Live support` and asserts the student request page contains no "Google Meet".
+- Docs: `README.md`, `docs/workflow.md`, `docs/student-guide.md`, `docs/mentor-guide.md`, `docs/self-hosted-deployment.md` updated; `.env.example`, compose, CI and the release script keep the `Google Meet` env value, which is the platform identifier.
+- Gates: lint clean; typecheck clean; 32 test files / 247 tests passing; production build clean; `check:live-support` green against the frontend checkout. Targeted Playwright not run in this session (needs the seeded database and auth state).

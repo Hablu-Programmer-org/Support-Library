@@ -4,10 +4,8 @@ import { joinLiveSupportAction } from "@/actions/live-support";
 import { ExternalActionForm } from "@/components/shared/external-action-form";
 import { cn } from "@/lib/cn";
 import {
-  isGoogleMeet,
-  joinLabel,
+  LIVE_SUPPORT_CTA,
   meetingCodeLabel,
-  openLabel,
   supportHoursBn,
   supportScheduleBn,
   type SupportPhase,
@@ -18,7 +16,8 @@ type LiveSupportCardProps = {
   /**
    * Manual entry fallback; absent while the room is closed.
    *
-   * Google Meet has no passcode, so the two values render independently.
+   * The current room platform has no passcode, so the two values render
+   * independently.
    */
   meetingId?: string | null;
   passcode?: string | null;
@@ -64,7 +63,6 @@ export function LiveSupportCard({
   csrfToken,
 }: LiveSupportCardProps) {
   const isOpen = shift !== "off";
-  const buttonLabel = `Live Support Center (${platform})`;
 
   return (
     <div className="space-y-6">
@@ -119,15 +117,14 @@ export function LiveSupportCard({
       {configured && (
         <ExternalActionForm
           action={joinLiveSupportAction}
-          ariaLabel={buttonLabel}
           className={joinClass}
           disabled={!isOpen}
           errorClassName={errorClass}
-          fallbackLabel={openLabel(platform)}
+          fallbackLabel={LIVE_SUPPORT_CTA.open}
           fields={{ csrfToken }}
           hint="Opens in a new tab, so the queue stays open next to the room."
-          label={joinLabel(platform)}
-          pendingLabel={`Opening ${platform}…`}
+          label={LIVE_SUPPORT_CTA.join}
+          pendingLabel={LIVE_SUPPORT_CTA.pending}
         />
       )}
 
@@ -154,9 +151,9 @@ export function LiveSupportCard({
         </div>
       )}
 
-      {isOpen && configured && isGoogleMeet(platform) && (
+      {isOpen && configured && (
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          {platform} may ask you to sign in with your Google account before it lets you in.
+          You may be asked to sign in before the room lets you in.
         </p>
       )}
 

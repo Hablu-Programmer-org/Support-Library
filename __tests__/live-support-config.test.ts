@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 const { getLiveSupportConfig, isLiveSupportConfigured } = await import("@/lib/live-support");
+const { LIVE_SUPPORT_CTA } = await import("@/lib/config/live-support");
 
 const MANAGED_VARS = [
   "LIVE_SUPPORT_PLATFORM",
@@ -62,5 +63,19 @@ describe("getLiveSupportConfig", () => {
     process.env.LIVE_SUPPORT_PLATFORM = "";
 
     expect(getLiveSupportConfig().platform).toBe("Google Meet");
+  });
+});
+
+describe("LIVE_SUPPORT_CTA", () => {
+  it("shows the platform-agnostic wording the LMS copy also uses", () => {
+    expect(LIVE_SUPPORT_CTA.join).toBe("Join Live support");
+    expect(LIVE_SUPPORT_CTA.pending).toBe("Opening Live support…");
+    expect(LIVE_SUPPORT_CTA.open).toBe("Open Live support");
+  });
+
+  it("never names the room platform in the call to action", () => {
+    for (const label of Object.values(LIVE_SUPPORT_CTA)) {
+      expect(label).not.toMatch(/meet|zoom/i);
+    }
   });
 });

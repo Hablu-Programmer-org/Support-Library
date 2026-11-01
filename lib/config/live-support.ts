@@ -29,13 +29,17 @@ export type SupportShift = keyof typeof SUPPORT_SHIFTS;
 export type SupportPhase = SupportShift | "off";
 
 /**
- * The platform the room runs on, shown in copy and button labels.
+ * The platform the room runs on.
  *
  * This is the only live support value with a source default: it is not a secret.
  * The room itself (join URL, meeting code, passcode) has **no** default, so a
  * leaked room can be rotated by changing the environment and no credential is
- * ever committed. `scripts/check-live-support-sync.ts` compares this constant
- * with the LMS frontend's `siteConfig.support.platform`.
+ * ever committed.
+ *
+ * The value is an identifier, not copy: `lib/env.ts` requires the join URL host
+ * to match it, and `meetingCodeLabel` uses it to pick the platform's own
+ * vocabulary ("Meeting code" vs "Meeting ID"). The join CTA deliberately does
+ * not name it — see `LIVE_SUPPORT_CTA`.
  */
 export const LIVE_SUPPORT_PLATFORM = "Google Meet";
 
@@ -60,15 +64,19 @@ export type LiveSupportConfig = {
 export const isGoogleMeet = (platform: string) => /meet/i.test(platform);
 
 /**
- * "Join Google Meet" / "Join Zoom".
+ * Visible call-to-action labels, independent of the room platform.
  *
- * Deliberately not `Join ${platform} Meeting`: that renders "Join Google Meet
- * Meeting" on Meet, and the platform name reads naturally as the product.
+ * The room runs on Google Meet today, but a student sees "Live support"
+ * (owner, 2026-11-01). Keeping the labels platform-agnostic means a room
+ * migration never changes the wording a student learned, and the platform name
+ * never reaches the rendered page. `scripts/check-live-support-sync.ts`
+ * compares `join` with the LMS help-center copy, so the two apps cannot drift.
  */
-export const joinLabel = (platform: string) => `Join ${platform}`;
-
-/** Fallback link text when the new tab could not be opened automatically. */
-export const openLabel = (platform: string) => `Open ${platform}`;
+export const LIVE_SUPPORT_CTA = {
+  join: "Join Live support",
+  pending: "Opening Live support…",
+  open: "Open Live support",
+} as const;
 
 /** Label for the manual-entry row, matched to the platform's own vocabulary. */
 export const meetingCodeLabel = (platform: string) =>

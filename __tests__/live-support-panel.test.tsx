@@ -8,8 +8,9 @@ vi.mock("@/actions/live-support", () => ({
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
 
 /**
- * The live room is Google Meet: no passcode, and the manual-entry row is the
- * meeting code. The room URL itself must never reach the markup.
+ * The live room is joined from this panel: the CTA is platform-agnostic
+ * ("Join Live support") and the manual-entry row uses the platform's own
+ * vocabulary. The room URL itself must never reach the markup.
  */
 const baseProps = {
   issueId: "66f1a2b3c4d5e6f7a8b9c0d1",
@@ -23,7 +24,7 @@ const baseProps = {
 
 const joinButton = () =>
   screen.getByRole("button", {
-    name: "Live Support Center (Google Meet)",
+    name: "Join Live support",
   }) as HTMLButtonElement;
 
 describe("LiveSupportPanel", () => {
@@ -41,11 +42,13 @@ describe("LiveSupportPanel", () => {
     expect(container.querySelector("select")).toBeNull();
 
     expect(joinButton().disabled).toBe(false);
-    expect(joinButton().textContent).toBe("Join Google Meet");
+    expect(joinButton().textContent).toBe("Join Live support");
     expect(screen.getByText(/Opens in a new tab/)).not.toBeNull();
     expect(screen.getByText("Meeting code")).not.toBeNull();
-    // Google Meet has no passcode row at all.
+    // The current room platform has no passcode row at all.
     expect(screen.queryByText("Passcode")).toBeNull();
+    // The platform name is an identifier, not copy: it must not be rendered.
+    expect(container.textContent).not.toContain("Google Meet");
   });
 
   it("never renders the meeting link itself", () => {
@@ -72,7 +75,7 @@ describe("LiveSupportPanel", () => {
     expect(
       screen.getByText(/This request is closed, so it can no longer be taken to the room/),
     ).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Live Support Center (Google Meet)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Join Live support" })).toBeNull();
     // A closed request also gets no dial-in details: the room is not for it.
     expect(screen.queryByText("Meeting code")).toBeNull();
   });
@@ -86,10 +89,10 @@ describe("LiveSupportPanel", () => {
       screen.getByText("The support room is not configured for this deployment yet."),
     ).not.toBeNull();
     expect(container.querySelector("form")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Live Support Center (Google Meet)" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Join Live support" })).toBeNull();
   });
 
-  it("still renders a passcode for a platform that has one", () => {
+  it("keeps the label platform-agnostic but uses the platform's own vocabulary", () => {
     render(
       <LiveSupportPanel
         {...baseProps}
@@ -102,8 +105,9 @@ describe("LiveSupportPanel", () => {
 
     expect(screen.getByText("Meeting ID")).not.toBeNull();
     expect(screen.getByText("Passcode")).not.toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Live Support Center (Zoom)" }).textContent,
-    ).toBe("Join Zoom");
+    // A different room platform must not change the CTA a student learned.
+    expect(screen.getByRole("button", { name: "Join Live support" }).textContent).toBe(
+      "Join Live support",
+    );
   });
 });

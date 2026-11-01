@@ -42,11 +42,11 @@ function renderForm(
   return render(
     <ExternalActionForm
       action={action}
-      fallbackLabel="Open Google Meet"
+      fallbackLabel="Open Live support"
       fields={{ csrfToken: "csrf-token", issueId: "issue-id" }}
       hint="Opens in a new tab"
-      label="Join Google Meet"
-      pendingLabel="Opening Google Meet…"
+      label="Join Live support"
+      pendingLabel="Opening Live support…"
       {...overrides}
     />,
   );
@@ -63,7 +63,7 @@ describe("ExternalActionForm", () => {
     const action = vi.fn(async () => ({ url: ROOM_URL }));
 
     renderForm(action);
-    fireEvent.click(screen.getByRole("button", { name: "Join Google Meet" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join Live support" }));
 
     await waitFor(() => expect(tab.location.replace).toHaveBeenCalledWith(ROOM_URL));
 
@@ -71,7 +71,7 @@ describe("ExternalActionForm", () => {
     expect(open).toHaveBeenCalledWith("", "_blank");
     expect(tab.opener).toBeNull();
     // A real link is also rendered, so a blocked tab still has a way in.
-    expect(screen.getByRole("link", { name: "Open Google Meet" })).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Open Live support" })).not.toBeNull();
   });
 
   it("falls back to a new-tab link when the popup is blocked", async () => {
@@ -79,9 +79,9 @@ describe("ExternalActionForm", () => {
     const action = vi.fn(async () => ({ url: ROOM_URL }));
 
     renderForm(action);
-    fireEvent.click(screen.getByRole("button", { name: "Join Google Meet" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join Live support" }));
 
-    const link = await screen.findByRole("link", { name: "Open Google Meet" });
+    const link = await screen.findByRole("link", { name: "Open Live support" });
     expect(link.getAttribute("href")).toBe(ROOM_URL);
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
@@ -94,11 +94,11 @@ describe("ExternalActionForm", () => {
     const action = vi.fn(async () => ({ error: "Live support is closed right now." }));
 
     renderForm(action);
-    fireEvent.click(screen.getByRole("button", { name: "Join Google Meet" }));
+    fireEvent.click(screen.getByRole("button", { name: "Join Live support" }));
 
     await waitFor(() => expect(tab.close).toHaveBeenCalled());
     expect(screen.getByRole("alert").textContent).toContain("Live support is closed right now.");
-    expect(screen.queryByRole("link", { name: "Open Google Meet" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open Live support" })).toBeNull();
   });
 
   it("opens only one tab on a double click", async () => {
@@ -107,7 +107,7 @@ describe("ExternalActionForm", () => {
     const action = vi.fn(async () => ({ url: ROOM_URL }));
 
     renderForm(action);
-    const button = screen.getByRole("button", { name: "Join Google Meet" });
+    const button = screen.getByRole("button", { name: "Join Live support" });
     fireEvent.click(button);
     fireEvent.click(button);
 
@@ -128,7 +128,7 @@ describe("ExternalActionForm", () => {
     renderForm(vi.fn(async () => ({})), { disabled: true });
 
     expect(
-      (screen.getByRole("button", { name: "Join Google Meet" }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: "Join Live support" }) as HTMLButtonElement).disabled,
     ).toBe(true);
   });
 });

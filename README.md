@@ -70,7 +70,7 @@ Help Center (dashboard sidebar)
                                               ▼  submit
                                      /dashboard/issues/{id}?created=1
                                        status · reference · own files · team replies
-                                       Live support panel → [ Join Google Meet ]
+                                       Live support panel → [ Join Live support ]
                                               ▼  join (server action)
                                      live-support-joins row ──► staff queue
 ```
@@ -91,24 +91,24 @@ Help Center (dashboard sidebar)
    (`/dashboard/issues/{id}?created=1`) with a success banner: status, the short
    reference (`000123`), everything they submitted, the team's replies
    (read-only) — and the **Live support** panel.
-6. The panel offers **Join Google Meet** only while the request is `OPEN`,
+6. The panel offers **Join Live support** only while the request is `OPEN`,
    `PENDING` or `FOLLOW_UP` **and** a support shift is open (08:00–12:00 or
    19:30–24:00, Asia/Dhaka, resolved on the server). The meeting code is rendered
-   only in that state; Google Meet has no passcode row. Meet may ask the student
-   to sign in with their Google account. The button **opens the room in a new
-   tab**, so the request page stays open.
+   only in that state; the current room platform has no passcode row. The
+   student may be asked to sign in before the room lets them in. The button
+   **opens the room in a new tab**, so the request page stays open.
 7. Joining runs a server action that re-checks ownership, the shift and the
    per-user budget, records one join per request per shift per day, audits it,
    and only then returns the room URL. The client opens that URL in a new tab;
-   if the browser blocks the popup (or JavaScript is off) an **Open Google Meet**
+   if the browser blocks the popup (or JavaScript is off) an **Open Live support**
    link appears instead — still a new tab.
 8. **My requests** lists the student's own requests so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
-> **No request-less shortcut.** The old "Join live support" button next to
-> **Submit an issue** was removed with the 2026-11-01 Google Meet switch: Meet
-> has no waiting room, so an untracked join left no queue row and no case to
-> follow up. The request page is the only way in.
+> **No request-less shortcut.** The old request-less join shortcut next to
+> **Submit an issue** was removed with the 2026-11-01 room switch: the room
+> platform has no waiting room, so an untracked join left no queue row and no
+> case to follow up. The request page is the only way in.
 
 ### Staff
 
@@ -233,7 +233,7 @@ cmd /c "npm run check:live-support"           # live support drift guard vs the 
 
 `bench:search` seeds a throwaway collection in the test database and prints a markdown comparison of the search strategies plus a scaling curve. It refuses to run against the development database. Findings: `docs/implementation.md`.
 
-`check:live-support` compares this app's live support schedule and its Bengali schedule wording against the LMS frontend's own copy (`frontend/src/lib/config/support.ts`), and inverts the room check: the join URL, meeting code and passcode must exist **only** here (resolved server-side from `LIVE_SUPPORT_*`, never in source), must never reappear in the LMS `support` config, and the LMS must keep a `support.libraryUrl` pointing students at this app. It also pins the platform label to the LMS copy. The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
+`check:live-support` compares this app's live support schedule and its Bengali schedule wording against the LMS frontend's own copy (`frontend/src/lib/config/support.ts`), and inverts the room check: the join URL, meeting code and passcode must exist **only** here (resolved server-side from `LIVE_SUPPORT_*`, never in source), must never reappear in the LMS `support` config, and the LMS must keep a `support.libraryUrl` pointing students at this app. It also compares the join CTA wording (`Join Live support`) with the LMS help-center copy, so the two apps cannot show different labels. The three repos are separate git repositories, so no CI can see across them — run it from a full local checkout (frontend next to `support-library`) before a release. It exits non-zero on drift *and* when it could not read both copies, so a green result can be trusted.
 
 ## Verification
 
