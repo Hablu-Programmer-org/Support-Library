@@ -30,6 +30,8 @@ const NO_REQUEST =
 const GENERIC = "We could not open the live support room. Please try again.";
 const RATE_LIMITED = "Too many attempts. Please wait a few minutes and try again.";
 const NOT_CONFIGURED = "Live support is not available right now. Please try again later.";
+/** Audit anchor for the request-less join: no issue is involved. */
+const QUICK_JOIN_RESOURCE_ID = "quick-join";
 
 /**
  * The room URL, resolved only after every check has passed.
@@ -167,6 +169,85 @@ export async function joinLiveSupportAction(
           action: "ISSUE_LIVE_SUPPORT_JOIN",
           resourceType: "SupportIssue",
           resourceId: issueId,
+          result: "SUCCEEDED",
+        },
+        context,
+      ).catch(() => undefined);
+
+      return externalRedirect(resolveJoinUrl(), NOT_CONFIGURED);
+    });
+  } catch {
+    return { error: GENERIC };
+  }
+}
+
+/**
+ * Walk into the live support room **without** a request (owner decision).
+ *
+ * The request page stays the supported path: it fixes a case for the mentor to
+ * follow up and puts the student in the staff queue. This shortcut exists on the
+ * issues page because students were asking for live help before submitting
+ * anything, and the request-first gate left them with nowhere to click.
+ *
+ * It is still narrow, and every check is repeated here rather than trusted from
+ * the page:
+ *  - CSRF, session and role (students only — staff join from `/dashboard/support`);
+ *  - the shift, resolved on the server in Asia/Dhaka (the browser clock is
+ *    display only);
+ *  - the shared `live-support.join` budget (so a request-less join cannot be
+ *    used to hammer the action or buy free database reads);
+ *  - a `LIVE_SUPPORT_QUICK_JOIN` audit row, best-effort like the request-backed
+ *    join.
+ *
+ * Known gap, accepted by the owner on 2026-11-01: no request is recorded, so the
+ * student is **not** in the staff queue ("Waiting today") and has no reference to
+ * read out. Anything that changes that would have to make a case, i.e. become
+ * the request-backed action.
+ */
+export async function joinLiveSupportQuickAction(
+  _prevState: ExternalRedirectState,
+  formData: FormData,
+): Promise<ExternalRedirectState> {
+  try {
+    return await withCsrfProtection(formData, async (): Promise<ExternalRedirectState> => {
+      const guard = await assertRole("STUDENT");
+      if (!guard.ok) {
+        return { error: "Sign in again to join live support." };
+      }
+
+      // Rank-based guard lets staff through; the session is the only source of
+      // the actor id, so the browser cannot pick whose budget is spent.
+      if (guard.session.user.role !== "STUDENT") {
+        return { error: "Staff should join from the Live support page." };
+      }
+
+      const actorId = guard.session.user.id;
+
+      if (currentShift(new Date()) === "off") {
+        return { error: CLOSED };
+      }
+
+      try {
+        await consumeRateLimit("live-support.join", actorId, {
+          action: "LIVE_SUPPORT_QUICK_JOIN",
+          resourceType: "LiveSupportQuickJoin",
+          resourceId: QUICK_JOIN_RESOURCE_ID,
+        });
+      } catch (error) {
+        if (error instanceof MutationRateLimitError) return { error: RATE_LIMITED };
+        if (error instanceof RateLimitUnavailableError) return { error: GENERIC };
+        throw error;
+      }
+
+      // Best-effort: a failed audit write must not tell the student the room is
+      // broken, because the join itself has already been authorized.
+      const context = await getRequestContext();
+      await recordAuditEvent(
+        {
+          actorId,
+          action: "LIVE_SUPPORT_QUICK_JOIN",
+          resourceType: "LiveSupportQuickJoin",
+          resourceId: QUICK_JOIN_RESOURCE_ID,
           result: "SUCCEEDED",
         },
         context,

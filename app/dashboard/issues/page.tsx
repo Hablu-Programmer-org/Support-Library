@@ -5,12 +5,14 @@ import { DeleteButton } from "@/components/issues/delete-button";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { StatusBadge } from "@/components/issues/status-badge";
+import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
-import { dayKeyInDhaka } from "@/lib/config/live-support";
+import { currentShift, dayKeyInDhaka } from "@/lib/config/live-support";
+import { isLiveSupportConfigured } from "@/lib/live-support";
 import {
   buildIssueDetailHref,
   buildIssueListHref,
@@ -91,7 +93,16 @@ export default async function IssuesPage({
   const waitingIds = new Set(waitingIssueIds);
 
   const canDelete = canManage; // Same roles can delete
-  const csrfToken = canDelete ? await generateCsrfToken(session.user.id) : "";
+  // Students also get the request-less quick join beside "Submit an issue";
+  // staff run the room from `/dashboard/support`, so they keep just "New Issue".
+  const showQuickJoin = canSubmit && !canManage;
+  // One token covers both student actions; staff never see the quick join.
+  const csrfToken =
+    canDelete || showQuickJoin ? await generateCsrfToken(session.user.id) : "";
+  // Both are resolved here, server-side: the browser clock is display only and
+  // the room URL never leaves the action.
+  const quickJoinShift = showQuickJoin ? currentShift(new Date()) : "off";
+  const quickJoinConfigured = showQuickJoin ? isLiveSupportConfigured() : false;
 
   // The list URL travelling with every row: a detail page hands it back so
   // "Back to results" (and every action that redirects) returns to this exact
@@ -111,6 +122,13 @@ export default async function IssuesPage({
               >
                 {canManage ? "New Issue" : "Submit an issue"}
               </Link>
+              {showQuickJoin && (
+                <QuickLiveSupportButton
+                  configured={quickJoinConfigured}
+                  csrfToken={csrfToken}
+                  shift={quickJoinShift}
+                />
+              )}
             </div>
           )
         }

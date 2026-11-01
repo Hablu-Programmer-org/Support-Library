@@ -1,0 +1,18 @@
+
+> support-library@1.0.6 test:e2e
+> playwright test
+
+◇ injected env (18) from .env.local
+◇ injected env (0) from .env.local
+
+Running 86 tests using 1 worker
+
+◇ injected env (0) from .env.local
+◇ injected env (0) from .env.local
+  ok  1 [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as admin (2.1s)
+  ok  2 [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as mentor (484ms)
+  ok  3 [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as student (694ms)
+  ok  4 [setup] › e2e\fixtures\lms.fixtures.ts:22:6 › seed hp-v2 style user for LMS lookups (60ms)
+◇ injected env (0) from .env.local
+  x   5 [chromium] › e2e\attachments-edit.spec.ts:9:7 › edit-mode attachments › an admin can preview and replace an old image attachment (21.5s)
+◇ injected env (0) from .env.local

@@ -105,10 +105,13 @@ Help Center (dashboard sidebar)
 8. **My requests** lists the student's own requests so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
-> **No request-less shortcut.** The old request-less join shortcut next to
-> **Submit an issue** was removed with the 2026-11-01 room switch: the room
-> platform has no waiting room, so an untracked join left no queue row and no
-> case to follow up. The request page is the only way in.
+> **Request-less shortcut (owner decision, 2026-11-01).** The issues page also
+> shows **Join Live support** beside **Submit an issue**. It enters the room with
+> no request (CSRF, shift, the `live-support.join` budget and a
+> `LIVE_SUPPORT_QUICK_JOIN` audit row still apply) but creates no queue row, so
+> the student is not in `Waiting today` and has no reference. The request page
+> above stays the tracked path — it queues the student and gives staff a case to
+> follow up.
 
 ### Staff
 
@@ -130,6 +133,7 @@ is submitted, and the chip only stays while the request is still unresolved.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; the meeting code is absent from the response |
+| Request-less join (issues page) | Allowed during a shift; **no** queue row, no reference — the request page is the queued path |
 | Request `SOLVED` / `ARCHIVED` | No join; the student is asked to submit a new request |
 | Another student's unpublished request | `404` (ownership is `createdBy` from the session) |
 | Another student's published issue | Read-only library view |

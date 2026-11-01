@@ -80,10 +80,14 @@ Help Center (dashboard sidebar)
    requests (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
 
-> **No request-less shortcut.** For students, the issues page no longer offers a
-> direct join button. It was removed with the 2026-11-01 room switch: the room
-> platform has no waiting room, so a request-less join produced no queue row and
-> no case to follow up. The request page is the only way into the room.
+> **Request-less shortcut (owner decision, 2026-11-01).** Students also get a
+> **Join Live support** button at the top of the issues page, beside **Submit an
+> issue**. It walks straight into the room with no request: CSRF, the
+> server-resolved shift, the shared `live-support.join` budget (10 / 10 min) and a
+> `LIVE_SUPPORT_QUICK_JOIN` audit row still apply, but it records **no** queue
+> row — the student does not appear in staff `Waiting today` and has no reference
+> to read out. The request page above stays the tracked path: it queues the
+> student and gives the mentor a case to follow up.
 
 ## 4. Staff journey
 
@@ -111,6 +115,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Retention | Join rows expire after 180 days |
 | Privacy | The queue shows student name/email, reference, request title, status, shift and time — never a passcode, IP or token |
 | Availability display | The meeting code is absent from the response while the room is closed |
+| Quick join (issues page) | Students join without a request (owner decision, 2026-11-01): not queued, no reference; the request page remains the tracked path |
 
 ## 6. Data and security notes
 
@@ -125,10 +130,10 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
   `Open Live support` link is always available when a popup is blocked.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
-- **Audit**: joins (success and denial) write `ISSUE_LIVE_SUPPORT_JOIN`; issue,
-  reply and publication changes are audited as before. The temporary
-  request-less `LIVE_SUPPORT_QUICK_JOIN` path was removed with the 2026-11-01
-  room switch, so every unaudited way into the room is gone too.
+- **Audit**: request-backed joins (success and denial) write
+  `ISSUE_LIVE_SUPPORT_JOIN`; the request-less issues-page join writes
+  `LIVE_SUPPORT_QUICK_JOIN` (denials come from the shared rate-limit bucket).
+  Issue, reply and publication changes are audited as before.
 - **Indexes**: `student_own_requests`, `student_own_issues`, `awaiting_mentor`,
   `live-support-joins-issue-day-shift-unique`, `live-support-joins-day-joined`
   (plus the TTL). The deploy pipeline runs `db:indexes --apply --create-only` then
@@ -140,7 +145,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
 | Popup blocked / tab closed | `Open Live support` link is rendered instead (still a new tab) |
-| No open request | No join panel; submit one first (the request-less shortcut was removed) |
+| No open request | The issues-page shortcut still joins (not queued, no reference); the request page shows no join panel until one is submitted |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
 | Another student's published issue | Read-only library view |

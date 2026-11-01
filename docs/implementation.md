@@ -81,6 +81,14 @@
   (`npm run check:live-support`) guards the schedule, the Bengali schedule wording,
   the join CTA wording ("Join Live support") and asserts the room credentials
   exist **only** here.
+- **Request-less quick join (owner decision, 2026-11-01).** The issues page's
+  header carries a student-only **Join Live support** button beside **Submit an
+  issue**, wired to `joinLiveSupportQuickAction`. It re-checks CSRF, role, the
+  server-resolved shift and the shared `live-support.join` budget, writes a
+  `LIVE_SUPPORT_QUICK_JOIN` audit row, and returns the room URL only then (opened
+  in a new tab by `ExternalActionForm`). It records **no** queue row, so those
+  students are absent from `Waiting today` and have no reference; the request
+  page stays the tracked path, and a unit + e2e spec pin both behaviours.
 
 ## Search Performance Findings
 
