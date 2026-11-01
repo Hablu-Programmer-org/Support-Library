@@ -8,6 +8,7 @@ import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 import { formatVideoLinks } from "@/lib/format-links";
+import { RichText } from "@/lib/rich-text";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
 const secondaryButtonClass =
@@ -110,9 +111,10 @@ export function ReplyItem({
         )}
       </header>
 
-      <p className="whitespace-pre-wrap wrap-break-word text-base leading-7 text-slate-700 dark:text-slate-200 max-w-3xl">
-        {reply.body}
-      </p>
+      <RichText
+        text={reply.body}
+        className="whitespace-pre-wrap wrap-break-word text-base leading-7 text-slate-700 dark:text-slate-200 max-w-3xl"
+      />
       <LinkList videoLinks={reply.videoLinks} />
       <AttachmentList uploads={reply.uploads} />
 
@@ -135,6 +137,9 @@ export function ReplyItem({
               maxLength={20_000}
               className={nativeTextareaClass}
             />
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+              Use **text** for bold.
+            </span>
           </label>
           <label className={nativeLabelClass}>
             Video links

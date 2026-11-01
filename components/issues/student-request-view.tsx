@@ -8,6 +8,7 @@ import { CopyValue } from "@/components/shared/copy-value";
 import { LinkList } from "@/components/shared/link-list";
 import { currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { getLiveSupportConfig } from "@/lib/live-support";
+import { RichText } from "@/lib/rich-text";
 import type { SupportIssueListItem } from "@/lib/services/issues";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
@@ -150,9 +151,10 @@ export function StudentRequestView({
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {reply.authorName ?? "Support team"} · {timestamp(reply.createdAt)}
                 </p>
-                <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
-                  {reply.body}
-                </p>
+                <RichText
+                  text={reply.body}
+                  className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300"
+                />
                 <LinkList videoLinks={reply.videoLinks} />
               </li>
             ))}
