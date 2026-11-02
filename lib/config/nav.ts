@@ -9,6 +9,7 @@ import {
   SparklesIcon,
   UserIcon,
   VideoIcon,
+  HelpCircleIcon,
 } from "@/components/icons";
 import { lmsHref } from "@/lib/links";
 import { ROLE_RANK, type UserRole } from "@/lib/roles";
@@ -61,6 +62,8 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
     icon: FileTextIcon,
   },
   myCoursesItem(),
+  { label: "n8n help", href: "/dashboard/n8n-help", maxRole: "STUDENT", icon: HelpCircleIcon },
+  { label: "n8n requests", href: "/dashboard/n8n-requests", minRole: "ADMIN", icon: HelpCircleIcon },
   // Staff only: students join from a specific request.
   {
     label: "Live support",

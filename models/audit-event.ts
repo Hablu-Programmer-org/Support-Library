@@ -15,6 +15,8 @@ export const AUDIT_ACTIONS = [
   "OAUTH_CALLBACK",
   "ISSUE_LIVE_SUPPORT_JOIN",
   "LIVE_SUPPORT_QUICK_JOIN",
+  "N8N_REQUEST_CREATE",
+  "N8N_LINK_EMAIL_SEND",
 ] as const;
 
 export const AUDIT_RESULTS = ["SUCCEEDED", "DENIED"] as const;
@@ -31,6 +33,7 @@ const auditEventSchema = new mongoose.Schema(
         "SupportAttachment",
         "OAuthCallback",
         "LiveSupportQuickJoin",
+        "N8nAccessRequest",
       ],
       required: true,
     },

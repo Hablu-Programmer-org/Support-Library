@@ -10,6 +10,7 @@ import {
   SupportIssueModel,
   SupportReplyModel,
   UserModel,
+  N8nAccessRequestModel,
 } from "@/models";
 
 /**
@@ -29,6 +30,7 @@ const localModels = [
   LiveSupportJoinModel,
   AuditEventModel,
   RateLimitBucketModel,
+  N8nAccessRequestModel,
 ];
 
 describe("MongoDB model naming convention", () => {

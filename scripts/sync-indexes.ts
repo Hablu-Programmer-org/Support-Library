@@ -10,6 +10,7 @@ import {
   SupportIssueModel,
   SupportReplyModel,
   UserModel,
+  N8nAccessRequestModel,
 } from "../models";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
@@ -21,6 +22,7 @@ const models = [
   LiveSupportJoinModel,
   AuditEventModel,
   RateLimitBucketModel,
+  N8nAccessRequestModel,
 ];
 
 async function main() {

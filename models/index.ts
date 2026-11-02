@@ -6,3 +6,4 @@ export * from "./counter";
 export * from "./live-support-join";
 export * from "./audit-event";
 export * from "./rate-limit-bucket";
+export * from "./n8n-access-request";
