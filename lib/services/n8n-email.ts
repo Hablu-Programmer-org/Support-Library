@@ -27,11 +27,14 @@ export async function sendN8nHelpEmail(input: {
   link: string;
 }) {
   const reset = input.requestType === "PASSWORD_RESET";
-  const title = reset ? "Reset your n8n password" : "Your n8n access is ready";
-  const action = reset ? "Reset n8n password" : "Set up n8n access";
+  const openAi = input.requestType === "OPENAI_ACCESS";
+  const title = openAi ? "Your OpenAI access is ready" : reset ? "Reset your n8n password" : "Your n8n access is ready";
+  const action = openAi ? "Accept OpenAI access" : reset ? "Reset n8n password" : "Set up n8n access";
   const name = escapeHtml(input.studentName);
   const link = escapeHtml(input.link);
-  const text = reset
+  const text = openAi
+    ? "Use the secure button below to accept your OpenAI workspace invitation. This email never contains an API key."
+    : reset
     ? "Use the secure button below to choose a new password."
     : "Use the secure button below to accept your invitation and set up your n8n account.";
 

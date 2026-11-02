@@ -7,15 +7,16 @@ import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
 
 export const dynamic = "force-dynamic";
 
-const labels = { ACCESS: "n8n access", PASSWORD_RESET: "Password reset" } as const;
+const labels = { ACCESS: "n8n access", PASSWORD_RESET: "Password reset", OPENAI_ACCESS: "OpenAI API access" } as const;
 
 export default async function N8nHelpPage() {
   const session = await requireRole("STUDENT");
   if (session.user.role !== "STUDENT") return null;
-  const [requests, csrfToken] = await Promise.all([
+  const [allRequests, csrfToken] = await Promise.all([
     listOwnN8nRequests(session.user.id),
     generateCsrfToken(session.user.id),
   ]);
+  const requests = allRequests.filter((request) => request.requestType !== "OPENAI_ACCESS");
   const latestSent = requests.find((request) => request.status === "SENT");
 
   return <div className="space-y-6">

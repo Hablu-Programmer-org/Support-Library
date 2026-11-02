@@ -6,6 +6,7 @@ import { DeleteButton } from "@/components/issues/delete-button";
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
+import { AccessHelpCard } from "@/components/n8n/access-help-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
@@ -25,6 +26,7 @@ import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
+import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +101,9 @@ export default async function IssuesPage({
   // One token covers both student actions; staff never see the quick join.
   const csrfToken =
     canDelete || showQuickJoin ? await generateCsrfToken(session.user.id) : "";
+  const accessRequests = showQuickJoin
+    ? await listOwnN8nRequests(session.user.id)
+    : [];
   // Both are resolved here, server-side: the browser clock is display only and
   // the room URL never leaves the action.
   const quickJoinShift = showQuickJoin ? currentShift(new Date()) : "off";
@@ -161,6 +166,18 @@ export default async function IssuesPage({
         showMentor={canManage}
         statuses={CASE_STATUSES}
       />
+
+      {showQuickJoin && (
+        <AccessHelpCard
+          csrfToken={csrfToken}
+          requests={accessRequests.map((request) => ({
+            id: request._id.toString(),
+            requestType: request.requestType,
+            status: request.status,
+            sentAt: request.sentAt?.toISOString() ?? null,
+          }))}
+        />
+      )}
 
       <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {issues.items.length === 0 ? (

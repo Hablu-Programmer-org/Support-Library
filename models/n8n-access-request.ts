@@ -1,6 +1,6 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-export const N8N_REQUEST_TYPES = ["ACCESS", "PASSWORD_RESET"] as const;
+export const N8N_REQUEST_TYPES = ["ACCESS", "PASSWORD_RESET", "OPENAI_ACCESS"] as const;
 export const N8N_REQUEST_STATUSES = ["PENDING", "PROCESSING", "SENT", "FAILED"] as const;
 
 const n8nAccessRequestSchema = new mongoose.Schema(
@@ -13,6 +13,7 @@ const n8nAccessRequestSchema = new mongoose.Schema(
     sentAt: { type: Date, default: null },
     handledBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     failureCode: { type: String, default: null, maxlength: 40 },
+    purpose: { type: String, trim: true, maxlength: 300, default: null },
   },
   { timestamps: true, collection: "n8n-access-requests" },
 );

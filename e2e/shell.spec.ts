@@ -38,13 +38,13 @@ test.describe("Shell: dashboard chrome", () => {
       .toBe(true);
 
     // Inline nav: the admin links (Dashboard, Issues, Live support, Support
-    // queue, n8n requests), the active one highlighted and marked. "My Courses" is
+    // queue, Access requests), the active one highlighted and marked. "My Courses" is
     // student-only and its LMS origin is not set for e2e, so it never appears
     // here.
     const nav = page.locator('header nav[aria-label="Primary"]');
     await expect(nav.getByRole("link")).toHaveCount(5);
     await expect(nav.getByRole("link", { name: "Support queue" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "n8n requests" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Access requests" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "n8n help" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     await expect(nav.getByRole("link", { name: "Issues" })).not.toHaveAttribute("aria-current", "page");
@@ -132,7 +132,7 @@ test.describe("Shell: My Courses link (student)", () => {
     await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "n8n help" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "n8n requests" })).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: "Access requests" })).toHaveCount(0);
     // Issues, Submit issue, My requests, My Courses, n8n help.
     await expect(nav.getByRole("link")).toHaveCount(5);
   });
@@ -144,7 +144,7 @@ test.describe("Shell: n8n admin link (mentor)", () => {
   test("does not expose the n8n request queue to mentors", async ({ page }) => {
     await page.goto("/dashboard");
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link", { name: "n8n requests" })).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: "Access requests" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "n8n help" })).toHaveCount(0);
   });
 });

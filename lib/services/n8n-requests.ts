@@ -5,10 +5,10 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { N8nAccessRequestModel, UserModel, type N8nRequestType } from "@/models";
 
-export async function createN8nRequest(studentId: string, requestType: N8nRequestType) {
+export async function createN8nRequest(studentId: string, requestType: N8nRequestType, purpose?: string) {
   await dbConnect();
   try {
-    return await N8nAccessRequestModel.create({ studentId, requestType });
+    return await N8nAccessRequestModel.create({ studentId, requestType, purpose: purpose || null });
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === 11000) return null;
     throw error;
@@ -34,8 +34,16 @@ export async function listN8nRequests() {
     attempts: request.attempts,
     createdAt: request.createdAt,
     sentAt: request.sentAt,
+    purpose: request.purpose,
     student: byId.get(request.studentId.toString()) ?? null,
   }));
+}
+
+export async function getN8nRequestType(requestId: string) {
+  if (!mongoose.isValidObjectId(requestId)) return null;
+  await dbConnect();
+  const request = await N8nAccessRequestModel.findById(requestId).select("requestType").lean();
+  return request?.requestType ?? null;
 }
 
 export async function claimN8nRequest(requestId: string, adminId: string) {

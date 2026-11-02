@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { validateN8nLink } = await import("@/lib/n8n-request-policy");
+const { validateAccessLink, validateN8nLink } = await import("@/lib/n8n-request-policy");
 const original = process.env.N8N_ALLOWED_LINK_HOSTS;
+const originalOpenAi = process.env.OPENAI_ALLOWED_LINK_HOSTS;
 
 afterEach(() => {
   if (original === undefined) delete process.env.N8N_ALLOWED_LINK_HOSTS;
   else process.env.N8N_ALLOWED_LINK_HOSTS = original;
+  if (originalOpenAi === undefined) delete process.env.OPENAI_ALLOWED_LINK_HOSTS;
+  else process.env.OPENAI_ALLOWED_LINK_HOSTS = originalOpenAi;
 });
 
 describe("n8n link policy", () => {
@@ -24,5 +27,13 @@ describe("n8n link policy", () => {
     expect(() => validateN8nLink("http://n8n.example.com/invite")).toThrow(/HTTPS/);
     delete process.env.N8N_ALLOWED_LINK_HOSTS;
     expect(() => validateN8nLink("https://n8n.example.com/invite")).toThrow(/configured n8n host/i);
+  });
+
+  it("accepts only the configured OpenAI invitation host", () => {
+    process.env.OPENAI_ALLOWED_LINK_HOSTS = "platform.openai.com";
+    expect(validateAccessLink("https://platform.openai.com/settings/organization", "openai"))
+      .toBe("https://platform.openai.com/settings/organization");
+    expect(() => validateAccessLink("https://chatgpt.com/", "openai")).toThrow(/configured OpenAI host/i);
+    delete process.env.OPENAI_ALLOWED_LINK_HOSTS;
   });
 });
