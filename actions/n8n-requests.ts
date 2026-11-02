@@ -12,7 +12,7 @@ import { isN8nAdmin, validateAccessLink } from "@/lib/n8n-request-policy";
 import { getRequestContext } from "@/lib/request-context";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import { recordAuditEvent } from "@/lib/services/audit";
-import { sendN8nHelpEmail } from "@/lib/services/n8n-email";
+import { sendN8nHelpEmail, sendOpenAiConfirmationEmail } from "@/lib/services/n8n-email";
 import {
   claimN8nRequest,
   createN8nRequest,
@@ -209,5 +209,69 @@ export async function sendN8nLinkAction(
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many send attempts. Try again later." };
     return { error: "The request could not be processed safely. Please try again." };
+  }
+}
+
+/**
+ * OpenAI access needs no invitation link from us: the admin copies the student's
+ * address into the OpenAI dashboard, OpenAI sends its own invitation, and this
+ * action only confirms it and emails the student.
+ *
+ * The request type is re-checked server-side so this no-link path can never be
+ * used to mark an n8n request as sent without a link.
+ */
+export async function confirmOpenAiAccessAction(
+  _state: N8nActionState,
+  formData: FormData,
+): Promise<N8nActionState> {
+  if (!(await csrfTokenIsValid(formData))) return { error: "Your session expired. Refresh and try again." };
+  const guard = await assertRole("ADMIN");
+  if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) {
+    return { error: "You do not have permission to confirm OpenAI access." };
+  }
+
+  const requestId = String(formData.get("requestId") ?? "");
+  const requestType = await getN8nRequestType(requestId);
+  if (!requestType) return { error: "This request no longer exists." };
+  if (requestType !== "OPENAI_ACCESS") {
+    return { error: "This is not an OpenAI access request. Send an invitation link instead." };
+  }
+
+  try {
+    if (!(await recentlySignedIn(guard.session.user.id))) {
+      return { error: "For security, sign out and sign in again before confirming access." };
+    }
+    await consumeRateLimit("n8n.email.send", guard.session.user.id);
+    const claimed = await claimN8nRequest(requestId, guard.session.user.id);
+    if (!claimed) return { error: "This request was already handled or is being processed." };
+    if (!claimed.student.isActive) {
+      await markN8nRequestFailed(requestId, guard.session.user.id);
+      return { error: "This student account is inactive." };
+    }
+
+    try {
+      await sendOpenAiConfirmationEmail({
+        to: claimed.student.email,
+        studentName: claimed.student.name,
+      });
+    } catch {
+      await markN8nRequestFailed(requestId, guard.session.user.id);
+      return { error: "Confirmation email could not be sent. Check SMTP and try again." };
+    }
+
+    await markN8nRequestSent(requestId, guard.session.user.id);
+    await recordAuditEvent({
+      actorId: guard.session.user.id,
+      action: "OPENAI_ACCESS_CONFIRM",
+      resourceType: "N8nAccessRequest",
+      resourceId: requestId,
+      result: "SUCCEEDED",
+    }, await getRequestContext());
+    revalidatePath("/dashboard/access-requests");
+    revalidatePath("/dashboard/issues");
+    return { success: "Confirmed. A confirmation email is on its way to the student." };
+  } catch (error) {
+    if (error instanceof MutationRateLimitError) return { error: "Too many attempts. Try again later." };
+    return { error: "The request could not be confirmed safely. Please try again." };
   }
 }

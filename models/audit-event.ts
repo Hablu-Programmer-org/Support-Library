@@ -18,6 +18,7 @@ export const AUDIT_ACTIONS = [
   "N8N_REQUEST_CREATE",
   "N8N_REQUEST_CREATE_BY_ADMIN",
   "N8N_LINK_EMAIL_SEND",
+  "OPENAI_ACCESS_CONFIRM",
 ] as const;
 
 export const AUDIT_RESULTS = ["SUCCEEDED", "DENIED"] as const;

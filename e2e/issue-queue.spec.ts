@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import mongoose from "mongoose";
 
 import { dbConnect } from "../lib/db";
-import { SupportIssueModel } from "../models";
+import { SupportIssueModel, SupportReplyModel } from "../models";
 import { STAFF_USERS } from "./fixtures/staff-users";
 
 /**
@@ -69,11 +69,62 @@ test.beforeAll(async () => {
       createdAt: newest,
       updatedAt: newest,
     },
+    // Legacy rows: created before the reply-state fields existed. They must not
+    // be labelled "No reply yet" just because the backfill has not run yet.
+    {
+      title: title("legacy answered"),
+      question: "Answered before the reply-state fields existed.",
+      searchText: `${token} legacy answered`,
+      createdBy: STUDENT_ID,
+      status: "OPEN",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+      createdAt: new Date("2026-01-04T10:00:00.000Z"),
+      updatedAt: newest,
+    },
+    {
+      title: title("legacy unanswered"),
+      question: "Never answered, created before the fields existed.",
+      searchText: `${token} legacy unanswered`,
+      createdBy: STUDENT_ID,
+      status: "OPEN",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+      createdAt: new Date("2026-01-05T10:00:00.000Z"),
+      updatedAt: newest,
+    },
   ]);
+
+  const legacyAnswered = await SupportIssueModel.findOne({ title: title("legacy answered") }).select("_id").lean();
+  if (legacyAnswered) {
+    // Mongoose applies the schema default on insert, so simulate a genuinely
+    // pre-migration row by removing the fields at the driver level.
+    await SupportIssueModel.collection.updateMany(
+      { _id: { $in: [legacyAnswered._id] } },
+      { $unset: { awaitingStaff: "", lastStaffReplyAt: "", lastStudentReplyAt: "" } },
+    );
+    // `isStaffReply` is deliberately omitted too: the read path must fall back to
+    // the author's role, exactly like the migration does.
+    const reply = await SupportReplyModel.create({
+      issueId: legacyAnswered._id,
+      authorId: new mongoose.Types.ObjectId(STAFF_USERS[1].id),
+      body: "Legacy staff answer.",
+    });
+    await SupportReplyModel.collection.updateOne({ _id: reply._id }, { $unset: { isStaffReply: "" } });
+  }
+  const legacyUnanswered = await SupportIssueModel.findOne({ title: title("legacy unanswered") }).select("_id").lean();
+  if (legacyUnanswered) {
+    await SupportIssueModel.collection.updateOne(
+      { _id: legacyUnanswered._id },
+      { $unset: { awaitingStaff: "", lastStaffReplyAt: "", lastStudentReplyAt: "" } },
+    );
+  }
 });
 
 test.afterAll(async () => {
   await dbConnect();
+  const issues = await SupportIssueModel.find({ title: { $regex: token } }).select("_id").lean();
+  await SupportReplyModel.deleteMany({ issueId: { $in: issues.map((issue) => issue._id) } });
   await SupportIssueModel.deleteMany({ title: { $regex: token } });
 });
 
@@ -91,6 +142,8 @@ test.describe("staff queue ordering", () => {
     await expect.poll(async () => queue(page).allInnerTexts()).toEqual([
       title("never answered"),
       title("student replied"),
+      title("legacy answered"),
+      title("legacy unanswered"),
       title("answered"),
     ]);
 
@@ -108,7 +161,7 @@ test.describe("staff queue ordering", () => {
   test("manual refresh keeps the filter and the same ordering", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${token}`);
 
-    await expect.poll(async () => queue(page).count()).toBe(3);
+    await expect.poll(async () => queue(page).count()).toBe(5);
     await page.getByRole("button", { name: "Refresh", exact: true }).click();
 
     await expect(page.getByText(/^Updated /).first()).toBeVisible();
@@ -116,8 +169,25 @@ test.describe("staff queue ordering", () => {
     await expect.poll(async () => queue(page).allInnerTexts()).toEqual([
       title("never answered"),
       title("student replied"),
+      title("legacy answered"),
+      title("legacy unanswered"),
       title("answered"),
     ]);
+  });
+
+  test("does not label a legacy answered issue as no reply", async ({ page }) => {
+    await page.goto(`/dashboard/issues?q=${token}`);
+
+    const legacyAnswered = page
+      .getByRole("heading", { name: title("legacy answered") })
+      .locator("..");
+    const legacyUnanswered = page
+      .getByRole("heading", { name: title("legacy unanswered") })
+      .locator("..");
+
+    // The pre-migration reply is derived from the author's role on read.
+    await expect(legacyAnswered.getByText("No reply yet", { exact: true })).toHaveCount(0);
+    await expect(legacyUnanswered.getByText("No reply yet", { exact: true })).toBeVisible();
   });
 });
 

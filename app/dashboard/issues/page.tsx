@@ -200,7 +200,16 @@ export default async function IssuesPage({
           <EmptyState>No issues found.</EmptyState>
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {issues.items.map((supportIssue) => (
+            {issues.items.map((supportIssue) => {
+              // Public rows carry no reply state at all; `in` narrows the union
+              // so the staff badge can never be read from a student projection.
+              const replyState = "awaitingStaff" in supportIssue
+                ? {
+                    awaiting: supportIssue.awaitingStaff === true,
+                    lastStaffReplyAt: supportIssue.lastStaffReplyAt ?? null,
+                  }
+                : null;
+              return (
               <div
                 key={supportIssue.id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
@@ -215,16 +224,13 @@ export default async function IssuesPage({
                         {supportIssue.title}
                       </h2>
                       <StatusBadge status={supportIssue.status} />
-                      {canManage &&
-                        "awaitingStaff" in supportIssue &&
-                        supportIssue.awaitingStaff !== false && (
-                          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                            {"lastStaffReplyAt" in supportIssue &&
-                            supportIssue.lastStaffReplyAt
-                              ? "Student replied"
-                              : "No reply yet"}
-                          </span>
-                        )}
+                      {canManage && replyState?.awaiting && (
+                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                          {replyState.lastStaffReplyAt
+                            ? "Student replied"
+                            : "No reply yet"}
+                        </span>
+                      )}
                       {waitingIds.has(supportIssue.id) &&
                         LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
                           supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
@@ -276,7 +282,8 @@ export default async function IssuesPage({
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

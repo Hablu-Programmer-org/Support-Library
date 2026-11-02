@@ -19,6 +19,7 @@ import {
   type SupportIssueInput,
   type SupportReplyInput,
 } from "@/lib/validation";
+import { deriveIssueReplyState } from "@/lib/reply-state";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { nextCaseRef } from "@/lib/services/case-ref";
 import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
@@ -807,15 +808,72 @@ export async function listIssues(
     SupportIssueModel.countDocuments(filter).maxTimeMS(5000),
   ]);
 
-  return {
-    items: (items as LeanDoc[]).map((item) => options.publicOnly
-      ? toPublicIssueListItem(item)
-      : toIssueListItem(item)),
+  const pageMeta = {
     page,
     limit,
     total,
     totalPages: Math.max(1, Math.ceil(total / limit)),
   };
+
+  if (options.publicOnly) {
+    return {
+      items: (items as LeanDoc[]).map((item) => toPublicIssueListItem(item)),
+      ...pageMeta,
+    };
+  }
+
+  return {
+    // Legacy rows created before the reply-state fields existed would otherwise
+    // show "No reply yet" on an answered ticket until the backfill runs.
+    items: await withDerivedReplyState((items as LeanDoc[]).map((item) => toIssueListItem(item))),
+    ...pageMeta,
+  };
+}
+
+/**
+ * Fill reply state for rows that predate `awaitingStaff`.
+ *
+ * The migration recomputes and stores these fields, but a forgotten or delayed
+ * backfill must never mislabel an answered ticket. Only the current page (≤100
+ * rows) is inspected, in one batched aggregation, and the result is in-memory —
+ * nothing is written on a read path.
+ */
+async function withDerivedReplyState(items: SupportIssueListItem[]) {
+  const legacy = items.filter((item) => typeof item.awaitingStaff !== "boolean");
+  if (legacy.length === 0) return items;
+
+  const summaries = await SupportReplyModel.aggregate<{
+    _id: unknown;
+    lastStaffReplyAt: Date | null;
+    lastStudentReplyAt: Date | null;
+  }>([
+    { $match: { issueId: { $in: legacy.map((item) => new mongoose.Types.ObjectId(item.id)) }, deletedAt: null } },
+    { $lookup: { from: "staff-users", localField: "authorId", foreignField: "_id", as: "author" } },
+    {
+      $set: {
+        effectiveStaff: {
+          $ifNull: ["$isStaffReply", { $in: [{ $arrayElemAt: ["$author.role", 0] }, ["ADMIN", "MENTOR"]] }],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$issueId",
+        lastStaffReplyAt: { $max: { $cond: ["$effectiveStaff", "$createdAt", null] } },
+        lastStudentReplyAt: { $max: { $cond: ["$effectiveStaff", null, "$createdAt"] } },
+      },
+    },
+  ], { maxTimeMS: 5000 });
+
+  const byIssue = new Map(summaries.map((summary) => [String(summary._id), summary]));
+  return items.map((item) => {
+    if (typeof item.awaitingStaff === "boolean") return item;
+    const summary = byIssue.get(item.id);
+    return {
+      ...item,
+      ...deriveIssueReplyState(summary?.lastStaffReplyAt ?? null, summary?.lastStudentReplyAt ?? null),
+    };
+  });
 }
 
 /**

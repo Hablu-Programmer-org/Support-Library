@@ -25,12 +25,23 @@ test.describe("access request administration", () => {
     const adminPage = await admin.newPage();
     await adminPage.goto("/dashboard/access-requests");
     await expect(adminPage.getByRole("heading", { name: "Access requests" })).toBeVisible();
+    // OpenAI and n8n are separate, clearly labelled queues.
+    await expect(adminPage.getByRole("heading", { name: "OpenAI API access" })).toBeVisible();
+    await expect(adminPage.getByRole("heading", { name: "n8n access & password reset" })).toBeVisible();
+
     await adminPage.getByLabel("Student email").fill("e2e.lms.student@test.com");
     await adminPage.getByRole("checkbox", { name: "n8n access" }).check();
     await adminPage.getByRole("checkbox", { name: "OpenAI API access" }).check();
     await adminPage.getByRole("button", { name: "Create selected requests" }).click();
     await expect(adminPage.getByRole("status")).toContainText("2 request(s) created");
     await expect(adminPage.getByText("Created by admin", { exact: false })).toHaveCount(2);
+
+    // The OpenAI path needs no link: copy the email, add it in OpenAI, then confirm.
+    const openAiQueue = adminPage.getByRole("region", { name: "OpenAI API access" });
+    await expect(openAiQueue.getByRole("button", { name: /Copy e2e\.lms\.student@test\.com/i })).toBeVisible();
+    await expect(openAiQueue.getByRole("button", { name: "Confirm added & email student" })).toBeVisible();
+    // Only the n8n queue asks for a link.
+    await expect(adminPage.locator('input[name="link"]')).toHaveCount(1);
     await admin.close();
 
     const mentor = await browser.newContext({ storageState: "e2e/.auth/mentor.json" });
