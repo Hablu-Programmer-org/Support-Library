@@ -182,12 +182,12 @@ The issue detail page can show:
 - Status badge.
 - Priority label.
 - `Student Library` badge.
-- Issue title.
+- Issue title, written as the problem itself.
 - Last updated time.
 - Full problem description.
 - Video links, if the reporter added any.
 - Tags.
-- Answers and updates.
+- The solution (or answer) and any later responses.
 - Course.
 - Batch.
 - Published date.
@@ -197,24 +197,21 @@ If course or batch is missing, the page shows `Not specified`.
 
 If a date is missing, the page shows `Not available`.
 
-## 10. Read Answers And Updates
+## 10. Read The Solution And Responses
 
-The answer section is called `Answers and updates` for students.
+The page leads with **The problem**, then the team's first reply, labelled `Solution` when the issue is solved or `Answer` otherwise.
 
-Replies are shown in chronological order, from oldest to newest.
+Only replies after the first one are listed under `Responses`. They are chronological, oldest to newest. The problem and the answer are the large text; responses are deliberately smaller so they never compete with the fix.
 
 Each reply can show:
 
 - Staff author name, or `Staff` if the name is unavailable.
-- Reply creation time.
+- Reply creation time, in Dhaka time.
 - `edited` marker if the reply was edited.
 - Reply text.
 - Video links.
 
-If no reply exists, the page shows:
-
-- `No responses yet`
-- `A support team response will appear here.`
+If no reply exists, the page shows `Responses` and `No answer yet. The team replies by email too.`
 
 Students cannot add replies or edit replies.
 
@@ -326,7 +323,7 @@ Open **Submit an issue** in the topbar, or press **Submit an issue** on the issu
 
 The form asks for two things:
 
-- A title: a short summary of the problem, at least 5 characters.
+- A problem title: one line, up to 80 characters. Name the problem, not the topic — write `Assignment submission link not found`, not `Assignment Submission`. The counter under the field turns amber as you approach the limit.
 - Problem details: what you were doing, what you expected, and what happened instead. Include the steps to reproduce the problem if you can.
 
 You can also add optional evidence:

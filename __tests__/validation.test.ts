@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  createSupportIssueInputSchema,
   supportIssueInputSchema,
   supportReplyInputSchema,
   videoLinksSchema,
@@ -104,6 +105,42 @@ describe("product validation", () => {
         question: "Image show hocche na in React component",
       }),
     ).toThrow(/requires a student identity/i);
+  });
+
+  it("caps a new issue title at 80 characters on one line", () => {
+    const base = {
+      question: "Image show hocche na in React component",
+    };
+
+    expect(
+      createSupportIssueInputSchema.parse({
+        ...base,
+        title: "a".repeat(80),
+      }).title,
+    ).toHaveLength(80);
+
+    expect(() =>
+      createSupportIssueInputSchema.parse({
+        ...base,
+        title: "a".repeat(81),
+      }),
+    ).toThrow(/80 characters/i);
+
+    expect(() =>
+      createSupportIssueInputSchema.parse({
+        ...base,
+        title: "Assignment Submission\nlink missing",
+      }),
+    ).toThrow(/one line/i);
+  });
+
+  it("keeps the wider title limit when editing a legacy issue", () => {
+    expect(
+      supportIssueInputSchema.parse({
+        title: "a".repeat(200),
+        question: "Image show hocche na in React component",
+      }).title,
+    ).toHaveLength(200);
   });
 
   it("accepts replies with external video links", () => {

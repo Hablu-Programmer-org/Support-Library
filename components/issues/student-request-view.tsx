@@ -2,24 +2,17 @@ import Link from "next/link";
 
 import { ArrowLeftIcon } from "@/components/icons";
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
+import { ReplyItem } from "@/components/issues/reply-item";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { CopyValue } from "@/components/shared/copy-value";
 import { LinkList } from "@/components/shared/link-list";
-import { currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { SectionLabel } from "@/components/shared/section-label";
+import { currentShift } from "@/lib/config/live-support";
+import { formatSupportDate } from "@/lib/format-date";
 import { getLiveSupportConfig } from "@/lib/live-support";
-import { RichText } from "@/lib/rich-text";
 import type { SupportIssueListItem } from "@/lib/services/issues";
 import type { SupportReplyListItem } from "@/lib/services/replies";
-
-const timestamp = (date?: Date | null) =>
-  date
-    ? new Intl.DateTimeFormat("en-GB", {
-        timeZone: SUPPORT_TIME_ZONE,
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(date)
-    : "—";
 
 /**
  * A student's own support request.
@@ -79,7 +72,7 @@ export function StudentRequestView({
           ) : (
             <span aria-hidden="true">—</span>
           )}
-          <span>Submitted {timestamp(issue.createdAt)}</span>
+          <span>Submitted {formatSupportDate(issue.createdAt)}</span>
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
           {issue.title}
@@ -87,13 +80,8 @@ export function StudentRequestView({
       </header>
 
       <section aria-labelledby="request-problem-heading" className="space-y-2">
-        <h2
-          id="request-problem-heading"
-          className="text-lg font-semibold text-slate-900 dark:text-white"
-        >
-          Your problem
-        </h2>
-        <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">
+        <SectionLabel id="request-problem-heading">Problem</SectionLabel>
+        <p className="whitespace-pre-wrap text-base leading-7 text-slate-800 dark:text-slate-100">
           {issue.question}
         </p>
         <LinkList videoLinks={issue.videoLinks} />
@@ -101,12 +89,7 @@ export function StudentRequestView({
       </section>
 
       <section aria-labelledby="request-details-heading">
-        <h2
-          id="request-details-heading"
-          className="text-lg font-semibold text-slate-900 dark:text-white"
-        >
-          Details
-        </h2>
+        <SectionLabel id="request-details-heading">Details</SectionLabel>
         <dl className="mt-3 space-y-3 border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-slate-500 dark:text-slate-400">Reference</dt>
@@ -128,39 +111,50 @@ export function StudentRequestView({
           </div>
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-slate-500 dark:text-slate-400">Last updated</dt>
-            <dd className="text-slate-900 dark:text-white">{timestamp(issue.updatedAt)}</dd>
+            <dd className="text-slate-900 dark:text-white">{formatSupportDate(issue.updatedAt)}</dd>
           </div>
         </dl>
       </section>
 
-      <section aria-labelledby="request-updates-heading">
-        <h2
-          id="request-updates-heading"
-          className="text-lg font-semibold text-slate-900 dark:text-white"
-        >
-          Updates from the team
-        </h2>
-        {replies.length === 0 ? (
+      {replies.length > 0 ? (
+        <>
+          <section aria-labelledby="request-answer-heading">
+            <SectionLabel id="request-answer-heading">
+              {issue.status === "SOLVED" ? "Solution" : "Answer"}
+            </SectionLabel>
+            <ol className="mt-2">
+              <li>
+                <ReplyItem
+                  issueId={issue.id}
+                  reply={replies[0]}
+                  canEdit={false}
+                  variant="solution"
+                />
+              </li>
+            </ol>
+          </section>
+
+          {replies.length > 1 && (
+            <section aria-labelledby="request-updates-heading">
+              <SectionLabel id="request-updates-heading">Updates</SectionLabel>
+              <ol className="mt-2">
+                {replies.slice(1).map((reply) => (
+                  <li key={reply.id}>
+                    <ReplyItem issueId={issue.id} reply={reply} canEdit={false} />
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </>
+      ) : (
+        <section aria-labelledby="request-updates-heading">
+          <SectionLabel id="request-updates-heading">Updates</SectionLabel>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             No updates yet. The team answers by email as well, so check your inbox.
           </p>
-        ) : (
-          <ul className="mt-3 divide-y divide-slate-200 border-t border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-            {replies.map((reply) => (
-              <li key={reply.id} className="space-y-1 py-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {reply.authorName ?? "Support team"} · {timestamp(reply.createdAt)}
-                </p>
-                <RichText
-                  text={reply.body}
-                  className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300"
-                />
-                <LinkList videoLinks={reply.videoLinks} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        </section>
+      )}
 
       <LiveSupportPanel
         configured={Boolean(joinUrl)}
@@ -174,8 +168,7 @@ export function StudentRequestView({
       />
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Replies here are read-only. Try the course documentation and videos first — the team helps
-        much faster when you share what you already tried.
+        Replies here are read-only.
       </p>
     </div>
   );

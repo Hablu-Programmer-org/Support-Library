@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { ISSUE_TITLE_CREATE_MAX } from "@/lib/constants";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models/shared";
 import {
   objectIdSchema,
@@ -39,6 +40,25 @@ export const supportIssueInputSchema = z.strictObject({
       message: "LMS user id requires a student identity",
     });
   }
+});
+
+/**
+ * The create-only title contract.
+ *
+ * A new issue is read as "the problem", so its title is capped at 80 characters
+ * and must stay on one line. Editing keeps the wider 200-character limit in
+ * `supportIssueInputSchema` so rows written before this rule stay editable.
+ */
+export const createSupportIssueInputSchema = supportIssueInputSchema.safeExtend({
+  title: z
+    .string()
+    .trim()
+    .min(5)
+    .max(
+      ISSUE_TITLE_CREATE_MAX,
+      `Keep the title to ${ISSUE_TITLE_CREATE_MAX} characters or fewer`,
+    )
+    .regex(/^[^\r\n]+$/, "Keep the title on one line"),
 });
 
 export const supportIssueFilterSchema = z.strictObject({

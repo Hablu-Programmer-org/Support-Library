@@ -69,10 +69,12 @@ export function ReplyComposer({
   const error = firstError(state);
 
   return (
-    <section className="py-6">
-      <h3 className="font-semibold text-slate-950 dark:text-white">Write a public response</h3>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Students can read this response after the issue is reviewed and published.
+    <section>
+      <h3 className="text-sm font-semibold text-slate-950 dark:text-white">
+        Write a response
+      </h3>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        The fix first, then the steps.
       </p>
       <form
         ref={formRef}

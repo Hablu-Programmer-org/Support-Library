@@ -15,17 +15,16 @@ import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { CopyValue } from "@/components/shared/copy-value";
 import { LinkList } from "@/components/shared/link-list";
+import { SectionLabel } from "@/components/shared/section-label";
 import {
   ArrowLeftIcon,
-  FileTextIcon,
-  MessageSquareIcon,
   PencilIcon,
   SettingsIcon,
   UserIcon,
   WarningTriangleIcon,
 } from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
-import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { formatSupportDate } from "@/lib/format-date";
 import {
   ISSUES_PATH,
   buildIssueEditHref,
@@ -53,17 +52,6 @@ const priorityLabels: Record<string, string> = {
   HIGH: "High priority",
   URGENT: "Urgent",
 };
-
-const formatDate = (date?: Date | null) =>
-  date
-    ? new Intl.DateTimeFormat("en-GB", {
-        // Support runs on Dhaka time; formatting on the server's clock (UTC in the
-        // container) made "last live support" look hours off from the queue.
-        timeZone: SUPPORT_TIME_ZONE,
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(date))
-    : "Not available";
 
 export default async function IssueDetailPage({
   params,
@@ -146,10 +134,10 @@ export default async function IssueDetailPage({
             <h1 className="max-w-4xl text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
               {supportIssue.title}
             </h1>
-            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Updated{" "}
               <time dateTime={supportIssue.updatedAt?.toISOString()}>
-                {formatDate(supportIssue.updatedAt)}
+                {formatSupportDate(supportIssue.updatedAt)}
               </time>
             </p>
           </div>
@@ -169,19 +157,11 @@ export default async function IssueDetailPage({
       </header>
 
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <main className="min-w-0 space-y-8">
-          <section aria-labelledby="problem-heading" className="pb-8">
-            <div className="mb-4 flex items-center gap-2">
-              <FileTextIcon size={16} className="text-slate-400 dark:text-slate-500" />
-              <h2
-                id="problem-heading"
-                className="text-xl font-semibold text-slate-950 dark:text-white"
-              >
-                The problem
-              </h2>
-            </div>
-            <div className="space-y-4">
-              <p className="whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-700 dark:text-slate-200 sm:text-lg max-w-3xl">
+        <main className="min-w-0 space-y-10">
+          <section aria-labelledby="problem-heading">
+            <SectionLabel id="problem-heading">The problem</SectionLabel>
+            <div className="mt-3 space-y-4">
+              <p className="max-w-3xl whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg">
                 {supportIssue.question}
               </p>
               <LinkList videoLinks={supportIssue.videoLinks} />
@@ -206,45 +186,64 @@ export default async function IssueDetailPage({
             </div>
           </section>
 
-          <section aria-labelledby="responses-heading" className="space-y-6">
-            <div className="flex items-center gap-2">
-              <MessageSquareIcon size={16} className="text-slate-400 dark:text-slate-500" />
-              <div>
-                <h2
-                  id="responses-heading"
-                  className="text-lg font-semibold text-slate-950 dark:text-white"
-                >
-                  {canEdit ? "Responses" : "Answers and updates"}
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {canEdit
-                    ? "Reviewed answers and updates in chronological order."
-                    : "Guidance reviewed by the Hablu Programmer support team."}
-                </p>
-              </div>
-            </div>
+          <div className="space-y-8 border-t border-slate-200 pt-8 dark:border-slate-800">
+            {replies.length > 0 ? (
+              <>
+                <section aria-labelledby="answer-heading">
+                  <SectionLabel id="answer-heading">
+                    {supportIssue.status === "SOLVED" ? "Solution" : "Answer"}
+                  </SectionLabel>
+                  <div className="mt-2">
+                    <IssueTimeline
+                      issueId={supportIssue.id}
+                      replies={[replies[0]]}
+                      viewerId={session.user.id}
+                      viewerRole={session.user.role}
+                      csrfToken={csrfToken}
+                      variant="solution"
+                    />
+                  </div>
+                </section>
 
-            <div className="divide-y divide-slate-200 dark:divide-slate-800">
-              <div className="py-6">
-                <IssueTimeline
-                  issueId={supportIssue.id}
-                  replies={replies}
-                  viewerId={session.user.id}
-                  viewerRole={session.user.role}
-                  csrfToken={csrfToken}
-                />
-              </div>
-              {canEdit && (
-                <div className="py-6">
-                  <ReplyComposer
-                    issueId={supportIssue.id}
-                    csrfToken={csrfToken}
-                    returnTo={returnTo ?? undefined}
-                  />
-                </div>
-              )}
+                {replies.length > 1 && (
+                  <section
+                    aria-labelledby="responses-heading"
+                    className="border-t border-slate-200 pt-8 dark:border-slate-800"
+                  >
+                    <SectionLabel id="responses-heading">
+                      Responses
+                    </SectionLabel>
+                    <div className="mt-2">
+                      <IssueTimeline
+                        issueId={supportIssue.id}
+                        replies={replies.slice(1)}
+                        viewerId={session.user.id}
+                        viewerRole={session.user.role}
+                        csrfToken={csrfToken}
+                      />
+                    </div>
+                  </section>
+                )}
+              </>
+            ) : (
+              <section aria-labelledby="responses-heading">
+                <SectionLabel id="responses-heading">Responses</SectionLabel>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                  No answer yet. The team replies by email too.
+                </p>
+              </section>
+            )}
+          </div>
+
+          {canEdit && (
+            <div className="border-t border-slate-200 pt-8 dark:border-slate-800">
+              <ReplyComposer
+                issueId={supportIssue.id}
+                csrfToken={csrfToken}
+                returnTo={returnTo ?? undefined}
+              />
             </div>
-          </section>
+          )}
         </main>
 
         <aside className="space-y-0 lg:sticky lg:top-20">
@@ -276,16 +275,16 @@ export default async function IssueDetailPage({
               <Info label="Batch" value={supportIssue.batchNo?.toString()} />
               <Info
                 label="Published"
-                value={formatDate(supportIssue.publishedAt)}
+                value={formatSupportDate(supportIssue.publishedAt)}
               />
               <Info
                 label="Created"
-                value={formatDate(supportIssue.createdAt)}
+                value={formatSupportDate(supportIssue.createdAt)}
               />
               {staffIssue && (
                 <Info
                   label="Live support"
-                  value={formatDate(staffIssue.lastLiveSupportAt)}
+                  value={formatSupportDate(staffIssue.lastLiveSupportAt)}
                 />
               )}
             </dl>

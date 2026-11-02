@@ -251,7 +251,7 @@ Required issue fields:
 | --- | --- |
 | Student name | Optional. When given, 2-120 characters; must be paired with a student email. |
 | Student email | Optional. When given, a valid email, max 160 characters, stored lowercased; must be paired with a student name. |
-| Issue title | 5-200 characters. |
+| Problem title | New issues: 5-80 characters on one line. Editing keeps the legacy 5-200 limit so older rows stay editable. |
 | Problem description | 5-20,000 characters. |
 
 Optional metadata:
@@ -278,13 +278,22 @@ a-z, 0-9, +, #, ., -
 
 Tags are normalized to lowercase and duplicates are removed.
 
-## 11. Write A Good Issue Title And Problem Description
+## 11. Write A Good Problem Title And Problem Description
 
-Good title:
+The title is the line a student reads first, so it must state **the problem**, not the topic.
 
-- Short but specific.
+- One line, up to 80 characters on a new issue.
+- Specific enough to search for.
 - No student name, email, phone, ID, payment ID, or private information.
-- Mentions the technical problem or support topic.
+- Names the technical problem, not the course or the lesson.
+
+Examples:
+
+| Better | Avoid |
+| --- | --- |
+| `Assignment submission link not found` | `Assignment Submission` |
+| `React image not rendering after deployment` | `Rahim cannot load his image` |
+| `GitHub push rejected by remote origin` | `Student email rahim@example.com push issue` |
 
 Good problem description:
 
@@ -292,14 +301,6 @@ Good problem description:
 - Includes relevant error text if safe.
 - Removes private details.
 - Uses general language so the answer can help other students later.
-
-Examples:
-
-| Better | Avoid |
-| --- | --- |
-| `React image not rendering after deployment` | `Rahim cannot load his image` |
-| `GitHub push rejected by remote origin` | `Student email rahim@example.com push issue` |
-| `Payment image attachment is invalid` | `Bkash transaction 01XXXXXXXXX issue` |
 
 ## 12. Initial Answer During Issue Creation
 
@@ -407,7 +408,7 @@ The issue detail page shows:
 - Full problem description.
 - Attached video links (the problem's evidence), if any.
 - Tags.
-- Responses.
+- The first reply as `Solution` (solved) or `Answer`, then later replies as `Responses`.
 - Issue context (course, batch, publication, creation time, and — for staff — the `Reference` and `Live support` fields).
 - Student snapshot.
 - Manage issue panel.

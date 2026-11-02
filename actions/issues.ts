@@ -28,6 +28,7 @@ import {
 } from "@/lib/services/issues";
 import { getStaffUserById } from "@/lib/services/staff";
 import {
+  createSupportIssueInputSchema,
   supportIssueInputSchema,
   supportReplyInputSchema,
   type SupportIssueInput,
@@ -100,8 +101,17 @@ const zodFieldErrors = (
   return fieldErrors;
 };
 
-const parseIssueForm = (formData: FormData) =>
-  supportIssueInputSchema.parse({
+/**
+ * Parse the issue form.
+ *
+ * `mode` selects the title contract: creation enforces the one-line, 80-char
+ * rule (see `createSupportIssueInputSchema`), while updates keep the wider
+ * legacy limit so rows created under the old rule can still be edited.
+ */
+const parseIssueForm = (formData: FormData, mode: "create" | "update") => {
+  const schema =
+    mode === "create" ? createSupportIssueInputSchema : supportIssueInputSchema;
+  return schema.parse({
     studentName: formValue(formData, "studentName"),
     studentEmail: formValue(formData, "studentEmail"),
     lmsUserId: formValue(formData, "lmsUserId"),
@@ -116,6 +126,7 @@ const parseIssueForm = (formData: FormData) =>
     tags: parseTags(formValue(formData, "tags")),
     videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });
+};
 
 async function bindLmsIdentity(issueData: z.infer<typeof supportIssueInputSchema>) {
   if (!issueData.studentEmail) {
@@ -136,7 +147,7 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     let issueData;
     let operationId: string;
     try {
-      issueData = await bindLmsIdentity(parseIssueForm(formData));
+      issueData = await bindLmsIdentity(parseIssueForm(formData, "create"));
       operationId = operationIdSchema.parse(formData.get("operationId"));
     } catch (err) {
       if (err instanceof Error && err.message === "LMS_IDENTITY_MISMATCH") {
@@ -313,7 +324,7 @@ export async function createStudentIssueAction(
         batchNo = enrolled.batchNo > 0 ? enrolled.batchNo : undefined;
       }
 
-      issueData = supportIssueInputSchema.parse({
+      issueData = createSupportIssueInputSchema.parse({
         studentName,
         studentEmail: email,
         lmsUserId: lmsUser?.userId,
@@ -419,7 +430,7 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
 
     let issueData;
     try {
-      issueData = await bindLmsIdentity(parseIssueForm(formData));
+      issueData = await bindLmsIdentity(parseIssueForm(formData, "update"));
     } catch (err) {
       if (err instanceof Error && err.message === "LMS_IDENTITY_MISMATCH") {
         return { fieldErrors: { studentEmail: ["The selected LMS user does not match this email"] } };

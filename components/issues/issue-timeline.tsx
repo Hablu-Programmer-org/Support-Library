@@ -8,21 +8,21 @@ export function IssueTimeline({
   viewerId,
   viewerRole,
   csrfToken = "",
+  variant = "response",
 }: {
   issueId: string;
   replies: SupportReplyListItem[];
   viewerId: string;
   viewerRole?: UserRole | null;
   csrfToken?: string;
+  /** The first reply is the answer people came for; later ones are follow-ups. */
+  variant?: "solution" | "response";
 }) {
   if (replies.length === 0) {
     return (
-      <section className="py-8 text-center">
-        <p className="font-medium text-slate-700 dark:text-slate-200">
-          No responses yet
-        </p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          A support team response will appear here.
+      <section className="py-6">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          No answer yet. The team replies by email too.
         </p>
       </section>
     );
@@ -32,14 +32,23 @@ export function IssueTimeline({
   const mayMutateAny = Boolean(viewerRole && canMutate(viewerRole));
 
   return (
-    <ol className="space-y-4" aria-label="Issue responses">
+    <ol
+      className="space-y-2"
+      aria-label={variant === "solution" ? "Issue solution" : "Issue responses"}
+    >
       {replies.map((reply) => {
         const isOwner = reply.authorId === viewerId;
         const canEdit = mayMutateAny && (isOwner || isAdmin(viewerRole!));
 
         return (
           <li key={reply.id}>
-            <ReplyItem issueId={issueId} reply={reply} canEdit={canEdit} csrfToken={csrfToken} />
+            <ReplyItem
+              issueId={issueId}
+              reply={reply}
+              canEdit={canEdit}
+              csrfToken={csrfToken}
+              variant={variant}
+            />
           </li>
         );
       })}

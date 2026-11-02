@@ -237,3 +237,14 @@ cmd /c "npm run test:e2e"
 - **Tests:** `__tests__/live-support.test.ts` re-pinned the Dhaka boundaries (`08:59 / 09:00 / 12:59 / 13:00 / 18:29 / 18:30 / 21:59 / 22:00`), the `SUPPORT_SHIFTS` values, the Bengali sentence and the daily total.
 - **Docs:** `README.md`, `docs/workflow.md`, `docs/student-guide.md` updated.
 - Gates: lint clean; typecheck clean; 35 test files / 273 tests passing; production build clean; `check:live-support` green against the frontend checkout. Targeted Playwright not run in this session (needs the seeded database and auth state).
+
+### Session log — problem-first issue page + one-line problem titles (2026-11-02)
+- **Title contract:** new issues must name the problem in one line, max 80 characters (`ISSUE_TITLE_CREATE_MAX`); a newline or 81st character is rejected server-side by `createSupportIssueInputSchema` (`safeExtend` of the shared schema). Updates keep the legacy 5–200 limit so older rows stay editable — no migration. `parseIssueForm(formData, "create" | "update")` selects the schema; student creation uses the create schema directly.
+- **Hierarchy:** `The problem` and its body lead the page; the first reply is `Solution` when `status === "SOLVED"`, otherwise `Answer`. Only later replies are `Responses` (muted, `text-sm`). No `Responses` heading appears when there is exactly one reply; zero replies keep `Responses` + `No answer yet. The team replies by email too.` so the existing e2e heading assertion still passes.
+- **Shared pieces:** `components/shared/section-label.tsx` (11px uppercase eyebrow that stays an `h2`), `components/shared/problem-title-hint.tsx` (hint + live counter, amber at the warn threshold, danger at the cap), and `lib/format-date.ts` (`formatSupportDate`: Dhaka `en-GB`, `2 Nov 2026, 12:41`). Reply bylines now use it instead of `toLocaleString("en-US")`, so seconds and the US format are gone.
+- **Student request page:** `Problem` body raised from `text-sm` to `text-base`; first reply is `Solution`/`Answer`, later ones `Updates`; reuses `ReplyItem` with `canEdit={false}`; footer shortened to "Replies here are read-only."
+- **Composer:** heading is now `text-sm` "Write a response" with the helper "The fix first, then the steps."; it stays expanded (Playwright's `formFor(page, "Add response")` depends on it). Delete control is muted until hover/focus.
+- **Lists:** issue titles use `line-clamp-2 wrap-break-word`; DOM text is unchanged, so `getByRole("heading", { name: title })` still matches the full title.
+- **Tests:** 2 new validation tests (80 accepted / 81 rejected / newline rejected; the edit schema still accepts 200).
+- **Docs:** `docs/student-guide.md`, `docs/mentor-guide.md`, `docs/admin-guide.md` updated for the new section names and title rule.
+- Gates: lint clean; typecheck clean; 35 test files / 275 tests passing; production build clean. Targeted Playwright not run in this session (needs the seeded database and auth state).

@@ -175,7 +175,7 @@ Admins can see:
 - Last updated time.
 - Full problem description.
 - Tags.
-- Responses.
+- The first reply as `Solution` (solved) or `Answer`, then later replies as `Responses`.
 - Reply author names.
 - Reply creation and edited markers.
 - Video links and private image attachments.
@@ -574,7 +574,7 @@ Student issue detail can show:
 - Full problem description.
 - Issue-level video links.
 - Tags.
-- Answers and updates.
+- The first reply as `Solution` or `Answer`, then later `Responses`.
 - Reply video links.
 - Course.
 - Batch.

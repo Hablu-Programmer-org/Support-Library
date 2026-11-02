@@ -7,6 +7,7 @@ import { PencilIcon, TrashIcon } from "@/components/icons";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
+import { formatSupportDate } from "@/lib/format-date";
 import { formatVideoLinks } from "@/lib/format-links";
 import { RichText } from "@/lib/rich-text";
 import type { SupportReplyListItem } from "@/lib/services/replies";
@@ -26,11 +27,14 @@ export function ReplyItem({
   reply,
   canEdit,
   csrfToken = "",
+  variant = "response",
 }: {
   issueId: string;
   reply: SupportReplyListItem;
   canEdit: boolean;
   csrfToken?: string;
+  /** `solution` is the answer the team stands behind; `response` is follow-up chatter. */
+  variant?: "solution" | "response";
 }) {
   const [editing, setEditing] = useState(false);
   const [editState, editFormAction, editPending] = useActionState(
@@ -59,7 +63,7 @@ export function ReplyItem({
       data-testid={`reply-${reply.id}`}
       className="border-b border-slate-200 py-5 last:border-b-0 dark:border-slate-800"
     >
-      <header className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           <span className="font-medium text-slate-700 dark:text-slate-200">
             {reply.authorName ?? "Staff"}
@@ -68,7 +72,7 @@ export function ReplyItem({
             <>
               {" · "}
               <time dateTime={new Date(reply.createdAt).toISOString()}>
-                {new Date(reply.createdAt).toLocaleString("en-US")}
+                {formatSupportDate(reply.createdAt)}
               </time>
             </>
           ) : null}
@@ -102,7 +106,7 @@ export function ReplyItem({
                 type="submit"
                 aria-label="Delete"
                 title="Delete reply"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-danger-600 transition hover:bg-danger-50 dark:text-danger-300 dark:hover:bg-danger-950/40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-danger-50 hover:text-danger-600 focus-visible:bg-danger-50 focus-visible:text-danger-600 dark:text-slate-500 dark:hover:bg-danger-950/40 dark:hover:text-danger-300 dark:focus-visible:bg-danger-950/40 dark:focus-visible:text-danger-300"
               >
                 <TrashIcon size={16} />
               </button>
@@ -113,7 +117,11 @@ export function ReplyItem({
 
       <RichText
         text={reply.body}
-        className="whitespace-pre-wrap wrap-break-word text-base leading-7 text-slate-700 dark:text-slate-200 max-w-3xl"
+        className={
+          variant === "solution"
+            ? "whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg max-w-3xl"
+            : "whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-600 dark:text-slate-400 max-w-3xl"
+        }
       />
       <LinkList videoLinks={reply.videoLinks} />
       <AttachmentList uploads={reply.uploads} />

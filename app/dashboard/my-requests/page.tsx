@@ -63,7 +63,7 @@ export default async function MyRequestsPage() {
               >
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-semibold text-slate-900 dark:text-white">{issue.title}</h2>
+                    <h2 className="line-clamp-2 wrap-break-word font-semibold text-slate-900 dark:text-white">{issue.title}</h2>
                     <StatusBadge status={issue.status} />
                     {roomOpen && eligible && (
                       <span className="rounded-full bg-success-100 px-2 py-0.5 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">

@@ -175,7 +175,7 @@ export default async function IssuesPage({
                   >
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="font-semibold">{supportIssue.title}</h2>
+                        <h2 className="line-clamp-2 wrap-break-word font-semibold">{supportIssue.title}</h2>
                         <StatusBadge status={supportIssue.status} />
                         {waitingIds.has(supportIssue.id) &&
                           LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(

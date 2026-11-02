@@ -8,6 +8,7 @@ import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import { formatByteSize } from "@/components/shared/attachment-list";
 import { formatVideoLinks } from "@/lib/format-links";
 import {
@@ -22,7 +23,13 @@ import {
   nativeSelectClass,
   nativeTextareaClass,
 } from "@/lib/config/fields";
-import { CASE_PRIORITIES, CASE_STATUSES } from "@/lib/constants";
+import {
+  CASE_PRIORITIES,
+  CASE_STATUSES,
+  ISSUE_TITLE_CREATE_MAX,
+  ISSUE_TITLE_MAX,
+  ISSUE_TITLE_WARN_AT,
+} from "@/lib/constants";
 
 const statusLabels = {
   OPEN: "Open",
@@ -272,6 +279,13 @@ export function IssueForm({
   // Using key prop on form to reset instead of useEffect to avoid lint warning
   const formKey = supportIssue?.id ?? "new";
 
+  // Creation enforces the one-line, 80-char title rule; editing keeps the wider
+  // legacy limit so older rows stay editable (see lib/validation/issue.ts).
+  const titleMax = supportIssue ? ISSUE_TITLE_MAX : ISSUE_TITLE_CREATE_MAX;
+  const titleWarnAt = supportIssue
+    ? Math.round(ISSUE_TITLE_MAX * 0.75)
+    : ISSUE_TITLE_WARN_AT;
+
   const updateField = useCallback((field: keyof FormData, value: string) => {
     setFormData((prev) =>
       prev[field] === value ? prev : { ...prev, [field]: value },
@@ -338,11 +352,11 @@ export function IssueForm({
         <SectionHeading
           title="Issue Details"
           icon={<FileTextIcon size={16} />}
-          description="Describe the issue clearly. A good title helps with search and categorization."
+          description="Keep the title to one short line that names the problem."
         />
         <div className="mt-4 space-y-4">
           <FieldWrapper
-            label="Issue Title"
+            label="Problem title"
             required
             error={state.fieldErrors?.title?.[0]}
           >
@@ -352,10 +366,17 @@ export function IssueForm({
               onChange={handleChange("title")}
               required
               minLength={5}
-              maxLength={200}
+              maxLength={titleMax}
               error={state.fieldErrors?.title?.[0]}
-              placeholder="e.g., React image not rendering in production build"
+              placeholder="Assignment submission link not found"
             />
+            {!state.fieldErrors?.title?.[0] && (
+              <ProblemTitleHint
+                length={formData.title.length}
+                max={titleMax}
+                warnAt={titleWarnAt}
+              />
+            )}
           </FieldWrapper>
 
           <FieldWrapper

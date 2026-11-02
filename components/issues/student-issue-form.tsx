@@ -10,12 +10,14 @@ import {
 } from "@/components/icons";
 import { Accordion } from "@/components/issues/accordion";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import {
   nativeFieldClass,
   nativeSelectClass,
   nativeTextareaClass,
   nativeTextareaCompactClass,
 } from "@/lib/config/fields";
+import { ISSUE_TITLE_CREATE_MAX, ISSUE_TITLE_WARN_AT } from "@/lib/constants";
 
 type StudentIssueFormProps = {
   csrfToken: string;
@@ -84,7 +86,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
         <div className="space-y-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Title{" "}
+              Problem title{" "}
               <span className="text-danger" aria-hidden="true">
                 *
               </span>
@@ -96,9 +98,9 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
               onChange={(event) => setTitle(event.target.value)}
               required
               minLength={5}
-              maxLength={200}
+              maxLength={ISSUE_TITLE_CREATE_MAX}
               aria-invalid={state.fieldErrors?.title?.[0] ? "true" : "false"}
-              placeholder="e.g., Video lecture is not loading"
+              placeholder="Assignment submission link not found"
             />
             {state.fieldErrors?.title?.[0] ? (
               <p
@@ -108,9 +110,11 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
                 {state.fieldErrors.title[0]}
               </p>
             ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                A short summary, at least 5 characters.
-              </p>
+              <ProblemTitleHint
+                length={title.length}
+                max={ISSUE_TITLE_CREATE_MAX}
+                warnAt={ISSUE_TITLE_WARN_AT}
+              />
             )}
           </label>
 

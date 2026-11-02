@@ -86,11 +86,15 @@ Help Center (dashboard sidebar)
    tags and course slugs. An existing answer is the fastest fix.
 4. Nothing matches → **Submit an issue**. Identity comes from the session (never
    the form); optional evidence is up to 3 private images (PNG/JPEG/GIF/WebP,
-   5 MB each) and external HTTPS video links.
+   5 MB each) and external HTTPS video links. The problem title is one line,
+   max 80 characters — name the problem (`Assignment submission link not found`),
+   not the topic.
 5. Submission lands on the student's **own request page**
    (`/dashboard/issues/{id}?created=1`) with a success banner: status, the short
    reference (`000123`), everything they submitted, the team's replies
-   (read-only) — and the **Live support** panel.
+   (read-only) — and the **Live support** panel. The page leads with **The
+   problem**, then the first reply as `Solution`/`Answer`; only follow-ups are
+   listed under `Responses`.
 6. The panel offers **Join Live support** only while the request is `OPEN`,
    `PENDING` or `FOLLOW_UP` **and** a support shift is open (09:00–13:00 or
    18:30–22:00, Asia/Dhaka, resolved on the server). Requests themselves can be

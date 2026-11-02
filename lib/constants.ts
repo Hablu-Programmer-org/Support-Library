@@ -1,4 +1,16 @@
 export const CASE_STATUSES = ["OPEN", "SOLVED", "PENDING", "FOLLOW_UP", "ARCHIVED"] as const;
+
+/**
+ * Title limits.
+ *
+ * A new issue's title must fit on one readable line and say what the problem
+ * is, so creation is capped at 80 characters and rejects newlines. Existing
+ * rows written under the old 200-character rule stay editable (and readable)
+ * without a migration.
+ */
+export const ISSUE_TITLE_CREATE_MAX = 80;
+export const ISSUE_TITLE_WARN_AT = 60;
+export const ISSUE_TITLE_MAX = 200;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 
 export const CASE_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;
