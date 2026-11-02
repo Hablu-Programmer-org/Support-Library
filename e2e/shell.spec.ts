@@ -131,10 +131,8 @@ test.describe("Shell: My Courses link (student)", () => {
     await expect(nav.getByRole("link", { name: "My requests" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
-    await expect(nav.getByRole("link", { name: "n8n help" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Access requests" })).toHaveCount(0);
-    // Issues, Submit issue, My requests, My Courses, n8n help.
-    await expect(nav.getByRole("link")).toHaveCount(5);
+    // Issues, Submit issue, My requests, My Courses.
+    await expect(nav.getByRole("link")).toHaveCount(4);
   });
 });
 

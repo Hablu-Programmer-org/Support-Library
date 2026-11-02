@@ -65,8 +65,6 @@ export async function createN8nRequestAction(
       }, await getRequestContext());
     }
     if (created.length === 0) return { error: "Every selected access type already has an active request." };
-    revalidatePath("/dashboard/n8n-help");
-    revalidatePath("/dashboard/n8n-requests");
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
     const skipped = parsed.data.length - created.length;
@@ -142,7 +140,6 @@ export async function createAccessRequestsForStudentAction(
 
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
-    revalidatePath("/dashboard/n8n-help");
     const skipped = parsed.data.requestTypes.length - created.length;
     return { success: skipped > 0
       ? `${created.length} request(s) created. ${skipped} active duplicate skipped.`
@@ -206,8 +203,6 @@ export async function sendN8nLinkAction(
       resourceId: requestId,
       result: "SUCCEEDED",
     }, await getRequestContext());
-    revalidatePath("/dashboard/n8n-help");
-    revalidatePath("/dashboard/n8n-requests");
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
     return { success: "The email was sent and the request status was updated." };

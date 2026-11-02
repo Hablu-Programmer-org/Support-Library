@@ -1,20 +1,22 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
 import { deleteIssueAction } from "@/actions/issues";
 import { DeleteButton } from "@/components/issues/delete-button";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { IssueRefreshControl } from "@/components/issues/issue-refresh-control";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
-import { AccessHelpCard } from "@/components/n8n/access-help-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { AccessHelpCard } from "@/components/tool-access/access-help-card";
 import { requireSession } from "@/lib/auth-guard";
-import { canCreateIssue, canMutate } from "@/lib/roles";
-import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
 import { currentShift, dayKeyInDhaka } from "@/lib/config/live-support";
-import { isLiveSupportConfigured } from "@/lib/live-support";
+import {
+  LIVE_SUPPORT_ELIGIBLE_STATUSES,
+  type CaseStatus,
+} from "@/lib/constants";
+import { generateCsrfToken } from "@/lib/csrf";
 import {
   buildIssueDetailHref,
   buildIssueListHref,
@@ -22,13 +24,14 @@ import {
   parseIssueListFilters,
   toIssueDateRange,
 } from "@/lib/issue-list-params";
+import { isLiveSupportConfigured } from "@/lib/live-support";
+import { canCreateIssue, canMutate } from "@/lib/roles";
+import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
+import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
 import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
-import { generateCsrfToken } from "@/lib/csrf";
-import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
-import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -85,16 +88,19 @@ export default async function IssuesPage({
   // rows to show. Send the viewer to the last real page instead of rendering
   // "Page 99 of 3" with dead Previous/Next buttons.
   if (issues.total > 0 && filters.page > issues.totalPages) {
-    redirect(buildIssueListHref(filters, { page: issues.totalPages, defaultSort }));
+    redirect(
+      buildIssueListHref(filters, { page: issues.totalPages, defaultSort }),
+    );
   }
 
-  const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] = await Promise.all([
-    listIssueFilterOptions(publicOnly),
-    canManage ? listAssignableMentors() : Promise.resolve([]),
-    canManage
-      ? listJoinIssueIdsForDay(dayKeyInDhaka(new Date()))
-      : Promise.resolve([] as string[]),
-  ]);
+  const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] =
+    await Promise.all([
+      listIssueFilterOptions(publicOnly),
+      canManage ? listAssignableMentors() : Promise.resolve([]),
+      canManage
+        ? listJoinIssueIdsForDay(dayKeyInDhaka(new Date()))
+        : Promise.resolve([] as string[]),
+    ]);
   const waitingIds = new Set(waitingIssueIds);
 
   const canDelete = canManage; // Same roles can delete
@@ -117,7 +123,10 @@ export default async function IssuesPage({
   // "Back to results" (and every action that redirects) returns to this exact
   // filter/page instead of resetting to page 1.
   const listHref = buildIssueListHref(filters, { defaultSort });
-  const returnTo = hasActiveIssueFilters(filters, defaultSort) || filters.page > 1 ? listHref : undefined;
+  const returnTo =
+    hasActiveIssueFilters(filters, defaultSort) || filters.page > 1
+      ? listHref
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -141,7 +150,9 @@ export default async function IssuesPage({
                   shift={quickJoinShift}
                 />
               )}
-              {canManage && activity && <IssueRefreshControl initialRevision={activity.revision} />}
+              {canManage && activity && (
+                <IssueRefreshControl initialRevision={activity.revision} />
+              )}
             </div>
           )
         }
@@ -194,79 +205,81 @@ export default async function IssuesPage({
                 key={supportIssue.id}
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
               >
-                  <Link
-                    href={buildIssueDetailHref(supportIssue.id, returnTo)}
-                    className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="line-clamp-2 wrap-break-word font-semibold">{supportIssue.title}</h2>
-                        <StatusBadge status={supportIssue.status} />
-                        {canManage && "awaitingStaff" in supportIssue && supportIssue.awaitingStaff !== false && (
+                <Link
+                  href={buildIssueDetailHref(supportIssue.id, returnTo)}
+                  className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="line-clamp-2 wrap-break-word font-semibold">
+                        {supportIssue.title}
+                      </h2>
+                      <StatusBadge status={supportIssue.status} />
+                      {canManage &&
+                        "awaitingStaff" in supportIssue &&
+                        supportIssue.awaitingStaff !== false && (
                           <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                            {"lastStaffReplyAt" in supportIssue && supportIssue.lastStaffReplyAt
+                            {"lastStaffReplyAt" in supportIssue &&
+                            supportIssue.lastStaffReplyAt
                               ? "Student replied"
                               : "No reply yet"}
                           </span>
                         )}
-                        {waitingIds.has(supportIssue.id) &&
-                          LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
-                            supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
-                          ) && (
-                            <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
-                              Waiting in live support
-                            </span>
-                          )}
-                      </div>
-                      <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-                        {supportIssue.question}
-                      </p>
-                      {canManage && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {"caseRef" in supportIssue && supportIssue.caseRef && (
-                            <>
-                              <span className="font-mono font-semibold">
-                                {supportIssue.caseRef}
-                              </span>
-                              {" · "}
-                            </>
-                          )}
-                          {supportIssue.studentName || "Unknown student"}
-                          {supportIssue.studentEmail
-                            ? ` · ${supportIssue.studentEmail}`
-                            : ""}
-                        </p>
-                      )}
-                    </div>
-                    {supportIssue.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
-                        {supportIssue.tags.map((item) => (
-                          <span
-                            key={item}
-                            className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800"
-                          >
-                            {item}
+                      {waitingIds.has(supportIssue.id) &&
+                        LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
+                          supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
+                        ) && (
+                          <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
+                            Waiting in live support
                           </span>
-                        ))}
-                      </div>
+                        )}
+                    </div>
+                    <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
+                      {supportIssue.question}
+                    </p>
+                    {canManage && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {"caseRef" in supportIssue && supportIssue.caseRef && (
+                          <>
+                            <span className="font-mono font-semibold">
+                              {supportIssue.caseRef}
+                            </span>
+                            {" · "}
+                          </>
+                        )}
+                        {supportIssue.studentName || "Unknown student"}
+                        {supportIssue.studentEmail
+                          ? ` · ${supportIssue.studentEmail}`
+                          : ""}
+                      </p>
                     )}
-                  </Link>
-                  {canDelete && (
-                    <DeleteButton
-                      action={deleteIssueAction.bind(
-                        null,
-                        supportIssue.id,
-                      )}
-                      csrfToken={csrfToken}
-                      className="shrink-0"
-                      returnTo={listHref}
-                    />
+                  </div>
+                  {supportIssue.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
+                      {supportIssue.tags.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                </Link>
+                {canDelete && (
+                  <DeleteButton
+                    action={deleteIssueAction.bind(null, supportIssue.id)}
+                    csrfToken={csrfToken}
+                    className="shrink-0"
+                    returnTo={listHref}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
         <span>
@@ -276,7 +289,10 @@ export default async function IssuesPage({
           {issues.page > 1 && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, { page: issues.page - 1, defaultSort })}
+              href={buildIssueListHref(filters, {
+                page: issues.page - 1,
+                defaultSort,
+              })}
             >
               Previous
             </Link>
@@ -284,7 +300,10 @@ export default async function IssuesPage({
           {issues.page < issues.totalPages && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, { page: issues.page + 1, defaultSort })}
+              href={buildIssueListHref(filters, {
+                page: issues.page + 1,
+                defaultSort,
+              })}
             >
               Next
             </Link>

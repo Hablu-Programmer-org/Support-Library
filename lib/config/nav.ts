@@ -62,7 +62,6 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
     icon: FileTextIcon,
   },
   myCoursesItem(),
-  { label: "n8n help", href: "/dashboard/n8n-help", maxRole: "STUDENT", icon: HelpCircleIcon },
   { label: "Access requests", href: "/dashboard/access-requests", minRole: "ADMIN", icon: HelpCircleIcon },
   // Staff only: students join from a specific request.
   {

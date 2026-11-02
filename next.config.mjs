@@ -51,6 +51,16 @@ const nextConfig = {
       bodySizeLimit: serverActionBodySizeLimit(),
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/n8n-help",
+        destination: "/dashboard/issues",
+        permanent: false,
+      },
+    ];
+  },
+
   async headers() {
     return [
       {
