@@ -60,7 +60,7 @@ test.describe("STUDENT issue submission", () => {
       baseURL,
     });
     const adminPage = await adminContext.newPage();
-    await adminPage.goto("/dashboard/issues");
+    await adminPage.goto(`/dashboard/issues?q=${encodeURIComponent(title)}`);
     const issueHeading = adminPage.getByRole("heading", { name: title });
     const issueCard = adminPage.locator("a").filter({ has: issueHeading });
     await expect(issueHeading).toBeVisible();
@@ -68,7 +68,7 @@ test.describe("STUDENT issue submission", () => {
 
     // The student's video link and optional course context are preserved.
     await issueHeading.click();
-    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}(\?returnTo=|$)/);
     await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
     await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
     await expect(adminPage.getByText("jfwd")).toBeVisible();
