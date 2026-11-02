@@ -22,6 +22,20 @@ describe("n8n link policy", () => {
     expect(() => validateN8nLink("https://n8n.example.com.evil.test/invite")).toThrow(/configured n8n host/i);
   });
 
+  it("accepts the production n8n signup URL without weakening exact-host checks", () => {
+    process.env.N8N_ALLOWED_LINK_HOSTS = "n8n.hablu-programmer.com";
+    expect(validateN8nLink("https://n8n.hablu-programmer.com/signup?token=redacted"))
+      .toBe("https://n8n.hablu-programmer.com/signup?token=redacted");
+    expect(() => validateN8nLink("https://n8n.hablu-programmer.com.evil.test/signup?token=x"))
+      .toThrow(/configured n8n host/i);
+  });
+
+  it("rejects oversized links", () => {
+    process.env.N8N_ALLOWED_LINK_HOSTS = "n8n.hablu-programmer.com";
+    expect(() => validateN8nLink(`https://n8n.hablu-programmer.com/signup?token=${"x".repeat(2100)}`))
+      .toThrow(/too long/i);
+  });
+
   it("rejects insecure links and fails closed without an allowlist", () => {
     process.env.N8N_ALLOWED_LINK_HOSTS = "n8n.example.com";
     expect(() => validateN8nLink("http://n8n.example.com/invite")).toThrow(/HTTPS/);

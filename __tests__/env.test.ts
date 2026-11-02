@@ -40,6 +40,13 @@ const MANAGED_VARS = [
   "LIVE_SUPPORT_JOIN_URL",
   "LIVE_SUPPORT_MEETING_ID",
   "LIVE_SUPPORT_PASSCODE",
+  "N8N_ALLOWED_LINK_HOSTS",
+  "OPENAI_ALLOWED_LINK_HOSTS",
+  "SMTP_HOST",
+  "SMTP_SERVICE",
+  "SMTP_PORT",
+  "SMTP_MAIL",
+  "SMTP_PASSWORD",
 ] as const;
 
 const originalEnv = { ...process.env };
@@ -70,6 +77,11 @@ const productionVars = {
   // one; the "requires the room" case below deletes it on purpose.
   LIVE_SUPPORT_PLATFORM: "Google Meet",
   LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
+  N8N_ALLOWED_LINK_HOSTS: "n8n.hablu-programmer.com",
+  SMTP_HOST: "smtp.example.com",
+  SMTP_PORT: "587",
+  SMTP_MAIL: "support@example.com",
+  SMTP_PASSWORD: "test-password",
 };
 
 const studentEmailVars = {
@@ -117,12 +129,33 @@ describe("validateEnv", () => {
     expect(() => validateEnv()).not.toThrow();
   });
 
+  it("rejects a production access-email setup without the n8n allowlist", () => {
+    setEnv({ NODE_ENV: "production", ...studentEmailVars, ...productionVars });
+    delete process.env.N8N_ALLOWED_LINK_HOSTS;
+
+    expect(() => validateEnv()).toThrow(/N8N_ALLOWED_LINK_HOSTS/);
+  });
+
+  it("rejects wildcard or URL-shaped n8n allowlist entries", () => {
+    setEnv({
+      NODE_ENV: "development",
+      ...studentEmailVars,
+      N8N_ALLOWED_LINK_HOSTS: "https://*.example.com/path",
+    });
+
+    expect(() => validateEnv()).toThrow(/exact hostnames/i);
+  });
+
   it("rejects missing production secrets in production", () => {
     // The room is supplied so the failure is the missing secrets, not the room.
     setEnv({
       NODE_ENV: "production",
       ...studentEmailVars,
       LIVE_SUPPORT_JOIN_URL: "https://meet.google.com/abc-defg-hij",
+      N8N_ALLOWED_LINK_HOSTS: "n8n.hablu-programmer.com",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_MAIL: "support@example.com",
+      SMTP_PASSWORD: "test-password",
     });
 
     expect(() => validateEnv()).toThrow(/Invalid production environment/i);

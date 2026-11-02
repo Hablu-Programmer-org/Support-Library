@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 
 import { dbConnect } from "../lib/db";
-import { deriveIssueReplyState } from "../lib/reply-state";
+import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "../lib/reply-state";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "../models";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
@@ -69,7 +69,7 @@ async function backfillIssues() {
       { $lookup: { from: "staff-users", localField: "authorId", foreignField: "_id", as: "author" } },
       { $set: {
         effectiveStaff: {
-          $ifNull: ["$isStaffReply", { $in: [{ $arrayElemAt: ["$author.role", 0] }, ["ADMIN", "MENTOR"]] }],
+          ...EFFECTIVE_STAFF_REPLY_EXPRESSION,
         },
       } },
       { $group: {

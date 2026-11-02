@@ -25,6 +25,7 @@ export async function sendN8nHelpEmail(input: {
   studentName: string;
   requestType: N8nRequestType;
   link: string;
+  requestId: string;
 }) {  const reset = input.requestType === "PASSWORD_RESET";
   const openAi = input.requestType === "OPENAI_ACCESS";
   const title = openAi ? "Your OpenAI access is ready" : reset ? "Reset your n8n password" : "Your n8n access is ready";
@@ -38,6 +39,7 @@ export async function sendN8nHelpEmail(input: {
     : "Use the secure button below to accept your invitation and set up your n8n account.";
 
   await transporter().sendMail({
+    messageId: `<access-${input.requestId}@hablu-programmer.com>`,
     from: `Hablu Support Library <${process.env.SMTP_MAIL}>`,
     to: input.to,
     subject: `${title} | Hablu Programmer`,
@@ -54,16 +56,18 @@ export async function sendN8nHelpEmail(input: {
 export async function sendOpenAiConfirmationEmail(input: {
   to: string;
   studentName: string;
+  requestId: string;
 }) {
   const name = escapeHtml(input.studentName);
   const email = escapeHtml(input.to);
-  const text = `Your email (${input.to}) has been added to the Hablu Programmer OpenAI API workspace. OpenAI sends its own invitation email separately — check your inbox and Spam/Promotions. Sign in at https://platform.openai.com/ using this address. We never email API keys, so never share a key with anyone.`;
+  const text = `Your email (${input.to}) was added to the Hablu Programmer OpenAI API workspace invitation list. OpenAI sends the invitation separately — check your inbox and Spam/Promotions. Access is complete only after you accept that invitation. Sign in at https://platform.openai.com/ using this address. We never email API keys, so never share a key with anyone.`;
 
   await transporter().sendMail({
+    messageId: `<openai-access-${input.requestId}@hablu-programmer.com>`,
     from: `Hablu Support Library <${process.env.SMTP_MAIL}>`,
     to: input.to,
-    subject: "Your OpenAI API access is active | Hablu Programmer",
+    subject: "Your OpenAI workspace invitation was sent | Hablu Programmer",
     text: `Hi ${input.studentName},\n\n${text}\n\nIf you did not request this, reply to this email so we can review it.\n\nHablu Support Library`,
-    html: `<div style="background:#f8fafc;padding:32px 16px;font-family:Arial,sans-serif;color:#0f172a"><div style="max-width:560px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px"><p style="color:#0891b2;font-weight:700;margin:0 0 12px">HABLU SUPPORT LIBRARY</p><h1 style="font-size:24px;margin:0 0 16px">Your OpenAI API access is active</h1><p>Hi ${name},</p><p>Your email <strong>${email}</strong> has been added to the Hablu Programmer OpenAI API workspace.</p><p>OpenAI sends its own invitation email separately, so check your inbox and Spam or Promotions for it.</p><p style="margin:28px 0"><a href="https://platform.openai.com/" style="background:#0891b2;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Open platform.openai.com</a></p><p style="font-size:14px;color:#475569">Sign in with this email address. We never email API keys, so never share a key with anyone.</p><p style="font-size:14px;color:#475569">If you did not request this, reply to this email so we can review it.</p></div></div>`,
+    html: `<div style="background:#f8fafc;padding:32px 16px;font-family:Arial,sans-serif;color:#0f172a"><div style="max-width:560px;margin:auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px"><p style="color:#0891b2;font-weight:700;margin:0 0 12px">HABLU SUPPORT LIBRARY</p><h1 style="font-size:24px;margin:0 0 16px">Your OpenAI workspace invitation was sent</h1><p>Hi ${name},</p><p>Your email <strong>${email}</strong> was added to the Hablu Programmer OpenAI API workspace invitation list.</p><p>OpenAI sends its invitation separately, so check your inbox and Spam or Promotions. Access is complete only after you accept it.</p><p style="margin:28px 0"><a href="https://platform.openai.com/" style="background:#0891b2;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700">Open platform.openai.com</a></p><p style="font-size:14px;color:#475569">Sign in with this email address. We never email API keys, so never share a key with anyone.</p><p style="font-size:14px;color:#475569">If you did not request this, reply to this email so we can review it.</p></div></div>`,
   });
 }

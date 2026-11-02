@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { confirmOpenAiAccessAction } from "@/actions/n8n-requests";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
+import { GoogleReverifyButton } from "@/components/tool-access/google-reverify-button";
 
 /**
  * OpenAI access has no link to send: the admin adds the copied email in the
@@ -13,25 +14,33 @@ import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 export function OpenAiConfirmForm({
   requestId,
   csrfToken,
+  requiresReauth = false,
 }: {
   requestId: string;
   csrfToken: string;
+  requiresReauth?: boolean;
 }) {
   const [state, action] = useActionState(confirmOpenAiAccessAction, {});
 
   return (
-    <form action={action} className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+    <form action={action} className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-800">
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="requestId" value={requestId} />
-      <ol className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
-        <li>1. Copy the student email above.</li>
-        <li>2. Add that email as a member in the OpenAI dashboard.</li>
-        <li>3. Confirm below — OpenAI invites them and we email a confirmation.</li>
-      </ol>
-      {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
+      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+        Copy email → add in OpenAI → confirm the invitation was sent.
+      </p>
+      <label className="mt-2 flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+        <input type="checkbox" name="confirmed" value="yes" required className="mt-0.5 accent-cyan-600" />
+        I added the exact email above and asked OpenAI to send its invitation.
+      </label>
+      {state.error && <p role="alert" className="mt-2 text-xs text-red-600">{state.error}</p>}
       {state.success && <p role="status" className="text-sm text-emerald-600">{state.success}</p>}
-      <div className="max-w-xs">
-        <PendingSubmitButton label="Confirm added & email student" pendingLabel="Confirming…" />
+      <div className="mt-2 max-w-xs">
+        {requiresReauth || state.errorCode === "REAUTH_REQUIRED" ? (
+          <GoogleReverifyButton />
+        ) : (
+          <PendingSubmitButton label="Confirm invite & email student" pendingLabel="Confirming…" className="w-auto px-3 py-2 text-xs" />
+        )}
       </div>
     </form>
   );

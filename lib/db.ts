@@ -34,7 +34,9 @@ export const dbConnect = async (): Promise<typeof mongoose> => {
   cache.promise ??= mongoose.connect(getMongoUri(), {
     dbName: getMongoDbName(),
     bufferCommands: false,
-    autoIndex: process.env.NODE_ENV !== "production",
+    // Index creation is an explicit release operation. Enabling it merely by
+    // running in development previously mutated a shared Atlas database.
+    autoIndex: process.env.MONGODB_AUTO_INDEX === "true",
     serverSelectionTimeoutMS: 10_000,
   });
 

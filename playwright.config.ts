@@ -37,6 +37,7 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       MONGODB_DB: testDb,
+      MONGODB_AUTO_INDEX: "true",
       LMS_MONGODB_URI: process.env.MONGODB_URI ?? "",
       MONGODB_TEST_DB: testDb,
       MONGODB_DEV_DB: devDb ?? "",

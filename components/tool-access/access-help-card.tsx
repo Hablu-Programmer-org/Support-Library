@@ -8,7 +8,7 @@ import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 type RequestSummary = {
   id: string;
   requestType: "ACCESS" | "PASSWORD_RESET" | "OPENAI_ACCESS";
-  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED";
+  status: "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SUPERSEDED";
   sentAt?: string | null;
 };
 
@@ -52,6 +52,13 @@ function StatusChip({ status, sentAt }: { status: RequestSummary["status"]; sent
       <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900">
         <span className="h-1 w-1 rounded-full bg-red-500" aria-hidden />
         Failed
+      </span>
+    );
+  }
+  if (status === "SUPERSEDED") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        Replaced
       </span>
     );
   }

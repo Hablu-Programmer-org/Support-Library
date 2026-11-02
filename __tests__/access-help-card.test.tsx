@@ -7,10 +7,12 @@ vi.mock("@/actions/n8n-requests", () => ({
   confirmOpenAiAccessAction: vi.fn(async () => ({})),
   sendN8nLinkAction: vi.fn(async () => ({})),
 }));
+vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
 
 import { AccessHelpCard } from "@/components/tool-access/access-help-card";
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
+import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
 
 describe("AccessHelpCard", () => {
   it("offers all three access types as checkboxes", () => {
@@ -76,5 +78,11 @@ describe("AdminCreateAccessRequestForm", () => {
     expect(screen.getByRole("checkbox", { name: "n8n access" })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: "n8n password reset" })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: "OpenAI API access" })).not.toBeNull();
+  });
+
+  it("offers Google step-up instead of forcing a sign-out", () => {
+    render(<OpenAiConfirmForm csrfToken="csrf" requestId="request-1" requiresReauth />);
+    expect(screen.getByRole("button", { name: "Verify with Google" })).not.toBeNull();
+    expect(screen.queryByText(/sign out/i)).toBeNull();
   });
 });

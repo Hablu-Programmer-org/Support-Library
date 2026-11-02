@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { createAccessRequestsForStudentAction } from "@/actions/n8n-requests";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
+import { GoogleReverifyButton } from "@/components/tool-access/google-reverify-button";
 
 const choices = [
   ["ACCESS", "n8n access"],
@@ -11,31 +12,39 @@ const choices = [
   ["OPENAI_ACCESS", "OpenAI API access"],
 ] as const;
 
-export function AdminCreateAccessRequestForm({ csrfToken }: { csrfToken: string }) {
+export function AdminCreateAccessRequestForm({
+  csrfToken,
+  requiresReauth = false,
+}: {
+  csrfToken: string;
+  requiresReauth?: boolean;
+}) {
   const [state, action] = useActionState(createAccessRequestsForStudentAction, {});
 
   return (
-    <section
+    <details
       aria-labelledby="admin-create-access-heading"
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      className="group rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
     >
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-slate-700 to-slate-900 text-white shadow-sm dark:from-slate-600 dark:to-slate-800">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-slate-700">
           <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         </span>
-        <div>
-          <h2 id="admin-create-access-heading" className="text-base font-semibold text-slate-900 dark:text-white">
+        <div className="min-w-0 flex-1">
+          <h2 id="admin-create-access-heading" className="text-sm font-semibold text-slate-900 dark:text-white">
             Create requests manually
           </h2>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Enter the Hablu Programmer account email and pick one or more access types.
           </p>
         </div>
-      </div>
+        <span className="text-xs text-slate-500 group-open:hidden">Open</span>
+        <span className="hidden text-xs text-slate-500 group-open:inline">Close</span>
+      </summary>
 
-      <form action={action} className="mt-5 space-y-4">
+      <form action={action} className="space-y-3 border-t border-slate-200 px-4 py-3 dark:border-slate-800">
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <div>
           <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="manual-access-email">
@@ -68,9 +77,13 @@ export function AdminCreateAccessRequestForm({ csrfToken }: { csrfToken: string 
         {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
         {state.success && <p role="status" className="text-sm text-emerald-600">{state.success}</p>}
         <div className="max-w-xs">
-          <PendingSubmitButton label="Create selected requests" pendingLabel="Creating requests…" />
+          {requiresReauth || state.errorCode === "REAUTH_REQUIRED" ? (
+            <GoogleReverifyButton />
+          ) : (
+            <PendingSubmitButton label="Create selected requests" pendingLabel="Creating requests…" className="w-auto px-3 py-2 text-xs" />
+          )}
         </div>
       </form>
-    </section>
+    </details>
   );
 }

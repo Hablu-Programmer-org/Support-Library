@@ -10,6 +10,7 @@ import { findLmsUserByEmail } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { isN8nAdmin, validateAccessLink } from "@/lib/n8n-request-policy";
 import { getRequestContext } from "@/lib/request-context";
+import { recentlySignedIn } from "@/lib/recent-auth";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { sendN8nHelpEmail, sendOpenAiConfirmationEmail } from "@/lib/services/n8n-email";
@@ -23,18 +24,16 @@ import {
 import { consumeRateLimit, MutationRateLimitError } from "@/lib/services/rate-limit";
 import { UserModel } from "@/models";
 
-export type N8nActionState = { success?: string; error?: string };
+export type N8nActionState = {
+  success?: string;
+  error?: string;
+  errorCode?: "REAUTH_REQUIRED";
+};
 const requestTypeSchema = z.enum(["ACCESS", "PASSWORD_RESET", "OPENAI_ACCESS"]);
 const adminCreateSchema = z.object({
   email: z.email().transform((value) => normalizeEmail(value)),
   requestTypes: z.array(requestTypeSchema).min(1).max(3),
 });
-
-async function recentlySignedIn(adminId: string) {
-  await dbConnect();
-  const admin = await UserModel.findById(adminId).select("lastLoginAt").lean();
-  return Boolean(admin?.lastLoginAt && Date.now() - admin.lastLoginAt.getTime() <= 12 * 60 * 60 * 1000);
-}
 
 export async function createN8nRequestAction(
   _state: N8nActionState,
@@ -87,7 +86,7 @@ export async function createAccessRequestsForStudentAction(
     return { error: "You do not have permission to create access requests." };
   }
   if (!(await recentlySignedIn(guard.session.user.id))) {
-    return { error: "For security, sign out and sign in again before creating access requests." };
+    return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
   }
 
   const parsed = adminCreateSchema.safeParse({
@@ -101,6 +100,9 @@ export async function createAccessRequestsForStudentAction(
     const lmsUser = await findLmsUserByEmail(parsed.data.email);
     if (!lmsUser) return { error: "No Hablu Programmer account was found with this email." };
     if (!lmsUser.isActive) return { error: "This Hablu Programmer account is inactive." };
+    if (mapLmsRole(lmsUser.role) !== "STUDENT") {
+      return { error: "Access requests can only be created for learner accounts." };
+    }
 
     await dbConnect();
     const target = await UserModel.findOneAndUpdate(
@@ -173,13 +175,13 @@ export async function sendN8nLinkAction(
 
   try {
     if (!(await recentlySignedIn(guard.session.user.id))) {
-      return { error: "For security, sign out and sign in again before sending this link." };
+      return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
     }
     await consumeRateLimit("n8n.email.send", guard.session.user.id);
     const claimed = await claimN8nRequest(requestId, guard.session.user.id);
     if (!claimed) return { error: "This request was already handled or is being processed." };
     if (!claimed.student.isActive) {
-      await markN8nRequestFailed(requestId, guard.session.user.id);
+      await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
       return { error: "This student account is inactive." };
     }
 
@@ -189,13 +191,17 @@ export async function sendN8nLinkAction(
         studentName: claimed.student.name,
         requestType: claimed.request.requestType,
         link,
+        requestId,
       });
     } catch {
-      await markN8nRequestFailed(requestId, guard.session.user.id);
+      await markN8nRequestFailed(requestId, claimed.leaseId);
       return { error: "Email could not be sent. Check SMTP and retry with a fresh link." };
     }
 
-    await markN8nRequestSent(requestId, guard.session.user.id);
+    const finalized = await markN8nRequestSent(requestId, claimed.leaseId);
+    if (!finalized) {
+      return { error: "The email may have been sent, but status confirmation failed. Refresh before retrying." };
+    }
     await recordAuditEvent({
       actorId: guard.session.user.id,
       action: "N8N_LINK_EMAIL_SEND",
@@ -236,16 +242,19 @@ export async function confirmOpenAiAccessAction(
   if (requestType !== "OPENAI_ACCESS") {
     return { error: "This is not an OpenAI access request. Send an invitation link instead." };
   }
+  if (formData.get("confirmed") !== "yes") {
+    return { error: "Confirm that you added the exact student email in OpenAI." };
+  }
 
   try {
     if (!(await recentlySignedIn(guard.session.user.id))) {
-      return { error: "For security, sign out and sign in again before confirming access." };
+      return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
     }
     await consumeRateLimit("n8n.email.send", guard.session.user.id);
     const claimed = await claimN8nRequest(requestId, guard.session.user.id);
     if (!claimed) return { error: "This request was already handled or is being processed." };
     if (!claimed.student.isActive) {
-      await markN8nRequestFailed(requestId, guard.session.user.id);
+      await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
       return { error: "This student account is inactive." };
     }
 
@@ -253,13 +262,17 @@ export async function confirmOpenAiAccessAction(
       await sendOpenAiConfirmationEmail({
         to: claimed.student.email,
         studentName: claimed.student.name,
+        requestId,
       });
     } catch {
-      await markN8nRequestFailed(requestId, guard.session.user.id);
+      await markN8nRequestFailed(requestId, claimed.leaseId);
       return { error: "Confirmation email could not be sent. Check SMTP and try again." };
     }
 
-    await markN8nRequestSent(requestId, guard.session.user.id);
+    const finalized = await markN8nRequestSent(requestId, claimed.leaseId);
+    if (!finalized) {
+      return { error: "The confirmation may have been emailed, but status update failed. Refresh before retrying." };
+    }
     await recordAuditEvent({
       actorId: guard.session.user.id,
       action: "OPENAI_ACCESS_CONFIRM",

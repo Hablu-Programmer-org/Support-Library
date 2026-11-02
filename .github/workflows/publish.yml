@@ -104,6 +104,10 @@ jobs:
             --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \
             --env LIVE_SUPPORT_PLATFORM='Google Meet' \
             --env LIVE_SUPPORT_JOIN_URL='https://meet.google.com/abc-defg-hij' \
+            --env N8N_ALLOWED_LINK_HOSTS='n8n.hablu-programmer.com' \
+            --env SMTP_HOST='smtp.invalid' \
+            --env SMTP_MAIL='smoke@hablu-programmer.com' \
+            --env SMTP_PASSWORD='smoke-placeholder' \
             --env LIVE_SUPPORT_MEETING_ID='abc-defg-hij' \
             "$app_tag")
           trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT

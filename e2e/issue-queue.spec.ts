@@ -6,8 +6,8 @@ import { SupportIssueModel, SupportReplyModel } from "../models";
 import { STAFF_USERS } from "./fixtures/staff-users";
 
 /**
- * Staff queue behaviour: unanswered requests first (oldest first), answered
- * requests last, and a refresh that never loses the current filter or page.
+ * Staff queue behaviour: unresolved answer-needed requests first (newest
+ * activity first), answered unresolved requests next and solved requests last.
  *
  * The rows are seeded directly so the three reply states are deterministic
  * instead of depending on how many replies earlier specs happened to create.
@@ -93,6 +93,20 @@ test.beforeAll(async () => {
       createdAt: new Date("2026-01-05T10:00:00.000Z"),
       updatedAt: newest,
     },
+    {
+      title: title("old solved"),
+      question: "A completed request must stay below every unresolved request.",
+      searchText: `${token} old solved`,
+      createdBy: STUDENT_ID,
+      status: "SOLVED",
+      priority: "NORMAL",
+      visibility: "INTERNAL",
+      awaitingStaff: true,
+      lastStaffReplyAt: null,
+      lastStudentReplyAt: null,
+      createdAt: new Date("2025-01-01T10:00:00.000Z"),
+      updatedAt: oldest,
+    },
   ]);
 
   const legacyAnswered = await SupportIssueModel.findOne({ title: title("legacy answered") }).select("_id").lean();
@@ -134,17 +148,18 @@ const queue = (page: Page) => page.locator("main h2:visible");
 test.describe("staff queue ordering", () => {
   test.use({ storageState: "e2e/.auth/mentor.json" });
 
-  test("shows unanswered issues first and oldest first, answered last", async ({ page }) => {
+  test("shows newest answer-needed unresolved first and solved last", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${token}`);
 
     await expect(page.getByText(`E2E queue ${token} never answered`)).toBeVisible();
 
     await expect.poll(async () => queue(page).allInnerTexts()).toEqual([
-      title("never answered"),
-      title("student replied"),
-      title("legacy answered"),
       title("legacy unanswered"),
+      title("student replied"),
+      title("never answered"),
+      title("legacy answered"),
       title("answered"),
+      title("old solved"),
     ]);
 
     // Staff-only badges: no reply vs. the student's later message.
@@ -161,17 +176,18 @@ test.describe("staff queue ordering", () => {
   test("manual refresh keeps the filter and the same ordering", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${token}`);
 
-    await expect.poll(async () => queue(page).count()).toBe(5);
+    await expect.poll(async () => queue(page).count()).toBe(6);
     await page.getByRole("button", { name: "Refresh", exact: true }).click();
 
     await expect(page.getByText(/^Updated /).first()).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`q=${token}`));
     await expect.poll(async () => queue(page).allInnerTexts()).toEqual([
-      title("never answered"),
-      title("student replied"),
-      title("legacy answered"),
       title("legacy unanswered"),
+      title("student replied"),
+      title("never answered"),
+      title("legacy answered"),
       title("answered"),
+      title("old solved"),
     ]);
   });
 

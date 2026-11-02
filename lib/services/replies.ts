@@ -9,7 +9,7 @@ import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
-import { deriveIssueReplyState } from "@/lib/reply-state";
+import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "@/lib/reply-state";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
@@ -98,18 +98,24 @@ async function refreshIssueReplySearchText(issueId: string, session: ClientSessi
 
 /** Recompute from live replies so edits/deletes and retries can never drift the queue state. */
 async function refreshIssueReplyState(issueId: string, session: ClientSession) {
-  const [lastStaff, lastStudent] = await Promise.all([
-    // `$ne: false` (not `true`) so replies written before `isStaffReply` existed
-    // still count as staff answers until the backfill stamps them. Legacy replies
-    // came from the staff-only composer, so this cannot hide a student message.
-    SupportReplyModel.findOne({ issueId, deletedAt: null, isStaffReply: { $ne: false } })
-      .select("createdAt").sort({ createdAt: -1 }).session(session).lean(),
-    SupportReplyModel.findOne({ issueId, deletedAt: null, isStaffReply: false })
-      .select("createdAt").sort({ createdAt: -1 }).session(session).lean(),
-  ]);
+  const [summary] = await SupportReplyModel.aggregate<{
+    lastStaffReplyAt: Date | null;
+    lastStudentReplyAt: Date | null;
+  }>([
+    { $match: { issueId: new mongoose.Types.ObjectId(issueId), deletedAt: null } },
+    { $lookup: { from: "staff-users", localField: "authorId", foreignField: "_id", as: "author" } },
+    { $set: { effectiveStaff: EFFECTIVE_STAFF_REPLY_EXPRESSION } },
+    {
+      $group: {
+        _id: null,
+        lastStaffReplyAt: { $max: { $cond: ["$effectiveStaff", "$createdAt", null] } },
+        lastStudentReplyAt: { $max: { $cond: ["$effectiveStaff", null, "$createdAt"] } },
+      },
+    },
+  ]).session(session);
   const state = deriveIssueReplyState(
-    lastStaff?.createdAt ?? null,
-    lastStudent?.createdAt ?? null,
+    summary?.lastStaffReplyAt ?? null,
+    summary?.lastStudentReplyAt ?? null,
   );
   await SupportIssueModel.updateOne(
     { _id: issueId },

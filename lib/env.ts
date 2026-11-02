@@ -244,6 +244,48 @@ const crossAppEnvShape = {
 
 const crossAppEnvSchema = z.object(crossAppEnvShape);
 
+const exactHostListSchema = z.string().trim().min(1).superRefine((value, context) => {
+  for (const host of value.split(",").map((entry) => entry.trim())) {
+    if (!host || host.includes("://") || host.includes("/") || host.includes("*") || host !== host.toLowerCase()) {
+      context.addIssue({
+        code: "custom",
+        message: "must contain lowercase exact hostnames separated by commas (no scheme, path or wildcard)",
+      });
+      return;
+    }
+    try {
+      const parsed = new URL(`https://${host}`);
+      if (parsed.hostname !== host || parsed.port) throw new Error("not exact");
+    } catch {
+      context.addIssue({ code: "custom", message: `contains an invalid hostname: ${host}` });
+      return;
+    }
+  }
+});
+
+const accessEmailEnvSchema = z
+  .object({
+    N8N_ALLOWED_LINK_HOSTS: exactHostListSchema.optional(),
+    OPENAI_ALLOWED_LINK_HOSTS: exactHostListSchema.optional(),
+    SMTP_HOST: z.string().trim().optional(),
+    SMTP_SERVICE: z.string().trim().optional(),
+    SMTP_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+    SMTP_MAIL: z.email().optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
+  })
+  .superRefine((value, context) => {
+    if (process.env.NODE_ENV !== "production") return;
+    if (!value.N8N_ALLOWED_LINK_HOSTS) {
+      context.addIssue({ code: "custom", path: ["N8N_ALLOWED_LINK_HOSTS"], message: "is required in production" });
+    }
+    if (!value.SMTP_HOST && !value.SMTP_SERVICE) {
+      context.addIssue({ code: "custom", path: ["SMTP_HOST"], message: "SMTP_HOST or SMTP_SERVICE is required in production" });
+    }
+    for (const key of ["SMTP_MAIL", "SMTP_PASSWORD"] as const) {
+      if (!value[key]) context.addIssue({ code: "custom", path: [key], message: "is required in production" });
+    }
+  });
+
 /**
  * Live support meeting details.
  *
@@ -359,6 +401,11 @@ export function validateEnv() {
   const crossApp = crossAppEnvSchema.safeParse(process.env);
   if (!crossApp.success) {
     throw new Error(`Invalid cross-app link environment: ${issueNames(crossApp.error)}`);
+  }
+
+  const accessEmail = accessEmailEnvSchema.safeParse(process.env);
+  if (!accessEmail.success) {
+    throw new Error(`Invalid access email environment: ${issueNames(accessEmail.error)}`);
   }
 
   const liveSupport = liveSupportEnvSchema.safeParse(process.env);

@@ -5,25 +5,22 @@ vi.mock("server-only", () => ({}));
 import { ISSUE_ANSWER_SORT_STAGES } from "@/lib/services/issues";
 
 /**
- * The staff queue must show "needs an answer" first (oldest request first) and
- * keep a stable tiebreaker. Legacy rows have no `awaitingStaff` field at all, so
- * the rank expression must treat "missing" as awaiting instead of burying the
- * oldest unanswered ticket at the bottom before the backfill has run.
+ * The staff queue derives legacy state before pagination, ranks unresolved work
+ * ahead of completed work and keeps a stable newest-first tiebreaker.
  */
 describe("ISSUE_ANSWER_SORT_STAGES", () => {
-  const [rankStage, sortStage] = ISSUE_ANSWER_SORT_STAGES;
-
-  it("ranks anything that is not explicitly answered as awaiting", () => {
-    const rank = JSON.stringify(rankStage);
-    expect(rank).toContain('"$eq":["$awaitingStaff",false]');
-    expect(rank).toContain('"$cond"');
-    // Only an explicit `false` (answered, waiting for the student) ranks lower.
-    expect(rankStage.$addFields).toHaveProperty("awaitingStaffRank");
+  it("derives missing reply state before sorting", () => {
+    const pipeline = JSON.stringify(ISSUE_ANSWER_SORT_STAGES);
+    expect(pipeline).toContain('"from":"support-replies"');
+    expect(pipeline).toContain('"needsLegacyState"');
+    expect(pipeline).toContain('"effectiveAwaitingStaff"');
   });
 
-  it("puts awaiting first, then oldest, then a stable id tiebreaker", () => {
-    expect(sortStage).toEqual({
-      $sort: { awaitingStaffRank: -1, createdAt: 1, _id: 1 },
+  it("puts actionable unresolved first and solved/archived last", () => {
+    const pipeline = JSON.stringify(ISSUE_ANSWER_SORT_STAGES);
+    expect(pipeline).toContain('"$in":["$status",["SOLVED","ARCHIVED"]]');
+    expect(ISSUE_ANSWER_SORT_STAGES.at(-1)).toEqual({
+      $sort: { answerQueueBucket: 1, answerQueueActivityAt: -1, createdAt: -1, _id: -1 },
     });
   });
 });

@@ -1,7 +1,7 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
 export const N8N_REQUEST_TYPES = ["ACCESS", "PASSWORD_RESET", "OPENAI_ACCESS"] as const;
-export const N8N_REQUEST_STATUSES = ["PENDING", "PROCESSING", "SENT", "FAILED"] as const;
+export const N8N_REQUEST_STATUSES = ["PENDING", "PROCESSING", "SENT", "FAILED", "SUPERSEDED"] as const;
 
 const n8nAccessRequestSchema = new mongoose.Schema(
   {
@@ -10,6 +10,8 @@ const n8nAccessRequestSchema = new mongoose.Schema(
     status: { type: String, enum: N8N_REQUEST_STATUSES, required: true, default: "PENDING", index: true },
     attempts: { type: Number, required: true, default: 0, min: 0 },
     processingStartedAt: { type: Date, default: null },
+    processingExpiresAt: { type: Date, default: null },
+    processingLeaseId: { type: String, default: null, maxlength: 80, select: false },
     sentAt: { type: Date, default: null },
     handledBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null, index: true },
@@ -20,6 +22,10 @@ const n8nAccessRequestSchema = new mongoose.Schema(
 );
 
 n8nAccessRequestSchema.index({ createdAt: -1 });
+n8nAccessRequestSchema.index(
+  { requestType: 1, status: 1, createdAt: -1, _id: -1 },
+  { name: "n8n-access-requests-staff-queue" },
+);
 n8nAccessRequestSchema.index(
   { studentId: 1, requestType: 1 },
   {

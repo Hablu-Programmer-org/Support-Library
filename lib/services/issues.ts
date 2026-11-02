@@ -19,7 +19,7 @@ import {
   type SupportIssueInput,
   type SupportReplyInput,
 } from "@/lib/validation";
-import { deriveIssueReplyState } from "@/lib/reply-state";
+import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "@/lib/reply-state";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { nextCaseRef } from "@/lib/services/case-ref";
 import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
@@ -46,18 +46,101 @@ export const PUBLIC_ISSUE_FIELDS =
   "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
 
 /**
- * Staff queue ordering: unanswered first, oldest first, `_id` as a stable
- * tiebreaker so pagination cannot repeat or skip a row.
+ * Staff queue ordering, computed before pagination:
+ * 0. unresolved requests that need a staff answer;
+ * 1. unresolved requests where staff answered last;
+ * 2. solved/archived requests.
  *
- * `$cond` is deliberate: legacy issues (created before the reply-state fields
- * existed) have no `awaitingStaff`, and a plain descending sort would push them
- * to the bottom — exactly the unanswered tickets staff must see first. Treating
- * "missing" as awaiting keeps the list correct even before the backfill runs.
+ * Legacy rows derive their state from replies in the aggregation. The lookup is
+ * conditional, so fully backfilled rows do not scan their reply thread.
  */
-export const ISSUE_ANSWER_SORT_STAGES = [
-  { $addFields: { awaitingStaffRank: { $cond: [{ $eq: ["$awaitingStaff", false] }, 0, 1] } } },
-  { $sort: { awaitingStaffRank: -1, createdAt: 1, _id: 1 } },
-] as const;
+export const ISSUE_ANSWER_SORT_STAGES: mongoose.PipelineStage[] = [
+  {
+    $lookup: {
+      from: "support-replies",
+      let: {
+        issueId: "$_id",
+        needsLegacyState: { $ne: [{ $type: "$awaitingStaff" }, "bool"] },
+      },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                "$$needsLegacyState",
+                { $eq: ["$issueId", "$$issueId"] },
+                { $eq: ["$deletedAt", null] },
+              ],
+            },
+          },
+        },
+        { $lookup: { from: "staff-users", localField: "authorId", foreignField: "_id", as: "author" } },
+        { $set: { effectiveStaff: EFFECTIVE_STAFF_REPLY_EXPRESSION } },
+        {
+          $group: {
+            _id: null,
+            lastStaffReplyAt: { $max: { $cond: ["$effectiveStaff", "$createdAt", null] } },
+            lastStudentReplyAt: { $max: { $cond: ["$effectiveStaff", null, "$createdAt"] } },
+          },
+        },
+      ],
+      as: "legacyReplyState",
+    },
+  },
+  {
+    $set: {
+      effectiveLastStaffReplyAt: {
+        $cond: [
+          { $eq: [{ $type: "$awaitingStaff" }, "bool"] },
+          "$lastStaffReplyAt",
+          { $ifNull: [{ $arrayElemAt: ["$legacyReplyState.lastStaffReplyAt", 0] }, null] },
+        ],
+      },
+      effectiveLastStudentReplyAt: {
+        $cond: [
+          { $eq: [{ $type: "$awaitingStaff" }, "bool"] },
+          "$lastStudentReplyAt",
+          { $ifNull: [{ $arrayElemAt: ["$legacyReplyState.lastStudentReplyAt", 0] }, null] },
+        ],
+      },
+    },
+  },
+  {
+    $set: {
+      effectiveAwaitingStaff: {
+        $cond: [
+          { $eq: [{ $type: "$awaitingStaff" }, "bool"] },
+          "$awaitingStaff",
+          {
+            $or: [
+              { $eq: ["$effectiveLastStaffReplyAt", null] },
+              { $gt: ["$effectiveLastStudentReplyAt", "$effectiveLastStaffReplyAt"] },
+            ],
+          },
+        ],
+      },
+    },
+  },
+  {
+    $set: {
+      answerQueueBucket: {
+        $cond: [
+          { $in: ["$status", ["SOLVED", "ARCHIVED"]] },
+          2,
+          { $cond: ["$effectiveAwaitingStaff", 0, 1] },
+        ],
+      },
+      answerQueueActivityAt: {
+        $cond: [
+          "$effectiveAwaitingStaff",
+          { $ifNull: ["$effectiveLastStudentReplyAt", "$createdAt"] },
+          "$updatedAt",
+        ],
+      },
+    },
+  },
+  { $sort: { answerQueueBucket: 1, answerQueueActivityAt: -1, createdAt: -1, _id: -1 } },
+];
 
 /** LOW=1 … URGENT=4 — string order would be wrong, so sorting uses this rank. */
 const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
@@ -852,7 +935,7 @@ async function withDerivedReplyState(items: SupportIssueListItem[]) {
     {
       $set: {
         effectiveStaff: {
-          $ifNull: ["$isStaffReply", { $in: [{ $arrayElemAt: ["$author.role", 0] }, ["ADMIN", "MENTOR"]] }],
+          ...EFFECTIVE_STAFF_REPLY_EXPRESSION,
         },
       },
     },
