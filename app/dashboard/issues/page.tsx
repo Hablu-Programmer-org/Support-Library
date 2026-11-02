@@ -115,7 +115,10 @@ export default async function IssuesPage({
       <PageHeader
         action={
           canSubmit && (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-end gap-2">
+              {/* The quick-join control owns a status line above its button. Align
+                  the action children by their bottom edge so Submit and Join keep
+                  one button baseline instead of centring Submit against both rows. */}
               <Link
                 className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
                 href="/dashboard/issues/new"

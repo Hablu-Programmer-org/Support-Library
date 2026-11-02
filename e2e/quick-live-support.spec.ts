@@ -20,6 +20,14 @@ test.describe("quick live support: students", () => {
     const join = page.getByRole("button", { name: "Join Live support" });
     await expect(join).toBeVisible();
 
+    // The status message sits above Join. Both actions must still share one
+    // visual baseline instead of vertically centring Submit against two rows.
+    const submitBox = await page.getByRole("link", { name: "Submit an issue" }).boundingBox();
+    const joinBox = await join.boundingBox();
+    expect(submitBox).not.toBeNull();
+    expect(joinBox).not.toBeNull();
+    expect(Math.abs((submitBox!.y + submitBox!.height) - (joinBox!.y + joinBox!.height))).toBeLessThanOrEqual(2);
+
     // The server resolves the shift and only marks the button clickable inside
     // a support slot, so the status line and the button must never disagree.
     const status = page.getByText(
