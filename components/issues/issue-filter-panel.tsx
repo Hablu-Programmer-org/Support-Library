@@ -20,6 +20,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const sortLabels: Record<IssueSort, string> = {
+  answer: "Answer needed first",
   newest: "Newest first",
   oldest: "Oldest first",
   priority: "Priority",
@@ -64,7 +65,7 @@ function FilterFields({
         <label className={nativeLabelClass}>
           Sort by
           <select className={nativeSelectClass} defaultValue={defaults.sort} name="sort">
-            {ISSUE_SORTS.map((item) => (
+            {(showMentor ? ISSUE_SORTS : ISSUE_SORTS.filter((item) => item !== "answer")).map((item) => (
               <option key={item} value={item}>
                 {sortLabels[item]}
               </option>
@@ -159,8 +160,25 @@ function FilterFields({
   );
 }
 
-function PanelHeader({ defaults, open, onToggle }: { defaults: IssueFilterDefaults; open: boolean; onToggle: () => void }) {
-  return <IssueSearchField defaults={defaults} open={open} onToggle={onToggle} />;
+function PanelHeader({
+  defaults,
+  defaultSort,
+  open,
+  onToggle,
+}: {
+  defaults: IssueFilterDefaults;
+  defaultSort: "answer" | "newest";
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <IssueSearchField
+      defaults={defaults}
+      defaultSort={defaultSort}
+      open={open}
+      onToggle={onToggle}
+    />
+  );
 }
 
 function PanelSkeleton() {
@@ -195,7 +213,8 @@ export function IssueFilterPanel({
     defaults.from,
     defaults.to,
   ].filter(Boolean).length;
-  const [open, setOpen] = useState(activeCount > 0 || defaults.sort !== "newest");
+  const defaultSort = showMentor ? "answer" : "newest";
+  const [open, setOpen] = useState(activeCount > 0 || defaults.sort !== defaultSort);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only render pattern
@@ -213,7 +232,7 @@ export function IssueFilterPanel({
   return (
     <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
       <form action="/dashboard/issues" method="get" className="space-y-4">
-        <PanelHeader defaults={defaults} open={open} onToggle={toggle} />
+        <PanelHeader defaults={defaults} defaultSort={defaultSort} open={open} onToggle={toggle} />
 
         {open && (
           <FilterFields

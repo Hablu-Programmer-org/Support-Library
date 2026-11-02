@@ -28,24 +28,9 @@ test.describe("quick live support: students", () => {
     expect(joinBox).not.toBeNull();
     expect(Math.abs((submitBox!.y + submitBox!.height) - (joinBox!.y + joinBox!.height))).toBeLessThanOrEqual(2);
 
-    // The server resolves the shift and only marks the button clickable inside
-    // a support slot, so the status line and the button must never disagree.
-    const status = page.getByText(
-      /Live support is open right now\.|Closed right now|Live support is unavailable right now\./,
-    );
-    await expect(status).toBeVisible();
-
-    const text = (await status.textContent()) ?? "";
-    if (text.includes("open right now")) {
-      await expect(join).toBeEnabled();
-    } else {
-      await expect(join).toBeDisabled();
-    }
-
-    // Closed state still tells the student when support runs.
-    if (text.includes("Closed")) {
-      await expect(status).toContainText("সকাল");
-    }
+    // Closed/unconfigured state is expressed by the disabled control only; the
+    // long schedule sentence must not distort the page header layout.
+    await expect(page.getByText(/Closed right now|সকাল ৯ টা থেকে দুপুর ১ টা/)).toHaveCount(0);
 
     // The room URL and the meeting code are resolved by the action, never
     // shipped in the document.

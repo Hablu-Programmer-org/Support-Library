@@ -9,6 +9,7 @@ import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
+import { deriveIssueReplyState } from "@/lib/reply-state";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
@@ -95,6 +96,28 @@ async function refreshIssueReplySearchText(issueId: string, session: ClientSessi
   ).session(session);
 }
 
+/** Recompute from live replies so edits/deletes and retries can never drift the queue state. */
+async function refreshIssueReplyState(issueId: string, session: ClientSession) {
+  const [lastStaff, lastStudent] = await Promise.all([
+    // `$ne: false` (not `true`) so replies written before `isStaffReply` existed
+    // still count as staff answers until the backfill stamps them. Legacy replies
+    // came from the staff-only composer, so this cannot hide a student message.
+    SupportReplyModel.findOne({ issueId, deletedAt: null, isStaffReply: { $ne: false } })
+      .select("createdAt").sort({ createdAt: -1 }).session(session).lean(),
+    SupportReplyModel.findOne({ issueId, deletedAt: null, isStaffReply: false })
+      .select("createdAt").sort({ createdAt: -1 }).session(session).lean(),
+  ]);
+  const state = deriveIssueReplyState(
+    lastStaff?.createdAt ?? null,
+    lastStudent?.createdAt ?? null,
+  );
+  await SupportIssueModel.updateOne(
+    { _id: issueId },
+    { $set: state },
+    { timestamps: false },
+  ).session(session);
+}
+
 async function requireLiveIssue(issueId: string, session: ClientSession) {
   if (!mongoose.Types.ObjectId.isValid(issueId)) return null;
   return SupportIssueModel.findOne({ _id: issueId, deletedAt: null })
@@ -135,6 +158,7 @@ export async function addReply(
   authorId: string,
   operationId: string,
   uploads: IngestedUpload[] = [],
+  authorRole: UserRole = "MENTOR",
 ) {
   const parsed = supportReplyInputSchema.parse(input);
   const parsedOperationId = operationIdSchema.parse(operationId);
@@ -163,11 +187,13 @@ export async function addReply(
         ...parsed,
         uploads,
         authorId: authorObjectId,
+        isStaffReply: authorRole !== "STUDENT",
         createOperationId: parsedOperationId,
         createOperationHash: requestHash,
       }], { session });
       await requirePublicationReview(parsed.issueId, authorId, session);
       await refreshIssueReplySearchText(parsed.issueId, session);
+      await refreshIssueReplyState(parsed.issueId, session);
       const context = await getRequestContext();
       for (const upload of uploads) {
         await recordAuditEvent({
@@ -287,6 +313,7 @@ export async function editReply(
     if (!reply) return null;
     await requirePublicationReview(issueId, actorId, session);
     await refreshIssueReplySearchText(issueId, session);
+    await refreshIssueReplyState(issueId, session);
     const context = await getRequestContext();
     await recordAuditEvent({
       actorId,
@@ -333,6 +360,7 @@ export async function softDeleteReply(
     if (!reply) return null;
     await requirePublicationReview(issueId, actorId, session);
     await refreshIssueReplySearchText(issueId, session);
+    await refreshIssueReplyState(issueId, session);
     const context = await getRequestContext();
     await recordAuditEvent({
       actorId,

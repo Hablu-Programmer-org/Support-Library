@@ -157,7 +157,13 @@ export async function addReplyAction(
 
     // `addReply` deletes these objects when the write is a replay, loses the
     // duplicate-key race, or discovers the issue is already gone.
-    reply = await addReply(parsed, guard.session.user.id, operationId, uploads);
+    reply = await addReply(
+      parsed,
+      guard.session.user.id,
+      operationId,
+      uploads,
+      guard.session.user.role ?? "MENTOR",
+    );
   } catch (error) {
     return replyFailure("add response", error, values);
   }

@@ -11,6 +11,7 @@ const supportReplySchema = new mongoose.Schema(
       index: true,
     },
     authorId: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
+    isStaffReply: { type: Boolean, required: true, default: true },
     body: { type: String, required: true, trim: true, minlength: 1, maxlength: 20_000 },
     videoLinks: { type: [videoLinkSchema], default: [] },
     uploads: { type: [uploadAttachmentSchema], default: [] },
@@ -26,6 +27,10 @@ const supportReplySchema = new mongoose.Schema(
 );
 
 supportReplySchema.index({ issueId: 1, createdAt: 1 });
+supportReplySchema.index(
+  { issueId: 1, isStaffReply: 1, createdAt: -1 },
+  { name: "replies-issue-author-kind-latest" },
+);
 supportReplySchema.index({ "uploads._id": 1 });
 supportReplySchema.index(
   { authorId: 1, createOperationId: 1 },

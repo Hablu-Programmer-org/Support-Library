@@ -5,7 +5,6 @@ import { ExternalActionForm } from "@/components/shared/external-action-form";
 import { cn } from "@/lib/cn";
 import {
   LIVE_SUPPORT_CTA,
-  supportScheduleBn,
   type SupportPhase,
 } from "@/lib/config/live-support";
 
@@ -53,17 +52,7 @@ export function QuickLiveSupportButton({
   const isOpen = shift !== "off";
 
   return (
-    <div className="flex flex-col items-start gap-2 sm:items-end">
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        {!configured ? (
-          "Live support is unavailable right now."
-        ) : isOpen ? (
-          "Live support is open right now."
-        ) : (
-          <>Closed right now · {supportScheduleBn}</>
-        )}
-      </p>
-
+    <div title={!configured ? "Live support is unavailable right now" : !isOpen ? "Live support is closed right now" : undefined}>
       <ExternalActionForm
         action={joinLiveSupportQuickAction}
         ariaLabel={LIVE_SUPPORT_CTA.join}

@@ -19,10 +19,12 @@ const DEBOUNCE_MS = 400;
  */
 export function IssueSearchField({
   defaults,
+  defaultSort,
   open,
   onToggle,
 }: {
   defaults: IssueFilterDefaults;
+  defaultSort?: "answer" | "newest" | "oldest" | "priority";
   open: boolean;
   onToggle: () => void;
 }) {
@@ -46,7 +48,7 @@ export function IssueSearchField({
     const timer = window.setTimeout(() => {
       // A search always restarts at page 1: the old page number would point at a
       // different result set. Everything else in the URL is kept.
-      const href = buildIssueListHref({ ...defaults, q: next, page: 1 });
+      const href = buildIssueListHref({ ...defaults, q: next, page: 1 }, { defaultSort });
 
       lastApplied.current = next;
       // `replace`, not `push`: a search should not fill the back button with one
@@ -57,7 +59,7 @@ export function IssueSearchField({
     }, DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [value, defaults, router]);
+  }, [value, defaults, defaultSort, router]);
 
   return (
     <div className="relative">

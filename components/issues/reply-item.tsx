@@ -119,8 +119,8 @@ export function ReplyItem({
         text={reply.body}
         className={
           variant === "solution"
-            ? "whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg max-w-3xl"
-            : "whitespace-pre-wrap wrap-break-word text-sm leading-6 text-slate-600 dark:text-slate-400 max-w-3xl"
+            ? "max-w-3xl text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg"
+            : "max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400"
         }
       />
       <LinkList videoLinks={reply.videoLinks} />
@@ -146,7 +146,7 @@ export function ReplyItem({
               className={nativeTextareaClass}
             />
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-              Use **text** for bold and [label](https://example.com) for a link.
+              Use ### for headings, - for lists, **text** for bold, `code`, and [label](https://example.com) for links.
             </span>
           </label>
           <label className={nativeLabelClass}>

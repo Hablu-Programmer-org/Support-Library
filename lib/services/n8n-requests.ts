@@ -5,10 +5,20 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { N8nAccessRequestModel, UserModel, type N8nRequestType } from "@/models";
 
-export async function createN8nRequest(studentId: string, requestType: N8nRequestType, purpose?: string) {
+export async function createN8nRequest(
+  studentId: string,
+  requestType: N8nRequestType,
+  purpose?: string,
+  createdBy?: string,
+) {
   await dbConnect();
   try {
-    return await N8nAccessRequestModel.create({ studentId, requestType, purpose: purpose || null });
+    return await N8nAccessRequestModel.create({
+      studentId,
+      requestType,
+      purpose: purpose || null,
+      createdBy: createdBy || null,
+    });
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && error.code === 11000) return null;
     throw error;
@@ -24,7 +34,8 @@ export async function listOwnN8nRequests(studentId: string) {
 export async function listN8nRequests() {
   await dbConnect();
   const requests = await N8nAccessRequestModel.find({}).sort({ createdAt: -1 }).limit(100).lean();
-  const students = await UserModel.find({ _id: { $in: requests.map((request) => request.studentId) } })
+  const userIds = requests.flatMap((request) => [request.studentId, request.createdBy].filter(Boolean));
+  const students = await UserModel.find({ _id: { $in: userIds } })
     .select("name email").lean();
   const byId = new Map(students.map((student) => [student._id.toString(), student]));
   return requests.map((request) => ({
@@ -35,6 +46,7 @@ export async function listN8nRequests() {
     createdAt: request.createdAt,
     sentAt: request.sentAt,
     purpose: request.purpose,
+    createdBy: request.createdBy ? byId.get(request.createdBy.toString()) ?? null : null,
     student: byId.get(request.studentId.toString()) ?? null,
   }));
 }

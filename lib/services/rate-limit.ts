@@ -24,7 +24,9 @@ export type RateLimitScope =
   | "oauth.callback"
   | "live-support.join"
   | "n8n.request.create"
-  | "n8n.email.send";
+  | "n8n.request.create.admin"
+  | "n8n.email.send"
+  | "issues.activity";
 
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
@@ -51,7 +53,9 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   // the staff queue with noise.
   "live-support.join": { limit: 10, windowMs: 10 * 60_000 },
   "n8n.request.create": { limit: 3, windowMs: 60 * 60_000 },
+  "n8n.request.create.admin": { limit: 30, windowMs: 60_000 },
   "n8n.email.send": { limit: 10, windowMs: 10 * 60_000 },
+  "issues.activity": { limit: 120, windowMs: 60_000 },
 };
 
 export class MutationRateLimitError extends Error {

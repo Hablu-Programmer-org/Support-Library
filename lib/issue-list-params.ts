@@ -19,7 +19,7 @@ import { CASE_STATUSES } from "@/lib/constants";
 
 export const ISSUES_PATH = "/dashboard/issues";
 
-export const ISSUE_SORTS = ["newest", "oldest", "priority"] as const;
+export const ISSUE_SORTS = ["answer", "newest", "oldest", "priority"] as const;
 export type IssueSort = (typeof ISSUE_SORTS)[number];
 
 export type IssueListFilters = {
@@ -145,7 +145,10 @@ export function parseIssueListFilters(
     mentorId: options.canManage && OBJECT_ID.test(mentorId) ? mentorId : "",
     from: isCalendarDate(from) ? from : "",
     to: isCalendarDate(to) ? to : "",
-    sort: (ISSUE_SORTS as readonly string[]).includes(sort) ? (sort as IssueSort) : "newest",
+    sort: (ISSUE_SORTS as readonly string[]).includes(sort) &&
+      (sort !== "answer" || options.canManage)
+      ? (sort as IssueSort)
+      : options.canManage ? "answer" : "newest",
     page: parsePage(params.page),
   };
 }
@@ -158,9 +161,10 @@ export function parseIssueListFilters(
  */
 export function buildIssueListHref(
   filters: IssueListFilters,
-  override?: { page?: number },
+  override?: { page?: number; defaultSort?: IssueSort },
 ): string {
   const page = override?.page ?? filters.page;
+  const defaultSort = override?.defaultSort ?? "newest";
   const params = new URLSearchParams();
 
   if (filters.q) params.set("q", filters.q);
@@ -171,7 +175,7 @@ export function buildIssueListHref(
   if (filters.mentorId) params.set("mentorId", filters.mentorId);
   if (filters.from) params.set("from", filters.from);
   if (filters.to) params.set("to", filters.to);
-  if (filters.sort !== "newest") params.set("sort", filters.sort);
+  if (filters.sort !== defaultSort) params.set("sort", filters.sort);
   if (page > 1) params.set("page", String(page));
 
   const query = params.toString();
@@ -236,7 +240,9 @@ export function parseIssueListReturnTo(
     if (!(paramName in filters)) filters[paramName] = paramValue;
   });
 
-  return buildIssueListHref(parseIssueListFilters(filters, options));
+  return buildIssueListHref(parseIssueListFilters(filters, options), {
+    defaultSort: options.canManage ? "answer" : "newest",
+  });
 }
 
 /** Same as above, but always yields a usable internal path. */
@@ -263,7 +269,10 @@ export function toIssueDateRange(filters: Pick<IssueListFilters, "from" | "to">)
 }
 
 /** True when anything other than the default view is active. */
-export function hasActiveIssueFilters(filters: IssueFilterDefaults): boolean {
+export function hasActiveIssueFilters(
+  filters: IssueFilterDefaults,
+  defaultSort: IssueSort = "newest",
+): boolean {
   return Boolean(
     filters.q ||
       filters.status ||
@@ -273,6 +282,6 @@ export function hasActiveIssueFilters(filters: IssueFilterDefaults): boolean {
       filters.mentorId ||
       filters.from ||
       filters.to ||
-      filters.sort !== "newest",
+      filters.sort !== defaultSort,
   );
 }

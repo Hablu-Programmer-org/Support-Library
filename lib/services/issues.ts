@@ -36,8 +36,27 @@ import {
 
 type LeanDoc = Record<string, unknown>;
 
-const PUBLIC_ISSUE_FIELDS =
+/**
+ * Explicit staff-only/internal allowlist for published (student-facing) reads.
+ * Reply-state fields are deliberately absent: they describe staff workload and
+ * must never reach a public or student projection.
+ */
+export const PUBLIC_ISSUE_FIELDS =
   "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+
+/**
+ * Staff queue ordering: unanswered first, oldest first, `_id` as a stable
+ * tiebreaker so pagination cannot repeat or skip a row.
+ *
+ * `$cond` is deliberate: legacy issues (created before the reply-state fields
+ * existed) have no `awaitingStaff`, and a plain descending sort would push them
+ * to the bottom — exactly the unanswered tickets staff must see first. Treating
+ * "missing" as awaiting keeps the list correct even before the backfill runs.
+ */
+export const ISSUE_ANSWER_SORT_STAGES = [
+  { $addFields: { awaitingStaffRank: { $cond: [{ $eq: ["$awaitingStaff", false] }, 0, 1] } } },
+  { $sort: { awaitingStaffRank: -1, createdAt: 1, _id: 1 } },
+] as const;
 
 /** LOW=1 … URGENT=4 — string order would be wrong, so sorting uses this rank. */
 const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
@@ -75,6 +94,9 @@ export type SupportIssueListItem = {
   caseRef?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
+  awaitingStaff?: boolean;
+  lastStaffReplyAt?: Date | null;
+  lastStudentReplyAt?: Date | null;
 };
 
 export type PublicIssueDetail = Pick<
@@ -143,6 +165,9 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   caseRef: (item.caseRef as string | null | undefined) ?? null,
   createdAt: item.createdAt as Date | undefined,
   updatedAt: item.updatedAt as Date | undefined,
+  awaitingStaff: typeof item.awaitingStaff === "boolean" ? item.awaitingStaff : undefined,
+  lastStaffReplyAt: item.lastStaffReplyAt as Date | null | undefined,
+  lastStudentReplyAt: item.lastStudentReplyAt as Date | null | undefined,
 });
 
 const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
@@ -173,7 +198,12 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   if (params.courseSlug) filter.courseSlug = params.courseSlug;
   if (params.batchNo) filter.batchNo = params.batchNo;
   if (params.tag) filter.tags = params.tag.toLowerCase();
-  if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) filter.mentorId = params.mentorId;
+  // Cast here rather than relying on `find()`: the `answer`/`priority` paths use
+  // `aggregate()`, which does not apply the schema, so a raw hex string would
+  // silently match nothing.
+  if (params.mentorId && mongoose.Types.ObjectId.isValid(params.mentorId)) {
+    filter.mentorId = new mongoose.Types.ObjectId(params.mentorId);
+  }
   const normalizedQuery = normalizeStudentEmail(params.q ?? "");
   const isExactEmailQuery = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedQuery);
   // Staff can find a case by the six digits the student reads out in the room.
@@ -267,6 +297,8 @@ export async function createIssue(
   try {
     const supportIssue = await mongoose.connection.transaction(async (session) => {
       const finalStatus = initialReply && solveIssue ? "SOLVED" : "OPEN";
+      const initialReplyAt = initialReply ? new Date() : null;
+      const initialReplyIsStaff = Boolean(initialReply && actorRole !== "STUDENT");
       // Filenames are deliberately kept out of `searchText`: an image attachment named
       // after the student would otherwise become searchable PII.
       const searchText = initialReply
@@ -287,6 +319,9 @@ export async function createIssue(
             }
           : {}),
         status: finalStatus,
+        awaitingStaff: !initialReplyIsStaff,
+        lastStaffReplyAt: initialReplyIsStaff ? initialReplyAt : null,
+        lastStudentReplyAt: initialReply && !initialReplyIsStaff ? initialReplyAt : null,
         searchText,
         mentorId: effectiveMentorId,
         uploads,
@@ -313,6 +348,7 @@ export async function createIssue(
           uploads: replyFiles,
           issueId: createdIssue._id,
           authorId: actorObjectId,
+          isStaffReply: actorRole !== "STUDENT",
         }], { session });
         for (const upload of replyFiles) {
           await recordAuditEvent({
@@ -713,7 +749,14 @@ export async function listIssues(
   // `priority` needs a computed rank (URGENT highest), which a plain field
   // sort can't express; other modes sort on `updatedAt` directly.
   const itemsQuery =
-    params.sort === "priority"
+    params.sort === "answer" && !options.publicOnly
+      ? SupportIssueModel.aggregate([
+          { $match: filter },
+          ...ISSUE_ANSWER_SORT_STAGES,
+          { $skip: skip },
+          { $limit: limit },
+        ], { maxTimeMS: 5000 })
+      : params.sort === "priority"
       ? SupportIssueModel.aggregate([
           { $match: filter },
           {

@@ -20,6 +20,11 @@ describe("parseIssueListFilters", () => {
   it("returns the default view for empty search params", () => {
     expect(parseIssueListFilters(undefined, staff)).toEqual({
       ...DEFAULT_ISSUE_FILTERS,
+      sort: "answer",
+      page: 1,
+    });
+    expect(parseIssueListFilters(undefined, student)).toEqual({
+      ...DEFAULT_ISSUE_FILTERS,
       page: 1,
     });
   });
@@ -72,8 +77,14 @@ describe("parseIssueListFilters", () => {
     expect(filters.batchNo).toBe("");
     expect(filters.from).toBe("");
     expect(filters.to).toBe("");
-    expect(filters.sort).toBe("newest");
+    expect(filters.sort).toBe("answer");
     expect(filters.page).toBe(1);
+  });
+
+  it("keeps the student default on newest", () => {
+    expect(parseIssueListFilters({ sort: "random" }, student).sort).toBe("newest");
+    expect(parseIssueListFilters({ sort: "answer" }, student).sort).toBe("newest");
+    expect(parseIssueListFilters({ sort: "answer" }, staff).sort).toBe("answer");
   });
 
   it("rejects a date that parses but is not a real day", () => {
@@ -131,6 +142,18 @@ describe("buildIssueListHref", () => {
     expect(href).toBe(`${ISSUES_PATH}?q=upload&status=OPEN&sort=oldest&page=3`);
   });
 
+  it("omits the role-specific default sort but keeps an explicit one", () => {
+    const now = { ...DEFAULT_ISSUE_FILTERS, page: 1 };
+
+    expect(buildIssueListHref({ ...now, sort: "answer" }, { defaultSort: "answer" })).toBe(
+      ISSUES_PATH,
+    );
+    expect(buildIssueListHref({ ...now, sort: "newest" }, { defaultSort: "answer" })).toBe(
+      `${ISSUES_PATH}?sort=newest`,
+    );
+    expect(buildIssueListHref({ ...now, sort: "answer" })).toBe(`${ISSUES_PATH}?sort=answer`);
+  });
+
   it("encodes values instead of letting them break the query", () => {
     const href = buildIssueListHref({
       ...DEFAULT_ISSUE_FILTERS,
@@ -176,9 +199,16 @@ describe("parseIssueListReturnTo", () => {
 
   it("rebuilds the URL from allowlisted filters only", () => {
     // Unknown keys, absolute URLs and defaults never survive the rebuild.
+    // `newest` is an explicit choice for staff (their default is `answer`).
     expect(
       parseIssueListReturnTo(
         `${ISSUES_PATH}?page=1&sort=newest&next=https%3A%2F%2Fevil.test`,
+        staff,
+      ),
+    ).toBe(`${ISSUES_PATH}?sort=newest`);
+    expect(
+      parseIssueListReturnTo(
+        `${ISSUES_PATH}?page=1&sort=answer&next=https%3A%2F%2Fevil.test`,
         staff,
       ),
     ).toBe(ISSUES_PATH);
@@ -246,7 +276,13 @@ describe("toIssueDateRange", () => {
 describe("hasActiveIssueFilters", () => {
   it("is false only for the default view", () => {
     expect(hasActiveIssueFilters(DEFAULT_ISSUE_FILTERS)).toBe(false);
+    expect(
+      hasActiveIssueFilters({ ...DEFAULT_ISSUE_FILTERS, sort: "answer" }, "answer"),
+    ).toBe(false);
     expect(hasActiveIssueFilters({ ...DEFAULT_ISSUE_FILTERS, sort: "oldest" })).toBe(true);
+    expect(
+      hasActiveIssueFilters({ ...DEFAULT_ISSUE_FILTERS, sort: "newest" }, "answer"),
+    ).toBe(true);
     expect(hasActiveIssueFilters({ ...DEFAULT_ISSUE_FILTERS, tag: "video" })).toBe(true);
   });
 });

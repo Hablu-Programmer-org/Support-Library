@@ -12,6 +12,7 @@ const n8nAccessRequestSchema = new mongoose.Schema(
     processingStartedAt: { type: Date, default: null },
     sentAt: { type: Date, default: null },
     handledBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null, index: true },
     failureCode: { type: String, default: null, maxlength: 40 },
     purpose: { type: String, trim: true, maxlength: 300, default: null },
   },

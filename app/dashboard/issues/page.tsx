@@ -4,6 +4,7 @@ import { deleteIssueAction } from "@/actions/issues";
 import { DeleteButton } from "@/components/issues/delete-button";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
+import { IssueRefreshControl } from "@/components/issues/issue-refresh-control";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
 import { AccessHelpCard } from "@/components/n8n/access-help-card";
@@ -27,6 +28,7 @@ import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
 import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
+import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,7 @@ export default async function IssuesPage({
   // Submitting a request is a separate, narrower right that students also hold.
   const canSubmit = canCreateIssue(session.user.role);
   const publicOnly = !canManage;
+  const defaultSort = canManage ? "answer" : "newest";
 
   // One parser for the URL state: it drops invalid values (so `?page=abc` or
   // `?status=NOPE` render the default list instead of throwing) and produces the
@@ -82,7 +85,7 @@ export default async function IssuesPage({
   // rows to show. Send the viewer to the last real page instead of rendering
   // "Page 99 of 3" with dead Previous/Next buttons.
   if (issues.total > 0 && filters.page > issues.totalPages) {
-    redirect(buildIssueListHref(filters, { page: issues.totalPages }));
+    redirect(buildIssueListHref(filters, { page: issues.totalPages, defaultSort }));
   }
 
   const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] = await Promise.all([
@@ -104,6 +107,7 @@ export default async function IssuesPage({
   const accessRequests = showQuickJoin
     ? await listOwnN8nRequests(session.user.id)
     : [];
+  const activity = canManage ? await getIssueActivitySnapshot() : null;
   // Both are resolved here, server-side: the browser clock is display only and
   // the room URL never leaves the action.
   const quickJoinShift = showQuickJoin ? currentShift(new Date()) : "off";
@@ -112,8 +116,8 @@ export default async function IssuesPage({
   // The list URL travelling with every row: a detail page hands it back so
   // "Back to results" (and every action that redirects) returns to this exact
   // filter/page instead of resetting to page 1.
-  const listHref = buildIssueListHref(filters);
-  const returnTo = hasActiveIssueFilters(filters) || filters.page > 1 ? listHref : undefined;
+  const listHref = buildIssueListHref(filters, { defaultSort });
+  const returnTo = hasActiveIssueFilters(filters, defaultSort) || filters.page > 1 ? listHref : undefined;
 
   return (
     <div className="space-y-6">
@@ -137,6 +141,7 @@ export default async function IssuesPage({
                   shift={quickJoinShift}
                 />
               )}
+              {canManage && activity && <IssueRefreshControl initialRevision={activity.revision} />}
             </div>
           )
         }
@@ -197,6 +202,13 @@ export default async function IssuesPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="line-clamp-2 wrap-break-word font-semibold">{supportIssue.title}</h2>
                         <StatusBadge status={supportIssue.status} />
+                        {canManage && "awaitingStaff" in supportIssue && supportIssue.awaitingStaff !== false && (
+                          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                            {"lastStaffReplyAt" in supportIssue && supportIssue.lastStaffReplyAt
+                              ? "Student replied"
+                              : "No reply yet"}
+                          </span>
+                        )}
                         {waitingIds.has(supportIssue.id) &&
                           LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
                             supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
@@ -264,7 +276,7 @@ export default async function IssuesPage({
           {issues.page > 1 && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, { page: issues.page - 1 })}
+              href={buildIssueListHref(filters, { page: issues.page - 1, defaultSort })}
             >
               Previous
             </Link>
@@ -272,7 +284,7 @@ export default async function IssuesPage({
           {issues.page < issues.totalPages && (
             <Link
               className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, { page: issues.page + 1 })}
+              href={buildIssueListHref(filters, { page: issues.page + 1, defaultSort })}
             >
               Next
             </Link>

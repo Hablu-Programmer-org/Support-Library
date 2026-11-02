@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 
-import { N8nRequestForm } from "@/components/n8n/n8n-request-form";
-import { OpenAiRequestForm } from "@/components/n8n/openai-request-form";
-import { cn } from "@/lib/cn";
+import { createN8nRequestAction } from "@/actions/n8n-requests";
+import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 
 type RequestSummary = {
   id: string;
@@ -13,54 +12,45 @@ type RequestSummary = {
   sentAt?: string | null;
 };
 
-const isActive = (status: RequestSummary["status"]) => status === "PENDING" || status === "PROCESSING";
+const choices = [
+  { value: "ACCESS", label: "n8n access", hint: "Add me as a member so I can use n8n." },
+  { value: "PASSWORD_RESET", label: "n8n password reset", hint: "Send a secure link so I can choose a new password." },
+  { value: "OPENAI_ACCESS", label: "OpenAI API access", hint: "Add me as a member for OpenAI API access. No API key is emailed." },
+] as const;
 
-function RequestState({ request }: { request: RequestSummary }) {
-  const sent = request.status === "SENT";
-  return <div className={cn(
-    "rounded-xl border p-4 text-sm",
-    sent
-      ? "border-emerald-300 bg-emerald-50 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100"
-      : "border-cyan-200 bg-cyan-50 text-slate-800 dark:border-cyan-900 dark:bg-cyan-950/20 dark:text-slate-100",
-  )}>
-    <p className="font-semibold">{sent ? "Your email has been sent" : "Your request is with the support team"}</p>
-    <p className="mt-1 text-slate-600 dark:text-slate-300">
-      {sent
-        ? "Check your registered Gmail inbox, Spam and Promotions. Use the invitation soon because it may expire."
-        : request.status === "PROCESSING" ? "Your secure email is being prepared. Please do not submit again." : "We will update this card after the email is sent."}
-    </p>
-  </div>;
-}
+const active = (status: RequestSummary["status"]) => status === "PENDING" || status === "PROCESSING";
 
 export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; requests: RequestSummary[] }) {
-  const [tab, setTab] = useState<"n8n" | "openai">("n8n");
-  const n8nRequests = requests.filter((request) => request.requestType !== "OPENAI_ACCESS");
-  const openAiRequests = requests.filter((request) => request.requestType === "OPENAI_ACCESS");
-  const current = (tab === "n8n" ? n8nRequests : openAiRequests).find((request) => isActive(request.status))
-    ?? (tab === "n8n" ? n8nRequests : openAiRequests).find((request) => request.status === "SENT");
-  const hasActive = Boolean(current && isActive(current.status));
+  const [state, action] = useActionState(createN8nRequestAction, {});
 
   return <section aria-labelledby="access-help-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <div className="mb-4">
+    <div className="mb-5">
       <h2 id="access-help-heading" className="text-lg font-semibold">Help &amp; access</h2>
-      <p className="mt-1 text-sm text-slate-500">Request account access without sharing passwords or API keys.</p>
+      <p className="mt-1 text-sm text-slate-500">Select one or more. Each access link will be sent separately to your registered email.</p>
     </div>
-    <div className="mb-5 flex border-b border-slate-200 dark:border-slate-800" role="tablist" aria-label="Access request type">
-      {(["n8n", "openai"] as const).map((item) => {
-        const activeForTab = (item === "n8n" ? n8nRequests : openAiRequests).some((request) => isActive(request.status));
-        return <button
-          key={item}
-          type="button"
-          role="tab"
-          aria-selected={tab === item}
-          onClick={() => setTab(item)}
-          className={cn("border-b-2 px-4 py-2 text-sm font-semibold transition", tab === item ? "border-cyan-500 text-cyan-600" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")}
-        >
-          {item === "n8n" ? "n8n help" : "OpenAI API access"}{activeForTab && <span className="ml-2 text-cyan-500" aria-label="active request">●</span>}
-        </button>;
-      })}
-    </div>
-    {current && <div className="mb-5"><RequestState request={current} /></div>}
-    {!hasActive && (tab === "n8n" ? <N8nRequestForm csrfToken={csrfToken} /> : <OpenAiRequestForm csrfToken={csrfToken} />)}
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="csrfToken" value={csrfToken} />
+      <fieldset className="space-y-2">
+        <legend className="sr-only">Choose access requests</legend>
+        {choices.map((choice) => {
+          const latest = requests.find((request) => request.requestType === choice.value);
+          const isActive = Boolean(latest && active(latest.status));
+          return <label key={choice.value} className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 has-checked:border-cyan-500 has-checked:bg-cyan-50 dark:border-slate-700 dark:has-checked:bg-cyan-950/30">
+            <input className="mt-1" type="checkbox" name="requestTypes" value={choice.value} disabled={isActive} />
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-2 font-semibold">
+                {choice.label}
+                {isActive && <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300">{latest?.status}</span>}
+                {!isActive && latest?.status === "SENT" && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Previously sent</span>}
+              </span>
+              <span className="mt-1 block text-sm text-slate-500">{isActive ? "The support team is already processing this request." : choice.hint}</span>
+            </span>
+          </label>;
+        })}
+      </fieldset>
+      {state.error && <p role="alert" className="text-sm text-red-600">{state.error}</p>}
+      {state.success && <p role="status" className="text-sm text-emerald-600">{state.success}</p>}
+      <div className="max-w-xs"><PendingSubmitButton label="Send selected requests" pendingLabel="Sending requests…" /></div>
+    </form>
   </section>;
 }
