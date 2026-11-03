@@ -26,10 +26,11 @@ import {
 } from "@/lib/issue-list-params";
 import { isLiveSupportConfigured } from "@/lib/live-support";
 import { canCreateIssue, canMutate } from "@/lib/roles";
+import { agentEnrollmentAllows } from "@/lib/agent-enrollment-rules";
 import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
-import { listOwnN8nRequests } from "@/lib/services/n8n-requests";
+import { getStudentAgentEnrollment, listOwnN8nRequests } from "@/lib/services/n8n-requests";
 import { listAssignableMentors } from "@/lib/services/staff";
 import { CASE_STATUSES } from "@/models";
 
@@ -110,9 +111,13 @@ export default async function IssuesPage({
   // One token covers both student actions; staff never see the quick join.
   const csrfToken =
     canDelete || showQuickJoin ? await generateCsrfToken(session.user.id) : "";
-  const accessRequests = showQuickJoin
-    ? await listOwnN8nRequests(session.user.id)
-    : [];
+  const agentAccess = showQuickJoin
+    ? await getStudentAgentEnrollment(session.user.id)
+    : null;
+  const accessRequests =
+    showQuickJoin && agentEnrollmentAllows(agentAccess)
+      ? await listOwnN8nRequests(session.user.id)
+      : [];
   const activity = canManage ? await getIssueActivitySnapshot() : null;
   // Both are resolved here, server-side: the browser clock is display only and
   // the room URL never leaves the action.
@@ -183,7 +188,7 @@ export default async function IssuesPage({
         statuses={CASE_STATUSES}
       />
 
-      {showQuickJoin && (
+      {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
         <AccessHelpCard
           csrfToken={csrfToken}
           requests={accessRequests.map((request) => ({

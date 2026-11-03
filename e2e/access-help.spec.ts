@@ -41,6 +41,39 @@ test.describe("student access help", () => {
   });
 });
 
+test.describe("student access help gating", () => {
+  test.use({ storageState: "e2e/.auth/student.json" });
+
+  test("does not expose AI-tools access to students outside the agent course", async ({ page }) => {
+    const lmsDb = process.env.LMS_MONGODB_DB;
+    if (!lmsDb) throw new Error("LMS_MONGODB_DB is missing");
+    const { MongoClient } = await import("mongodb");
+    const client = new MongoClient(process.env.MONGODB_URI ?? "");
+    await client.connect();
+    const db = client.db(lmsDb);
+    const lmsUser = await db.collection("User").findOne({ email: "student@hablu-programmer.com" }, { projection: { _id: 1 } });
+    if (!lmsUser?._id) throw new Error("E2E student missing in LMS");
+
+    await db.collection("EnrolledCourse").deleteOne({ userId: lmsUser._id, courseSlug: "agent" });
+    try {
+      await page.goto("/dashboard/issues");
+      await expect(page.getByRole("region", { name: "Help & access" })).toHaveCount(0);
+      await expect(page.getByRole("checkbox", { name: /n8n access/i })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Send selected requests" })).toHaveCount(0);
+    } finally {
+      await db.collection("EnrolledCourse").updateOne(
+        { userId: lmsUser._id, courseSlug: "agent" },
+        {
+          $set: { batchNo: 4, status: "running", email: "student@hablu-programmer.com" },
+          $setOnInsert: { _id: new (await import("mongodb")).ObjectId() },
+        },
+        { upsert: true },
+      );
+      await client.close();
+    }
+  });
+});
+
 test.describe("access request administration", () => {
   test("allows admins and denies mentors", async ({ browser }) => {
     const admin = await browser.newContext({ storageState: "e2e/.auth/admin.json" });
@@ -55,7 +88,7 @@ test.describe("access request administration", () => {
     await expect(openAiTab).toHaveAttribute("aria-pressed", "true");
     await expect(openAiTab).toContainText("0 pending");
     await expect(n8nTab).toContainText("0 pending");
-    await expect(adminPage.getByRole("checkbox", { name: "Show already sent" })).not.toBeChecked();
+    await expect(adminPage.getByRole("checkbox", { name: "Show completed" })).not.toBeChecked();
     await expect(adminPage.getByRole("region", { name: "OpenAI API access" })).toBeVisible();
 
     await adminPage.getByText("Create requests manually", { exact: true }).click();
@@ -76,7 +109,7 @@ test.describe("access request administration", () => {
     // The queue is a compact list: final actions are available directly without
     // an intermediate Process control.
     await expect(openAiQueue.getByText("Batch 4", { exact: true })).toBeVisible();
-    await expect(openAiQueue.getByText("First OpenAI request")).toBeVisible();
+    await expect(openAiQueue.getByText("Never granted OpenAI access")).toBeVisible();
     await expect(openAiQueue.getByRole("button", { name: "Process" })).toHaveCount(0);
     const openAiConfirmation = openAiQueue.getByRole("checkbox", { name: "Added this exact email" });
     const confirmButton = openAiQueue.getByRole("button", { name: "Confirm & email student" });
@@ -109,7 +142,7 @@ test.describe("access request administration", () => {
     await expect(n8nQueue.getByText("Admin created")).toBeVisible();
 
     // The sent toggle changes the query without hiding pending work.
-    await adminPage.getByRole("checkbox", { name: "Show already sent" }).check();
+    await adminPage.getByRole("checkbox", { name: "Show completed" }).check();
     await expect(adminPage).toHaveURL(/sent=1/);
     await expect(n8nQueue.getByText("Admin created")).toBeVisible();
 
