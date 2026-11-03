@@ -3,7 +3,7 @@ import "server-only";
 import { dbConnect } from "@/lib/db";
 import { UserModel } from "@/models";
 
-export const RECENT_AUTH_WINDOW_MS = 12 * 60 * 60 * 1000;
+export const RECENT_AUTH_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export async function recentlySignedIn(userId: string, now = new Date()) {
   await dbConnect();

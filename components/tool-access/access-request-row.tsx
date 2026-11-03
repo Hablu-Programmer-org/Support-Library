@@ -156,7 +156,6 @@ export function AccessRequestRow({
                 <RejectAccessRequestForm
                   requestId={request.id}
                   csrfToken={csrfToken}
-                  requiresReauth={requiresReauth}
                   onDecisionSaved={onDecisionSaved}
                 />
               )}

@@ -334,10 +334,6 @@ export async function rejectAccessRequestAction(
   if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) {
     return { error: "You do not have permission to reject access requests." };
   }
-  if (!(await recentlySignedIn(guard.session.user.id))) {
-    return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
-  }
-
   const parsed = rejectRequestSchema.safeParse({
     requestId: String(formData.get("requestId") ?? ""),
     reason: String(formData.get("reason") ?? ""),

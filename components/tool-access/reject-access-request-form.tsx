@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { rejectAccessRequestAction } from "@/actions/n8n-requests";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
-import { GoogleReverifyButton } from "@/components/tool-access/google-reverify-button";
 import { nativeSelectClass, nativeTextareaCompactClass } from "@/lib/config/fields";
 
 const REASONS = [
@@ -21,19 +20,16 @@ const REASONS = [
 export function RejectAccessRequestForm({
   requestId,
   csrfToken,
-  requiresReauth,
   onDecisionSaved,
 }: {
   requestId: string;
   csrfToken: string;
-  requiresReauth: boolean;
   onDecisionSaved: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [state, action] = useActionState(rejectAccessRequestAction, {});
-  const needsReauth = requiresReauth || state.errorCode === "REAUTH_REQUIRED";
 
   useEffect(() => {
     if (!state.success) return;
@@ -102,16 +98,12 @@ export function RejectAccessRequestForm({
           >
             Cancel
           </button>
-          {needsReauth ? (
-            <GoogleReverifyButton />
-          ) : (
-            <PendingSubmitButton
-              className="w-auto bg-rose-600 px-3 py-2 text-xs shadow-sm hover:bg-rose-700 disabled:shadow-none"
-              disabled={!reason}
-              label="Reject & notify"
-              pendingLabel="Rejecting…"
-            />
-          )}
+          <PendingSubmitButton
+            className="w-auto bg-rose-600 px-3 py-2 text-xs shadow-sm hover:bg-rose-700 disabled:shadow-none"
+            disabled={!reason}
+            label="Reject & notify"
+            pendingLabel="Rejecting…"
+          />
         </div>
       </div>
       {state.error && <p role="alert" className="mt-2 text-xs text-red-600">{state.error}</p>}
