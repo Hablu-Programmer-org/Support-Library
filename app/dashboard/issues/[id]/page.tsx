@@ -31,6 +31,7 @@ import {
   parseIssueListReturnTo,
 } from "@/lib/issue-list-params";
 import { canMutate, isAdmin } from "@/lib/roles";
+import { getOwnIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
@@ -84,13 +85,15 @@ export default async function IssueDetailPage({
     // case never opens up. Ownership comes from `createdBy`, not the URL.
     const ownedIssue = await getOwnIssueDetail(id, session.user.id);
     if (ownedIssue) {
-      const [replies, csrfToken] = await Promise.all([
+      const [replies, csrfToken, activity] = await Promise.all([
         listReplies(ownedIssue.id, true),
         generateCsrfToken(session.user.id),
+        getOwnIssueActivitySnapshot(session.user.id),
       ]);
 
       return (
         <StudentRequestView
+          activityRevision={activity.revision}
           created={created === "1"}
           csrfToken={csrfToken}
           issue={ownedIssue}

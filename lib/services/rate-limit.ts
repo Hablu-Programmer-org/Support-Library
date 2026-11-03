@@ -26,7 +26,8 @@ export type RateLimitScope =
   | "n8n.request.create"
   | "n8n.request.create.admin"
   | "n8n.email.send"
-  | "issues.activity";
+  | "issues.activity"
+  | "my-requests.activity";
 
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
@@ -56,6 +57,9 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "n8n.request.create.admin": { limit: 30, windowMs: 60_000 },
   "n8n.email.send": { limit: 10, windowMs: 10 * 60_000 },
   "issues.activity": { limit: 120, windowMs: 60_000 },
+  // The student list and an open request both probe this every 10s while the
+  // tab is visible, so the budget is the same shape as the staff one.
+  "my-requests.activity": { limit: 120, windowMs: 60_000 },
 };
 
 export class MutationRateLimitError extends Error {

@@ -1,23 +1,55 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { AccessRequestToolbar } from "@/components/tool-access/access-request-toolbar";
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
+import {
+  accessQueueStatuses,
+  buildAccessRequestHref,
+  parseAccessRequestListState,
+  type AccessRequestListState,
+  type AccessRequestTab,
+} from "@/lib/access-request-list-params";
 import { requireRole } from "@/lib/auth-guard";
 import { generateCsrfToken } from "@/lib/csrf";
 import { formatSupportDate } from "@/lib/format-date";
 import { isN8nAdmin } from "@/lib/n8n-request-policy";
 import { recentlySignedIn } from "@/lib/recent-auth";
-import { listN8nRequestQueue } from "@/lib/services/n8n-requests";
+import {
+  countPendingN8nRequests,
+  listN8nRequestQueue,
+} from "@/lib/services/n8n-requests";
+import type { N8nRequestType } from "@/models";
 
 export const dynamic = "force-dynamic";
 
 type AccessRequest = Awaited<ReturnType<typeof listN8nRequestQueue>>["items"][number];
 type Status = AccessRequest["status"];
+
+const TAB_TYPES: Record<AccessRequestTab, N8nRequestType[]> = {
+  openai: ["OPENAI_ACCESS"],
+  n8n: ["ACCESS", "PASSWORD_RESET"],
+};
+
+const TAB_META: Record<
+  AccessRequestTab,
+  { title: string; accent: string; form: "openai" | "n8n" }
+> = {
+  openai: {
+    title: "OpenAI API access",
+    accent: "bg-emerald-500",
+    form: "openai",
+  },
+  n8n: {
+    title: "n8n access & password reset",
+    accent: "bg-cyan-500",
+    form: "n8n",
+  },
+};
 
 const STATUS_STYLES: Record<Status, { pill: string; dot: string; label: string }> = {
   PENDING: {
@@ -47,13 +79,12 @@ const STATUS_STYLES: Record<Status, { pill: string; dot: string; label: string }
   },
 };
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<AccessRequest["requestType"], string> = {
   ACCESS: "n8n access",
-  PASSWORD_RESET: "n8n password reset",
-  OPENAI_ACCESS: "OpenAI API access",
-} as const;
+  PASSWORD_RESET: "Password reset",
+  OPENAI_ACCESS: "OpenAI access",
+};
 
-/** Actionable requests first, then the rest, newest first inside each group. */
 function StatusPill({ status }: { status: Status }) {
   const style = STATUS_STYLES[status];
   return (
@@ -71,232 +102,200 @@ function RequestCard({
   csrfToken,
   variant,
   requiresReauth,
+  accent,
 }: {
   request: AccessRequest;
   csrfToken: string;
   variant: "openai" | "n8n";
   requiresReauth: boolean;
+  accent: string;
 }) {
   const email = request.student?.email ?? null;
   const actionable = request.status === "PENDING" || request.status === "FAILED";
+  const dateLabel =
+    request.status === "SENT" && request.sentAt
+      ? `Sent ${formatSupportDate(request.sentAt)}`
+      : formatSupportDate(request.createdAt);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
-      <div>
+    <article className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <span className={`absolute inset-y-0 left-0 w-0.5 ${accent}`} aria-hidden />
+      <div className="px-3 py-2.5">
         <div className="flex flex-wrap items-start gap-x-3 gap-y-2 sm:items-center">
-          <div className="min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {request.student?.name ?? "Unknown student"}
-            </h3>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {request.student?.name ?? "Unknown student"}
+              </h3>
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                {TYPE_LABELS[request.requestType]}
+              </span>
+              {request.createdBy && (
+                <span
+                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                  title={`Created by ${request.createdBy.email}`}
+                >
+                  Admin created
+                </span>
+              )}
+            </div>
             {email ? (
-              <div className="flex flex-wrap items-center gap-1.5">
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">{email}</p>
                 <CopyEmailButton email={email} />
               </div>
             ) : (
-              <p className="mt-1 text-sm text-slate-500">Account unavailable</p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Account unavailable
+              </p>
             )}
           </div>
-          <span className="rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium dark:bg-slate-800">
-            {TYPE_LABELS[request.requestType]}
-          </span>
-          <StatusPill status={request.status} />
-          <span className="text-[11px] text-slate-500 sm:ml-auto">{formatSupportDate(request.createdAt)}</span>
+
+          <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
+            <StatusPill status={request.status} />
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">{dateLabel}</span>
+          </div>
         </div>
-
-        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-          {request.createdBy
-            ? `Created by admin · ${request.createdBy.email}`
-            : "Requested by account owner"}
-        </p>
-
-        {request.purpose && (
-          <details className="mt-2 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs dark:bg-slate-800/40">
-            <summary className="cursor-pointer font-medium text-slate-500">Request details</summary>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              What they want to build
-            </p>
-            <p className="mt-1 whitespace-pre-wrap">{request.purpose}</p>
-          </details>
-        )}
 
         {actionable && request.student && (
           variant === "openai" ? (
-            <OpenAiConfirmForm requestId={request.id} csrfToken={csrfToken} requiresReauth={requiresReauth} />
+            <OpenAiConfirmForm
+              requestId={request.id}
+              csrfToken={csrfToken}
+              requiresReauth={requiresReauth}
+            />
           ) : (
-            <N8nSendForm requestId={request.id} csrfToken={csrfToken} requiresReauth={requiresReauth} />
+            <N8nSendForm
+              requestId={request.id}
+              csrfToken={csrfToken}
+              requiresReauth={requiresReauth}
+            />
           )
-        )}
-
-        {request.status === "SENT" && (
-          <p className="mt-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-            <span aria-hidden>✓</span>
-            Email sent {request.sentAt ? formatSupportDate(request.sentAt) : "successfully"}.
-          </p>
-        )}
-        {request.status === "PROCESSING" && (
-          <p className="mt-1.5 text-[11px] text-amber-700 dark:text-amber-300">
-            Processing with a recoverable 10-minute lease.
-          </p>
         )}
       </div>
     </article>
   );
 }
 
-function SectionHeader({
-  headingId,
-  title,
-  description,
-  count,
-  icon,
-  tone,
-}: {
-  headingId: string;
-  title: string;
-  description: string;
-  count: number;
-  icon: ReactNode;
-  tone: "openai" | "n8n";
-}) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm ${
-            tone === "openai"
-              ? "bg-linear-to-br from-emerald-500 to-teal-600"
-              : "bg-linear-to-br from-cyan-500 to-indigo-600"
-          }`}
-        >
-          {icon}
-        </span>
-        <div>
-          <h2 id={headingId} className="text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>
-        </div>
-      </div>
-      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-        {count} {count === 1 ? "request" : "requests"}
-      </span>
-    </div>
-  );
-}
-
-function EmptyRow({ children }: { children: string }) {
-  return (
-    <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-      {children}
-    </p>
-  );
+function emptyMessage(state: AccessRequestListState) {
+  const name = state.tab === "openai" ? "OpenAI" : "n8n";
+  if (state.q) {
+    return `No ${state.showSent ? "" : "pending "}${name} requests match “${state.q}”.`;
+  }
+  return state.showSent ? `No ${name} requests yet.` : `No pending ${name} requests.`;
 }
 
 function QueuePagination({
+  state,
   page,
   totalPages,
-  pageKey,
-  otherPage,
-  otherPageKey,
+  total,
 }: {
+  state: AccessRequestListState;
   page: number;
   totalPages: number;
-  pageKey: "openaiPage" | "n8nPage";
-  otherPage: number;
-  otherPageKey: "openaiPage" | "n8nPage";
+  total: number;
 }) {
-  if (totalPages <= 1) return null;
-  const href = (next: number) => {
-    const params = new URLSearchParams();
-    if (next > 1) params.set(pageKey, String(next));
-    if (otherPage > 1) params.set(otherPageKey, String(otherPage));
-    return `/dashboard/access-requests${params.size ? `?${params}` : ""}`;
-  };
   return (
-    <nav className="flex items-center justify-end gap-2 text-xs" aria-label="Request queue pages">
-      {page > 1 && <Link className="rounded-lg border px-2.5 py-1.5" href={href(page - 1)}>Previous</Link>}
-      <span className="text-slate-500">{page} / {totalPages}</span>
-      {page < totalPages && <Link className="rounded-lg border px-2.5 py-1.5" href={href(page + 1)}>Next</Link>}
-    </nav>
+    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <span>
+        {total} {total === 1 ? "request" : "requests"}
+        {totalPages > 1 ? ` · Page ${page} of ${totalPages}` : ""}
+      </span>
+      {totalPages > 1 && (
+        <div className="flex gap-2">
+          {page > 1 && (
+            <Link
+              className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+              href={buildAccessRequestHref(state, { page: page - 1 })}
+            >
+              Previous
+            </Link>
+          )}
+          {page < totalPages && (
+            <Link
+              className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+              href={buildAccessRequestHref(state, { page: page + 1 })}
+            >
+              Next
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
 export default async function AccessRequestsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ openaiPage?: string; n8nPage?: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await requireRole("ADMIN");
   if (!(await isN8nAdmin(session.user.email))) redirect("/unauthorized");
-  const params = await searchParams;
-  const parsePage = (value?: string) => /^\d+$/.test(value ?? "") ? Math.max(1, Math.min(10_000, Number(value))) : 1;
-  const openaiPage = parsePage(params?.openaiPage);
-  const n8nPage = parsePage(params?.n8nPage);
-  const [openAiRequests, n8nRequests, csrfToken, isRecent] = await Promise.all([
-    listN8nRequestQueue(["OPENAI_ACCESS"], openaiPage),
-    listN8nRequestQueue(["ACCESS", "PASSWORD_RESET"], n8nPage),
+
+  const state = parseAccessRequestListState(await searchParams);
+  const [requests, openAiPending, n8nPending, csrfToken, isRecent] = await Promise.all([
+    listN8nRequestQueue({
+      requestTypes: TAB_TYPES[state.tab],
+      statuses: accessQueueStatuses(state.showSent),
+      search: state.q,
+      page: state.page,
+    }),
+    countPendingN8nRequests(TAB_TYPES.openai),
+    countPendingN8nRequests(TAB_TYPES.n8n),
     generateCsrfToken(session.user.id),
     recentlySignedIn(session.user.id),
   ]);
-  if (openAiRequests.total > 0 && openaiPage > openAiRequests.totalPages) redirect("/dashboard/access-requests");
-  if (n8nRequests.total > 0 && n8nPage > n8nRequests.totalPages) redirect("/dashboard/access-requests");
+
+  // A stale link or a deleted last row must land on a real page, not
+  // "Page 9 of 1" with dead navigation.
+  if (state.page > requests.totalPages) {
+    redirect(buildAccessRequestHref(state, { page: requests.totalPages }));
+  }
+
+  const meta = TAB_META[state.tab];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Access requests"
-        description="OpenAI emails its own invitation; n8n needs a link from you. API keys are never accepted, stored or emailed."
+        description="Copy the student email, then confirm OpenAI access or send the n8n link. API keys are never accepted, stored or emailed."
       />
 
       <AdminCreateAccessRequestForm csrfToken={csrfToken} requiresReauth={!isRecent} />
 
-      <section aria-labelledby="openai-requests-heading" className="space-y-4">
-        <SectionHeader
-          headingId="openai-requests-heading"
-          title="OpenAI API access"
-          description="Copy the email, add it in the OpenAI dashboard, then confirm. OpenAI sends the invite; we send the confirmation."
-          count={openAiRequests.total}
-          tone="openai"
-          icon={
-            <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4" />
-            </svg>
-          }
-        />
-        {openAiRequests.items.length === 0 ? (
-          <EmptyRow>No OpenAI access request is waiting.</EmptyRow>
-        ) : (
-          <div className="space-y-2">
-            {openAiRequests.items.map((request) => (
-              <RequestCard key={request.id} request={request} csrfToken={csrfToken} variant="openai" requiresReauth={!isRecent} />
-            ))}
-          </div>
-        )}
-        <QueuePagination page={openAiRequests.page} totalPages={openAiRequests.totalPages} pageKey="openaiPage" otherPage={n8nRequests.page} otherPageKey="n8nPage" />
-      </section>
+      <AccessRequestToolbar
+        counts={{ openai: openAiPending, n8n: n8nPending }}
+        state={state}
+      />
 
-      <section aria-labelledby="n8n-requests-heading" className="space-y-4">
-        <SectionHeader
-          headingId="n8n-requests-heading"
-          title="n8n access & password reset"
-          description="Paste the link generated in n8n and email it. Links are sent immediately and never stored."
-          count={n8nRequests.total}
-          tone="n8n"
-          icon={
-            <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5 21 3M21 3h-5.25M21 3v5.25M10.5 13.5 3 21M3 21h5.25M3 21v-5.25" />
-            </svg>
-          }
-        />
-        {n8nRequests.items.length === 0 ? (
-          <EmptyRow>No n8n access or password-reset request is waiting.</EmptyRow>
+      <section aria-label={meta.title} className="space-y-2">
+        {requests.items.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+            {emptyMessage(state)}
+          </p>
         ) : (
           <div className="space-y-2">
-            {n8nRequests.items.map((request) => (
-              <RequestCard key={request.id} request={request} csrfToken={csrfToken} variant="n8n" requiresReauth={!isRecent} />
+            {requests.items.map((request) => (
+              <RequestCard
+                key={request.id}
+                accent={meta.accent}
+                csrfToken={csrfToken}
+                request={request}
+                requiresReauth={!isRecent}
+                variant={meta.form}
+              />
             ))}
           </div>
         )}
-        <QueuePagination page={n8nRequests.page} totalPages={n8nRequests.totalPages} pageKey="n8nPage" otherPage={openAiRequests.page} otherPageKey="openaiPage" />
+
+        <QueuePagination
+          page={requests.page}
+          state={state}
+          total={requests.total}
+          totalPages={requests.totalPages}
+        />
       </section>
     </div>
   );

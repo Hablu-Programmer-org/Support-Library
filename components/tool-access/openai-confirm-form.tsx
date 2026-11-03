@@ -26,15 +26,12 @@ export function OpenAiConfirmForm({
     <form action={action} className="mt-2 border-t border-slate-200 pt-2 dark:border-slate-800">
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="requestId" value={requestId} />
-      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-        Copy email → add in OpenAI → confirm the invitation was sent.
-      </p>
-      <label className="mt-2 flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+      <label className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
         <input type="checkbox" name="confirmed" value="yes" required className="mt-0.5 accent-cyan-600" />
-        I added the exact email above and asked OpenAI to send its invitation.
+        I added this exact email in OpenAI.
       </label>
       {state.error && <p role="alert" className="mt-2 text-xs text-red-600">{state.error}</p>}
-      {state.success && <p role="status" className="text-sm text-emerald-600">{state.success}</p>}
+      {state.success && <p role="status" className="mt-2 text-sm text-emerald-600">{state.success}</p>}
       <div className="mt-2 max-w-xs">
         {requiresReauth || state.errorCode === "REAUTH_REQUIRED" ? (
           <GoogleReverifyButton />

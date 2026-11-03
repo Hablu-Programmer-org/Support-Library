@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ArrowLeftIcon } from "@/components/icons";
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
+import { MyRequestsRefresh } from "@/components/issues/my-requests-refresh";
 import { ReplyItem } from "@/components/issues/reply-item";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
@@ -31,11 +32,14 @@ export function StudentRequestView({
   replies,
   csrfToken,
   created,
+  activityRevision,
 }: {
   issue: SupportIssueListItem;
   replies: SupportReplyListItem[];
   csrfToken: string;
   created: boolean;
+  /** Student-scoped revision from the server render; a changed one pulls a new reply in. */
+  activityRevision: string;
 }) {
   const shift = currentShift(new Date());
   const { platform, meetingId, passcode, joinUrl } = getLiveSupportConfig();
@@ -43,13 +47,18 @@ export function StudentRequestView({
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 py-6">
-      <Link
-        href="/dashboard/my-requests"
-        className="inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
-      >
-        <ArrowLeftIcon size={18} />
-        Back to my requests
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/dashboard/my-requests"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
+        >
+          <ArrowLeftIcon size={18} />
+          Back to my requests
+        </Link>
+        {/* The open request stays current while the student waits: a staff reply
+            bumps the student's revision and this refreshes the RSC payload. */}
+        <MyRequestsRefresh initialRevision={activityRevision} />
+      </div>
 
       {created && (
         <div

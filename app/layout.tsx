@@ -35,7 +35,10 @@ export default async function RootLayout({
     // suppressHydrationWarning is required: next-themes sets the `dark` class on
     // <html> before React hydrates, so the server and client markup differ.
     <html lang="en" suppressHydrationWarning className={geistSans.variable}>
-      <body>
+      {/* Browser extensions (Grammarly's data-gr-* attributes are the common one)
+          write attributes onto <body> before React hydrates. That is not our
+          markup, and without this React logs a mismatch on every page. */}
+      <body suppressHydrationWarning>
         <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>

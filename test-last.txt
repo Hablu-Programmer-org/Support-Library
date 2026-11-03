@@ -1,0 +1,17 @@
+
+> support-library@1.0.6 test
+> vitest run
+
+
+ RUN  v5.0.5 D:/codes/work/hablu/hablu-programmer/support-library
+
+
+ Test Files  46 passed (46)
+      Tests  354 passed (354)
+   Start at  08:31:50
+   Duration  13.32s (environment 66%, setup 15%, import 11%, tests 6%, worker 1%, transform 1%)
+
+Environment  jsdom was created 46 times · 70.75s total, 66% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+

@@ -67,9 +67,10 @@ export async function createN8nRequestAction(
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
     const skipped = parsed.data.length - created.length;
+    const submitted = `${created.length} request${created.length === 1 ? "" : "s"} submitted`;
     return { success: skipped > 0
-      ? `${created.length} request(s) sent. ${skipped} active duplicate skipped.`
-      : `${created.length} request(s) sent to the support team.` };
+      ? `${submitted} · ${skipped} already active.`
+      : `${submitted} successfully.` };
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many requests. Please try again later." };
     return { error: "We could not submit your request. Please try again." };

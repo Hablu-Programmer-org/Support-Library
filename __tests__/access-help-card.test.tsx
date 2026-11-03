@@ -9,10 +9,99 @@ vi.mock("@/actions/n8n-requests", () => ({
 }));
 vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
 
-import { AccessHelpCard } from "@/components/tool-access/access-help-card";
+import { AccessHelpCard, requestStatusMessage, sentRequestsMessage } from "@/components/tool-access/access-help-card";
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
+
+describe("sentRequestsMessage", () => {
+  it("returns null until an email has been sent", () => {
+    expect(sentRequestsMessage([])).toBeNull();
+    expect(sentRequestsMessage([{ id: "1", requestType: "ACCESS", status: "PENDING" }])).toBeNull();
+    expect(sentRequestsMessage([{ id: "1", requestType: "ACCESS", status: "FAILED" }])).toBeNull();
+  });
+
+  it("names a single sent request", () => {
+    expect(sentRequestsMessage([{ id: "1", requestType: "ACCESS", status: "SENT" }]))
+      .toBe("n8n invite sent — check Inbox/Spam.");
+    expect(sentRequestsMessage([{ id: "1", requestType: "PASSWORD_RESET", status: "SENT" }]))
+      .toBe("Reset link sent — check Inbox/Spam.");
+    expect(sentRequestsMessage([{ id: "1", requestType: "OPENAI_ACCESS", status: "SENT" }]))
+      .toBe("OpenAI invite sent — check Inbox/Spam.");
+  });
+
+  it("combines any two sent requests", () => {
+    expect(sentRequestsMessage([
+      { id: "1", requestType: "ACCESS", status: "SENT" },
+      { id: "2", requestType: "PASSWORD_RESET", status: "SENT" },
+    ])).toBe("n8n invite & Reset link sent — check Inbox/Spam.");
+    expect(sentRequestsMessage([
+      { id: "1", requestType: "ACCESS", status: "SENT" },
+      { id: "2", requestType: "OPENAI_ACCESS", status: "SENT" },
+    ])).toBe("n8n & OpenAI invites sent — check Inbox/Spam.");
+    expect(sentRequestsMessage([
+      { id: "1", requestType: "PASSWORD_RESET", status: "SENT" },
+      { id: "2", requestType: "OPENAI_ACCESS", status: "SENT" },
+    ])).toBe("Reset link & OpenAI invite sent — check Inbox/Spam.");
+  });
+
+  it("combines all three sent requests in a fixed order", () => {
+    expect(sentRequestsMessage([
+      { id: "1", requestType: "OPENAI_ACCESS", status: "SENT" },
+      { id: "2", requestType: "ACCESS", status: "SENT" },
+      { id: "3", requestType: "PASSWORD_RESET", status: "SENT" },
+    ])).toBe("n8n invite, Reset link & OpenAI invite sent — check Inbox/Spam.");
+  });
+
+  it("ignores unsent requests when building the sentence", () => {
+    expect(sentRequestsMessage([
+      { id: "1", requestType: "ACCESS", status: "SENT" },
+      { id: "2", requestType: "OPENAI_ACCESS", status: "PENDING" },
+    ])).toBe("n8n invite sent — check Inbox/Spam.");
+  });
+});
+
+describe("requestStatusMessage", () => {
+  it("names a single submitted request and the approval step", () => {
+    expect(requestStatusMessage([{ id: "1", requestType: "ACCESS", status: "PENDING" }]))
+      .toBe("n8n access request submitted — awaiting admin approval.");
+    expect(requestStatusMessage([{ id: "1", requestType: "OPENAI_ACCESS", status: "PENDING" }]))
+      .toBe("OpenAI API request submitted — awaiting admin approval.");
+  });
+
+  it("combines two submitted requests", () => {
+    expect(requestStatusMessage([
+      { id: "1", requestType: "ACCESS", status: "PENDING" },
+      { id: "2", requestType: "OPENAI_ACCESS", status: "PENDING" },
+    ])).toBe("n8n access & OpenAI API requests submitted — awaiting admin approval.");
+  });
+
+  it("lists all three submitted requests in a fixed order", () => {
+    expect(requestStatusMessage([
+      { id: "1", requestType: "OPENAI_ACCESS", status: "PENDING" },
+      { id: "2", requestType: "PASSWORD_RESET", status: "PENDING" },
+      { id: "3", requestType: "ACCESS", status: "PENDING" },
+    ])).toBe("n8n access, password reset & OpenAI API requests submitted — awaiting admin approval.");
+  });
+
+  it("explains processing and failed requests", () => {
+    expect(requestStatusMessage([{ id: "1", requestType: "PASSWORD_RESET", status: "PROCESSING" }]))
+      .toBe("password reset is being processed.");
+    expect(requestStatusMessage([{ id: "1", requestType: "ACCESS", status: "FAILED" }]))
+      .toBe("n8n access could not be completed — please try again.");
+  });
+
+  it("keeps sent and pending work in one summary", () => {
+    expect(requestStatusMessage([
+      { id: "1", requestType: "ACCESS", status: "SENT" },
+      { id: "2", requestType: "OPENAI_ACCESS", status: "PENDING" },
+    ])).toBe("OpenAI API request submitted — awaiting admin approval. · n8n invite sent — check Inbox/Spam.");
+  });
+
+  it("ignores replaced requests", () => {
+    expect(requestStatusMessage([{ id: "1", requestType: "ACCESS", status: "SUPERSEDED" }])).toBeNull();
+  });
+});
 
 describe("AccessHelpCard", () => {
   it("offers all three access types as checkboxes", () => {
@@ -21,6 +110,14 @@ describe("AccessHelpCard", () => {
     expect(screen.getByRole("checkbox", { name: /n8n access/i })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: /n8n password reset/i })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: /OpenAI API access/i })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Send selected requests" })).not.toBeNull();
+  });
+
+  it("keeps a short static duration message and no invitation-only warning", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[]} />);
+    expect(screen.getByText("n8n: 1 year · OpenAI: 2 months")).toBeTruthy();
+    expect(screen.getByText("Select the access you need.")).toBeTruthy();
+    expect(screen.queryByText(/No API key is emailed/i)).toBeNull();
   });
 
   it("disables only the type that already has an active request", () => {
@@ -31,10 +128,30 @@ describe("AccessHelpCard", () => {
     }]} />);
     expect((screen.getByRole("checkbox", { name: /OpenAI API access/i }) as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByRole("checkbox", { name: /n8n access/i }) as HTMLInputElement).disabled).toBe(false);
-    expect(screen.getByText("Waiting")).toBeTruthy();
+    expect(screen.getByText("Request received")).toBeTruthy();
+    expect(screen.getByText("OpenAI API request submitted — awaiting admin approval.")).toBeTruthy();
   });
 
-  it("shows a sent chip with the date and inbox guidance", () => {
+  it("explains mixed sent and pending requests", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[
+      { id: "request-1", requestType: "ACCESS", status: "SENT" },
+      { id: "request-2", requestType: "OPENAI_ACCESS", status: "PENDING" },
+    ]} />);
+    expect(screen.getByText(
+      "OpenAI API request submitted — awaiting admin approval. · n8n invite sent — check Inbox/Spam.",
+    )).toBeTruthy();
+  });
+
+  it("keeps a pending message calm even if an older attempt failed", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[
+      { id: "new", requestType: "ACCESS", status: "PENDING" },
+      { id: "old", requestType: "ACCESS", status: "FAILED" },
+    ]} />);
+    const message = screen.getByText("n8n access request submitted — awaiting admin approval.");
+    expect(message.className).not.toContain("text-red-600");
+  });
+
+  it("shows a sent chip with the date and a typed inbox message", () => {
     render(<AccessHelpCard csrfToken="csrf" requests={[{
       id: "request-1",
       requestType: "ACCESS",
@@ -42,16 +159,27 @@ describe("AccessHelpCard", () => {
       sentAt: "2026-11-03T10:00:00.000Z",
     }]} />);
     expect(screen.getByText(/^Sent/)).toBeTruthy();
-    expect(screen.getByText(/Check Inbox and Spam/i)).toBeTruthy();
+    // Fixed en-GB + Dhaka: never "Nov 3" (server locale) or a neighbouring day.
+    expect(screen.getByText("Sent · 3 Nov")).toBeTruthy();
+    expect(screen.getByText("n8n invite sent — check Inbox/Spam.")).toBeTruthy();
   });
 
-  it("shows a failed chip", () => {
-    render(<AccessHelpCard csrfToken="csrf" requests={[{
-      id: "request-1",
-      requestType: "PASSWORD_RESET",
-      status: "FAILED",
-    }]} />);
-    expect(screen.getByText("Failed")).toBeTruthy();
+  it("summarises several sent requests in one line", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[
+      { id: "request-1", requestType: "ACCESS", status: "SENT" },
+      { id: "request-2", requestType: "PASSWORD_RESET", status: "SENT" },
+      { id: "request-3", requestType: "OPENAI_ACCESS", status: "SENT" },
+    ]} />);
+    expect(screen.getByText("n8n invite, Reset link & OpenAI invite sent — check Inbox/Spam.")).toBeTruthy();
+  });
+
+  it("labels failed and replaced requests clearly", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[
+      { id: "request-1", requestType: "PASSWORD_RESET", status: "FAILED" },
+      { id: "request-2", requestType: "ACCESS", status: "SUPERSEDED" },
+    ]} />);
+    expect(screen.getByText("Try again")).toBeTruthy();
+    expect(screen.getByText("Replaced")).toBeTruthy();
   });
 });
 

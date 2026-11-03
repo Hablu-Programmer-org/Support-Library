@@ -1,0 +1,51 @@
+
+> support-library@1.0.6 build
+> next build
+
+▲ Next.js 16.4.2 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.mjs took 33ms
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1798ms
+  Running TypeScript ...
+  Finished TypeScript in 4.5s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/5) ...
+  Generating static pages using 11 workers (1/5) 
+  Generating static pages using 11 workers (2/5) 
+  Generating static pages using 11 workers (3/5) 
+✓ Generating static pages using 11 workers (5/5) in 177ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /api/attachments/[id]
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/health
+├ ƒ /api/health/live
+├ ƒ /api/health/ready
+├ ƒ /api/issues/activity
+├ ƒ /api/my-requests/activity
+├ ƒ /dashboard
+├ ƒ /dashboard/access-requests
+├ ƒ /dashboard/issues
+├ ƒ /dashboard/issues/[id]
+├ ƒ /dashboard/issues/[id]/edit
+├ ƒ /dashboard/issues/new
+├ ƒ /dashboard/issues/submitted
+├ ƒ /dashboard/live-support
+├ ƒ /dashboard/my-requests
+├ ƒ /dashboard/n8n-requests
+├ ƒ /dashboard/support
+├ ƒ /login
+└ ƒ /unauthorized
+
+
+ƒ Proxy (Middleware)
+
+ƒ  (Dynamic)  server-rendered on demand
+

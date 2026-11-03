@@ -4,7 +4,13 @@ import { randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
-import { N8nAccessRequestModel, UserModel, type N8nRequestType } from "@/models";
+import { buildSearchRegex } from "@/lib/search";
+import {
+  N8nAccessRequestModel,
+  UserModel,
+  type N8nRequestStatus,
+  type N8nRequestType,
+} from "@/models";
 
 export async function createN8nRequest(
   studentId: string,
@@ -69,16 +75,62 @@ export async function listN8nRequests() {
 }
 
 const STAFF_QUEUE_LIMIT = 25;
+/** Upper bound on the ids a search may fan out to, so one broad term cannot build an unbounded `$in`. */
+const SEARCH_USER_LIMIT = 200;
 
-export async function listN8nRequestQueue(
-  requestTypes: N8nRequestType[],
+export type StaffAccessQueueQuery = {
+  requestTypes: N8nRequestType[];
+  statuses?: readonly N8nRequestStatus[];
+  /** Partial student email. Empty means no email filter. */
+  search?: string;
+  page?: number;
+  limit?: number;
+};
+
+/**
+ * The queue reads `student.email`, which lives on the user document rather than
+ * on the request, so an email search resolves matching user ids first and then
+ * filters requests by those ids. The cap keeps a broad term (or one character)
+ * from producing an unbounded `$in`.
+ */
+async function findStudentIdsByEmail(search: string) {
+  const regex = buildSearchRegex(search);
+  if (!regex) return [];
+  const users = await UserModel.find({ email: regex })
+    .select("_id")
+    .limit(SEARCH_USER_LIMIT)
+    .lean();
+  return users.map((user) => user._id);
+}
+
+export async function listN8nRequestQueue({
+  requestTypes,
+  statuses,
+  search = "",
   page = 1,
   limit = STAFF_QUEUE_LIMIT,
-) {
+}: StaffAccessQueueQuery) {
   await dbConnect();
   const safePage = Math.max(1, Math.trunc(page));
   const safeLimit = Math.min(50, Math.max(1, Math.trunc(limit)));
-  const filter = { requestType: { $in: requestTypes } };
+  const trimmedSearch = search.trim();
+
+  // A one-character search has no regex, and returning every row for it would
+  // look like a match. Fail closed instead: the admin types one more character.
+  if (trimmedSearch && !buildSearchRegex(trimmedSearch)) {
+    return { items: [], page: 1, total: 0, totalPages: 1 };
+  }
+
+  const filter: Record<string, unknown> = {
+    requestType: { $in: requestTypes },
+  };
+  if (statuses && statuses.length > 0) {
+    filter.status = { $in: statuses };
+  }
+  if (trimmedSearch) {
+    filter.studentId = { $in: await findStudentIdsByEmail(trimmedSearch) };
+  }
+
   const [requests, total] = await Promise.all([
     N8nAccessRequestModel.aggregate([
       { $match: filter },
@@ -121,6 +173,18 @@ export async function listN8nRequestQueue(
     total,
     totalPages: Math.max(1, Math.ceil(total / safeLimit)),
   };
+}
+
+/**
+ * Outstanding work per tab. Deliberately independent of the email search and
+ * the sent toggle: the badge answers "how many requests are still waiting?".
+ */
+export async function countPendingN8nRequests(requestTypes: N8nRequestType[]) {
+  await dbConnect();
+  return N8nAccessRequestModel.countDocuments({
+    requestType: { $in: requestTypes },
+    status: "PENDING",
+  });
 }
 
 export async function getN8nRequestType(requestId: string) {

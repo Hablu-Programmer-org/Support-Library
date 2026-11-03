@@ -1,0 +1,325 @@
+◇ injected env (25) from .env.local
+◇ injected env (0) from .env.local
+
+Running 94 tests using 1 worker
+
+◇ injected env (0) from .env.local
+
+◇ injected env (0) from .env.local
+
+[1/94] [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as admin
+[2/94] [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as mentor
+[3/94] [setup] › e2e\fixtures\auth.fixtures.ts:102:8 › authenticate as student
+[4/94] [setup] › e2e\fixtures\lms.fixtures.ts:22:6 › seed hp-v2 style user for LMS lookups
+◇ injected env (0) from .env.local
+
+[5/94] [chromium] › e2e\access-help.spec.ts:6:7 › student access help › shows all access choices directly below issue search
+[6/94] [chromium] › e2e\access-help.spec.ts:45:7 › access request administration › allows admins and denies mentors
+  1) [chromium] › e2e\access-help.spec.ts:45:7 › access request administration › allows admins and denies mentors 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('button', { name: /^OpenAI/ })
+    Expected substring: "0 pending"
+    Received string:    "OpenAI1 pending"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('button', { name: /^OpenAI/ }) with timeout 5000ms
+      - waiting for getByRole('button', { name: /^OpenAI/ })
+        14 × locator resolved to <button type="button" aria-pressed="true" class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white">…</button>
+           - unexpected value "OpenAI1 pending"
+
+
+      54 |     const n8nTab = adminPage.getByRole("button", { name: /^n8n/ });
+      55 |     await expect(openAiTab).toHaveAttribute("aria-pressed", "true");
+    > 56 |     await expect(openAiTab).toContainText("0 pending");
+         |                             ^
+      57 |     await expect(n8nTab).toContainText("0 pending");
+      58 |     await expect(adminPage.getByRole("checkbox", { name: "Show already sent" })).not.toBeChecked();
+      59 |     await expect(adminPage.getByRole("region", { name: "OpenAI API access" })).toBeVisible();
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\access-help.spec.ts:56:29
+
+    Error Context: test-results\access-help-access-request-cf3b2-s-admins-and-denies-mentors-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[7/94] [chromium] › e2e\attachments-edit.spec.ts:9:7 › edit-mode attachments › an admin can preview and replace an old image attachment
+  2) [chromium] › e2e\attachments-edit.spec.ts:9:7 › edit-mode attachments › an admin can preview and replace an old image attachment 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('form').filter({ has: getByRole('button', { name: 'Create Issue', exact: true }) }).first().getByRole('button', { name: 'Create Issue', exact: true })
+
+
+       at form-helpers.ts:45
+
+      43 |       .then(() => true)
+      44 |       .catch(() => false);
+    > 45 |     await form.getByRole("button", { name: submitLabel, exact: true }).click();
+         |                                                                        ^
+      46 |     if (await navigated) return;
+      47 |   }
+      48 |   throw new Error(`"${submitLabel}" never navigated to ${url}`);
+        at submitAndWait (D:\codes\work\hablu\hablu-programmer\support-library\e2e\form-helpers.ts:45:72)
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\attachments-edit.spec.ts:32:5
+
+    Error Context: test-results\attachments-edit-edit-mode-e82d0-ace-an-old-image-attachment-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[8/94] [chromium] › e2e\attachments.spec.ts:13:7 › uploaded attachments › a student can attach an image and staff can open it; strangers cannot
+  3) [chromium] › e2e\attachments.spec.ts:13:7 › uploaded attachments › a student can attach an image and staff can open it; strangers cannot 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 404
+
+      75 |
+      76 |     const response = await adminPage.request.get(src!);
+    > 77 |     expect(response.status()).toBe(200);
+         |                               ^
+      78 |     expect(response.headers()["content-type"]).toContain("image/png");
+      79 |     expect((await response.body()).length).toBe(png.length);
+      80 |
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\attachments.spec.ts:77:31
+
+    Error Context: test-results\attachments-uploaded-attac-c9376-an-open-it-strangers-cannot-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[9/94] [chromium] › e2e\attachments.spec.ts:104:7 › uploaded attachments › a file that is not a real image is rejected with a field error
+  4) [chromium] › e2e\attachments.spec.ts:104:7 › uploaded attachments › a file that is not a real image is rejected with a field error 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('form').filter({ has: getByRole('button', { name: 'Submit request', exact: true }) }).first().locator('input[name="title"]')
+
+
+      107 |     await page.goto("/dashboard/issues/new");
+      108 |     const form = formFor(page, "Submit request");
+    > 109 |     await form.locator('input[name="title"]').fill(title);
+          |                                               ^
+      110 |     await form
+      111 |       .locator('textarea[name="question"]')
+      112 |       .fill("My selected image is actually text.");
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\attachments.spec.ts:109:47
+
+    Error Context: test-results\attachments-uploaded-attac-36c29-rejected-with-a-field-error-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[10/94] [chromium] › e2e\issue-filters.spec.ts:79:7 › Issue list filters (mentor) › filters by course and batch
+[11/94] [chromium] › e2e\issue-filters.spec.ts:111:7 › Issue list filters (mentor) › filters by mentor and date range
+  5) [chromium] › e2e\issue-filters.spec.ts:111:7 › Issue list filters (mentor) › filters by mentor and date range 
+
+    Test timeout of 120000ms exceeded.
+
+    Error: locator.click: Test timeout of 120000ms exceeded.
+    Call log:
+      - waiting for locator('form').filter({ has: getByRole('button', { name: 'Create Issue', exact: true }) }).first().getByRole('button', { name: 'Create Issue', exact: true })
+
+
+      17 |       .then(() => true)
+      18 |       .catch(() => false);
+    > 19 |     await form.getByRole("button", { name: "Create Issue", exact: true }).click();
+         |                                                                           ^
+      20 |     if (await navigated) return;
+      21 |   }
+      22 |   throw new Error(`Submit never navigated to ${url}`);
+        at submit (D:\codes\work\hablu\hablu-programmer\support-library\e2e\issue-filters.spec.ts:19:75)
+        at createIssue (D:\codes\work\hablu\hablu-programmer\support-library\e2e\issue-filters.spec.ts:73:3)
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\issue-filters.spec.ts:113:5
+
+    Error Context: test-results\issue-filters-Issue-list-f-b7c26-rs-by-mentor-and-date-range-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[12/94] [chromium] › e2e\issue-filters.spec.ts:138:7 › Issue list filters (mentor) › applies sort order
+[13/94] [chromium] › e2e\issue-list-return.spec.ts:65:7 › Issue list: returning from a case › keeps filter and page when a case is opened and left again
+[14/94] [chromium] › e2e\issue-list-return.spec.ts:92:7 › Issue list: returning from a case › archiving from a filtered page stays on that page
+[15/94] [chromium] › e2e\issue-list-return.spec.ts:106:7 › Issue list: returning from a case › falls back to the first page for a non-numeric page
+[16/94] [chromium] › e2e\issue-list-return.spec.ts:113:7 › Issue list: returning from a case › redirects an out-of-range page to the last real page
+[17/94] [chromium] › e2e\issue-queue.spec.ts:151:7 › staff queue ordering › shows newest answer-needed unresolved first and solved last
+[18/94] [chromium] › e2e\issue-queue.spec.ts:176:7 › staff queue ordering › manual refresh keeps the filter and the same ordering
+[19/94] [chromium] › e2e\issue-queue.spec.ts:194:7 › staff queue ordering › does not label a legacy answered issue as no reply
+[20/94] [chromium] › e2e\issue-queue.spec.ts:213:7 › activity probe authorization › denies students the staff-only change signal
+[21/94] [chromium] › e2e\issue-queue.spec.ts:219:7 › activity probe authorization › does not show reply-state badges on the student list
+[22/94] [chromium] › e2e\issues.spec.ts:17:9 › Issue CRUD (mentor) › creates an issue with text and attachments in one submission
+[23/94] [chromium] › e2e\issues.spec.ts:17:9 › Issue CRUD (mentor) › creates an issue with attachments only in one submission
+[24/94] [chromium] › e2e\issues.spec.ts:17:9 › Issue CRUD (mentor) › creates an issue with answer awaiting confirmation in one submission
+[25/94] [chromium] › e2e\issues.spec.ts:41:7 › Issue CRUD (mentor) › finds a case by its six-digit reference
+[26/94] [chromium] › e2e\issues.spec.ts:62:7 › Issue CRUD (mentor) › searches while typing, without pressing Enter
+[27/94] [chromium] › e2e\issues.spec.ts:82:7 › Issue CRUD (mentor) › creates an issue, replies, and updates status
+[28/94] [chromium] › e2e\issues.spec.ts:126:7 › Issue CRUD (mentor) › autofills student name from an LMS email match
+[29/94] [chromium] › e2e\issues.spec.ts:150:7 › Issue CRUD (mentor) › rejects a submitted LMS id that does not belong to the email
+[30/94] [chromium] › e2e\issues.spec.ts:169:7 › Issue CRUD (mentor) › rejects a stale issue edit
+[31/94] [chromium] › e2e\issues.spec.ts:192:7 › Issue CRUD (mentor) › allows a manual student name after an LMS lookup miss
+[32/94] [chromium] › e2e\issues.spec.ts:206:7 › Issue CRUD (mentor) › renders the issue article without horizontal overflow on mobile
+[33/94] [chromium] › e2e\issues.spec.ts:241:7 › Issue CRUD (mentor) › edits an issue and persists the change
+[34/94] [chromium] › e2e\issues.spec.ts:259:7 › Issue CRUD (mentor) › rejects moving an issue to ARCHIVED through the edit form
+  6) [chromium] › e2e\issues.spec.ts:259:7 › Issue CRUD (mentor) › rejects moving an issue to ARCHIVED through the edit form 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('form').filter({ has: getByRole('button', { name: 'Create Issue', exact: true }) }).first().getByRole('button', { name: 'Create Issue', exact: true })
+
+
+       at form-helpers.ts:45
+
+      43 |       .then(() => true)
+      44 |       .catch(() => false);
+    > 45 |     await form.getByRole("button", { name: submitLabel, exact: true }).click();
+         |                                                                        ^
+      46 |     if (await navigated) return;
+      47 |   }
+      48 |   throw new Error(`"${submitLabel}" never navigated to ${url}`);
+        at submitAndWait (D:\codes\work\hablu\hablu-programmer\support-library\e2e\form-helpers.ts:45:72)
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\issues.spec.ts:267:5
+
+    Error Context: test-results\issues-Issue-CRUD-mentor-r-bf1b9-HIVED-through-the-edit-form-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[35/94] [chromium] › e2e\issues.spec.ts:288:7 › Issue CRUD (mentor) › shows quick tips from the info button beside the title
+[36/94] [chromium] › e2e\issues.spec.ts:307:7 › Issue CRUD (mentor) › creates a general issue without any student identity
+[37/94] [chromium] › e2e\issues.spec.ts:326:7 › Issue CRUD (mentor) › archives an issue from the detail page
+[38/94] [chromium] › e2e\landing.spec.ts:4:7 › Landing › guest sees only the sign-in path, no library chrome
+[39/94] [chromium] › e2e\landing.spec.ts:22:7 › Landing library search › search button deep-links to the issues query
+[40/94] [chromium] › e2e\live-support.spec.ts:46:7 › LIVE support: sign-in gate › sends guests to login, remembering the page they wanted
+[41/94] [chromium] › e2e\live-support.spec.ts:59:7 › STUDENT: a request is the way into the room › submitting lands on the request with its live support panel
+[42/94] [chromium] › e2e\live-support.spec.ts:83:7 › STUDENT: a request is the way into the room › finds the request again in My requests
+[43/94] [chromium] › e2e\live-support.spec.ts:98:7 › STUDENT: a request is the way into the room › cannot open another owner's unpublished request
+[44/94] [chromium] › e2e\live-support.spec.ts:123:7 › STUDENT: a request is the way into the room › is sent from the staff room page to their requests
+[45/94] [chromium] › e2e\live-support.spec.ts:128:7 › STUDENT: a request is the way into the room › has no Live support item in the nav, but has My requests
+[46/94] [chromium] › e2e\live-support.spec.ts:137:7 › STUDENT: a request is the way into the room › keeps the staff queue out of reach
+[47/94] [chromium] › e2e\live-support.spec.ts:162:7 › STAFF: they run the room › joins without a request and sees no student panel
+[48/94] [chromium] › e2e\live-support.spec.ts:173:7 › STAFF: they run the room › sees the student request without the student's join panel
+[49/94] [chromium] › e2e\live-support.spec.ts:235:7 › LIVE support: staff queue › lists who is waiting and which request they brought
+[50/94] [chromium] › e2e\live-support.spec.ts:251:7 › LIVE support: staff queue › shows the waiting student on the staff dashboard
+[51/94] [chromium] › e2e\live-support.spec.ts:268:7 › LIVE support: staff queue › marks the issue as waiting in the staff issues list
+  7) [chromium] › e2e\live-support.spec.ts:268:7 › LIVE support: staff queue › marks the issue as waiting in the staff issues list 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Waiting in live support').first()
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Waiting in live support').first() with timeout 5000ms
+      - waiting for getByText('Waiting in live support').first()
+
+
+      269 |     await page.goto("/dashboard/issues");
+      270 |
+    > 271 |     await expect(page.getByText("Waiting in live support").first()).toBeVisible();
+          |                                                                     ^
+      272 |   });
+      273 |
+      274 |   test("stops calling a case waiting once it is solved", async ({ page }) => {
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\live-support.spec.ts:271:69
+
+    Error Context: test-results\live-support-LIVE-support--0e85d-ng-in-the-staff-issues-list-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[52/94] [chromium] › e2e\live-support.spec.ts:274:7 › LIVE support: staff queue › stops calling a case waiting once it is solved
+[53/94] [chromium] › e2e\live-support.spec.ts:286:7 › LIVE support: staff queue › is reached from the staff room page
+[54/94] [chromium] › e2e\public-smoke.spec.ts:3:5 › public landing loads
+[55/94] [chromium] › e2e\public-smoke.spec.ts:12:5 › dashboard redirects unauthenticated users to login
+[56/94] [chromium] › e2e\public-smoke.spec.ts:18:5 › health endpoints distinguish liveness and readiness
+[57/94] [chromium] › e2e\public-smoke.spec.ts:28:5 › production responses include baseline security headers
+[58/94] [chromium] › e2e\quick-live-support.spec.ts:15:7 › quick live support: students › offers a direct join beside Submit an issue, matching the shift
+[59/94] [chromium] › e2e\quick-live-support.spec.ts:46:7 › quick live support: staff › is not offered to staff
+[60/94] [chromium] › e2e\reply-composer-failures.spec.ts:48:7 › Reply composer failure reporting › a rejected attachment shows the reason and keeps the typed response
+[WebServer] [replies] add response failed Error [UploadValidationError]: reply-not-an-image-1793673555918.txt is not a supported image (PNG, JPEG, GIF or WebP)
+[WebServer]     at Z (D:\codes\work\hablu\hablu-programmer\support-library\.next\standalone\.next\server\chunks\ssr\_0z96hgy38px13._.js:1:19117)
+[WebServer]     at async y (D:\codes\work\hablu\hablu-programmer\support-library\.next\standalone\.next\server\chunks\ssr\_next-internal_server_app_dashboard_issues_[id]_page_actions_1w_1do_ub5qx0.js:1:1967) {
+[WebServer]   field: 'uploads'
+[WebServer] }
+
+[61/94] [chromium] › e2e\reply-composer-failures.spec.ts:67:7 › Reply composer failure reporting › a stale CSRF token asks for a reload instead of crashing the page
+[62/94] [chromium] › e2e\reply-composer-failures.spec.ts:82:7 › Reply composer failure reporting › two responses written on the same page view both save
+[63/94] [chromium] › e2e\reply-composer-failures.spec.ts:101:7 › Reply composer failure reporting › a rejected edit keeps the editor open with what was typed
+[64/94] [chromium] › e2e\reply-edit-delete.spec.ts:30:7 › Reply edit and delete interactions › cancel keeps the body and save closes the editor
+[65/94] [chromium] › e2e\reply-edit-delete.spec.ts:52:7 › Reply edit and delete interactions › editing a reply can add and clear video links
+[66/94] [chromium] › e2e\reply-edit-delete.spec.ts:73:7 › Reply edit and delete interactions › delete only removes the reply after confirming
+[67/94] [chromium] › e2e\reply-edit-delete.spec.ts:86:7 › Reply edit and delete interactions › adds a video link without an error page
+[68/94] [chromium] › e2e\reply-permissions.spec.ts:13:7 › Reply edit/delete permissions › only the author or an admin sees edit and delete
+[69/94] [chromium] › e2e\roles.spec.ts:15:5 › Role matrix: admin › can access dashboard
+[70/94] [chromium] › e2e\roles.spec.ts:25:5 › Role matrix: admin › can access issues list
+[71/94] [chromium] › e2e\roles.spec.ts:36:5 › Role matrix: admin › can open the staff create form
+[72/94] [chromium] › e2e\roles.spec.ts:47:5 › Role matrix: admin › can open the issue editor
+[73/94] [chromium] › e2e\roles.spec.ts:15:5 › Role matrix: mentor › can access dashboard
+[74/94] [chromium] › e2e\roles.spec.ts:25:5 › Role matrix: mentor › can access issues list
+[75/94] [chromium] › e2e\roles.spec.ts:36:5 › Role matrix: mentor › can open the staff create form
+[76/94] [chromium] › e2e\roles.spec.ts:47:5 › Role matrix: mentor › can open the issue editor
+[77/94] [chromium] › e2e\roles.spec.ts:15:5 › Role matrix: student › can access dashboard
+[78/94] [chromium] › e2e\roles.spec.ts:25:5 › Role matrix: student › can access issues list
+[79/94] [chromium] › e2e\roles.spec.ts:36:5 › Role matrix: student › cannot open the staff create form
+[80/94] [chromium] › e2e\roles.spec.ts:47:5 › Role matrix: student › cannot open the issue editor
+[81/94] [chromium] › e2e\shell.spec.ts:16:7 › Shell: dashboard chrome › topbar with inline nav matches the frontend design
+[82/94] [chromium] › e2e\shell.spec.ts:67:7 › Shell: dashboard chrome › issues list keeps native filter selects
+[83/94] [chromium] › e2e\shell.spec.ts:85:7 › Shell: mobile navbar › nav links and brand stay visible on mobile and navigate
+[84/94] [chromium] › e2e\shell.spec.ts:97:7 › Shell: mobile navbar › account sheet opens with identity, appearance and sign out
+[85/94] [chromium] › e2e\shell.spec.ts:114:7 › Shell: My Courses link (student) › leaves for the LMS in a new tab and never claims the active state
+[86/94] [chromium] › e2e\shell.spec.ts:142:7 › Shell: n8n admin link (mentor) › does not expose the n8n request queue to mentors
+[87/94] [chromium] › e2e\shell.spec.ts:151:7 › Shell: public pages › landing renders dark by default with cyan CTA
+[88/94] [chromium] › e2e\solve-publish.spec.ts:12:7 › Admin solving publishes › marking SOLVED with the short PII confirmation publishes and can be removed
+[89/94] [chromium] › e2e\staff-form-failures.spec.ts:36:7 › Staff form failure reporting › a stale status revision shows its reason instead of the error page
+  8) [chromium] › e2e\staff-form-failures.spec.ts:36:7 › Staff form failure reporting › a stale status revision shows its reason instead of the error page 
+
+    Error: locator.evaluate: Error: strict mode violation: locator('input[name="expectedUpdatedAt"]') resolved to 2 elements:
+        1) <input type="hidden" name="expectedUpdatedAt" value="2026-11-03T02:40:33.594Z"/> aka getByRole('complementary').locator('input[name="expectedUpdatedAt"]')
+        2) <input type="hidden" name="expectedUpdatedAt" value="2026-11-03T02:40:33.594Z"/> aka locator('input[name="expectedUpdatedAt"]').nth(1)
+
+    Call log:
+      - waiting for locator('input[name="expectedUpdatedAt"]')
+
+
+      38 |
+      39 |     // Pretend the page was rendered against an older revision of the issue.
+    > 40 |     await page.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {
+         |                                                           ^
+      41 |       (input as HTMLInputElement).value = "2000-01-01T00:00:00.000Z";
+      42 |     });
+      43 |     await page.getByLabel("Status").selectOption("PENDING");
+        at D:\codes\work\hablu\hablu-programmer\support-library\e2e\staff-form-failures.spec.ts:40:59
+
+    Error Context: test-results\staff-form-failures-Staff--4ef87-n-instead-of-the-error-page-chromium\error-context.md
+
+
+◇ injected env (0) from .env.local
+
+[90/94] [chromium] › e2e\student-gating.spec.ts:12:7 › STUDENT content gating › hides unpublished issues and student PII from students
+[91/94] [chromium] › e2e\student-submit.spec.ts:15:7 › STUDENT issue submission › submits a request that staff can pick up
+[92/94] [chromium] › e2e\student-submit.spec.ts:79:7 › STUDENT issue submission › never exposes staff surfaces
+[93/94] [chromium] › e2e\zz-auth-freshness.spec.ts:13:7 › LMS authorization freshness › applies an LMS role demotion to an existing session
+[94/94] [chromium] › e2e\zz-auth-freshness.spec.ts:46:7 › LMS authorization freshness › blocks an existing session after LMS deactivation
+◇ injected env (0) from .env.local
+  8 failed
+    [chromium] › e2e\access-help.spec.ts:45:7 › access request administration › allows admins and denies mentors 
+    [chromium] › e2e\attachments-edit.spec.ts:9:7 › edit-mode attachments › an admin can preview and replace an old image attachment 
+    [chromium] › e2e\attachments.spec.ts:13:7 › uploaded attachments › a student can attach an image and staff can open it; strangers cannot 
+    [chromium] › e2e\attachments.spec.ts:104:7 › uploaded attachments › a file that is not a real image is rejected with a field error 
+    [chromium] › e2e\issue-filters.spec.ts:111:7 › Issue list filters (mentor) › filters by mentor and date range 
+    [chromium] › e2e\issues.spec.ts:259:7 › Issue CRUD (mentor) › rejects moving an issue to ARCHIVED through the edit form 
+    [chromium] › e2e\live-support.spec.ts:268:7 › LIVE support: staff queue › marks the issue as waiting in the staff issues list 
+    [chromium] › e2e\staff-form-failures.spec.ts:36:7 › Staff form failure reporting › a stale status revision shows its reason instead of the error page 
+  86 passed (8.7m)
