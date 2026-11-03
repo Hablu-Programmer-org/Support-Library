@@ -7,7 +7,9 @@ import { dbConnect } from "@/lib/db";
 import { buildSearchRegex } from "@/lib/search";
 import {
   N8nAccessRequestModel,
+  ToolAccessEntitlementModel,
   UserModel,
+  type AccessRejectionReason,
   type N8nRequestStatus,
   type N8nRequestType,
 } from "@/models";
@@ -18,6 +20,14 @@ import {
   type LmsAgentEnrollment,
 } from "@/lib/agent-enrollment-rules";
 import { getAgentEnrollment, getAgentEnrollmentsByEmails } from "@/lib/lms";
+import {
+  accessExpiresAt,
+  entitlementToolForRequest,
+  requestCreatesEntitlement,
+  TOOL_ACCESS_POLICY,
+  toolEntitlementState,
+} from "@/lib/tool-access-policy";
+import { recordAuditEvent, type AuditEventContext } from "@/lib/services/audit";
 
 /** Resolves the local student row into its `agent` enrolment snapshot. */
 export async function getStudentAgentEnrollment(
@@ -40,6 +50,13 @@ export async function createN8nRequest(
   // Defence in depth: the actions check this too, but the service is the last
   // gate for any future caller.
   if (!agentEnrollmentAllows(agent)) return null;
+  const tool = entitlementToolForRequest(requestType);
+  const entitlement = await ToolAccessEntitlementModel.findOne({ studentId, tool }).lean();
+  if (requestCreatesEntitlement(requestType) && entitlement) return null;
+  if (
+    requestType === "PASSWORD_RESET" &&
+    (!entitlement || toolEntitlementState(entitlement) !== "ACTIVE")
+  ) return null;
   try {
     return await mongoose.connection.transaction(async (session) => {
       // A student may retry after a failure, but the old row must no longer be
@@ -79,6 +96,14 @@ export async function listOwnN8nRequests(studentId: string) {
     { $replaceRoot: { newRoot: "$latest" } },
     { $sort: { createdAt: -1, _id: -1 } },
   ]);
+}
+
+export async function listOwnToolEntitlements(studentId: string) {
+  await dbConnect();
+  if (!mongoose.isValidObjectId(studentId)) return [];
+  return ToolAccessEntitlementModel.find({ studentId })
+    .select("tool grantedAt expiresAt revokedAt")
+    .lean();
 }
 
 export async function listN8nRequests() {
@@ -194,15 +219,23 @@ export async function listN8nRequestQueue({
     ? []
     : await N8nAccessRequestModel.aggregate<{
         _id: { studentId: mongoose.Types.ObjectId; requestType: N8nRequestType };
+        firstRequestedAt: Date;
         count: number;
+        firstSentAt: Date | null;
         lastSentAt: Date | null;
       }>([
-        { $match: { studentId: { $in: studentObjectIds }, status: "SENT" } },
+        { $match: { studentId: { $in: studentObjectIds } } },
         {
           $group: {
             _id: { studentId: "$studentId", requestType: "$requestType" },
-            count: { $sum: 1 },
-            lastSentAt: { $max: "$sentAt" },
+            firstRequestedAt: { $min: "$createdAt" },
+            count: { $sum: { $cond: [{ $eq: ["$status", "SENT"] }, 1, 0] } },
+            firstSentAt: {
+              $min: { $cond: [{ $eq: ["$status", "SENT"] }, "$sentAt", null] },
+            },
+            lastSentAt: {
+              $max: { $cond: [{ $eq: ["$status", "SENT"] }, "$sentAt", null] },
+            },
           },
         },
       ]);
@@ -214,6 +247,14 @@ export async function listN8nRequestQueue({
   const emails = [...new Set(users.map((user) => user.email).filter(Boolean))];
   // Two LMS reads for the whole page instead of two per row.
   const agentByEmail = await getAgentEnrollmentsByEmails(emails);
+  const entitlements = studentObjectIds.length === 0
+    ? []
+    : await ToolAccessEntitlementModel.find({ studentId: { $in: studentObjectIds } })
+      .select("studentId tool grantedAt expiresAt revokedAt")
+      .lean();
+  const entitlementByKey = new Map(
+    entitlements.map((row) => [`${row.studentId}:${row.tool}`, row]),
+  );
 
   return {
     items: requests.map((request) => {
@@ -222,6 +263,8 @@ export async function listN8nRequestQueue({
       const history = historyByKey.get(
         `${request.studentId}:${request.requestType}`,
       );
+      const tool = entitlementToolForRequest(request.requestType as N8nRequestType);
+      const entitlement = entitlementByKey.get(`${request.studentId}:${tool}`);
 
       return {
         id: request._id.toString(),
@@ -237,10 +280,21 @@ export async function listN8nRequestQueue({
         // so an eligible student never reads "not enrolled".
         batchNo: (request.batchNo as number | null) ?? agent?.batchNo ?? null,
         accessHistory: {
+          firstRequestedAt: history?.firstRequestedAt ?? (request.createdAt as Date),
           count: history?.count ?? 0,
+          firstSentAt: history?.firstSentAt ?? null,
           lastSentAt: history?.lastSentAt ?? null,
         },
+        entitlement: entitlement
+          ? {
+              tool,
+              grantedAt: entitlement.grantedAt,
+              expiresAt: entitlement.expiresAt,
+              state: toolEntitlementState(entitlement),
+            }
+          : null,
         agentEligible: agent ? agentEnrollmentAllows(agent) : false,
+        currentBatchNo: agent?.batchNo ?? null,
       };
     }),
     page: safePage,
@@ -278,7 +332,7 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
   // The LMS lives in another database/client, so its read stays outside the
   // transaction (only transactional DB work runs inside).
   const owner = await N8nAccessRequestModel.findById(requestId)
-    .select("studentId")
+    .select("studentId requestType")
     .lean();
   const ownerStudent = owner
     ? await UserModel.findById(owner.studentId).select("email").lean()
@@ -289,7 +343,23 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
 
   return mongoose.connection.transaction(async (session) => {
     const candidate = await N8nAccessRequestModel.findById(requestId).session(session).lean();
-    if (!candidate || candidate.status === "SENT" || candidate.status === "SUPERSEDED") return null;
+    if (
+      !candidate ||
+      candidate.status === "SENT" ||
+      candidate.status === "REJECTED" ||
+      candidate.status === "SUPERSEDED"
+    ) return null;
+
+    const tool = entitlementToolForRequest(candidate.requestType);
+    const entitlement = await ToolAccessEntitlementModel.findOne({
+      studentId: candidate.studentId,
+      tool,
+    }).session(session).lean();
+    if (requestCreatesEntitlement(candidate.requestType) && entitlement) return null;
+    if (
+      candidate.requestType === "PASSWORD_RESET" &&
+      (!entitlement || toolEntitlementState(entitlement) !== "ACTIVE")
+    ) return null;
 
     const newerActive = await N8nAccessRequestModel.exists({
       _id: { $ne: candidate._id },
@@ -352,14 +422,47 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
 }
 
 export async function markN8nRequestSent(requestId: string, leaseId: string) {
-  const result = await N8nAccessRequestModel.updateOne(
-    { _id: requestId, status: "PROCESSING", processingLeaseId: leaseId },
-    {
-      $set: { status: "SENT", sentAt: new Date(), failureCode: null },
-      $unset: { processingLeaseId: "", processingExpiresAt: "" },
-    },
-  );
-  return result.modifiedCount === 1;
+  const grantedAt = new Date();
+  return mongoose.connection.transaction(async (session) => {
+    const request = await N8nAccessRequestModel.findOne({
+      _id: requestId,
+      status: "PROCESSING",
+      processingLeaseId: leaseId,
+    }).session(session).lean();
+    if (!request) return false;
+
+    if (requestCreatesEntitlement(request.requestType)) {
+      const tool = entitlementToolForRequest(request.requestType);
+      const existing = await ToolAccessEntitlementModel.exists({
+        studentId: request.studentId,
+        tool,
+      }).session(session);
+      if (existing) return false;
+      const policy = TOOL_ACCESS_POLICY[tool];
+      await ToolAccessEntitlementModel.create([{
+        studentId: request.studentId,
+        tool,
+        policyKey: policy.key,
+        policyDurationMonths: policy.durationMonths,
+        courseSlug: request.courseSlug || ACCESS_COURSE_SLUG,
+        enrollmentId: request.enrollmentId ?? null,
+        grantedBatchNo: request.batchNo ?? null,
+        sourceRequestId: request._id,
+        grantedAt,
+        expiresAt: accessExpiresAt(tool, grantedAt),
+      }], { session });
+    }
+
+    const result = await N8nAccessRequestModel.updateOne(
+      { _id: request._id, status: "PROCESSING", processingLeaseId: leaseId },
+      {
+        $set: { status: "SENT", sentAt: grantedAt, failureCode: null },
+        $unset: { processingLeaseId: "", processingExpiresAt: "" },
+      },
+      { session },
+    );
+    return result.modifiedCount === 1;
+  });
 }
 
 export async function markN8nRequestFailed(
@@ -373,6 +476,73 @@ export async function markN8nRequestFailed(
       $set: { status: "FAILED", failureCode },
       $unset: { processingLeaseId: "", processingExpiresAt: "" },
     },
+  );
+  return result.modifiedCount === 1;
+}
+
+export async function rejectN8nRequest(input: {
+  requestId: string;
+  adminId: string;
+  reason: AccessRejectionReason;
+  note?: string;
+  context?: AuditEventContext;
+}) {
+  if (!mongoose.isValidObjectId(input.requestId) || !mongoose.isValidObjectId(input.adminId)) {
+    return null;
+  }
+  await dbConnect();
+  const now = new Date();
+
+  return mongoose.connection.transaction(async (session) => {
+    const request = await N8nAccessRequestModel.findOneAndUpdate(
+      { _id: input.requestId, status: { $in: ["PENDING", "FAILED"] } },
+      {
+        $set: {
+          status: "REJECTED",
+          rejectedAt: now,
+          rejectedBy: new mongoose.Types.ObjectId(input.adminId),
+          handledBy: new mongoose.Types.ObjectId(input.adminId),
+          rejectionReasonCode: input.reason,
+          rejectionNote: input.note?.trim() || null,
+          rejectionEmailStatus: "PENDING",
+          failureCode: null,
+        },
+        $unset: { processingLeaseId: "", processingExpiresAt: "" },
+      },
+      { new: true, session },
+    ).lean();
+    if (!request) return null;
+
+    const student = await UserModel.findById(request.studentId)
+      .select("name email isActive")
+      .session(session)
+      .lean();
+    if (!student?.email) {
+      await N8nAccessRequestModel.updateOne(
+        { _id: request._id },
+        { $set: { rejectionEmailStatus: "FAILED" } },
+        { session },
+      );
+    }
+
+    await recordAuditEvent({
+      actorId: input.adminId,
+      action: "ACCESS_REQUEST_REJECT",
+      resourceType: "N8nAccessRequest",
+      resourceId: request._id.toString(),
+      result: "SUCCEEDED",
+    }, input.context, session);
+
+    return { request, student };
+  });
+}
+
+export async function markRejectionEmailResult(requestId: string, sent: boolean) {
+  const result = await N8nAccessRequestModel.updateOne(
+    { _id: requestId, status: "REJECTED", rejectionEmailStatus: "PENDING" },
+    sent
+      ? { $set: { rejectionEmailStatus: "SENT", rejectionEmailSentAt: new Date() } }
+      : { $set: { rejectionEmailStatus: "FAILED" } },
   );
   return result.modifiedCount === 1;
 }

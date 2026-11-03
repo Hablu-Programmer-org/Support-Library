@@ -15,7 +15,7 @@ import {
 import { accessHistoryLabel } from "@/lib/access-history-label";
 import { requireRole } from "@/lib/auth-guard";
 import { generateCsrfToken } from "@/lib/csrf";
-import { formatSupportDate } from "@/lib/format-date";
+import { formatSupportDate, formatSupportShortDate } from "@/lib/format-date";
 import { isN8nAdmin } from "@/lib/n8n-request-policy";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import {
@@ -49,6 +49,7 @@ const STATUS_META: Record<
   PROCESSING: { label: "Processing", tone: "processing" },
   SENT: { label: "Sent", tone: "sent" },
   FAILED: { label: "Failed", tone: "failed" },
+  REJECTED: { label: "Rejected", tone: "failed" },
   SUPERSEDED: { label: "Superseded", tone: "muted" },
 };
 
@@ -181,7 +182,9 @@ export default async function AccessRequestsPage({
                     batchLabel:
                       request.batchNo && request.agentEligible
                         ? `Batch ${request.batchNo}`
-                        : null,
+                        : request.batchNo
+                          ? `Requested Batch ${request.batchNo}`
+                          : null,
                     historyLabel: accessHistoryLabel(
                       request.requestType,
                       request.accessHistory.count,
@@ -189,8 +192,27 @@ export default async function AccessRequestsPage({
                     ),
                     createdByEmail: request.createdBy?.email ?? null,
                     variant,
-                    actionable: request.status === "PENDING" || request.status === "FAILED",
-                    agentEligible: request.agentEligible,
+                    canApprove: request.agentEligible &&
+                      (request.status === "PENDING" || request.status === "FAILED") &&
+                      request.entitlement === null,
+                    canReject: request.status === "PENDING" || request.status === "FAILED",
+                    firstRequestedLabel: `Requested ${formatSupportShortDate(request.accessHistory.firstRequestedAt) ?? "unknown"}`,
+                    enrollmentLabel: request.currentBatchNo && request.currentBatchNo !== request.batchNo
+                      ? `Now Batch ${request.currentBatchNo}`
+                      : request.agentEligible
+                        ? "Enrollment active"
+                        : request.batchNo
+                          ? "Enrollment inactive"
+                          : "No enrollment",
+                    entitlementLabel: request.entitlement
+                      ? request.entitlement.state === "ACTIVE"
+                        ? `Access until ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
+                        : request.entitlement.state === "EXPIRED"
+                          ? `Expired ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
+                          : "Access revoked"
+                      : request.status === "REJECTED"
+                        ? "Not granted"
+                        : "No prior access",
                   }}
                 />
               );

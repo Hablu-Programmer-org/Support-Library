@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 import { formatSupportShortDate } from "@/lib/format-date";
 
 type RequestType = "ACCESS" | "PASSWORD_RESET" | "OPENAI_ACCESS";
-type RequestStatus = "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "SUPERSEDED";
+type RequestStatus = "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "REJECTED" | "SUPERSEDED";
 
 type RequestSummary = {
   id: string;
@@ -30,6 +30,7 @@ const STATUS_TEXT: Record<RequestStatus, string> = {
   PROCESSING: "Processing",
   SENT: "Sent",
   FAILED: "Try again",
+  REJECTED: "Not approved",
   SUPERSEDED: "Replaced",
 };
 
@@ -144,7 +145,7 @@ function StatusChip({ status, sentAt }: { status: RequestStatus; sentAt?: string
         className={cn(
           "h-1 w-1 rounded-full",
           status === "SENT" && "bg-emerald-500",
-          status === "FAILED" && "bg-red-500",
+          (status === "FAILED" || status === "REJECTED") && "bg-red-500",
           status === "SUPERSEDED" && "bg-slate-400",
           (status === "PENDING" || status === "PROCESSING") && "animate-pulse bg-amber-500",
         )}
@@ -160,7 +161,7 @@ export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; req
   // Tone follows the same newest-per-type view as the sentence, so a replaced
   // failure cannot turn a pending message red.
   const latestStatuses = [...newestByType(requests).values()].map((request) => request.status);
-  const statusTone = latestStatuses.includes("FAILED")
+  const statusTone = latestStatuses.includes("REJECTED") || latestStatuses.includes("FAILED")
     ? ("error" as const)
     : latestStatuses.includes("SENT")
       ? ("success" as const)

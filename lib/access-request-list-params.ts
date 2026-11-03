@@ -23,6 +23,7 @@ export type AccessRequestTab = (typeof ACCESS_REQUEST_TABS)[number];
  */
 export const ACCESS_QUEUE_ACTIVE_STATUSES = ["PENDING", "FAILED", "PROCESSING"] as const;
 export const ACCESS_QUEUE_SENT_STATUS = "SENT" as const;
+export const ACCESS_QUEUE_COMPLETED_STATUSES = ["SENT", "REJECTED"] as const;
 
 const MAX_QUERY_LENGTH = 120;
 /** Same ceiling as the issue list: a pasted page number must not become a huge skip. */
@@ -105,6 +106,6 @@ export function buildAccessRequestHref(
 /** Statuses a queue query may return for the current sent-toggle state. */
 export function accessQueueStatuses(showSent: boolean): N8nRequestStatus[] {
   return showSent
-    ? [...ACCESS_QUEUE_ACTIVE_STATUSES, ACCESS_QUEUE_SENT_STATUS]
+    ? [...ACCESS_QUEUE_ACTIVE_STATUSES, ...ACCESS_QUEUE_COMPLETED_STATUSES]
     : [...ACCESS_QUEUE_ACTIVE_STATUSES];
 }

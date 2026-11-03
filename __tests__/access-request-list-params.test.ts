@@ -79,6 +79,6 @@ describe("buildAccessRequestHref", () => {
 describe("accessQueueStatuses", () => {
   it("shows active work by default and adds sent rows only when asked", () => {
     expect(accessQueueStatuses(false)).toEqual(["PENDING", "FAILED", "PROCESSING"]);
-    expect(accessQueueStatuses(true)).toEqual(["PENDING", "FAILED", "PROCESSING", "SENT"]);
+    expect(accessQueueStatuses(true)).toEqual(["PENDING", "FAILED", "PROCESSING", "SENT", "REJECTED"]);
   });
 });

@@ -133,7 +133,7 @@ export function AccessRequestToolbar({
             }}
             type="checkbox"
           />
-          Show already sent
+          Show completed
         </label>
       </div>
 

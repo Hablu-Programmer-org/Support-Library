@@ -13,7 +13,11 @@ import { getRequestContext } from "@/lib/request-context";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import { recordAuditEvent } from "@/lib/services/audit";
-import { sendN8nHelpEmail, sendOpenAiConfirmationEmail } from "@/lib/services/n8n-email";
+import {
+  sendAccessRejectionEmail,
+  sendN8nHelpEmail,
+  sendOpenAiConfirmationEmail,
+} from "@/lib/services/n8n-email";
 import {
   claimN8nRequest,
   createN8nRequest,
@@ -21,19 +25,28 @@ import {
   getStudentAgentEnrollment,
   markN8nRequestFailed,
   markN8nRequestSent,
+  markRejectionEmailResult,
+  rejectN8nRequest,
 } from "@/lib/services/n8n-requests";
 import { consumeRateLimit, MutationRateLimitError } from "@/lib/services/rate-limit";
 import { UserModel } from "@/models";
+import { ACCESS_REJECTION_REASONS } from "@/models/n8n-access-request";
 
 export type N8nActionState = {
   success?: string;
   error?: string;
+  warning?: string;
   errorCode?: "REAUTH_REQUIRED";
 };
 const requestTypeSchema = z.enum(["ACCESS", "PASSWORD_RESET", "OPENAI_ACCESS"]);
 const adminCreateSchema = z.object({
   email: z.email().transform((value) => normalizeEmail(value)),
   requestTypes: z.array(requestTypeSchema).min(1).max(3),
+});
+const rejectRequestSchema = z.object({
+  requestId: z.string().regex(/^[a-f\d]{24}$/i),
+  reason: z.enum(ACCESS_REJECTION_REASONS),
+  note: z.string().trim().max(300).optional(),
 });
 
 export async function createN8nRequestAction(
@@ -307,5 +320,86 @@ export async function confirmOpenAiAccessAction(
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many attempts. Try again later." };
     return { error: "The request could not be confirmed safely. Please try again." };
+  }
+}
+
+export async function rejectAccessRequestAction(
+  _state: N8nActionState,
+  formData: FormData,
+): Promise<N8nActionState> {
+  if (!(await csrfTokenIsValid(formData))) {
+    return { error: "Your session expired. Refresh and try again." };
+  }
+  const guard = await assertRole("ADMIN");
+  if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) {
+    return { error: "You do not have permission to reject access requests." };
+  }
+  if (!(await recentlySignedIn(guard.session.user.id))) {
+    return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
+  }
+
+  const parsed = rejectRequestSchema.safeParse({
+    requestId: String(formData.get("requestId") ?? ""),
+    reason: String(formData.get("reason") ?? ""),
+    note: String(formData.get("note") ?? "") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: "Choose a rejection reason and keep the internal note under 300 characters." };
+  }
+
+  try {
+    await consumeRateLimit("access.request.decision", guard.session.user.id, {
+      action: "ACCESS_REQUEST_REJECT",
+      resourceType: "N8nAccessRequest",
+      resourceId: parsed.data.requestId,
+    });
+    // Consume the email budget before the transaction. A rate-limit failure must
+    // never commit a rejection whose promised notification was not attempted.
+    await consumeRateLimit("n8n.email.send", guard.session.user.id);
+    const context = await getRequestContext();
+    const rejected = await rejectN8nRequest({
+      requestId: parsed.data.requestId,
+      adminId: guard.session.user.id,
+      reason: parsed.data.reason,
+      note: parsed.data.note,
+      context,
+    });
+    if (!rejected) {
+      return { error: "This request was already handled or is being processed. Refresh to see its latest status." };
+    }
+
+    revalidatePath("/dashboard/access-requests");
+    revalidatePath("/dashboard/issues");
+
+    if (!rejected.student?.email) {
+      return {
+        success: "Request rejected.",
+        warning: "The student account has no deliverable email, so no notification was sent.",
+      };
+    }
+
+    try {
+      await sendAccessRejectionEmail({
+        to: rejected.student.email,
+        studentName: rejected.student.name,
+        requestType: rejected.request.requestType,
+        reason: parsed.data.reason,
+        batchNo: rejected.request.batchNo ?? null,
+        requestId: parsed.data.requestId,
+      });
+      await markRejectionEmailResult(parsed.data.requestId, true);
+      return { success: "Request rejected and the student was notified by email." };
+    } catch {
+      await markRejectionEmailResult(parsed.data.requestId, false);
+      return {
+        success: "Request rejected.",
+        warning: "The notification email failed. The decision is saved; retry delivery after checking SMTP.",
+      };
+    }
+  } catch (error) {
+    if (error instanceof MutationRateLimitError) {
+      return { error: "Too many decisions in a short time. Try again later." };
+    }
+    return { error: "The request could not be rejected safely. Please try again." };
   }
 }

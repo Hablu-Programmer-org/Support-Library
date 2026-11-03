@@ -9,9 +9,9 @@ const SENT_NOUN: Record<N8nRequestType, string> = {
 };
 
 const FIRST_LABEL: Record<N8nRequestType, string> = {
-  ACCESS: "First n8n access request",
-  PASSWORD_RESET: "First password reset request",
-  OPENAI_ACCESS: "First OpenAI request",
+  ACCESS: "Never granted n8n access",
+  PASSWORD_RESET: "No reset link sent",
+  OPENAI_ACCESS: "Never granted OpenAI access",
 };
 
 /**

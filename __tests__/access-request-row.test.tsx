@@ -6,8 +6,10 @@ vi.mock("@/actions/n8n-requests", () => ({
   createAccessRequestsForStudentAction: vi.fn(async () => ({})),
   confirmOpenAiAccessAction: vi.fn(async () => ({})),
   sendN8nLinkAction: vi.fn(async () => ({})),
+  rejectAccessRequestAction: vi.fn(async () => ({})),
 }));
 vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { AccessRequestRow, type AccessRowRequest } from "@/components/tool-access/access-request-row";
 
@@ -21,10 +23,13 @@ const base: AccessRowRequest = {
   email: "ahmad@test.com",
   batchLabel: "Batch 4",
   historyLabel: "n8n access sent 2× · Last 1 Nov",
+  firstRequestedLabel: "Requested 1 Nov",
+  entitlementLabel: "No prior access",
+  enrollmentLabel: "Enrollment active",
   createdByEmail: null,
   variant: "n8n",
-  actionable: true,
-  agentEligible: true,
+  canApprove: true,
+  canReject: true,
 };
 
 describe("AccessRequestRow", () => {
@@ -69,7 +74,7 @@ describe("AccessRequestRow", () => {
   it("blocks processing when the student is not in the agent course", () => {
     render(
       <AccessRequestRow
-        request={{ ...base, batchLabel: null, agentEligible: false }}
+        request={{ ...base, batchLabel: null, canApprove: false, enrollmentLabel: "No enrollment" }}
         csrfToken="csrf"
         requiresReauth={false}
       />,
@@ -83,7 +88,7 @@ describe("AccessRequestRow", () => {
   it("hides the action for rows that are already sent", () => {
     render(
       <AccessRequestRow
-        request={{ ...base, actionable: false, statusLabel: "Sent", statusTone: "sent" }}
+        request={{ ...base, canApprove: false, canReject: false, statusLabel: "Sent", statusTone: "sent" }}
         csrfToken="csrf"
         requiresReauth={false}
       />,

@@ -4,9 +4,9 @@ import { accessHistoryLabel } from "@/lib/access-history-label";
 
 describe("accessHistoryLabel", () => {
   it("says this is the first request when nothing was delivered", () => {
-    expect(accessHistoryLabel("ACCESS", 0)).toBe("First n8n access request");
-    expect(accessHistoryLabel("PASSWORD_RESET", 0)).toBe("First password reset request");
-    expect(accessHistoryLabel("OPENAI_ACCESS", 0)).toBe("First OpenAI request");
+    expect(accessHistoryLabel("ACCESS", 0)).toBe("Never granted n8n access");
+    expect(accessHistoryLabel("PASSWORD_RESET", 0)).toBe("No reset link sent");
+    expect(accessHistoryLabel("OPENAI_ACCESS", 0)).toBe("Never granted OpenAI access");
   });
 
   it("counts delivered emails and shows the last date", () => {
@@ -26,7 +26,7 @@ describe("accessHistoryLabel", () => {
   });
 
   it("treats a negative or non-finite count as no history", () => {
-    expect(accessHistoryLabel("ACCESS", -1)).toBe("First n8n access request");
-    expect(accessHistoryLabel("ACCESS", Number.NaN)).toBe("First n8n access request");
+    expect(accessHistoryLabel("ACCESS", -1)).toBe("Never granted n8n access");
+    expect(accessHistoryLabel("ACCESS", Number.NaN)).toBe("Never granted n8n access");
   });
 });

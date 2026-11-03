@@ -1,8 +1,11 @@
 "use client";
 
+import { useCallback, useState } from "react";
+
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
+import { RejectAccessRequestForm } from "@/components/tool-access/reject-access-request-form";
 
 export type AccessRowRequest = {
   id: string;
@@ -17,10 +20,13 @@ export type AccessRowRequest = {
   batchLabel: string | null;
   /** e.g. `n8n access sent 2× · Last 1 Nov` or `First n8n access request`. */
   historyLabel: string;
+  firstRequestedLabel: string;
+  entitlementLabel: string;
+  enrollmentLabel: string;
   createdByEmail: string | null;
   variant: "openai" | "n8n";
-  actionable: boolean;
-  agentEligible: boolean;
+  canApprove: boolean;
+  canReject: boolean;
 };
 
 const STATUS_TONES: Record<AccessRowRequest["statusTone"], string> = {
@@ -57,7 +63,9 @@ export function AccessRequestRow({
   csrfToken: string;
   requiresReauth: boolean;
 }) {
-  const canProcess = request.actionable && request.agentEligible;
+  const [decisionSaved, setDecisionSaved] = useState(false);
+  const onDecisionSaved = useCallback(() => setDecisionSaved(true), []);
+  const canProcess = request.canApprove && !decisionSaved;
 
   return (
     <li className="px-3 py-3 sm:px-4">
@@ -118,22 +126,38 @@ export function AccessRequestRow({
               </span>
             )}
             <span aria-hidden>·</span>
+            <span>{request.enrollmentLabel}</span>
+            <span aria-hidden>·</span>
+            <span>{request.firstRequestedLabel}</span>
+            <span aria-hidden>·</span>
             <span>{request.historyLabel}</span>
+            <span aria-hidden>·</span>
+            <span className="font-medium text-slate-600 dark:text-slate-300">{request.entitlementLabel}</span>
           </div>
 
-          {canProcess && (
-            <div className={`min-w-0 shrink-0 ${request.variant === "n8n" ? "lg:w-[42%]" : ""}`}>
-              {request.variant === "openai" ? (
-                <OpenAiConfirmForm
+          {(canProcess || (request.canReject && !decisionSaved)) && (
+            <div className={`flex min-w-0 shrink-0 flex-wrap items-start justify-end gap-2 ${request.variant === "n8n" ? "lg:w-[48%]" : ""}`}>
+              {canProcess && (
+                request.variant === "openai" ? (
+                  <OpenAiConfirmForm
+                    requestId={request.id}
+                    csrfToken={csrfToken}
+                    requiresReauth={requiresReauth}
+                  />
+                ) : (
+                  <N8nSendForm
+                    requestId={request.id}
+                    csrfToken={csrfToken}
+                    requiresReauth={requiresReauth}
+                  />
+                )
+              )}
+              {request.canReject && !decisionSaved && (
+                <RejectAccessRequestForm
                   requestId={request.id}
                   csrfToken={csrfToken}
                   requiresReauth={requiresReauth}
-                />
-              ) : (
-                <N8nSendForm
-                  requestId={request.id}
-                  csrfToken={csrfToken}
-                  requiresReauth={requiresReauth}
+                  onDecisionSaved={onDecisionSaved}
                 />
               )}
             </div>
