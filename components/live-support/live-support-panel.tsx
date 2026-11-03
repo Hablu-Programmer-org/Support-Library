@@ -144,7 +144,6 @@ export function LiveSupportPanel({
           errorClassName={errorClass}
           fallbackLabel={LIVE_SUPPORT_CTA.open}
           fields={{ csrfToken, issueId }}
-          hint="Opens in a new tab, so this request page stays open."
           label={LIVE_SUPPORT_CTA.join}
           pendingLabel={LIVE_SUPPORT_CTA.pending}
         />

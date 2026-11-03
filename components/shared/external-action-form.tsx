@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/cn";
 import type { ExternalRedirectState } from "@/lib/external-redirect";
@@ -23,11 +23,10 @@ type ExternalActionFormProps = {
   fallbackLabel: string;
   /** Accessible name when it should differ from the visible label. */
   ariaLabel?: string;
-  /** Small note under the button, e.g. "Opens in a new tab". */
-  hint?: string;
+  /** Tooltip for the whole control (unavailable/closed reason). */
+  title?: string;
   disabled?: boolean;
   className?: string;
-  hintClassName?: string;
   errorClassName?: string;
   linkClassName?: string;
 };
@@ -58,18 +57,16 @@ export function ExternalActionForm({
   pendingLabel,
   fallbackLabel,
   ariaLabel,
-  hint,
   disabled = false,
   className,
-  hintClassName,
   errorClassName,
   linkClassName,
+  title,
 }: ExternalActionFormProps) {
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const result = state ?? INITIAL_STATE;
   const tabRef = useRef<Window | null>(null);
   const linkRef = useRef<HTMLAnchorElement>(null);
-  const hintId = useId();
 
   function preOpenTab() {
     if (disabled || pending || result.url) return;
@@ -127,7 +124,7 @@ export function ExternalActionForm({
   const buttonDisabled = disabled || pending || Boolean(result.url);
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-3" title={title}>
       {Object.entries(fields ?? {}).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
@@ -135,7 +132,6 @@ export function ExternalActionForm({
       <button
         type="submit"
         aria-label={ariaLabel ?? label}
-        aria-describedby={hint ? hintId : undefined}
         aria-disabled={buttonDisabled}
         className={className}
         disabled={buttonDisabled}
@@ -143,12 +139,6 @@ export function ExternalActionForm({
       >
         {pending ? pendingLabel : label}
       </button>
-
-      {hint && (
-        <p id={hintId} className={cn("text-xs text-slate-500 dark:text-slate-400", hintClassName)}>
-          {hint}
-        </p>
-      )}
 
       {result.error && (
         <p role="alert" className={errorClassName}>

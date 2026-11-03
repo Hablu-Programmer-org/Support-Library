@@ -41,8 +41,8 @@ const errorClass =
  *
  * The 2026-11-01 announcement asks students to submit a request *before* live
  * support. The request page is still the supported path; this button is kept as
- * an escape hatch, and its hint nudges the request-first journey instead of
- * telling students they need nothing.
+ * an escape hatch and stays a plain button — no hint text under it (owner
+ * decision, 2026-11-03), because the note distorted the page header layout.
  */
 export function QuickLiveSupportButton({
   shift,
@@ -52,24 +52,17 @@ export function QuickLiveSupportButton({
   const isOpen = shift !== "off";
 
   return (
-    <div title={!configured ? "Live support is unavailable right now" : !isOpen ? "Live support is closed right now" : undefined}>
-      <ExternalActionForm
-        action={joinLiveSupportQuickAction}
-        ariaLabel={LIVE_SUPPORT_CTA.join}
-        className={joinClass}
-        disabled={!isOpen || !configured}
-        errorClassName={errorClass}
-        fallbackLabel={LIVE_SUPPORT_CTA.open}
-        fields={{ csrfToken }}
-        hint={
-          configured && isOpen
-            ? "Opens in a new tab, so this list stays open. Tip: submit an issue first so a mentor can follow your case."
-            : undefined
-        }
-        hintClassName="text-right"
-        label={LIVE_SUPPORT_CTA.join}
-        pendingLabel={LIVE_SUPPORT_CTA.pending}
-      />
-    </div>
+    <ExternalActionForm
+      action={joinLiveSupportQuickAction}
+      ariaLabel={LIVE_SUPPORT_CTA.join}
+      className={joinClass}
+      disabled={!isOpen || !configured}
+      errorClassName={errorClass}
+      fallbackLabel={LIVE_SUPPORT_CTA.open}
+      fields={{ csrfToken }}
+      label={LIVE_SUPPORT_CTA.join}
+      pendingLabel={LIVE_SUPPORT_CTA.pending}
+      title={!configured ? "Live support is unavailable right now" : !isOpen ? "Live support is closed right now" : undefined}
+    />
   );
 }

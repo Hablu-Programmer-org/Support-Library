@@ -122,7 +122,6 @@ export function LiveSupportCard({
           errorClassName={errorClass}
           fallbackLabel={LIVE_SUPPORT_CTA.open}
           fields={{ csrfToken }}
-          hint="Opens in a new tab, so the queue stays open next to the room."
           label={LIVE_SUPPORT_CTA.join}
           pendingLabel={LIVE_SUPPORT_CTA.pending}
         />

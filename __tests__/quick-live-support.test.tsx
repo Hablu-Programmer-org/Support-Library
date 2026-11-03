@@ -31,7 +31,7 @@ describe("QuickLiveSupportButton", () => {
     expect((screen.getByRole("button", { name: "Join Live support" }) as HTMLButtonElement).disabled)
       .toBe(true);
     expect(container.textContent).not.toMatch(/Closed right now|সকাল/);
-    expect(screen.getByRole("button", { name: "Join Live support" }).parentElement?.parentElement?.getAttribute("title"))
+    expect(screen.getByRole("button", { name: "Join Live support" }).parentElement?.getAttribute("title"))
       .toBe("Live support is closed right now");
   });
 

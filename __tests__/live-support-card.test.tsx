@@ -25,7 +25,6 @@ describe("LiveSupportCard", () => {
 
     expect(button.disabled).toBe(false);
     expect(button.textContent).toBe("Join Live support");
-    expect(screen.getByText(/queue stays open next to the room/)).not.toBeNull();
     expect(screen.getByText("Meeting code")).not.toBeNull();
     expect(screen.queryByText("Passcode")).toBeNull();
     // The platform name is an identifier, not copy: it must not be rendered.

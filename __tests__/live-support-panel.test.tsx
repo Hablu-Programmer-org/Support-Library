@@ -43,7 +43,6 @@ describe("LiveSupportPanel", () => {
 
     expect(joinButton().disabled).toBe(false);
     expect(joinButton().textContent).toBe("Join Live support");
-    expect(screen.getByText(/Opens in a new tab/)).not.toBeNull();
     expect(screen.getByText("Meeting code")).not.toBeNull();
     // The current room platform has no passcode row at all.
     expect(screen.queryByText("Passcode")).toBeNull();

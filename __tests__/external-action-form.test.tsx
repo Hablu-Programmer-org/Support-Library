@@ -44,7 +44,6 @@ function renderForm(
       action={action}
       fallbackLabel="Open Live support"
       fields={{ csrfToken: "csrf-token", issueId: "issue-id" }}
-      hint="Opens in a new tab"
       label="Join Live support"
       pendingLabel="Opening Live support…"
       {...overrides}
