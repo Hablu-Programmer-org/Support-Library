@@ -73,23 +73,29 @@ test.describe("access request administration", () => {
     await expect(openAiQueue.getByRole("button", { name: /Copy e2e\.lms\.student@test\.com/i })).toBeVisible();
     await expect(adminPage.locator('input[name="link"]')).toHaveCount(0);
 
-    // The queue is a compact list: the row shows the agent batch + history and
-    // keeps the send form collapsed until the admin opens it.
+    // The queue is a compact list: final actions are available directly without
+    // an intermediate Process control.
     await expect(openAiQueue.getByText("Batch 4", { exact: true })).toBeVisible();
     await expect(openAiQueue.getByText("First OpenAI request")).toBeVisible();
-    const processButton = openAiQueue.getByRole("button", { name: "Process" });
-    await expect(processButton).toHaveAttribute("aria-expanded", "false");
-    await processButton.click();
-    await expect(openAiQueue.getByRole("button", { name: "Confirm invite & email student" })).toBeVisible();
+    await expect(openAiQueue.getByRole("button", { name: "Process" })).toHaveCount(0);
+    const openAiConfirmation = openAiQueue.getByRole("checkbox", { name: "Added this exact email" });
+    const confirmButton = openAiQueue.getByRole("button", { name: "Confirm & email student" });
+    await expect(confirmButton).toBeDisabled();
+    await openAiQueue.getByText("Added this exact email", { exact: true }).click();
+    await expect(openAiConfirmation).toBeChecked();
+    await expect(confirmButton).toBeEnabled();
 
     // The n8n tab keeps both n8n request types and its own link form.
     await n8nTab.click();
     await expect(n8nTab).toHaveAttribute("aria-pressed", "true");
     const n8nQueue = adminPage.getByRole("region", { name: "n8n access & password reset" });
     await expect(n8nQueue.getByText("Admin created")).toHaveCount(1);
-    await expect(adminPage.locator('input[name="link"]')).toHaveCount(0);
-    await n8nQueue.getByRole("button", { name: "Process" }).click();
-    await expect(adminPage.locator('input[name="link"]')).toHaveCount(1);
+    const n8nLink = n8nQueue.getByLabel("n8n link");
+    const sendEmail = n8nQueue.getByRole("button", { name: "Send email" });
+    await expect(n8nLink).toBeVisible();
+    await expect(sendEmail).toBeDisabled();
+    await n8nLink.fill("https://n8n.hablu-programmer.com/invite/test");
+    await expect(sendEmail).toBeEnabled();
 
     // Email search is server-side and live: no submit button, and it survives a
     // refresh because the query lives in the URL.

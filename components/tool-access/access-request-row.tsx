@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
@@ -47,8 +45,8 @@ const STATUS_DOTS: Record<AccessRowRequest["statusTone"], string> = {
 };
 
 /**
- * One request as a single scannable line. The processing form is collapsed so a
- * long queue stays readable; opening it is a deliberate action per row.
+ * One request as a compact, scannable row. Actionable requests expose their
+ * final control directly, without an intermediate Process/Close interaction.
  */
 export function AccessRequestRow({
   request,
@@ -59,13 +57,12 @@ export function AccessRequestRow({
   csrfToken: string;
   requiresReauth: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const canProcess = request.actionable && request.agentEligible;
 
   return (
     <li className="px-3 py-3 sm:px-4">
-      <div className="flex flex-wrap items-start gap-x-3 gap-y-2 sm:flex-nowrap">
-        <div className="min-w-0 flex-1">
+      <div className="space-y-2">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1 sm:flex-nowrap">
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white">
               {request.studentName ?? "Unknown student"}
@@ -82,19 +79,35 @@ export function AccessRequestRow({
               </span>
             )}
           </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${STATUS_TONES[request.statusTone]}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${STATUS_DOTS[request.statusTone]}`}
+                aria-hidden
+              />
+              {request.statusLabel}
+            </span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              {request.dateLabel}
+            </span>
+          </div>
+        </div>
 
-          {request.email ? (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="truncate text-xs text-slate-600 dark:text-slate-300">
-                {request.email}
-              </span>
-              <CopyEmailButton email={request.email} className="px-2 py-1 text-[11px]" />
-            </div>
-          ) : (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Account unavailable</p>
-          )}
-
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+            {request.email ? (
+              <>
+                <span className="max-w-full truncate text-xs text-slate-600 dark:text-slate-300">
+                  {request.email}
+                </span>
+                <CopyEmailButton email={request.email} className="px-2 py-1 text-[11px]" />
+              </>
+            ) : (
+              <span className="text-xs">Account unavailable</span>
+            )}
+            <span aria-hidden>·</span>
             {request.batchLabel ? (
               <span className="font-medium text-slate-600 dark:text-slate-300">
                 {request.batchLabel}
@@ -106,59 +119,27 @@ export function AccessRequestRow({
             )}
             <span aria-hidden>·</span>
             <span>{request.historyLabel}</span>
-          </p>
-        </div>
+          </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:flex-col sm:items-end sm:gap-1.5">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${STATUS_TONES[request.statusTone]}`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${STATUS_DOTS[request.statusTone]}`}
-              aria-hidden
-            />
-            {request.statusLabel}
-          </span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            {request.dateLabel}
-          </span>
-          {request.actionable && (
-            <button
-              type="button"
-              onClick={() => setOpen((value) => !value)}
-              disabled={!canProcess}
-              aria-expanded={open}
-              aria-controls={`process-${request.id}`}
-              title={
-                canProcess
-                  ? undefined
-                  : "The student is not enrolled in the AI Agent course."
-              }
-              className="rounded-lg border border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
-            >
-              {open ? "Close" : "Process"}
-            </button>
+          {canProcess && (
+            <div className={`min-w-0 shrink-0 ${request.variant === "n8n" ? "lg:w-[42%]" : ""}`}>
+              {request.variant === "openai" ? (
+                <OpenAiConfirmForm
+                  requestId={request.id}
+                  csrfToken={csrfToken}
+                  requiresReauth={requiresReauth}
+                />
+              ) : (
+                <N8nSendForm
+                  requestId={request.id}
+                  csrfToken={csrfToken}
+                  requiresReauth={requiresReauth}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
-
-      {open && canProcess && (
-        <div id={`process-${request.id}`} className="mt-2">
-          {request.variant === "openai" ? (
-            <OpenAiConfirmForm
-              requestId={request.id}
-              csrfToken={csrfToken}
-              requiresReauth={requiresReauth}
-            />
-          ) : (
-            <N8nSendForm
-              requestId={request.id}
-              csrfToken={csrfToken}
-              requiresReauth={requiresReauth}
-            />
-          )}
-        </div>
-      )}
     </li>
   );
 }

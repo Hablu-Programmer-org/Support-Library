@@ -37,17 +37,33 @@ describe("AccessRequestRow", () => {
     expect(screen.getByRole("button", { name: /Copy ahmad@test\.com/i })).toBeTruthy();
   });
 
-  it("keeps the send form collapsed until Process is opened", () => {
+  it("shows the n8n action directly and gates send on a link", () => {
     render(<AccessRequestRow request={base} csrfToken="csrf" requiresReauth={false} />);
 
-    const process = screen.getByRole("button", { name: "Process" });
-    expect(process.getAttribute("aria-expanded")).toBe("false");
-    expect(document.querySelector('input[name="link"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Process" })).toBeNull();
+    const link = screen.getByLabelText("n8n link") as HTMLInputElement;
+    const send = screen.getByRole("button", { name: "Send email" }) as HTMLButtonElement;
+    expect(send.disabled).toBe(true);
+    fireEvent.change(link, { target: { value: "https://n8n.hablu-programmer.com/invite" } });
+    expect(send.disabled).toBe(false);
+  });
 
-    fireEvent.click(process);
+  it("makes the full OpenAI confirmation label clickable", () => {
+    render(
+      <AccessRequestRow
+        request={{ ...base, typeLabel: "OpenAI", variant: "openai" }}
+        csrfToken="csrf"
+        requiresReauth={false}
+      />,
+    );
 
-    expect(document.querySelector('input[name="link"]')).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Close" }).getAttribute("aria-expanded")).toBe("true");
+    const checkbox = screen.getByRole("checkbox", { name: "Added this exact email" }) as HTMLInputElement;
+    const confirm = screen.getByRole("button", { name: "Confirm & email student" }) as HTMLButtonElement;
+    expect(checkbox.checked).toBe(false);
+    expect(confirm.disabled).toBe(true);
+    fireEvent.click(screen.getByText("Added this exact email"));
+    expect(checkbox.checked).toBe(true);
+    expect(confirm.disabled).toBe(false);
   });
 
   it("blocks processing when the student is not in the agent course", () => {
@@ -60,7 +76,8 @@ describe("AccessRequestRow", () => {
     );
 
     expect(screen.getByText("Not enrolled in the AI Agent course")).toBeTruthy();
-    expect((screen.getByRole("button", { name: "Process" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "Process" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send email" })).toBeNull();
   });
 
   it("hides the action for rows that are already sent", () => {
@@ -72,6 +89,6 @@ describe("AccessRequestRow", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Process" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send email" })).toBeNull();
   });
 });

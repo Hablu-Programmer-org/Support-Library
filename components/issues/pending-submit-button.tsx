@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 import { cn } from "@/lib/cn";
@@ -10,18 +11,22 @@ export function PendingSubmitButton({
   pendingLabel,
   variant = "primary",
   className,
+  disabled = false,
+  leadingIcon,
 }: {
   label: string;
   pendingLabel: string;
   variant?: "primary" | "secondary";
   className?: string;
+  disabled?: boolean;
+  leadingIcon?: ReactNode;
 }) {
   const { pending } = useFormStatus();
 
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       className={cn(
         "inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
         variant === "primary"
@@ -31,6 +36,7 @@ export function PendingSubmitButton({
       )}
     >
       {pending && <Spinner />}
+      {!pending && leadingIcon}
       {pending ? pendingLabel : label}
     </button>
   );

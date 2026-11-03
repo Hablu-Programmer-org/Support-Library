@@ -1,5 +1,18 @@
 name: CI
 
+# CI shape (why it looks like this):
+#   quality  ─┐
+#             ├─ build ──┬─ e2e shard 1 ─┐
+#             │          └─ e2e shard 2 ─┼── verify (aggregate gate)
+#             └─────────── compose check ┘
+#
+# The application is built EXACTLY ONCE per commit, inside `build`. The tests,
+# the published image and the deployed container all consume that same tarball,
+# so "what CI tested" and "what production runs" cannot drift.
+#
+# The aggregate gate keeps the historical job name "Verify and production E2E"
+# so an existing required status check on `main` keeps matching.
+
 on:
   pull_request:
     branches: [main]
@@ -8,31 +21,33 @@ on:
 
 permissions:
   contents: read
+  # `gh run download` fetches this run's build artifact.
+  actions: read
 
 concurrency:
   group: support-library-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "24.21.0"
+  ARTIFACT_NAME: support-library-production-build
+
 jobs:
-  verify:
-    name: Verify and production E2E
+  quality:
+    name: Quality
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       CI: "true"
       MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
-      MONGODB_DB: support_library_ci_dev
-      MONGODB_TEST_DB: support_library_ci_e2e
+      MONGODB_DB: support_library_ci_quality
+      MONGODB_TEST_DB: support_library_ci_quality
       LMS_MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
-      LMS_MONGODB_DB: support_library_ci_e2e
-      E2E_ALLOW_DATABASE_RESET: "true"
+      LMS_MONGODB_DB: support_library_ci_quality
       AUTH_SECRET: CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026
       AUTH_TRUST_HOST: "true"
       AUTH_URL: http://127.0.0.1:12001
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:12001
-      # Inlined into the client bundle at build time, so it must be present in
-      # the job env (the "Clean production build" step) — setting it only in the
-      # Playwright webServer would be too late for the standalone output.
       NEXT_PUBLIC_LMS_URL: https://www.hablu-programmer.com
       AUTH_GOOGLE_ID: ci.invalid.apps.googleusercontent.com
       AUTH_GOOGLE_SECRET: ci-only-placeholder
@@ -43,35 +58,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: 24.21.0
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Start transaction-capable MongoDB
-        shell: bash
-        run: |
-          docker run --detach --name support-library-ci-mongo --publish 27017:27017 \
-            mongo:8.0.15-noble --replSet rs0 --bind_ip_all
-          for attempt in {1..30}; do
-            if docker exec support-library-ci-mongo mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1; then
-              break
-            fi
-            if [[ "$attempt" == 30 ]]; then
-              docker logs support-library-ci-mongo
-              exit 1
-            fi
-            sleep 2
-          done
-          docker exec support-library-ci-mongo mongosh --quiet --eval \
-            'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
-          for attempt in {1..30}; do
-            if docker exec support-library-ci-mongo mongosh --quiet --eval \
-              'if (!db.hello().isWritablePrimary) quit(1)' >/dev/null 2>&1; then
-              exit 0
-            fi
-            sleep 2
-          done
-          docker logs support-library-ci-mongo
-          exit 1
 
       - name: Install locked dependencies
         run: npm ci
@@ -88,21 +76,17 @@ jobs:
       - name: Production dependency audit
         shell: bash
         run: |
-          # An audit failure must mean "a high-severity production vulnerability",
-          # not "npm's advisory endpoint had a bad minute". The bulk advisory API
-          # does return 503s (and CI saw one), so retry transport errors with
-          # backoff while still failing fast on a real finding.
+          # A failure must mean "a high-severity production vulnerability",
+          # not "the advisory endpoint had a bad minute". Transport errors are
+          # retried with backoff; anything else fails the job.
           set -uo pipefail
-
           for attempt in 1 2 3 4 5; do
             output=$(npm audit --omit=dev --audit-level=high 2>&1)
             code=$?
             printf '%s\n' "$output"
-
             if [ "$code" -eq 0 ]; then
               exit 0
             fi
-
             if printf '%s' "$output" | grep -qiE \
               'service unavailable|audit endpoint returned an error|econnreset|etimedout|eai_again|network|socket hang up'; then
               delay=$((attempt * 15))
@@ -110,42 +94,13 @@ jobs:
               sleep "$delay"
               continue
             fi
-
-            # Anything else (vulnerabilities found, malformed lockfile, ...) is a
-            # real result and must fail the job.
             exit "$code"
           done
-
           echo "::error::npm audit could not reach the advisory database after 5 attempts"
           exit 1
 
-      - name: Apply and verify database indexes
-        env:
-          MONGODB_DB: support_library_ci_e2e
-        run: |
-          npm run db:indexes
-          npm run db:indexes -- --apply --create-only
-          npm run db:indexes -- --verify
-
-      - name: Clean production build and assert standalone output
-        run: |
-          rm -rf .next
-          npm run build
-          test -f .next/standalone/server.js
-          test -d .next/static
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Production E2E
-        shell: bash
-        run: |
-          config=playwright.12001.config.ts
-          if [[ -f playwright.ci.config.ts ]]; then
-            config=playwright.ci.config.ts
-          fi
-          npx playwright test --config="$config"
-
+      # Compose validation needs Docker only (no Node, no database), so it rides
+      # along here instead of paying for its own runner.
       - name: Create Compose validation environment
         shell: bash
         run: |
@@ -181,55 +136,274 @@ jobs:
           docker compose -f compose.example.yml -f compose.traefik.yml config --quiet
           docker compose -f compose.production.yml config --quiet
 
-      - name: Build and smoke-test runtime container
+  build:
+    name: Production Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      # Baked into the bundle as next.config's deploymentId.
+      DEPLOYMENT_VERSION: ${{ github.sha }}
+      # Non-secret placeholders: the previous single-job CI exported these to the
+      # build as well, and nothing here opens a real connection.
+      MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      MONGODB_DB: support_library_ci_build
+      MONGODB_TEST_DB: support_library_ci_build
+      LMS_MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      LMS_MONGODB_DB: support_library_ci_build
+      # Inlined into the client bundle at build time.
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:12001
+      NEXT_PUBLIC_LMS_URL: https://www.hablu-programmer.com
+      NEXT_TELEMETRY_DISABLED: "1"
+      LIVE_SUPPORT_PLATFORM: Google Meet
+      LIVE_SUPPORT_JOIN_URL: https://meet.google.com/abc-defg-hij
+      LIVE_SUPPORT_MEETING_ID: abc-defg-hij
+      AUTH_SECRET: CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://127.0.0.1:12001
+      AUTH_GOOGLE_ID: ci.invalid.apps.googleusercontent.com
+      AUTH_GOOGLE_SECRET: ci-only-placeholder
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Clean production build and assert standalone output
+        run: |
+          rm -rf .next
+          npm run build
+          test -f .next/standalone/server.js
+          test -d .next/static
+          test -d public
+
+      # One tarball carries hidden paths (`standalone/.next/**`) that
+      # upload-artifact would drop if the directory were uploaded directly.
+      - name: Package the tested build
         shell: bash
         run: |
-          docker build --target runner --build-arg DEPLOYMENT_VERSION="$GITHUB_SHA" --tag support-library-ci:"$GITHUB_SHA" .
-          container_id=$(docker run --detach --rm --publish 127.0.0.1:12002:12000 \
-            --env NODE_ENV=production \
-            --env MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
-            --env MONGODB_DB=support_library_ci_smoke \
-            --env LMS_MONGODB_URI='mongodb://127.0.0.1:27017/?replicaSet=rs0' \
-            --env LMS_MONGODB_DB=hp-v2 \
-            --env AUTH_SECRET='CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026' \
-            --env AUTH_TRUST_HOST=true \
-            --env AUTH_URL='http://127.0.0.1:12001' \
-            --env AUTH_GOOGLE_ID=ci.invalid.apps.googleusercontent.com \
-            --env AUTH_GOOGLE_SECRET=ci-only-placeholder \
-            --env TRUSTED_PROXY_HOPS=1 \
-            --env NEXT_PUBLIC_LMS_URL='https://lms.example.com' \
-            --env LIVE_SUPPORT_PLATFORM='Google Meet' \
-            --env LIVE_SUPPORT_JOIN_URL='https://meet.google.com/abc-defg-hij' \
-            --env N8N_ALLOWED_LINK_HOSTS='n8n.hablu-programmer.com' \
-            --env SMTP_HOST='smtp.invalid' \
-            --env SMTP_MAIL='ci@hablu-programmer.com' \
-            --env SMTP_PASSWORD='ci-placeholder' \
-            --env LIVE_SUPPORT_MEETING_ID='abc-defg-hij' \
-            --env STUDENT_EMAIL_KEY_VERSION=v1 \
-            --env STUDENT_EMAIL_ENCRYPTION_KEYS='v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=' \
-            --env STUDENT_EMAIL_LOOKUP_KEYS='v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=' \
-            support-library-ci:"$GITHUB_SHA")
-          trap 'docker stop "$container_id" >/dev/null 2>&1 || true' EXIT
+          set -euo pipefail
+          rm -rf release-artifact
+          mkdir -p release-artifact/.next
+          cp -a .next/standalone release-artifact/.next/standalone
+          cp -a .next/static release-artifact/.next/static
+          cp -a public release-artifact/public
+          cp package.json release-artifact/package.json
+
+          cat > release-artifact/artifact-manifest.json <<EOF
+          {
+            "commitSha": "${GITHUB_SHA}",
+            "packageVersion": "$(node -p "require('./package.json').version")",
+            "nodeVersion": "${NODE_VERSION}",
+            "deploymentVersion": "${DEPLOYMENT_VERSION}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunAttempt": "${GITHUB_RUN_ATTEMPT}"
+          }
+          EOF
+
+          cd release-artifact
+          find .next public package.json artifact-manifest.json -type f -print0 \
+            | sort -z | xargs -0 sha256sum > SHA256SUMS
+          tar -czf ../production-build.tar.gz \
+            .next public package.json artifact-manifest.json SHA256SUMS
+
+      - name: Upload tested production build
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: production-build.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  e2e:
+    name: Production E2E (shard ${{ matrix.shard }}/2)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    env:
+      CI: "true"
+      GH_TOKEN: ${{ github.token }}
+      MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      # Each shard owns its own database so the two never see each other's rows.
+      MONGODB_DB: support_library_ci_e2e_${{ matrix.shard }}
+      MONGODB_TEST_DB: support_library_ci_e2e_${{ matrix.shard }}
+      MONGODB_DEV_DB: support_library_ci_e2e_${{ matrix.shard }}_dev
+      LMS_MONGODB_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      LMS_MONGODB_DB: support_library_ci_e2e_${{ matrix.shard }}
+      E2E_ALLOW_DATABASE_RESET: "true"
+      AUTH_SECRET: CI-only_A7f3kP9xQ2mN8vR5tY1wL6sD4hJ0cB!2026
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://127.0.0.1:12001
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:12001
+      NEXT_PUBLIC_LMS_URL: https://www.hablu-programmer.com
+      AUTH_GOOGLE_ID: ci.invalid.apps.googleusercontent.com
+      AUTH_GOOGLE_SECRET: ci-only-placeholder
+      LIVE_SUPPORT_PLATFORM: Google Meet
+      LIVE_SUPPORT_JOIN_URL: https://meet.google.com/abc-defg-hij
+      LIVE_SUPPORT_MEETING_ID: abc-defg-hij
+      SHARD: ${{ matrix.shard }}
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Start transaction-capable MongoDB
+        shell: bash
+        run: |
+          name="support-library-ci-mongo-${SHARD}"
+          docker run --detach --name "$name" --publish 27017:27017 \
+            mongo:8.0.15-noble --replSet rs0 --bind_ip_all
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:12002/api/health/live >/dev/null; then
-              exit 0
+            if docker exec "$name" mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' >/dev/null 2>&1; then
+              break
             fi
-            if ! docker inspect "$container_id" >/dev/null 2>&1; then
-              echo "Runtime container exited before becoming live"
+            if [[ "$attempt" == 30 ]]; then
+              docker logs "$name"
               exit 1
             fi
             sleep 2
           done
-          docker logs "$container_id"
+          docker exec "$name" mongosh --quiet --eval \
+            'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+          for attempt in {1..30}; do
+            if docker exec "$name" mongosh --quiet --eval \
+              'if (!db.hello().isWritablePrimary) quit(1)' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs "$name"
           exit 1
 
-      - name: Upload Playwright diagnostics
-        if: failure()
+      # Index drift is a release gate, so it runs on exactly one shard against
+      # the database that shard is about to use (create-only, then verify).
+      - name: Apply and verify database indexes
+        if: matrix.shard == 1
+        run: |
+          npm run db:indexes
+          npm run db:indexes -- --apply --create-only
+          npm run db:indexes -- --verify
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Download tested production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ci-build
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name "$ARTIFACT_NAME" --dir ci-build
+          test -f ci-build/production-build.tar.gz
+
+      - name: Verify and unpack tested build
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .next slice
+          mkdir -p slice
+          tar -xzf ci-build/production-build.tar.gz -C slice
+          (
+            cd slice
+            sha256sum --check SHA256SUMS
+          )
+
+          # The build must belong to this exact commit.
+          node -e '
+            const m = require("./slice/artifact-manifest.json");
+            const want = process.env.GITHUB_SHA;
+            if (m.commitSha !== want) {
+              console.error(`Artifact commit ${m.commitSha} != ${want}`);
+              process.exit(1);
+            }
+            if (m.nodeVersion !== process.env.NODE_VERSION) {
+              console.error(`Artifact node ${m.nodeVersion} != ${process.env.NODE_VERSION}`);
+              process.exit(1);
+            }
+          '
+
+          rm -rf .next public
+          mv slice/.next .next
+          mv slice/public public
+          cp slice/package.json package.json
+          rm -rf slice
+
+          test -f .next/standalone/server.js
+          test -d .next/static
+          test -d public
+
+      - name: Production E2E
+        shell: bash
+        run: |
+          npx playwright test --config=playwright.12001.config.ts --shard="${SHARD}/2"
+
+      - name: Upload Playwright report
+        if: always()
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
         with:
-          name: playwright-diagnostics-${{ github.run_id }}
+          name: playwright-report-shard-${{ matrix.shard }}
           path: |
             playwright-report/
             test-results/
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Stop MongoDB
+        if: always()
+        shell: bash
+        run: docker rm -f "support-library-ci-mongo-${SHARD}" || true
+
+  verify:
+    name: Verify and production E2E
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs:
+      - quality
+      - build
+      - e2e
+    # Runs even when a dependency failed or was cancelled, so this job always
+    # publishes a result; it then fails loudly instead of being skipped (a
+    # skipped required check would look ambiguous in the Actions UI).
+    if: always()
+    steps:
+      - name: Aggregate the required results
+        env:
+          QUALITY: ${{ needs.quality.result }}
+          BUILD: ${{ needs.build.result }}
+          E2E: ${{ needs.e2e.result }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          failed=0
+          for pair in "quality:${QUALITY}" "build:${BUILD}" "e2e:${E2E}"; do
+            name="${pair%%:*}"
+            result="${pair#*:}"
+            echo "${name} => ${result}"
+            if [ "${result}" != "success" ]; then
+              echo "::error::${name} finished as '${result}'"
+              failed=1
+            fi
+          done
+          if [ "${failed}" -ne 0 ]; then
+            exit 1
+          fi
+          echo "All required checks passed."

@@ -1,5 +1,9 @@
 name: Publish GHCR image
 
+# Packages the exact tarball CI already built and tested. This workflow never
+# runs `next build` and never runs `npm ci` for the application image, so the
+# published artifact is byte-for-byte what the E2E suite exercised.
+
 on:
   workflow_run:
     workflows: [CI]
@@ -13,22 +17,26 @@ on:
         type: string
 
 permissions:
-  actions: read
   contents: read
+  actions: read
   packages: write
 
 concurrency:
   group: support-library-publish-${{ github.event.workflow_run.head_sha || inputs.sha }}
   cancel-in-progress: false
 
+env:
+  NODE_VERSION: "24.21.0"
+  ARTIFACT_NAME: support-library-production-build
+
 jobs:
   publish:
     name: Build and publish immutable images
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
-      - name: Resolve and validate release revision
+      - name: Resolve the trusted release revision
         id: release
         shell: bash
         env:
@@ -38,9 +46,9 @@ jobs:
           INPUT_SHA: ${{ inputs.sha }}
         run: |
           set -euo pipefail
-          sha="$WORKFLOW_SHA"
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            sha="$INPUT_SHA"
+          sha="${WORKFLOW_SHA}"
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            sha="${INPUT_SHA}"
           fi
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "A full lowercase commit SHA is required"; exit 1; }
 
@@ -51,21 +59,103 @@ jobs:
             exit 1
           }
 
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            successful_ci=$(gh api --paginate \
-              "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=100" \
-              --jq ".workflow_runs[] | select(.head_sha == \"$sha\") | .id" | head -n 1)
-            [[ -n "$successful_ci" ]] || { echo "No successful CI run exists for $sha"; exit 1; }
-          fi
+          version=$(gh api "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$sha" --jq .content \
+            | base64 --decode | jq -r .version)
 
-          package_content=$(gh api "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$sha" --jq .content)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "version=$(printf '%s' "$package_content" | base64 --decode | jq -r .version)" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Resolve the successful CI run for this commit
+        id: ci
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          run_id=""
+          if [ "${EVENT_NAME}" = "workflow_run" ]; then
+            run_id="${EVENT_RUN_ID}"
+          else
+            run_id=$(gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=100" \
+              --jq ".workflow_runs[] | select(.head_sha == \"$SHA\") | .id" | head -n 1)
+          fi
+          [[ "$run_id" =~ ^[0-9]+$ ]] || { echo "No CI run id resolved"; exit 1; }
+
+          # Defence in depth: the run we are about to trust must itself be a
+          # successful ci.yml run on main for this exact commit.
+          meta=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id")
+          run_sha=$(printf '%s' "$meta" | jq -r .head_sha)
+          run_branch=$(printf '%s' "$meta" | jq -r .head_branch)
+          run_path=$(printf '%s' "$meta" | jq -r .path)
+          run_conclusion=$(printf '%s' "$meta" | jq -r .conclusion)
+
+          echo "ci run ${run_id}: sha=${run_sha} branch=${run_branch} path=${run_path} conclusion=${run_conclusion}"
+
+          [[ "$run_sha" == "$SHA" ]] || { echo "CI run head_sha does not match the release SHA"; exit 1; }
+          [[ "$run_branch" == "main" ]] || { echo "CI run is not from main"; exit 1; }
+          [[ "$run_path" == ".github/workflows/ci.yml" ]] || { echo "CI run is not ci.yml"; exit 1; }
+          [[ "$run_conclusion" == "success" ]] || { echo "CI run did not succeed"; exit 1; }
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      # Checkout must happen BEFORE the artifact is downloaded: `actions/checkout`
+      # runs `git clean -ffdx` by default, which would delete the downloaded
+      # build and the assembled runtime context.
       - name: Check out exact revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ steps.release.outputs.sha }}
+
+      - name: Download the tested production build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf ci-build
+          gh run download "${{ steps.ci.outputs.run_id }}" --repo "$GITHUB_REPOSITORY" \
+            --name "$ARTIFACT_NAME" --dir ci-build
+          test -f ci-build/production-build.tar.gz
+
+      - name: Verify and unpack the tested build
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          rm -rf release-context
+          mkdir -p release-context
+          tar -xzf ci-build/production-build.tar.gz -C release-context
+
+          (
+            cd release-context
+            sha256sum --check SHA256SUMS
+          )
+
+          node -e '
+            const m = require("./release-context/artifact-manifest.json");
+            const want = process.env.RELEASE_SHA;
+            if (m.commitSha !== want) {
+              console.error(`Artifact commit ${m.commitSha} != ${want}`);
+              process.exit(1);
+            }
+            if (m.nodeVersion !== process.env.NODE_VERSION) {
+              console.error(`Artifact node ${m.nodeVersion} != ${process.env.NODE_VERSION}`);
+              process.exit(1);
+            }
+            if (m.deploymentVersion !== want) {
+              console.error(`Artifact deployment ${m.deploymentVersion} != ${want}`);
+              process.exit(1);
+            }
+          '
+
+          test -f release-context/.next/standalone/server.js
+          test -d release-context/.next/static
+          test -d release-context/public
 
       - name: Log in to GHCR
         shell: bash
@@ -73,7 +163,39 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
 
-      - name: Build, smoke-test, and publish exact-SHA images
+      # The runtime image only copies files: no npm, no Next build. That is what
+      # makes the published image identical to the tested tarball.
+      - name: Assemble runtime image context
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > release-context/runtime.Dockerfile <<'DOCKERFILE'
+          FROM node:24.21.0-bookworm-slim
+
+          WORKDIR /app
+          ENV NODE_ENV=production \
+              NEXT_TELEMETRY_DISABLED=1 \
+              HOSTNAME=0.0.0.0 \
+              PORT=12000
+
+          ARG DEPLOYMENT_VERSION
+          ENV DEPLOYMENT_VERSION=${DEPLOYMENT_VERSION}
+
+          COPY --chown=node:node .next/standalone/ ./
+          COPY --chown=node:node .next/static/ ./.next/static/
+          COPY --chown=node:node public/ ./public/
+
+          USER node
+          EXPOSE 12000
+
+          HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+            CMD ["node", "-e", "fetch('http://127.0.0.1:12000/api/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+
+          CMD ["node", "server.js"]
+          DOCKERFILE
+          printf '%s\n' 'runtime.Dockerfile' '.dockerignore' 'SHA256SUMS' > release-context/.dockerignore
+
+      - name: Build, smoke-test and publish
         id: images
         shell: bash
         env:
@@ -84,8 +206,19 @@ jobs:
           app_tag="ghcr.io/$repository:sha-$RELEASE_SHA"
           ops_tag="ghcr.io/$repository-ops:sha-$RELEASE_SHA"
 
-          docker build --pull --target runner --build-arg DEPLOYMENT_VERSION="$RELEASE_SHA" --tag "$app_tag" .
+          docker build \
+            --file release-context/runtime.Dockerfile \
+            --build-arg DEPLOYMENT_VERSION="$RELEASE_SHA" \
+            --tag "$app_tag" \
+            release-context
+
           docker build --pull --target ops --tag "$ops_tag" .
+
+          # The health endpoint hides the revision in production by design, so
+          # the revision is asserted from the image config instead.
+          docker image inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$app_tag" \
+            | grep -qx "DEPLOYMENT_VERSION=$RELEASE_SHA" \
+            || { echo "runtime image is missing DEPLOYMENT_VERSION=$RELEASE_SHA"; exit 1; }
 
           container_id=$(docker run --detach --rm --publish 127.0.0.1:12002:12000 \
             --env NODE_ENV=production \
@@ -115,6 +248,10 @@ jobs:
             if curl --fail --silent http://127.0.0.1:12002/api/health/live >/dev/null; then
               break
             fi
+            if ! docker inspect "$container_id" >/dev/null 2>&1; then
+              echo "Runtime container exited before becoming live"
+              exit 1
+            fi
             [[ "$attempt" != 30 ]] || { docker logs "$container_id"; exit 1; }
             sleep 2
           done
@@ -123,10 +260,11 @@ jobs:
 
           docker push "$app_tag"
           docker push "$ops_tag"
+
           app_digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$app_tag")
           ops_digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$ops_tag")
-          [[ "$app_digest" =~ @sha256:[0-9a-f]{64}$ ]]
-          [[ "$ops_digest" =~ @sha256:[0-9a-f]{64}$ ]]
+          [[ "$app_digest" =~ ^ghcr\.io/.+@sha256:[0-9a-f]{64}$ ]] || { echo "bad app digest: $app_digest"; exit 1; }
+          [[ "$ops_digest" =~ ^ghcr\.io/.+@sha256:[0-9a-f]{64}$ ]] || { echo "bad ops digest: $ops_digest"; exit 1; }
 
           printf '%s\n' \
             "RELEASE_SHA=$RELEASE_SHA" \
