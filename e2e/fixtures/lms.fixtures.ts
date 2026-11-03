@@ -38,4 +38,21 @@ setup("seed hp-v2 style user for LMS lookups", async () => {
     },
     { upsert: true },
   );
+
+  // AI-tools access (n8n / OpenAI) is restricted to the `agent` course, so the
+  // fixture student needs that enrolment as well as the issue-form one.
+  const lmsUser = await client
+    .db(dbName)
+    .collection("User")
+    .findOne({ email: LMS_FIXTURE_USER.email }, { projection: { _id: 1 } });
+  if (!lmsUser?._id) throw new Error("LMS fixture user missing after upsert");
+
+  await client.db(dbName).collection("EnrolledCourse").updateOne(
+    { userId: lmsUser._id, courseSlug: "agent" },
+    {
+      $set: { batchNo: 4, status: "running", email: LMS_FIXTURE_USER.email },
+      $setOnInsert: { _id: new mongoose.Types.ObjectId() },
+    },
+    { upsert: true },
+  );
 });

@@ -9,9 +9,10 @@ import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
-import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "@/lib/reply-state";
+import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION, isEffectiveStaffReply } from "@/lib/reply-state";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
+import { buildOwnIssueFilter } from "@/lib/issue-ownership";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
@@ -21,9 +22,10 @@ export type SupportReplyListItem = {
   issueId: string;
   authorId: string;
   authorName?: string;
+  isStaffReply: boolean;
   body: string;
   videoLinks: Array<{ title: string; url: string; timestamp?: string | null; summary?: string | null }>;
-  uploads: AttachmentView[];
+  uploads: Array<Omit<AttachmentView, "uploadedBy">>;
   createdAt?: Date;
   updatedAt?: Date;
   editedAt?: Date | null;
@@ -33,14 +35,24 @@ const toReplyListItem = (reply: LeanDoc, authors: Map<string, LeanDoc> = new Map
   const authorId = String(reply.authorId);
   const author = authors.get(authorId);
 
+  const uploads = toAttachmentViews(reply.uploads).map((upload) => ({
+    id: upload.id,
+    originalName: upload.originalName,
+    mimeType: upload.mimeType,
+    byteSize: upload.byteSize,
+    width: upload.width,
+    height: upload.height,
+    createdAt: upload.createdAt,
+  }));
   return {
     id: String(reply._id),
     issueId: String(reply.issueId),
     authorId,
     authorName: author?.name as string | undefined,
+    isStaffReply: isEffectiveStaffReply(reply, (author as { role?: string | null } | undefined)?.role),
     body: String(reply.body),
     videoLinks: Array.isArray(reply.videoLinks) ? reply.videoLinks as SupportReplyListItem["videoLinks"] : [],
-    uploads: toAttachmentViews(reply.uploads),
+    uploads,
     createdAt: reply.createdAt as Date | undefined,
     updatedAt: reply.updatedAt as Date | undefined,
     editedAt: reply.editedAt as Date | null | undefined,
@@ -51,7 +63,7 @@ async function buildAuthorMap(replies: LeanDoc[]) {
   const ids = [...new Set(replies.map((reply) => String(reply.authorId)).filter(Boolean))];
   if (!ids.length) return new Map<string, LeanDoc>();
 
-  const authors = await UserModel.find({ _id: { $in: ids } }).select("name").lean();
+  const authors = await UserModel.find({ _id: { $in: ids } }).select("name role").lean();
   return new Map(authors.map((author) => [String(author._id), author as LeanDoc]));
 }
 
@@ -90,7 +102,7 @@ async function refreshIssueReplySearchText(issueId: string, session: ClientSessi
             tags: supportIssue.tags,
           },
           replies.map((reply) => reply.body),
-        ),
+        ).slice(0, 100000),
       },
     },
   ).session(session);
@@ -159,6 +171,163 @@ function isDuplicateKeyError(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
+export async function addStudentReply(
+  input: SupportReplyInput,
+  studentId: string,
+  operationId: string,
+  uploads: IngestedUpload[] = [],
+) {
+  const parsed = supportReplyInputSchema.parse(input);
+  const parsedOperationId = operationIdSchema.parse(operationId);
+  const requestHash = mutationRequestHash({ input: parsed });
+  await dbConnect();
+  const studentObjectId = new mongoose.Types.ObjectId(studentId);
+
+  let existing: LeanDoc | null = null;
+  try {
+    existing = await SupportReplyModel.findOne({
+      authorId: studentObjectId,
+      createOperationId: parsedOperationId,
+    }).lean();
+  } catch (error) {
+    await discardUploads(uploads);
+    throw error;
+  }
+  if (existing) {
+    await settleReplayedUploads(uploads, existing.createOperationHash as string | null, requestHash, existing.uploads);
+    return toReplyListItem(existing);
+  }
+
+  let reply: SupportReplyListItem | null;
+  try {
+    reply = await mongoose.connection.transaction(async (session) => {
+      const supportIssue = await SupportIssueModel.findOne({
+        _id: new mongoose.Types.ObjectId(parsed.issueId),
+        ...buildOwnIssueFilter(studentId),
+        status: { $ne: "ARCHIVED" },
+      })
+        .select("_id status visibility")
+        .session(session)
+        .lean();
+      if (!supportIssue) return null;
+
+      const studentReplyCount = await SupportReplyModel.countDocuments({
+        issueId: new mongoose.Types.ObjectId(parsed.issueId),
+        authorId: studentObjectId,
+        isStaffReply: false,
+        deletedAt: null,
+      }).session(session);
+      if (studentReplyCount >= 25) return null;
+
+      const staffReplyExists = await SupportReplyModel.exists({
+        issueId: new mongoose.Types.ObjectId(parsed.issueId),
+        deletedAt: null,
+        isStaffReply: true,
+      }).session(session);
+      let staffReplyFound = Boolean(staffReplyExists);
+      if (!staffReplyFound) {
+        const fallbackStaffReply = await SupportReplyModel.aggregate([
+          { $match: { issueId: new mongoose.Types.ObjectId(parsed.issueId), deletedAt: null } },
+          { $lookup: { from: "staff-users", localField: "authorId", foreignField: "_id", as: "author" } },
+          { $set: { effectiveStaff: EFFECTIVE_STAFF_REPLY_EXPRESSION } },
+          { $match: { effectiveStaff: true } },
+          { $limit: 1 },
+        ]).session(session);
+        staffReplyFound = fallbackStaffReply.length > 0;
+      }
+      if (!staffReplyFound) return null;
+
+      const [createdReply] = await SupportReplyModel.create([{
+        ...parsed,
+        uploads,
+        authorId: studentObjectId,
+        isStaffReply: false,
+        createOperationId: parsedOperationId,
+        createOperationHash: requestHash,
+      }], { session });
+
+      const nextStatus = supportIssue.status === "SOLVED" ? "FOLLOW_UP" : supportIssue.status;
+      // Preserve the latest staff reply timestamp while marking this as waiting.
+      const currentIssue = await SupportIssueModel.findById(parsed.issueId)
+        .select("lastStaffReplyAt")
+        .session(session)
+        .lean();
+      const derivedState = deriveIssueReplyState(
+        currentIssue?.lastStaffReplyAt ?? null,
+        new Date(),
+      );
+      const updateResult = await SupportIssueModel.updateOne(
+        { _id: parsed.issueId, createdBy: studentObjectId, deletedAt: null, status: { $ne: "ARCHIVED" } },
+        {
+          $set: {
+            status: nextStatus,
+            updatedBy: studentObjectId,
+            visibility: "INTERNAL",
+            publishedAt: null,
+            publishedBy: null,
+            lastStudentReplyAt: derivedState.lastStudentReplyAt,
+            awaitingStaff: derivedState.awaitingStaff,
+            lastStaffReplyAt: derivedState.lastStaffReplyAt,
+          },
+          $push: {
+            publicationHistory: {
+              $each: [
+                {
+                  action: "PUBLIC_REPLY_CHANGED",
+                  actorId: studentObjectId,
+                  at: new Date(),
+                },
+              ],
+              $slice: -50,
+            },
+          },
+        },
+        { session },
+      );
+      if (updateResult.matchedCount !== 1) throw new Error("Student reply issue update did not match");
+
+      await refreshIssueReplySearchText(parsed.issueId, session);
+      await refreshIssueReplyState(parsed.issueId, session);
+      const context = await getRequestContext();
+      for (const upload of uploads) {
+        await recordAuditEvent({
+          actorId: studentId,
+          action: "ATTACHMENT_UPLOAD",
+          resourceType: "SupportAttachment",
+          resourceId: upload._id,
+          result: "SUCCEEDED",
+        }, context, session);
+      }
+      await recordAuditEvent({
+        actorId: studentId,
+        action: "REPLY_CREATE",
+        resourceType: "SupportReply",
+        resourceId: String(createdReply._id),
+        result: "SUCCEEDED",
+      }, context, session);
+      return toReplyListItem(createdReply.toObject());
+    });
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      await discardUploads(uploads);
+      throw error;
+    }
+    const duplicate = await SupportReplyModel.findOne({
+      authorId: studentObjectId,
+      createOperationId: parsedOperationId,
+    }).lean();
+    if (!duplicate) {
+      await discardUploads(uploads);
+      throw error;
+    }
+    await settleReplayedUploads(uploads, duplicate.createOperationHash, requestHash, duplicate.uploads);
+    return toReplyListItem(duplicate);
+  }
+
+  if (!reply) await discardUploads(uploads);
+  return reply;
+}
+
 export async function addReply(
   input: SupportReplyInput,
   authorId: string,
@@ -179,7 +348,7 @@ export async function addReply(
     createOperationId: parsedOperationId,
   }).lean();
   if (existing) {
-    await settleReplayedUploads(uploads, existing.createOperationHash, requestHash, existing.uploads);
+    await settleReplayedUploads(uploads, existing.createOperationHash as string | null, requestHash, existing.uploads);
     return toReplyListItem(existing);
   }
 
@@ -242,22 +411,37 @@ export async function addReply(
   return reply;
 }
 
-export async function listReplies(issueId: string, redactActorIds = false) {
+export type ListRepliesOptions = {
+  viewerId?: string;
+  redactActorIds?: boolean;
+};
+
+export async function listReplies(issueId: string, options?: ListRepliesOptions) {
+  const viewerId = options?.viewerId;
+  const redactActorIds = options?.redactActorIds ?? false;
   if (!mongoose.Types.ObjectId.isValid(issueId)) return [];
   await dbConnect();
 
   const filter: Record<string, unknown> = { issueId, deletedAt: null };
 
-  const replies = await SupportReplyModel.find(filter).sort({ createdAt: 1 }).lean();
+  const replies = await SupportReplyModel.find(filter).sort({ createdAt: 1, _id: 1 }).lean();
   const authors = await buildAuthorMap(replies as LeanDoc[]);
   return (replies as LeanDoc[]).map((reply) => {
     const mapped = toReplyListItem(reply, authors);
-    // The public projection strips uploads entirely: the bytes are staff-only by
-    // policy, and even the id and original filename would leak — filenames
-    // routinely contain a person's name, which is exactly what this app is
-    // careful never to expose to a student.
-    return redactActorIds ? { ...mapped, authorId: "", uploads: [] } : mapped;
-  });
+    // The public projection strips staff uploads entirely, while preserving
+    // the owner's own uploaded images so a follow-up remains usable.
+    if (!redactActorIds) return mapped;
+    const isOwnReply = Boolean(viewerId && String(reply.authorId) === viewerId);
+    // A redacted student view must never expose another student's reply body,
+    // links, metadata or attachments. Only effective staff replies and the
+    // viewer's own replies survive the projection.
+    if (!mapped.isStaffReply && !isOwnReply) return null;
+    return {
+      ...mapped,
+      authorId: "",
+      uploads: mapped.isStaffReply || !isOwnReply ? [] : mapped.uploads,
+    };
+  }).filter((reply): reply is SupportReplyListItem => reply !== null);
 }
 
 /**

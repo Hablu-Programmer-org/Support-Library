@@ -16,6 +16,7 @@ export type RateLimitScope =
   | "issue.publish"
   | "issue.unpublish"
   | "reply.add"
+  | "reply.add.student"
   | "reply.edit"
   | "reply.delete"
   | "attachment.upload"
@@ -41,6 +42,7 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "issue.publish": { limit: 20, windowMs: 60_000 },
   "issue.unpublish": { limit: 20, windowMs: 60_000 },
   "reply.add": { limit: 30, windowMs: 60_000 },
+  "reply.add.student": { limit: 10, windowMs: 10 * 60_000 },
   "reply.edit": { limit: 30, windowMs: 60_000 },
   "reply.delete": { limit: 30, windowMs: 60_000 },
   // Uploads are heavier than any other mutation, so they get a tighter budget.
@@ -55,7 +57,7 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "live-support.join": { limit: 10, windowMs: 10 * 60_000 },
   "n8n.request.create": { limit: 3, windowMs: 60 * 60_000 },
   "n8n.request.create.admin": { limit: 30, windowMs: 60_000 },
-  "n8n.email.send": { limit: 10, windowMs: 10 * 60_000 },
+  "n8n.email.send": { limit: 60, windowMs: 10 * 60_000 },
   "issues.activity": { limit: 120, windowMs: 60_000 },
   // The student list and an open request both probe this every 10s while the
   // tab is visible, so the budget is the same shape as the staff one.

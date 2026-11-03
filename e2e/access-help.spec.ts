@@ -71,14 +71,24 @@ test.describe("access request administration", () => {
     await expect(n8nTab).toContainText("1 pending");
     await expect(openAiQueue.getByText("Admin created")).toHaveCount(1);
     await expect(openAiQueue.getByRole("button", { name: /Copy e2e\.lms\.student@test\.com/i })).toBeVisible();
-    await expect(openAiQueue.getByRole("button", { name: "Confirm invite & email student" })).toBeVisible();
     await expect(adminPage.locator('input[name="link"]')).toHaveCount(0);
 
-    // The n8n tab keeps both n8n request types and the link form.
+    // The queue is a compact list: the row shows the agent batch + history and
+    // keeps the send form collapsed until the admin opens it.
+    await expect(openAiQueue.getByText("Batch 4", { exact: true })).toBeVisible();
+    await expect(openAiQueue.getByText("First OpenAI request")).toBeVisible();
+    const processButton = openAiQueue.getByRole("button", { name: "Process" });
+    await expect(processButton).toHaveAttribute("aria-expanded", "false");
+    await processButton.click();
+    await expect(openAiQueue.getByRole("button", { name: "Confirm invite & email student" })).toBeVisible();
+
+    // The n8n tab keeps both n8n request types and its own link form.
     await n8nTab.click();
     await expect(n8nTab).toHaveAttribute("aria-pressed", "true");
     const n8nQueue = adminPage.getByRole("region", { name: "n8n access & password reset" });
     await expect(n8nQueue.getByText("Admin created")).toHaveCount(1);
+    await expect(adminPage.locator('input[name="link"]')).toHaveCount(0);
+    await n8nQueue.getByRole("button", { name: "Process" }).click();
     await expect(adminPage.locator('input[name="link"]')).toHaveCount(1);
 
     // Email search is server-side and live: no submit button, and it survives a

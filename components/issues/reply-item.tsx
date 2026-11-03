@@ -28,6 +28,7 @@ export function ReplyItem({
   canEdit,
   csrfToken = "",
   variant = "response",
+  authorLabel,
 }: {
   issueId: string;
   reply: SupportReplyListItem;
@@ -35,6 +36,7 @@ export function ReplyItem({
   csrfToken?: string;
   /** `solution` is the answer the team stands behind; `response` is follow-up chatter. */
   variant?: "solution" | "response";
+  authorLabel?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [editState, editFormAction, editPending] = useActionState(
@@ -66,7 +68,7 @@ export function ReplyItem({
       <header className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-500 dark:text-slate-400">
           <span className="font-medium text-slate-700 dark:text-slate-200">
-            {reply.authorName ?? "Staff"}
+            {authorLabel ?? (reply.isStaffReply ? "Staff" : reply.authorName ?? "You")}
           </span>
           {reply.createdAt ? (
             <>

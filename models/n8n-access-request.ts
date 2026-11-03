@@ -17,6 +17,12 @@ const n8nAccessRequestSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null, index: true },
     failureCode: { type: String, default: null, maxlength: 40 },
     purpose: { type: String, trim: true, maxlength: 300, default: null },
+    // Snapshot of the fixed-course context. `agent` is the only course whose
+    // students may receive n8n/OpenAI access, so the queue can show the batch
+    // even if the LMS enrolment row is later paused or moved.
+    courseSlug: { type: String, trim: true, lowercase: true, default: "agent" },
+    batchNo: { type: Number, min: 1, default: null },
+    enrollmentId: { type: mongoose.Schema.Types.ObjectId, default: null },
   },
   { timestamps: true, collection: "n8n-access-requests" },
 );

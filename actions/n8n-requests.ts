@@ -6,7 +6,7 @@ import { z } from "zod";
 import { assertRole } from "@/lib/auth-guard";
 import { dbConnect } from "@/lib/db";
 import { normalizeEmail } from "@/lib/email";
-import { findLmsUserByEmail } from "@/lib/lms";
+import { findLmsUserByEmail, getAgentEnrollment } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { isN8nAdmin, validateAccessLink } from "@/lib/n8n-request-policy";
 import { getRequestContext } from "@/lib/request-context";
@@ -18,6 +18,7 @@ import {
   claimN8nRequest,
   createN8nRequest,
   getN8nRequestType,
+  getStudentAgentEnrollment,
   markN8nRequestFailed,
   markN8nRequestSent,
 } from "@/lib/services/n8n-requests";
@@ -47,6 +48,11 @@ export async function createN8nRequestAction(
     : [formData.get("requestType")];
   const parsed = z.array(requestTypeSchema).min(1).max(3).safeParse([...new Set(rawTypes)]);
   if (!parsed.success) return { error: "Choose at least one access request." };
+
+  const enrollment = await getStudentAgentEnrollment(guard.session.user.id);
+  if (!enrollment.enrolled || enrollment.blocked || enrollment.batchNo === null) {
+    return { error: "These tools are only for students enrolled in the AI Agent course." };
+  }
 
   try {
     await consumeRateLimit("n8n.request.create", guard.session.user.id);
@@ -100,6 +106,10 @@ export async function createAccessRequestsForStudentAction(
     await consumeRateLimit("n8n.request.create.admin", guard.session.user.id);
     const lmsUser = await findLmsUserByEmail(parsed.data.email);
     if (!lmsUser) return { error: "No Hablu Programmer account was found with this email." };
+    const enrollment = await getAgentEnrollment(parsed.data.email);
+    if (!enrollment.enrolled || enrollment.blocked || enrollment.batchNo === null) {
+      return { error: "This student is not enrolled in the AI Agent course." };
+    }
     if (!lmsUser.isActive) return { error: "This Hablu Programmer account is inactive." };
     if (mapLmsRole(lmsUser.role) !== "STUDENT") {
       return { error: "Access requests can only be created for learner accounts." };
@@ -180,7 +190,12 @@ export async function sendN8nLinkAction(
     }
     await consumeRateLimit("n8n.email.send", guard.session.user.id);
     const claimed = await claimN8nRequest(requestId, guard.session.user.id);
-    if (!claimed) return { error: "This request was already handled or is being processed." };
+    if (!claimed) {
+      return {
+        error:
+          "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
+      };
+    }
     if (!claimed.student.isActive) {
       await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
       return { error: "This student account is inactive." };
@@ -253,7 +268,12 @@ export async function confirmOpenAiAccessAction(
     }
     await consumeRateLimit("n8n.email.send", guard.session.user.id);
     const claimed = await claimN8nRequest(requestId, guard.session.user.id);
-    if (!claimed) return { error: "This request was already handled or is being processed." };
+    if (!claimed) {
+      return {
+        error:
+          "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
+      };
+    }
     if (!claimed.student.isActive) {
       await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
       return { error: "This student account is inactive." };

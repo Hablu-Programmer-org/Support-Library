@@ -8,4 +8,8 @@ export const supportReplyInputSchema = z.strictObject({
   videoLinks: videoLinksSchema,
 });
 
+// Existing schema is intentionally reused for students: same content limits,
+// different authorization and lifecycle handling in the action/service layers.
+export const studentReplyInputSchema = supportReplyInputSchema;
+
 export type SupportReplyInput = z.infer<typeof supportReplyInputSchema>;

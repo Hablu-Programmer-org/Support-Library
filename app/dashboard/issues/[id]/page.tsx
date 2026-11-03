@@ -86,7 +86,7 @@ export default async function IssueDetailPage({
     const ownedIssue = await getOwnIssueDetail(id, session.user.id);
     if (ownedIssue) {
       const [replies, csrfToken, activity] = await Promise.all([
-        listReplies(ownedIssue.id, true),
+        listReplies(ownedIssue.id, { viewerId: session.user.id ?? undefined, redactActorIds: true }),
         generateCsrfToken(session.user.id),
         getOwnIssueActivitySnapshot(session.user.id),
       ]);
@@ -98,6 +98,7 @@ export default async function IssueDetailPage({
           csrfToken={csrfToken}
           issue={ownedIssue}
           replies={replies}
+
         />
       );
     }
@@ -106,7 +107,7 @@ export default async function IssueDetailPage({
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  const replies = await listReplies(supportIssue.id, !canEdit);
+  const replies = await listReplies(supportIssue.id, { redactActorIds: !canEdit });
   const csrfToken = await generateCsrfToken(session.user.id);
 
   return (

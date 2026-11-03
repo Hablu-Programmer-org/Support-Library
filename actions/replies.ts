@@ -8,15 +8,18 @@ import type { FormState } from "@/actions/issues";
 import { assertRole } from "@/lib/auth-guard";
 import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
 import { MutationConflictError, operationIdSchema } from "@/lib/mutation-security";
-import { parseVideoLinks } from "@/lib/parse-links";
+import { parseVideoLinks, parseStudentVideoLinksResult } from "@/lib/parse-links";
+import { linkLimit } from "@/lib/validation/common";
 import { canMutate } from "@/lib/roles";
 import { csrfTokenIsValid } from "@/lib/safe-action";
+import { getRequestContext } from "@/lib/request-context";
+import { recordAuditEvent } from "@/lib/services/audit";
 import {
   MutationRateLimitError,
   RateLimitUnavailableError,
   consumeRateLimit,
 } from "@/lib/services/rate-limit";
-import { addReply, editReply, softDeleteReply } from "@/lib/services/replies";
+import { addReply, addStudentReply, editReply, softDeleteReply } from "@/lib/services/replies";
 import {
   formFiles,
   ingestUploads,
@@ -24,6 +27,7 @@ import {
   type IngestedUpload,
 } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema } from "@/lib/validation";
+import { studentReplyInputSchema } from "@/lib/validation/reply";
 
 /**
  * Reply actions report their failures as form state instead of throwing.
@@ -182,6 +186,127 @@ export async function addReplyAction(
       }),
     ),
   );
+}
+
+export async function addStudentReplyAction(
+  issueId: string,
+  _prevState: ReplyFormState | undefined,
+  formData: FormData,
+): Promise<ReplyFormState> {
+  const values = {
+    body: formValue(formData, "body") ?? "",
+    videoLinks: formValue(formData, "videoLinks") ?? "",
+  };
+
+  if (!(await csrfTokenIsValid(formData))) {
+    return { fieldErrors: { _form: [SESSION_EXPIRED] }, values };
+  }
+
+  const guard = await assertRole("STUDENT");
+  if (!guard.ok) redirect("/unauthorized");
+  if (guard.session.user.role !== "STUDENT") redirect("/unauthorized");
+
+  const files = formFiles(formData, "uploads");
+
+  let reply: Awaited<ReturnType<typeof addStudentReply>>;
+  try {
+    const rawVideoLinks = formValue(formData, "videoLinks");
+    // Bound the raw payload before any parsing work happens.
+    if (rawVideoLinks && (rawVideoLinks.length > 20_000 || rawVideoLinks.split("\n").length > 100)) {
+      return {
+        fieldErrors: {
+          videoLinks: ["Too many video links. Add at most 100 lines."],
+        },
+        values,
+      };
+    }
+
+    // A valid operation id is mandatory for student follow-ups: it is the only
+    // thing that makes a double submit idempotent.
+    const rawOperationId = formData.get("operationId");
+    const parsedOperationId = operationIdSchema.safeParse(rawOperationId);
+    if (!parsedOperationId.success) {
+      return {
+        fieldErrors: {
+          _form: ["This form is out of date. Reload the page and try again."],
+        },
+        values,
+      };
+    }
+    const operationId = parsedOperationId.data;
+
+    try {
+      await consumeRateLimit("reply.add.student", guard.session.user.id, {
+        action: "REPLY_CREATE",
+        resourceType: "SupportReply",
+        resourceId: issueId,
+      });
+      if (files.length) {
+        await consumeRateLimit("attachment.upload", guard.session.user.id);
+      }
+    } catch (error) {
+      if (error instanceof MutationRateLimitError) {
+        return { fieldErrors: { _form: [RATE_LIMITED] }, values };
+      }
+      console.error("[replies] student reply rate limit unavailable", error);
+      return { fieldErrors: { _form: [GENERIC] }, values };
+    }
+
+    const parsedVideoLinks = parseStudentVideoLinksResult(rawVideoLinks);
+    if (rawVideoLinks && parsedVideoLinks.submittedLines > 0 && (parsedVideoLinks.invalidLines.length > 0 || parsedVideoLinks.overflow)) {
+      const message = parsedVideoLinks.overflow
+        ? `Add at most ${linkLimit()} video links.`
+        : "Some video links are invalid. Use title|https://url|timestamp|summary.";
+      return {
+        fieldErrors: {
+          videoLinks: [message],
+        },
+        values,
+      };
+    }
+    const parsed = studentReplyInputSchema.parse({
+      issueId,
+      body: formValue(formData, "body"),
+      videoLinks: parsedVideoLinks.links,
+    });
+
+    let uploads: IngestedUpload[] = [];
+    try {
+      uploads = await ingestUploads(files, guard.session.user.id);
+    } catch (error) {
+      if (error instanceof UploadValidationError) throw error;
+      throw new Error("Upload failed");
+    }
+
+    reply = await addStudentReply(parsed, guard.session.user.id, operationId, uploads);
+  } catch (error) {
+    return replyFailure("student reply", error, values);
+  }
+
+  if (!reply) {
+    await recordAuditEvent(
+      {
+        actorId: guard.session.user.id,
+        action: "REPLY_CREATE",
+        resourceType: "SupportIssue",
+        resourceId: issueId,
+        result: "DENIED",
+      },
+      await getRequestContext(),
+    ).catch(() => undefined);
+    return {
+      fieldErrors: {
+        _form: ["This request cannot receive a follow-up reply right now."],
+      },
+      values,
+    };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/issues");
+  revalidatePath("/dashboard/my-requests");
+  revalidatePath(`/dashboard/issues/${issueId}`);
+  redirect(`/dashboard/issues/${issueId}`);
 }
 
 export async function editReplyAction(

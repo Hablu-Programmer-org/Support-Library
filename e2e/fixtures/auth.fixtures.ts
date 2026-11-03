@@ -79,6 +79,16 @@ async function upsertStaffUser(user: (typeof STAFF_USERS)[number]) {
       },
       { upsert: true },
     );
+
+    // AI-tools access is restricted to the `agent` course.
+    await lmsClient.db(lmsDb).collection("EnrolledCourse").updateOne(
+      { userId: lmsUser._id, courseSlug: "agent" },
+      {
+        $set: { batchNo: 4, status: "running", email: user.email },
+        $setOnInsert: { _id: new mongoose.Types.ObjectId() },
+      },
+      { upsert: true },
+    );
   }
 }
 

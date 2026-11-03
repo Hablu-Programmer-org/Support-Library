@@ -1,5 +1,12 @@
 import "server-only";
 
+import {
+  ACCESS_COURSE_SLUG,
+  MISSING_AGENT_ENROLLMENT,
+  selectAgentEnrollment,
+  type LmsAgentEnrollment,
+  type LmsEnrollmentCandidate,
+} from "@/lib/agent-enrollment-rules";
 import { normalizeEmail } from "@/lib/email";
 import { getLmsMongoClient } from "@/lib/lms-db";
 import { pickStudentCourses, type LmsEnrollmentRow } from "@/lib/lms-courses";
@@ -112,4 +119,121 @@ export const lookupLmsStudent = async (email: string): Promise<LmsStudentLookup 
   const user = await findLmsUserByEmail(email);
   if (!user) return null;
   return { userId: user.userId, name: user.name || user.email };
+};
+
+const MISSING_AGENT = MISSING_AGENT_ENROLLMENT;
+export type { LmsAgentEnrollment } from "@/lib/agent-enrollment-rules";
+
+/**
+ * Read-only check of the fixed `agent` course for the AI-tools access queue.
+ *
+ * The queue never lists courses: `agent` is the only course whose students may
+ * receive n8n/OpenAI access, so this answers two questions only - are they in
+ * it, and which batch are they in.
+ */
+export const getAgentEnrollment = async (
+  email?: string | null,
+): Promise<LmsAgentEnrollment> => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return MISSING_AGENT;
+
+  const client = await getLmsMongoClient();
+  const db = client.db(getLmsDbName());
+
+  const user =
+    (await db.collection("User").findOne({ email: normalized }, { projection: { _id: 1 } })) ??
+    (await db.collection("User").findOne(
+      { email: { $regex: `^${escapeRegex(normalized)}$`, $options: "i" } },
+      { projection: { _id: 1 } },
+    ));
+  if (!user?._id) return MISSING_AGENT;
+
+  const rows = await db
+    .collection("EnrolledCourse")
+    .find(
+      { userId: user._id, courseSlug: ACCESS_COURSE_SLUG },
+      { projection: { _id: 1, batchNo: 1, status: 1 } },
+    )
+    .toArray();
+
+  return selectAgentEnrollment(rows.map(toCandidate));
+};
+
+const toCandidate = (row: Record<string, unknown>): LmsEnrollmentCandidate => {
+  const batch = Number(row.batchNo);
+  return {
+    enrollmentId: row._id ? String(row._id) : null,
+    batchNo: Number.isFinite(batch) && batch > 0 ? Math.trunc(batch) : null,
+    status: typeof row.status === "string" ? row.status : null,
+  };
+};
+
+/**
+ * Batched variant for queue pages: two LMS reads for the whole page instead of
+ * one read per student.
+ */
+export const getAgentEnrollmentsByEmails = async (
+  emails: readonly string[],
+): Promise<Map<string, LmsAgentEnrollment>> => {
+  const normalized = [...new Set(emails.map((email) => normalizeEmail(email)).filter(Boolean))];
+  const result = new Map<string, LmsAgentEnrollment>();
+  if (normalized.length === 0) return result;
+
+  const client = await getLmsMongoClient();
+  const db = client.db(getLmsDbName());
+
+  const users = await db
+    .collection("User")
+    .find(
+      { email: { $in: normalized } },
+      { projection: { _id: 1, email: 1 } },
+    )
+    .toArray();
+
+  const userIdByEmail = new Map<string, unknown>();
+  for (const user of users) {
+    const email = typeof user.email === "string" ? normalizeEmail(user.email) : "";
+    if (email && user._id) userIdByEmail.set(email, user._id);
+  }
+
+  // Emails stored with different casing are not covered by the `$in`, so the
+  // unmatched ones fall back to the case-insensitive single lookup.
+  const missing = normalized.filter((email) => !userIdByEmail.has(email));
+  if (missing.length > 0) {
+    await Promise.all(
+      missing.map(async (email) => {
+        const agent = await getAgentEnrollment(email);
+        result.set(email, agent);
+      }),
+    );
+  }
+
+  const matched = [...userIdByEmail.entries()];
+  if (matched.length === 0) return result;
+
+  const rows = await db
+    .collection("EnrolledCourse")
+    .find(
+      {
+        userId: { $in: matched.map(([, id]) => id) },
+        courseSlug: ACCESS_COURSE_SLUG,
+      },
+      { projection: { _id: 1, userId: 1, batchNo: 1, status: 1 } },
+    )
+    .toArray();
+
+  const rowsByUserId = new Map<string, LmsEnrollmentCandidate[]>();
+  for (const row of rows) {
+    const key = row.userId ? String(row.userId) : "";
+    if (!key) continue;
+    const list = rowsByUserId.get(key) ?? [];
+    list.push(toCandidate(row));
+    rowsByUserId.set(key, list);
+  }
+
+  for (const [email, id] of matched) {
+    result.set(email, selectAgentEnrollment(rowsByUserId.get(String(id)) ?? []));
+  }
+
+  return result;
 };

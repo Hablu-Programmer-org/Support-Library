@@ -16,6 +16,14 @@ export const EFFECTIVE_STAFF_REPLY_EXPRESSION = {
   ],
 } as const;
 
+export function isEffectiveStaffReply(
+  reply: { isStaffReply?: boolean | null },
+  authorRole?: string | null,
+) {
+  if (typeof reply.isStaffReply === "boolean") return reply.isStaffReply;
+  return authorRole === "ADMIN" || authorRole === "MENTOR";
+}
+
 export function deriveIssueReplyState(
   lastStaffReplyAt: Date | null,
   lastStudentReplyAt: Date | null,

@@ -4,6 +4,7 @@ import { ArrowLeftIcon } from "@/components/icons";
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
 import { MyRequestsRefresh } from "@/components/issues/my-requests-refresh";
 import { ReplyItem } from "@/components/issues/reply-item";
+import { StudentReplyComposer } from "@/components/issues/student-reply-composer";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { AttachmentList } from "@/components/shared/attachment-list";
 import { CopyValue } from "@/components/shared/copy-value";
@@ -138,6 +139,7 @@ export function StudentRequestView({
                   reply={replies[0]}
                   canEdit={false}
                   variant="solution"
+                  authorLabel={replies[0].isStaffReply ? "Support team" : "You"}
                 />
               </li>
             </ol>
@@ -149,7 +151,12 @@ export function StudentRequestView({
               <ol className="mt-2">
                 {replies.slice(1).map((reply) => (
                   <li key={reply.id}>
-                    <ReplyItem issueId={issue.id} reply={reply} canEdit={false} />
+                    <ReplyItem
+                      issueId={issue.id}
+                      reply={reply}
+                      canEdit={false}
+                      authorLabel={reply.isStaffReply ? "Support team" : "You"}
+                    />
                   </li>
                 ))}
               </ol>
@@ -165,6 +172,18 @@ export function StudentRequestView({
         </section>
       )}
 
+      {issue.status === "ARCHIVED" ? (
+        <p className="border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:text-slate-400">
+          This request is archived, so follow-up replies are closed.
+        </p>
+      ) : replies.some((reply) => reply.isStaffReply) ? (
+        <StudentReplyComposer issueId={issue.id} csrfToken={csrfToken} />
+      ) : (
+        <p className="border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:text-slate-400">
+          Wait for the support team&apos;s first reply before sending a follow-up.
+        </p>
+      )}
+
       <LiveSupportPanel
         configured={Boolean(joinUrl)}
         csrfToken={csrfToken}
@@ -177,7 +196,7 @@ export function StudentRequestView({
       />
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Replies here are read-only.
+        Follow-ups are sent to the support team and may reopen a solved request.
       </p>
     </div>
   );

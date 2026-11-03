@@ -68,9 +68,14 @@ export async function findAttachmentForDownload(
   await dbConnect();
 
   const [issue, reply] = await Promise.all([
-    SupportIssueModel.findOne({ "uploads._id": attachmentId }).select("uploads").lean(),
-    SupportReplyModel.findOne({ "uploads._id": attachmentId }).select("uploads").lean(),
+    SupportIssueModel.findOne({ "uploads._id": attachmentId, deletedAt: null }).select("uploads").lean(),
+    SupportReplyModel.findOne({ "uploads._id": attachmentId, deletedAt: null }).select("uploads issueId").lean(),
   ]);
+
+  if (reply) {
+    const parentIssue = await SupportIssueModel.findById(reply.issueId).select("deletedAt").lean();
+    if (!parentIssue || (parentIssue as { deletedAt?: Date | null }).deletedAt) return null;
+  }
 
   const parent = issue
     ? { parentType: "SupportIssue" as const, parentId: String(issue._id), uploads: issue.uploads }

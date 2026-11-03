@@ -11,6 +11,23 @@ import {
   type N8nRequestStatus,
   type N8nRequestType,
 } from "@/models";
+import {
+  ACCESS_COURSE_SLUG,
+  agentEnrollmentAllows,
+  MISSING_AGENT_ENROLLMENT,
+  type LmsAgentEnrollment,
+} from "@/lib/agent-enrollment-rules";
+import { getAgentEnrollment, getAgentEnrollmentsByEmails } from "@/lib/lms";
+
+/** Resolves the local student row into its `agent` enrolment snapshot. */
+export async function getStudentAgentEnrollment(
+  studentId: string,
+): Promise<LmsAgentEnrollment> {
+  if (!mongoose.isValidObjectId(studentId)) return MISSING_AGENT_ENROLLMENT;
+  await dbConnect();
+  const student = await UserModel.findById(studentId).select("email").lean();
+  return getAgentEnrollment(student?.email ?? null);
+}
 
 export async function createN8nRequest(
   studentId: string,
@@ -19,6 +36,10 @@ export async function createN8nRequest(
   createdBy?: string,
 ) {
   await dbConnect();
+  const agent = await getStudentAgentEnrollment(studentId);
+  // Defence in depth: the actions check this too, but the service is the last
+  // gate for any future caller.
+  if (!agentEnrollmentAllows(agent)) return null;
   try {
     return await mongoose.connection.transaction(async (session) => {
       // A student may retry after a failure, but the old row must no longer be
@@ -33,6 +54,12 @@ export async function createN8nRequest(
         requestType,
         purpose: purpose || null,
         createdBy: createdBy || null,
+        courseSlug: ACCESS_COURSE_SLUG,
+        batchNo: agent.batchNo,
+        enrollmentId:
+          agent.enrollmentId && mongoose.isValidObjectId(agent.enrollmentId)
+            ? new mongoose.Types.ObjectId(agent.enrollmentId)
+            : null,
       }], { session });
       return created;
     });
@@ -157,18 +184,65 @@ export async function listN8nRequestQueue({
   const userIds = requests.flatMap((request) => [request.studentId, request.createdBy].filter(Boolean));
   const users = await UserModel.find({ _id: { $in: userIds } }).select("name email").lean();
   const byId = new Map(users.map((user) => [user._id.toString(), user]));
+
+  const studentObjectIds = [...new Set(requests.map((request) => String(request.studentId)))]
+    .filter((id) => mongoose.isValidObjectId(id))
+    .map((id) => new mongoose.Types.ObjectId(id));
+
+  // One bounded aggregation for the page instead of one query per row.
+  const historyRows = studentObjectIds.length === 0
+    ? []
+    : await N8nAccessRequestModel.aggregate<{
+        _id: { studentId: mongoose.Types.ObjectId; requestType: N8nRequestType };
+        count: number;
+        lastSentAt: Date | null;
+      }>([
+        { $match: { studentId: { $in: studentObjectIds }, status: "SENT" } },
+        {
+          $group: {
+            _id: { studentId: "$studentId", requestType: "$requestType" },
+            count: { $sum: 1 },
+            lastSentAt: { $max: "$sentAt" },
+          },
+        },
+      ]);
+
+  const historyByKey = new Map(
+    historyRows.map((row) => [`${row._id.studentId}:${row._id.requestType}`, row]),
+  );
+
+  const emails = [...new Set(users.map((user) => user.email).filter(Boolean))];
+  // Two LMS reads for the whole page instead of two per row.
+  const agentByEmail = await getAgentEnrollmentsByEmails(emails);
+
   return {
-    items: requests.map((request) => ({
-      id: request._id.toString(),
-      requestType: request.requestType as N8nRequestType,
-      status: request.status,
-      attempts: request.attempts,
-      createdAt: request.createdAt as Date,
-      sentAt: request.sentAt as Date | null,
-      purpose: request.purpose as string | null,
-      createdBy: request.createdBy ? byId.get(request.createdBy.toString()) ?? null : null,
-      student: byId.get(request.studentId.toString()) ?? null,
-    })),
+    items: requests.map((request) => {
+      const student = byId.get(request.studentId.toString()) ?? null;
+      const agent = student?.email ? agentByEmail.get(student.email) : undefined;
+      const history = historyByKey.get(
+        `${request.studentId}:${request.requestType}`,
+      );
+
+      return {
+        id: request._id.toString(),
+        requestType: request.requestType as N8nRequestType,
+        status: request.status,
+        attempts: request.attempts,
+        createdAt: request.createdAt as Date,
+        sentAt: request.sentAt as Date | null,
+        purpose: request.purpose as string | null,
+        createdBy: request.createdBy ? byId.get(request.createdBy.toString()) ?? null : null,
+        student: student ? { name: student.name, email: student.email } : null,
+        // Rows created before the snapshot existed fall back to the live batch,
+        // so an eligible student never reads "not enrolled".
+        batchNo: (request.batchNo as number | null) ?? agent?.batchNo ?? null,
+        accessHistory: {
+          count: history?.count ?? 0,
+          lastSentAt: history?.lastSentAt ?? null,
+        },
+        agentEligible: agent ? agentEnrollmentAllows(agent) : false,
+      };
+    }),
     page: safePage,
     total,
     totalPages: Math.max(1, Math.ceil(total / safeLimit)),
@@ -200,6 +274,19 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
   const now = new Date();
   const leaseId = randomUUID();
   const expiresAt = new Date(now.getTime() + 10 * 60_000);
+
+  // The LMS lives in another database/client, so its read stays outside the
+  // transaction (only transactional DB work runs inside).
+  const owner = await N8nAccessRequestModel.findById(requestId)
+    .select("studentId")
+    .lean();
+  const ownerStudent = owner
+    ? await UserModel.findById(owner.studentId).select("email").lean()
+    : null;
+  const agentAllowed = agentEnrollmentAllows(
+    await getAgentEnrollment(ownerStudent?.email ?? null),
+  );
+
   return mongoose.connection.transaction(async (session) => {
     const candidate = await N8nAccessRequestModel.findById(requestId).session(session).lean();
     if (!candidate || candidate.status === "SENT" || candidate.status === "SUPERSEDED") return null;
@@ -246,11 +333,14 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
       .select("name email isActive")
       .session(session)
       .lean();
-    if (!student) {
+    if (!student || !agentAllowed) {
       await N8nAccessRequestModel.updateOne(
         { _id: request._id, processingLeaseId: leaseId },
         {
-          $set: { status: "FAILED", failureCode: "STUDENT_NOT_FOUND" },
+          $set: {
+            status: "FAILED",
+            failureCode: student ? "AGENT_ENROLLMENT_UNAVAILABLE" : "STUDENT_NOT_FOUND",
+          },
           $unset: { processingLeaseId: "", processingExpiresAt: "" },
         },
         { session },
