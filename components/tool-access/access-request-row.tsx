@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
@@ -65,9 +65,17 @@ export function AccessRequestRow({
 }) {
   const [decisionSaved, setDecisionSaved] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const rejectButtonRef = useRef<HTMLButtonElement>(null);
   const onDecisionSaved = useCallback(() => setDecisionSaved(true), []);
   const canProcess = request.canApprove && !decisionSaved;
   const canReject = request.canReject && !decisionSaved;
+
+  const closeReject = useCallback(() => {
+    setRejectOpen(false);
+    window.setTimeout(() => rejectButtonRef.current?.focus(), 0);
+  }, []);
+
+  const rejectMode = canReject && rejectOpen;
 
   return (
     <li className="px-3 py-3 sm:px-4">
@@ -105,7 +113,7 @@ export function AccessRequestRow({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-start">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
             {request.email ? (
               <>
@@ -137,7 +145,7 @@ export function AccessRequestRow({
             <span className="font-medium text-slate-600 dark:text-slate-300">{request.entitlementLabel}</span>
           </div>
 
-          {(canProcess || canReject) && (
+          {(canProcess || canReject) && !rejectMode && (
             <div className={`flex min-w-0 shrink-0 flex-wrap items-start justify-end gap-2 ${request.variant === "n8n" ? "lg:w-[48%]" : ""}`}>
               {canProcess && (
                 request.variant === "openai" ? (
@@ -154,9 +162,11 @@ export function AccessRequestRow({
                   />
                 )
               )}
-              {canReject && !rejectOpen && (
+              {canReject && (
                 <button
-                  aria-expanded="false"
+                  ref={rejectButtonRef}
+                  aria-controls={`reject-panel-${request.id}`}
+                  aria-expanded={false}
                   className="inline-flex shrink-0 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30 dark:border-rose-900 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/30"
                   onClick={() => setRejectOpen(true)}
                   type="button"
@@ -164,21 +174,24 @@ export function AccessRequestRow({
                   Reject
                 </button>
               )}
-
-            </div>
-          )}
-
-          {canReject && rejectOpen && (
-            <div className="w-full">
-              <RejectAccessRequestForm
-                requestId={request.id}
-                csrfToken={csrfToken}
-                onDecisionSaved={onDecisionSaved}
-                onCancel={() => setRejectOpen(false)}
-              />
             </div>
           )}
         </div>
+
+        {rejectMode && (
+          <section
+            aria-label="Reject access request"
+            className="w-full min-w-0"
+            id={`reject-panel-${request.id}`}
+          >
+            <RejectAccessRequestForm
+              requestId={request.id}
+              csrfToken={csrfToken}
+              onDecisionSaved={onDecisionSaved}
+              onCancel={closeReject}
+            />
+          </section>
+        )}
       </div>
     </li>
   );
