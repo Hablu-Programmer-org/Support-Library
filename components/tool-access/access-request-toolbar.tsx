@@ -28,9 +28,11 @@ const TABS: { id: AccessRequestTab; label: string }[] = [
 export function AccessRequestToolbar({
   state,
   counts,
+  batches,
 }: {
   state: AccessRequestListState;
   counts: Record<AccessRequestTab, number>;
+  batches: number[];
 }) {
   const router = useRouter();
   const [value, setValue] = useState(state.q);
@@ -137,56 +139,78 @@ export function AccessRequestToolbar({
         </label>
       </div>
 
-      <div>
-        <div className="relative">
-          <SearchIcon
-            className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
-              searching ? "animate-pulse text-primary" : "text-slate-400"
-            }`}
-            size={18}
-          />
-          <input
-            aria-label="Search by student email"
-            className={`${nativeFieldClass} px-10`}
-            enterKeyHint="search"
-            placeholder="Search student email"
-            type="search"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              navigate({ q: value.trim(), page: 1 });
+      <div className="space-y-1.5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="sr-only" htmlFor="access-batch-filter">
+            Filter by batch
+          </label>
+          <select
+            id="access-batch-filter"
+            aria-label="Filter by batch"
+            className={`${nativeFieldClass} sm:w-40`}
+            value={state.batch === null ? "" : String(state.batch)}
+            onChange={(event) => {
+              const next = event.target.value;
+              navigate({ batch: next === "" ? null : Number(next), page: 1 });
             }}
-          />
-          {value && (
-            <button
-              aria-label="Clear email search"
-              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-              onClick={() => {
-                setValue("");
-                navigate({ q: "", page: 1 });
+          >
+            <option value="">All batches</option>
+            {batches.map((batch) => (
+              <option key={batch} value={batch}>
+                Batch {batch}
+              </option>
+            ))}
+          </select>
+          <div className="relative flex-1">
+            <SearchIcon
+              className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
+                searching ? "animate-pulse text-primary" : "text-slate-400"
+              }`}
+              size={18}
+            />
+            <input
+              aria-label="Search by student email"
+              className={`${nativeFieldClass} px-10`}
+              enterKeyHint="search"
+              placeholder="Search student email"
+              type="search"
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                navigate({ q: value.trim(), page: 1 });
               }}
-              type="button"
-            >
-              <svg
-                aria-hidden
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.8}
-                viewBox="0 0 24 24"
+            />
+            {value && (
+              <button
+                aria-label="Clear email search"
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                onClick={() => {
+                  setValue("");
+                  navigate({ q: "", page: 1 });
+                }}
+                type="button"
               >
-                <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
-              </svg>
-            </button>
-          )}
-          <span aria-live="polite" className="sr-only">
-            {searching ? "Searching" : ""}
-          </span>
+                <svg
+                  aria-hidden
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            )}
+            <span aria-live="polite" className="sr-only">
+              {searching ? "Searching" : ""}
+            </span>
+          </div>
         </div>
         {value.trim().length === 1 && (
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Type at least 2 characters to search.
           </p>
         )}

@@ -20,6 +20,7 @@ import { isN8nAdmin } from "@/lib/n8n-request-policy";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import {
   countPendingN8nRequests,
+  listAccessRequestBatchNumbers,
   listN8nRequestQueue,
 } from "@/lib/services/n8n-requests";
 import type { N8nRequestType } from "@/models";
@@ -61,10 +62,13 @@ const TYPE_LABELS: Record<N8nRequestType, string> = {
 
 function emptyMessage(state: AccessRequestListState) {
   const name = state.tab === "openai" ? "OpenAI" : "n8n";
+  const batch = state.batch !== null ? ` for Batch ${state.batch}` : "";
   if (state.q) {
-    return `No ${state.showSent ? "" : "pending "}${name} requests match “${state.q}”.`;
+    return `No ${state.showSent ? "" : "pending "}${name} requests${batch} match “${state.q}”.`;
   }
-  return state.showSent ? `No ${name} requests yet.` : `No pending ${name} requests.`;
+  return state.showSent
+    ? `No ${name} requests${batch} yet.`
+    : `No pending ${name} requests${batch}.`;
 }
 
 function QueuePagination({
@@ -117,13 +121,15 @@ export default async function AccessRequestsPage({
   if (!(await isN8nAdmin(session.user.email))) redirect("/unauthorized");
 
   const state = parseAccessRequestListState(await searchParams);
-  const [requests, openAiPending, n8nPending, csrfToken, isRecent] = await Promise.all([
+  const [requests, batchNumbers, openAiPending, n8nPending, csrfToken, isRecent] = await Promise.all([
     listN8nRequestQueue({
       requestTypes: TAB_TYPES[state.tab],
       statuses: accessQueueStatuses(state.showSent),
       search: state.q,
+      batchNo: state.batch,
       page: state.page,
     }),
+    listAccessRequestBatchNumbers(TAB_TYPES[state.tab]),
     countPendingN8nRequests(TAB_TYPES.openai),
     countPendingN8nRequests(TAB_TYPES.n8n),
     generateCsrfToken(session.user.id),
@@ -148,6 +154,7 @@ export default async function AccessRequestsPage({
       <AdminCreateAccessRequestForm csrfToken={csrfToken} requiresReauth={!isRecent} />
 
       <AccessRequestToolbar
+        batches={batchNumbers}
         counts={{ openai: openAiPending, n8n: n8nPending }}
         state={state}
       />
@@ -184,7 +191,9 @@ export default async function AccessRequestsPage({
                         ? `Batch ${request.batchNo}`
                         : request.batchNo
                           ? `Requested Batch ${request.batchNo}`
-                          : null,
+                          : request.agentEligible
+                            ? "Batch unavailable"
+                            : null,
                     historyLabel: accessHistoryLabel(
                       request.requestType,
                       request.accessHistory.count,

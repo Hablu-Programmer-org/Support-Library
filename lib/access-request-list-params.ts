@@ -29,12 +29,15 @@ const MAX_QUERY_LENGTH = 120;
 /** Same ceiling as the issue list: a pasted page number must not become a huge skip. */
 const MAX_PAGE = 10_000;
 const DIGITS = /^\d+$/;
+const MAX_BATCH = 9999;
 
 export type AccessRequestListState = {
   tab: AccessRequestTab;
   q: string;
   showSent: boolean;
   page: number;
+  /** Requested batch snapshot filter. `null` means "All batches". */
+  batch: number | null;
 };
 
 export const DEFAULT_ACCESS_REQUEST_STATE: AccessRequestListState = {
@@ -42,6 +45,7 @@ export const DEFAULT_ACCESS_REQUEST_STATE: AccessRequestListState = {
   q: "",
   showSent: false,
   page: 1,
+  batch: null,
 };
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -62,6 +66,14 @@ const parsePage = (value: unknown): number => {
   return Math.min(page, MAX_PAGE);
 };
 
+const parseBatch = (value: unknown): number | null => {
+  const raw = firstValue(value).trim();
+  if (!DIGITS.test(raw)) return null;
+  const batch = Number.parseInt(raw.slice(0, 6), 10);
+  if (!Number.isFinite(batch) || batch < 1 || batch > MAX_BATCH) return null;
+  return batch;
+};
+
 /**
  * Turns raw `searchParams` into the one shape the page and the toolbar agree on.
  * Invalid values degrade to the default view instead of reaching the service.
@@ -80,6 +92,7 @@ export function parseAccessRequestListState(
     q: normalizeEmail(firstValue(params.q)).slice(0, MAX_QUERY_LENGTH),
     showSent: firstValue(params.sent) === "1",
     page: parsePage(params.page),
+    batch: parseBatch(params.batch),
   };
 }
 
@@ -97,6 +110,7 @@ export function buildAccessRequestHref(
   if (merged.tab !== DEFAULT_ACCESS_REQUEST_STATE.tab) params.set("tab", merged.tab);
   if (merged.q) params.set("q", merged.q);
   if (merged.showSent) params.set("sent", "1");
+  if (merged.batch !== null) params.set("batch", String(merged.batch));
   if (merged.page > 1) params.set("page", String(merged.page));
 
   const query = params.toString();

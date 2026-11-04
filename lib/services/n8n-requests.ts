@@ -135,6 +135,8 @@ export type StaffAccessQueueQuery = {
   statuses?: readonly N8nRequestStatus[];
   /** Partial student email. Empty means no email filter. */
   search?: string;
+  /** Requested batch snapshot. `null`/undefined means all batches. */
+  batchNo?: number | null;
   page?: number;
   limit?: number;
 };
@@ -159,6 +161,7 @@ export async function listN8nRequestQueue({
   requestTypes,
   statuses,
   search = "",
+  batchNo = null,
   page = 1,
   limit = STAFF_QUEUE_LIMIT,
 }: StaffAccessQueueQuery) {
@@ -166,6 +169,10 @@ export async function listN8nRequestQueue({
   const safePage = Math.max(1, Math.trunc(page));
   const safeLimit = Math.min(50, Math.max(1, Math.trunc(limit)));
   const trimmedSearch = search.trim();
+  const safeBatchNo =
+    typeof batchNo === "number" && Number.isInteger(batchNo) && batchNo > 0
+      ? batchNo
+      : null;
 
   // A one-character search has no regex, and returning every row for it would
   // look like a match. Fail closed instead: the admin types one more character.
@@ -181,6 +188,9 @@ export async function listN8nRequestQueue({
   }
   if (trimmedSearch) {
     filter.studentId = { $in: await findStudentIdsByEmail(trimmedSearch) };
+  }
+  if (safeBatchNo !== null) {
+    filter.batchNo = safeBatchNo;
   }
 
   const [requests, total] = await Promise.all([
@@ -313,6 +323,20 @@ export async function countPendingN8nRequests(requestTypes: N8nRequestType[]) {
     requestType: { $in: requestTypes },
     status: "PENDING",
   });
+}
+
+/**
+ * Distinct requested batch snapshots for the current tab. Used to populate the
+ * batch filter without exposing any student data.
+ */
+export async function listAccessRequestBatchNumbers(requestTypes: N8nRequestType[]) {
+  await dbConnect();
+  const rows = await N8nAccessRequestModel.aggregate<{ _id: number }>([
+    { $match: { requestType: { $in: requestTypes }, batchNo: { $type: "number", $gte: 1 } } },
+    { $group: { _id: "$batchNo" } },
+    { $sort: { _id: -1 } },
+  ]);
+  return rows.map((row) => row._id).filter((value) => Number.isInteger(value) && value > 0);
 }
 
 export async function getN8nRequestType(requestId: string) {

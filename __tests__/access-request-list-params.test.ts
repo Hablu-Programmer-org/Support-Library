@@ -17,7 +17,7 @@ describe("parseAccessRequestListState", () => {
   it("reads a valid tab, search, sent toggle and page", () => {
     expect(
       parseAccessRequestListState({ tab: "n8n", q: " Student@Example.com ", sent: "1", page: "3" }),
-    ).toEqual({ tab: "n8n", q: "student@example.com", showSent: true, page: 3 });
+    ).toEqual({ tab: "n8n", q: "student@example.com", showSent: true, page: 3, batch: null });
   });
 
   it("drops invalid values instead of forwarding them", () => {
@@ -40,6 +40,17 @@ describe("parseAccessRequestListState", () => {
   it("keeps the first value when a param is repeated", () => {
     expect(parseAccessRequestListState({ tab: ["n8n", "openai"] }).tab).toBe("n8n");
   });
+
+  it("reads a valid requested batch", () => {
+    expect(parseAccessRequestListState({ batch: "4" }).batch).toBe(4);
+  });
+
+  it("drops invalid batch values", () => {
+    expect(parseAccessRequestListState({ batch: "0" }).batch).toBeNull();
+    expect(parseAccessRequestListState({ batch: "-2" }).batch).toBeNull();
+    expect(parseAccessRequestListState({ batch: "abc" }).batch).toBeNull();
+    expect(parseAccessRequestListState({ batch: "4.5" }).batch).toBeNull();
+  });
 });
 
 describe("buildAccessRequestHref", () => {
@@ -54,6 +65,7 @@ describe("buildAccessRequestHref", () => {
         q: "student@example.com",
         showSent: true,
         page: 2,
+        batch: null,
       }),
     ).toBe(
       `${ACCESS_REQUESTS_PATH}?tab=n8n&q=student%40example.com&sent=1&page=2`,
@@ -61,7 +73,7 @@ describe("buildAccessRequestHref", () => {
   });
 
   it("applies an override without mutating the state", () => {
-    const state = { tab: "openai" as const, q: "a@b.com", showSent: true, page: 4 };
+    const state = { tab: "openai" as const, q: "a@b.com", showSent: true, page: 4, batch: null };
     expect(buildAccessRequestHref(state, { page: 1 })).toBe(
       `${ACCESS_REQUESTS_PATH}?q=a%40b.com&sent=1`,
     );
@@ -69,10 +81,31 @@ describe("buildAccessRequestHref", () => {
   });
 
   it("round-trips through the parser", () => {
-    const state = { tab: "n8n" as const, q: "a@b.com", showSent: true, page: 3 };
+    const state = { tab: "n8n" as const, q: "a@b.com", showSent: true, page: 3, batch: null };
     expect(parseAccessRequestListState(
       Object.fromEntries(new URL(buildAccessRequestHref(state), "http://x").searchParams),
     )).toEqual(state);
+  });
+
+  it("carries a batch filter and omits it for all batches", () => {
+    expect(
+      buildAccessRequestHref({
+        tab: "openai",
+        q: "",
+        showSent: false,
+        page: 1,
+        batch: 4,
+      }),
+    ).toBe(`${ACCESS_REQUESTS_PATH}?batch=4`);
+    expect(
+      buildAccessRequestHref({
+        tab: "openai",
+        q: "",
+        showSent: false,
+        page: 1,
+        batch: null,
+      }),
+    ).toBe(ACCESS_REQUESTS_PATH);
   });
 });
 

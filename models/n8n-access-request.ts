@@ -67,6 +67,10 @@ n8nAccessRequestSchema.index(
   { name: "n8n-access-requests-staff-queue" },
 );
 n8nAccessRequestSchema.index(
+  { requestType: 1, status: 1, batchNo: 1, createdAt: -1, _id: -1 },
+  { name: "n8n-access-requests-staff-queue-by-batch" },
+);
+n8nAccessRequestSchema.index(
   { studentId: 1, requestType: 1 },
   {
     name: "n8n-access-requests-student-type-active-unique",
