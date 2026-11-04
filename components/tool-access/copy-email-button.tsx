@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Copies a student's email so an admin can paste it into the n8n or OpenAI
@@ -18,15 +18,17 @@ async function copyText(value: string) {
   }
   try {
     const area = document.createElement("textarea");
-    area.value = value;
-    area.setAttribute("readonly", "");
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(area);
-    return ok;
+    try {
+      area.value = value;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      return document.execCommand("copy");
+    } finally {
+      area.remove();
+    }
   } catch {
     return false;
   }
@@ -40,11 +42,20 @@ export function CopyEmailButton({
   className?: string;
 }) {
   const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const resetTimer = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current !== null) window.clearTimeout(resetTimer.current);
+    },
+    [],
+  );
 
   const onCopy = async () => {
     const ok = await copyText(email);
     setState(ok ? "copied" : "failed");
-    window.setTimeout(() => setState("idle"), 1800);
+    if (resetTimer.current !== null) window.clearTimeout(resetTimer.current);
+    resetTimer.current = window.setTimeout(() => setState("idle"), 1800);
   };
 
   return (
@@ -52,9 +63,11 @@ export function CopyEmailButton({
       type="button"
       onClick={onCopy}
       aria-label={state === "copied" ? "Email copied" : `Copy ${email}`}
-      className={`inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-cyan-500 dark:hover:text-cyan-300 ${className}`}
+      className={`group inline-flex max-w-full items-center gap-1.5 rounded-sm text-left text-xs font-medium text-slate-700 transition-colors hover:text-cyan-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 focus-visible:ring-offset-2 motion-reduce:transition-none dark:text-slate-200 dark:hover:text-cyan-300 dark:focus-visible:ring-offset-slate-950 ${className}`}
+      title="Click to copy email"
     >
-      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5">
+      <span className="min-w-0 truncate">{email}</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100">
         {state === "copied" ? (
           <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
         ) : (
@@ -64,7 +77,18 @@ export function CopyEmailButton({
           </>
         )}
       </svg>
-      {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : "Copy email"}
+      <span
+        aria-live="polite"
+        className={`shrink-0 text-[11px] no-underline ${
+          state === "copied"
+            ? "text-emerald-600 dark:text-emerald-400"
+            : state === "failed"
+              ? "text-red-600 dark:text-red-400"
+              : "sr-only"
+        }`}
+      >
+        {state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : ""}
+      </span>
     </button>
   );
 }

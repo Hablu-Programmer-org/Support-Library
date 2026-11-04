@@ -221,6 +221,14 @@ html.dark {
 ::-webkit-scrollbar {
   width: 10px;
 }
+/* An unstyled track paints the browser's default light strip over a dark page,
+   which read as a white sliver at the right edge. Let the page show through. */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+html {
+  scrollbar-color: rgb(148 163 184 / 0.55) transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(transparent, #06b6d4, #8b5cf6);
   border-radius: 6px;

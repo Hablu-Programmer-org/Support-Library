@@ -26,7 +26,7 @@ export function ProblemTitleHint({
   return (
     <div className="flex items-baseline justify-between gap-3">
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        One line, {max} characters max. Name the problem, not the topic.
+        One line, {max} characters max. Name the issue clearly, not just the topic.
       </p>
       <span
         aria-live="polite"

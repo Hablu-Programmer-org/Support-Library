@@ -77,6 +77,7 @@ test.describe("student access help gating", () => {
 test.describe("access request administration", () => {
   test("allows admins and denies mentors", async ({ browser }) => {
     const admin = await browser.newContext({ storageState: "e2e/.auth/admin.json" });
+    await admin.grantPermissions(["clipboard-read", "clipboard-write"]);
     const adminPage = await admin.newPage();
     await adminPage.goto("/dashboard/access-requests");
     await expect(adminPage.getByRole("heading", { name: "Access requests" })).toBeVisible();
@@ -103,7 +104,14 @@ test.describe("access request administration", () => {
     await expect(openAiTab).toContainText("1 pending");
     await expect(n8nTab).toContainText("1 pending");
     await expect(openAiQueue.getByText("Admin created")).toHaveCount(1);
-    await expect(openAiQueue.getByRole("button", { name: /Copy e2e\.lms\.student@test\.com/i })).toBeVisible();
+    const copyEmail = openAiQueue.getByRole("button", { name: /Copy e2e\.lms\.student@test\.com/i });
+    await expect(copyEmail).toBeVisible();
+    await expect(openAiQueue.getByText("Copy email", { exact: true })).toHaveCount(0);
+    await copyEmail.click();
+    await expect(openAiQueue.getByText("Copied", { exact: true })).toBeVisible();
+    expect(await adminPage.evaluate(() => navigator.clipboard.readText())).toBe(
+      "e2e.lms.student@test.com",
+    );
     await expect(adminPage.locator('input[name="link"]')).toHaveCount(0);
 
     // The queue is a compact list: final actions are available directly without

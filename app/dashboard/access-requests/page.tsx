@@ -23,6 +23,7 @@ import {
   listAccessRequestBatchNumbers,
   listN8nRequestQueue,
 } from "@/lib/services/n8n-requests";
+import { requestEntitlementAllowsProcessing } from "@/lib/tool-access-policy";
 import type { N8nRequestType } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -75,39 +76,37 @@ function QueuePagination({
   state,
   page,
   totalPages,
-  total,
 }: {
   state: AccessRequestListState;
   page: number;
-  totalPages: number;
   total: number;
+  totalPages: number;
 }) {
+  if (totalPages <= 1) return null;
+
   return (
     <div className="flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
       <span>
-        {total} {total === 1 ? "request" : "requests"}
-        {totalPages > 1 ? ` · Page ${page} of ${totalPages}` : ""}
+        Page {page} of {totalPages}
       </span>
-      {totalPages > 1 && (
-        <div className="flex gap-2">
-          {page > 1 && (
-            <Link
-              className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
-              href={buildAccessRequestHref(state, { page: page - 1 })}
-            >
-              Previous
-            </Link>
-          )}
-          {page < totalPages && (
-            <Link
-              className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
-              href={buildAccessRequestHref(state, { page: page + 1 })}
-            >
-              Next
-            </Link>
-          )}
-        </div>
-      )}
+      <div className="flex gap-2">
+        {page > 1 && (
+          <Link
+            className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+            href={buildAccessRequestHref(state, { page: page - 1 })}
+          >
+            Previous
+          </Link>
+        )}
+        {page < totalPages && (
+          <Link
+            className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
+            href={buildAccessRequestHref(state, { page: page + 1 })}
+          >
+            Next
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
@@ -145,27 +144,44 @@ export default async function AccessRequestsPage({
   const variant = state.tab === "openai" ? "openai" : "n8n";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
-        title="Access requests"
         description="AI Agent course students only. Copy the email, then confirm OpenAI access or send the n8n link. API keys are never accepted, stored or emailed."
+        eyebrow="Admin"
+        title="Access requests"
       />
 
       <AdminCreateAccessRequestForm csrfToken={csrfToken} requiresReauth={!isRecent} />
 
-      <AccessRequestToolbar
-        batches={batchNumbers}
-        counts={{ openai: openAiPending, n8n: n8nPending }}
-        state={state}
-      />
+      {/* Filters stay reachable while the queue scrolls (desktop only: on a
+          phone the bar would cover too much of the list). */}
+      <div className="border-y border-slate-200 py-3 sm:sticky sm:top-16 sm:z-20 sm:bg-white/95 sm:backdrop-blur-sm dark:border-slate-800 sm:dark:bg-slate-950/95">
+        <AccessRequestToolbar
+          batches={batchNumbers}
+          counts={{ openai: openAiPending, n8n: n8nPending }}
+          state={state}
+        />
+      </div>
 
       <section aria-label={TAB_TITLES[state.tab]} className="space-y-2">
-        {requests.items.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-            {emptyMessage(state)}
+        <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+            {TAB_TITLES[state.tab]}
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {requests.total} {requests.total === 1 ? "request" : "requests"}
+            {state.showSent ? "" : " pending"}
           </p>
+        </div>
+
+        {requests.items.length === 0 ? (
+          <div className="border-y border-slate-200 px-4 py-7 text-center dark:border-slate-800">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {emptyMessage(state)}
+            </p>
+          </div>
         ) : (
-          <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+          <ul className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
             {requests.items.map((request) => {
               const status = STATUS_META[request.status];
               const dateLabel =
@@ -185,6 +201,7 @@ export default async function AccessRequestsPage({
                     statusTone: status.tone,
                     dateLabel,
                     studentName: request.student?.name ?? null,
+                    studentImage: request.student?.image ?? null,
                     email: request.student?.email ?? null,
                     batchLabel:
                       request.batchNo && request.agentEligible
@@ -203,7 +220,10 @@ export default async function AccessRequestsPage({
                     variant,
                     canApprove: request.agentEligible &&
                       (request.status === "PENDING" || request.status === "FAILED") &&
-                      request.entitlement === null,
+                      requestEntitlementAllowsProcessing(
+                        request.requestType,
+                        request.entitlement?.state ?? null,
+                      ),
                     canReject: request.status === "PENDING" || request.status === "FAILED",
                     firstRequestedLabel: `Requested ${formatSupportShortDate(request.accessHistory.firstRequestedAt) ?? "unknown"}`,
                     enrollmentLabel: request.currentBatchNo && request.currentBatchNo !== request.batchNo

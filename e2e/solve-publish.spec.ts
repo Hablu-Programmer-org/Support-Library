@@ -17,7 +17,9 @@ test.describe("Admin solving publishes", () => {
     await form.locator('input[name="studentName"]').fill("E2E Solve Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.solve.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="question"]').fill("Publishing should follow a solve.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Publishing should happen only after the issue is solved and the PII review is confirmed.");
     // Keep the new case OPEN: the create form's "solved" option is not a publish.
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);

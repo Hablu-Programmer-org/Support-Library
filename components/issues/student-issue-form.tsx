@@ -10,6 +10,7 @@ import {
 } from "@/components/icons";
 import { Accordion } from "@/components/issues/accordion";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import {
   nativeFieldClass,
@@ -17,7 +18,12 @@ import {
   nativeTextareaClass,
   nativeTextareaCompactClass,
 } from "@/lib/config/fields";
-import { ISSUE_TITLE_CREATE_MAX, ISSUE_TITLE_WARN_AT } from "@/lib/constants";
+import {
+  ISSUE_DETAILS_CREATE_MIN,
+  ISSUE_DETAILS_MAX,
+  ISSUE_TITLE_CREATE_MAX,
+  ISSUE_TITLE_WARN_AT,
+} from "@/lib/constants";
 
 type StudentIssueFormProps = {
   csrfToken: string;
@@ -49,6 +55,12 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
   };
 
   const formError = state.fieldErrors?._form?.[0];
+  const optionalDetailsHaveError = Boolean(
+    state.fieldErrors?.videoLinks?.[0] ||
+      state.fieldErrors?.moduleSlug?.[0] ||
+      state.fieldErrors?.contentSlug?.[0] ||
+      state.fieldErrors?.tags?.[0],
+  );
 
   return (
     <form
@@ -71,22 +83,21 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
       )}
 
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <span
+        <div className="flex items-center gap-2.5">
+          <HelpCircleIcon
             aria-hidden="true"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-100 text-primary-700 dark:bg-primary-950/60 dark:text-primary-300"
-          >
-            <HelpCircleIcon size={19} />
-          </span>
+            className="shrink-0 text-cyan-600 dark:text-cyan-300"
+            size={19}
+          />
           <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
-            Describe your problem
+             Describe your issue
           </h2>
         </div>
 
         <div className="space-y-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Problem title{" "}
+               Issue title{" "}
               <span className="text-danger" aria-hidden="true">
                 *
               </span>
@@ -120,7 +131,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Issue details{" "}
+               Issue details{" "}
               <span className="text-danger" aria-hidden="true">
                 *
               </span>
@@ -131,11 +142,13 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               required
-              rows={7}
-              minLength={5}
-              maxLength={20_000}
+              rows={8}
+              minLength={ISSUE_DETAILS_CREATE_MIN}
+              maxLength={ISSUE_DETAILS_MAX}
               aria-invalid={state.fieldErrors?.question?.[0] ? "true" : "false"}
-              placeholder="Explain what you were doing, what you expected, and what happened instead."
+              placeholder={
+                "What were you trying to do?\nWhat happened or what exact error did you see?\nWhat have you already tried?"
+              }
             />
             {state.fieldErrors?.question?.[0] ? (
               <p
@@ -145,9 +158,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
                 {state.fieldErrors.question[0]}
               </p>
             ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Include the steps to reproduce the problem if you can.
-              </p>
+              <IssueDetailsHint value={question} />
             )}
           </label>
 
@@ -166,50 +177,18 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             )}
           </div>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Video links
-            </span>
-            <textarea
-              className={nativeTextareaCompactClass}
-              name="videoLinks"
-              value={videoLinks}
-              onChange={(event) => setVideoLinks(event.target.value)}
-              rows={2}
-              aria-invalid={
-                state.fieldErrors?.videoLinks?.[0] ? "true" : "false"
-              }
-              placeholder={
-                "Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"
-              }
-            />
-            {state.fieldErrors?.videoLinks?.[0] ? (
-              <p
-                className="text-sm text-danger-600 dark:text-danger-400"
-                role="alert"
-              >
-                {state.fieldErrors.videoLinks[0]}
-              </p>
-            ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                One per line:{" "}
-                <span className="font-medium">Title|https://link</span>
-              </p>
-            )}
-          </label>
         </div>
       </div>
 
-      <Accordion
-        title="Additional Details"
-        defaultOpen
-        icon={<SettingsIcon size={20} />}
-        contentClassName="space-y-4"
-      >
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Tell the team which course the problem belongs to. The batch is filled in from your
-          enrolment, and lesson details help them find the right content faster.
-        </p>
+      <section className="space-y-4 border-t border-slate-200 pt-5 dark:border-slate-800">
+        <div>
+          <h3 className="text-base font-semibold text-slate-950 dark:text-white">
+            Course context
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            Choose the course. Your batch is filled from your enrolment.
+          </p>
+        </div>
 
         {courses.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -259,10 +238,24 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
           </div>
         ) : (
           <p className="rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200">
-            We could not find a course on your LMS account. You can still submit this request — the
-            team will ask for the course if it matters.
+            We could not find a course on your LMS account. You can still submit
+            this request — the team will ask for the course if it matters.
           </p>
         )}
+      </section>
+
+      <Accordion
+        key={optionalDetailsHaveError ? "optional-error" : "optional-clean"}
+        title="Add module, lesson, tags or video links"
+        defaultOpen={optionalDetailsHaveError}
+        icon={<SettingsIcon size={20} />}
+        contentClassName="space-y-4"
+        className="border-t border-slate-200 dark:border-slate-800"
+        titleClassName="rounded-lg px-2"
+      >
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          These optional details help the team find the exact lesson or walkthrough faster.
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
@@ -341,20 +334,45 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             </p>
           )}
         </label>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Video links
+          </span>
+          <textarea
+            className={nativeTextareaCompactClass}
+            name="videoLinks"
+            value={videoLinks}
+            onChange={(event) => setVideoLinks(event.target.value)}
+            rows={2}
+            aria-invalid={state.fieldErrors?.videoLinks?.[0] ? "true" : "false"}
+            placeholder="Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"
+          />
+          {state.fieldErrors?.videoLinks?.[0] ? (
+            <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+              {state.fieldErrors.videoLinks[0]}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              One per line: <span className="font-medium">Title|https://link</span>
+            </p>
+          )}
+        </label>
       </Accordion>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
-      >
-        <CheckCircleIcon size={18} />
-        {pending ? "Submitting..." : "Submit request"}
-      </button>
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 motion-reduce:transition-none dark:focus:ring-offset-slate-950 sm:w-auto sm:min-w-52"
+        >
+          <CheckCircleIcon size={18} />
+          {pending ? "Submitting..." : "Submit request"}
+        </button>
+      </div>
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        After you submit, you can join live support for this request from its page during the support
-        hours.
+        After submitting, track replies and open Live support from the request page.
       </p>
     </form>
   );

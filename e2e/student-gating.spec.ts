@@ -25,7 +25,9 @@ test.describe("STUDENT content gating", () => {
     await form.locator('input[name="studentName"]').fill("E2E Gating Student");
     await form.locator('input[name="studentEmail"]').fill(studentEmail);
     await form.locator('input[name="title"]').fill(issueTitle);
-    await form.locator('textarea[name="question"]').fill("Which content may students see?");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Which parts of this support issue may a student see after an admin publishes it?");
     await form.locator('input[name="solveIssue"]').uncheck();
 
     await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);

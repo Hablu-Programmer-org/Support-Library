@@ -20,7 +20,9 @@ test.describe("Issue CRUD (mentor)", () => {
       await form.locator('input[name="studentName"]').fill("E2E Answer Student");
       await form.locator('input[name="studentEmail"]').fill(`e2e.answer.${Date.now()}@test.com`);
       await form.locator('input[name="title"]').fill(`E2E ${scenario.label}`);
-      await form.locator('textarea[name="question"]').fill("How do I fix the broken image path?");
+      await form
+        .locator('textarea[name="question"]')
+        .fill("How do I fix the broken image path after deploying the React application?");
       await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
       await expect(form.locator('textarea[name="solutionFileLinks"]')).toHaveCount(0);
       await form.locator('textarea[name="solutionBody"]').fill(scenario.body);
@@ -46,7 +48,9 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Ref Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.ref.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="question"]').fill("Find me by reference.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Find this request by its six-digit reference from the staff issue search.");
     await submitCreate(page);
 
     const reference = (
@@ -67,7 +71,9 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Auto Search Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.auto.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="question"]').fill("Typing should find me.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Typing part of this issue title should find the request without pressing Enter.");
     await submitCreate(page);
 
     await page.goto("/dashboard/issues");
@@ -85,7 +91,9 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Test Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.student.${Date.now().toString()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E React image not rendering");
-    await form.locator('textarea[name="question"]').fill("Image show hocche na in React component");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Image show hocche na in React component after I changed the public asset path.");
     await expect(form.locator('select[name="status"]')).toHaveCount(0);
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
@@ -142,7 +150,9 @@ test.describe("Issue CRUD (mentor)", () => {
       .toBe("E2E LMS Student");
 
     await form.locator('input[name="title"]').fill("E2E LMS autofill submission");
-    await form.locator('textarea[name="question"]').fill("Does the disabled LMS name submit correctly?");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Does the disabled LMS student-name field submit the matched account correctly?");
     await submitCreate(page);
     await expect(page.getByText("E2E LMS autofill submission")).toBeVisible();
   });
@@ -329,7 +339,9 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Archive Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.archive.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E issue to archive");
-    await form.locator('textarea[name="question"]').fill("This issue is going to be archived.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("This issue should be archived safely and removed from the active staff queue.");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
 

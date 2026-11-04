@@ -12,7 +12,9 @@ async function createIssueWithReply(page: import("@playwright/test").Page, body:
   await form.locator('input[name="studentName"]').fill("E2E Edit Delete Student");
   await form.locator('input[name="studentEmail"]').fill(`e2e.editdel.${emailTag}@test.com`);
   await form.locator('input[name="title"]').fill(`E2E edit/delete ${emailTag}`);
-  await form.locator('textarea[name="question"]').fill("How should reply edit and delete behave?");
+  await form
+    .locator('textarea[name="question"]')
+    .fill("How should reply editing and deletion behave after a staff response has been saved?");
   await form.locator('input[name="solveIssue"]').uncheck();
 
   await submitAndWait(page, "Create Issue", ISSUE_URL);
@@ -90,7 +92,9 @@ test.describe("Reply edit and delete interactions", () => {
     await form.locator('input[name="studentName"]').fill("E2E Link Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.links.${Date.now().toString()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E reply links");
-    await form.locator('textarea[name="question"]').fill("Links should not crash the reply form.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Adding a valid video link should save normally and must not crash the reply form.");
     await form.locator('input[name="solveIssue"]').uncheck();
 
     await submitAndWait(page, "Create Issue", ISSUE_URL);

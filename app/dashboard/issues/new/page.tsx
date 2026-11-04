@@ -1,8 +1,8 @@
 import {
   ArrowLeftIcon,
-  HelpCircleIcon,
   SparklesIcon,
 } from "@/components/icons";
+import { BeforeSubmitGuide } from "@/components/issues/before-submit-guide";
 import { IssueForm } from "@/components/issues/issue-form";
 import { StudentIssueForm } from "@/components/issues/student-issue-form";
 import { QuickTips } from "@/components/issues/quick-tips";
@@ -25,7 +25,7 @@ export default async function NewIssuePage() {
     return (
       <div className="flex flex-col">
         <header className="w-full px-4 py-3">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link
               href="/dashboard/issues"
               className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -38,63 +38,28 @@ export default async function NewIssuePage() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-          <div className="space-y-6">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <div className="space-y-8">
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <SparklesIcon
-                  size={20}
-                  className="mt-1 shrink-0 text-slate-400 dark:text-slate-500"
-                />
-                <div>
+              <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Submit a support request
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400">
-                    Describe your problem and the support team will get back to
-                    you by email.
+                     Describe the issue clearly so the support team can help
+                     faster.
                   </p>
-                </div>
               </div>
             </div>
 
-            <section
-              className="border-l-2 border-primary pl-4"
-              aria-labelledby="tips-heading"
-            >
-              <h2
-                id="tips-heading"
-                className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
-              >
-                <HelpCircleIcon size={16} />
-                Before you submit
-              </h2>
-              <ul className="mt-2 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                <li>
-                  Search the Support Library first — your answer may already be
-                  published.
-                </li>
-                <li>One problem per request keeps it easy to track.</li>
-                <li>
-                  Add a screenshot, the exact error message and what you already
-                  tried — that is what lets the team solve it quickly.
-                </li>
-                <li>
-                  Live support needs this request first: the mentor opens your
-                  case from the reference on the request page.
-                </li>
-                <li>
-                  Requests can be submitted 24/7; live support runs only during a
-                  support shift.
-                </li>
-                <li>
-                  The team replies by email, and every answer also appears on the
-                  request page — check it for updates.
-                </li>
-              </ul>
-            </section>
-
-            <StudentIssueForm courses={courses} csrfToken={csrfToken} />
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
+              <div className="order-2 min-w-0 lg:order-1">
+                <StudentIssueForm courses={courses} csrfToken={csrfToken} />
+              </div>
+              <div className="order-1 min-w-0 lg:order-2">
+                <BeforeSubmitGuide />
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -105,7 +70,7 @@ export default async function NewIssuePage() {
     <div className="flex flex-col">
       {/* Back link */}
       <header className="w-full px-4 py-3">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <Link
             href="/dashboard/issues"
             className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
@@ -119,7 +84,7 @@ export default async function NewIssuePage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         <div className="space-y-6">
           {/* Page Title & Description */}
           <div className="space-y-2">

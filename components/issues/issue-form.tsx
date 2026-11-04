@@ -8,6 +8,7 @@ import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import { formatByteSize } from "@/components/shared/attachment-list";
 import { formatVideoLinks } from "@/lib/format-links";
@@ -26,6 +27,8 @@ import {
 import {
   CASE_PRIORITIES,
   CASE_STATUSES,
+  ISSUE_DETAILS_CREATE_MIN,
+  ISSUE_DETAILS_MAX,
   ISSUE_TITLE_CREATE_MAX,
   ISSUE_TITLE_MAX,
   ISSUE_TITLE_WARN_AT,
@@ -357,7 +360,7 @@ export function IssueForm({
         />
         <div className="mt-4 space-y-4">
           <FieldWrapper
-            label="Problem title"
+             label="Issue title"
             required
             error={state.fieldErrors?.title?.[0]}
           >
@@ -381,7 +384,7 @@ export function IssueForm({
           </FieldWrapper>
 
           <FieldWrapper
-            label="Problem Description"
+             label="Issue details"
             required
             error={state.fieldErrors?.question?.[0]}
           >
@@ -389,13 +392,24 @@ export function IssueForm({
               name="question"
               value={formData.question}
               onChange={handleChange("question")}
-              required
-              rows={5}
-              maxLength={20_000}
-              error={state.fieldErrors?.question?.[0]}
-              placeholder="Describe the issue in detail. Include steps to reproduce, expected behavior, and actual behavior."
-            />
-          </FieldWrapper>
+               required
+               rows={supportIssue ? 5 : 7}
+               minLength={supportIssue ? 5 : ISSUE_DETAILS_CREATE_MIN}
+               maxLength={ISSUE_DETAILS_MAX}
+               error={state.fieldErrors?.question?.[0]}
+               placeholder={
+                 supportIssue
+                   ? "Describe the issue in detail."
+                   : "What were they trying to do?\nWhat happened or what exact error appeared?\nWhat has already been tried?"
+               }
+             />
+             {!state.fieldErrors?.question?.[0] && (
+               <IssueDetailsHint
+                 value={formData.question}
+                 requireCreateMinimum={!supportIssue}
+               />
+             )}
+           </FieldWrapper>
 
           {!minimal && (
             <FieldWrapper

@@ -64,7 +64,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await requestForm.locator('input[name="title"]').fill(title);
     await requestForm
       .locator('textarea[name="question"]')
-      .fill("The mentor needs the reference in the room.");
+      .fill("The mentor needs this request reference to investigate the issue during the support room.");
     // Course is required for an account with LMS enrolments.
     await chooseStudentCourse(requestForm);
     await submitAndWait(page, "Submit request", REQUEST_URL);
@@ -110,7 +110,9 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await form.locator('input[name="studentName"]').fill("E2E Foreign Student");
     await form.locator('input[name="studentEmail"]').fill(`foreign.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="question"]').fill("Not yours to read.");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("This unpublished request belongs to another student and must remain private.");
     await submitAndWait(adminPage, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
     const issuePath = new URL(adminPage.url()).pathname;
     await adminContext.close();

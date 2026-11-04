@@ -196,6 +196,25 @@ describe("CopyEmailButton", () => {
 
     expect(writeText).toHaveBeenCalledWith("student@example.com");
     await waitFor(() => expect(screen.getByText("Copied")).toBeTruthy());
+    expect(screen.getByText("student@example.com")).toBeTruthy();
+    expect(screen.queryByText("Copy email")).toBeNull();
+    expect(screen.getByRole("button", { name: "Email copied" }).className).not.toContain("border-slate");
+  });
+
+  it("announces a copy failure when clipboard methods are unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+
+    render(<CopyEmailButton email="student@example.com" />);
+    fireEvent.click(screen.getByRole("button", { name: /copy student@example.com/i }));
+
+    await waitFor(() => expect(screen.getByText("Copy failed")).toBeTruthy());
   });
 });
 

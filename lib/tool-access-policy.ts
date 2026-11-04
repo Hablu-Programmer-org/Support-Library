@@ -44,6 +44,19 @@ export function requestCreatesEntitlement(requestType: N8nRequestType): boolean 
   return requestType === "ACCESS" || requestType === "OPENAI_ACCESS";
 }
 
+/**
+ * New access can only be granted once, while a password reset is valid only
+ * for a student whose existing n8n access is still active.
+ */
+export function requestEntitlementAllowsProcessing(
+  requestType: N8nRequestType,
+  entitlementState: ToolEntitlementState | null,
+): boolean {
+  return requestType === "PASSWORD_RESET"
+    ? entitlementState === "ACTIVE"
+    : entitlementState === null;
+}
+
 export function accessExpiresAt(tool: ToolAccessTool, grantedAt: Date): Date {
   return addCalendarMonthsInDhaka(grantedAt, TOOL_ACCESS_POLICY[tool].durationMonths);
 }

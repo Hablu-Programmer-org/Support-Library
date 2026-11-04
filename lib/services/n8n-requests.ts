@@ -24,6 +24,7 @@ import {
   accessExpiresAt,
   entitlementToolForRequest,
   requestCreatesEntitlement,
+  requestEntitlementAllowsProcessing,
   TOOL_ACCESS_POLICY,
   toolEntitlementState,
 } from "@/lib/tool-access-policy";
@@ -52,11 +53,8 @@ export async function createN8nRequest(
   if (!agentEnrollmentAllows(agent)) return null;
   const tool = entitlementToolForRequest(requestType);
   const entitlement = await ToolAccessEntitlementModel.findOne({ studentId, tool }).lean();
-  if (requestCreatesEntitlement(requestType) && entitlement) return null;
-  if (
-    requestType === "PASSWORD_RESET" &&
-    (!entitlement || toolEntitlementState(entitlement) !== "ACTIVE")
-  ) return null;
+  const entitlementState = entitlement ? toolEntitlementState(entitlement) : null;
+  if (!requestEntitlementAllowsProcessing(requestType, entitlementState)) return null;
   try {
     return await mongoose.connection.transaction(async (session) => {
       // A student may retry after a failure, but the old row must no longer be
@@ -217,7 +215,11 @@ export async function listN8nRequestQueue({
     N8nAccessRequestModel.countDocuments(filter),
   ]);
   const userIds = requests.flatMap((request) => [request.studentId, request.createdBy].filter(Boolean));
-  const users = await UserModel.find({ _id: { $in: userIds } }).select("name email").lean();
+  // Keep the queue DTO explicit: the admin needs only identity fields and the
+  // existing profile image. Never pass a raw user document to the client.
+  const users = await UserModel.find({ _id: { $in: userIds } })
+    .select("name email image")
+    .lean();
   const byId = new Map(users.map((user) => [user._id.toString(), user]));
 
   const studentObjectIds = [...new Set(requests.map((request) => String(request.studentId)))]
@@ -276,6 +278,10 @@ export async function listN8nRequestQueue({
       const tool = entitlementToolForRequest(request.requestType as N8nRequestType);
       const entitlement = entitlementByKey.get(`${request.studentId}:${tool}`);
 
+      const creator = request.createdBy
+        ? byId.get(request.createdBy.toString()) ?? null
+        : null;
+
       return {
         id: request._id.toString(),
         requestType: request.requestType as N8nRequestType,
@@ -284,8 +290,14 @@ export async function listN8nRequestQueue({
         createdAt: request.createdAt as Date,
         sentAt: request.sentAt as Date | null,
         purpose: request.purpose as string | null,
-        createdBy: request.createdBy ? byId.get(request.createdBy.toString()) ?? null : null,
-        student: student ? { name: student.name, email: student.email } : null,
+        createdBy: creator ? { name: creator.name, email: creator.email } : null,
+        student: student
+          ? {
+              name: student.name,
+              email: student.email,
+              image: typeof student.image === "string" ? student.image : null,
+            }
+          : null,
         // Rows created before the snapshot existed fall back to the live batch,
         // so an eligible student never reads "not enrolled".
         batchNo: (request.batchNo as number | null) ?? null,
@@ -379,11 +391,8 @@ export async function claimN8nRequest(requestId: string, adminId: string) {
       studentId: candidate.studentId,
       tool,
     }).session(session).lean();
-    if (requestCreatesEntitlement(candidate.requestType) && entitlement) return null;
-    if (
-      candidate.requestType === "PASSWORD_RESET" &&
-      (!entitlement || toolEntitlementState(entitlement) !== "ACTIVE")
-    ) return null;
+    const entitlementState = entitlement ? toolEntitlementState(entitlement) : null;
+    if (!requestEntitlementAllowsProcessing(candidate.requestType, entitlementState)) return null;
 
     const newerActive = await N8nAccessRequestModel.exists({
       _id: { $ne: candidate._id },

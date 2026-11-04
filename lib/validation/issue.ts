@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { ISSUE_TITLE_CREATE_MAX } from "@/lib/constants";
+import {
+  ISSUE_DETAILS_CREATE_MIN,
+  ISSUE_DETAILS_MAX,
+  ISSUE_TITLE_CREATE_MAX,
+} from "@/lib/constants";
+import { hasEnoughIssueDetails } from "@/lib/issue-content-rules";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models/shared";
 import {
   objectIdSchema,
@@ -59,6 +64,14 @@ export const createSupportIssueInputSchema = supportIssueInputSchema.safeExtend(
       `Keep the title to ${ISSUE_TITLE_CREATE_MAX} characters or fewer`,
     )
     .regex(/^[^\r\n]+$/, "Keep the title on one line"),
+  question: z
+    .string()
+    .trim()
+    .max(ISSUE_DETAILS_MAX)
+    .refine(
+      hasEnoughIssueDetails,
+      `Please add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue`,
+    ),
 });
 
 export const supportIssueFilterSchema = z.strictObject({

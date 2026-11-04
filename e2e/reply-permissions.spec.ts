@@ -19,7 +19,9 @@ test.describe("Reply edit/delete permissions", () => {
     await form.locator('input[name="studentName"]').fill("E2E Perm Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.perm.${Date.now().toString()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E permission issue");
-    await form.locator('textarea[name="question"]').fill("Who may edit this reply?");
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Which staff account may edit or delete this saved reply after another user opens it?");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
     const issuePath = new URL(page.url()).pathname;

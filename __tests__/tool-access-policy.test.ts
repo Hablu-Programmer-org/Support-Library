@@ -4,6 +4,7 @@ import {
   accessExpiresAt,
   addCalendarMonthsInDhaka,
   requestCreatesEntitlement,
+  requestEntitlementAllowsProcessing,
   toolEntitlementState,
 } from "@/lib/tool-access-policy";
 
@@ -29,6 +30,20 @@ describe("tool access policy", () => {
     expect(requestCreatesEntitlement("ACCESS")).toBe(true);
     expect(requestCreatesEntitlement("OPENAI_ACCESS")).toBe(true);
     expect(requestCreatesEntitlement("PASSWORD_RESET")).toBe(false);
+  });
+
+  it("allows password resets only with active n8n access", () => {
+    expect(requestEntitlementAllowsProcessing("PASSWORD_RESET", "ACTIVE")).toBe(true);
+    expect(requestEntitlementAllowsProcessing("PASSWORD_RESET", null)).toBe(false);
+    expect(requestEntitlementAllowsProcessing("PASSWORD_RESET", "EXPIRED")).toBe(false);
+    expect(requestEntitlementAllowsProcessing("PASSWORD_RESET", "REVOKED")).toBe(false);
+  });
+
+  it("allows new access only when no entitlement exists", () => {
+    expect(requestEntitlementAllowsProcessing("ACCESS", null)).toBe(true);
+    expect(requestEntitlementAllowsProcessing("OPENAI_ACCESS", null)).toBe(true);
+    expect(requestEntitlementAllowsProcessing("ACCESS", "ACTIVE")).toBe(false);
+    expect(requestEntitlementAllowsProcessing("OPENAI_ACCESS", "EXPIRED")).toBe(false);
   });
 
   it("derives active, expired and revoked states", () => {

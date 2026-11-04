@@ -71,15 +71,15 @@ export function Topbar({ user }: TopbarProps) {
 
         <nav
           aria-label="Primary"
-          className="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto sm:gap-1.5"
+          className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto sm:gap-1"
         >
           {navItems.map((item) => {
             const active = item.href === activeHref;
             const Icon = item.icon;
-            const className = `group relative flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
+            const className = `group relative flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 motion-reduce:transition-none ${
               active
-                ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
-                : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"
+                ? "bg-cyan-500/10 font-semibold text-cyan-700 ring-1 ring-inset ring-cyan-500/25 dark:bg-cyan-400/10 dark:text-cyan-300 dark:ring-cyan-400/25"
+                : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white"
             }`;
             // Labels stay hidden until `lg`: below that the four items a
             // student sees (Issues, Submit issue, My Courses, Live support)

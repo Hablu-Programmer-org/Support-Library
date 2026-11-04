@@ -109,7 +109,7 @@ describe("product validation", () => {
 
   it("caps a new issue title at 80 characters on one line", () => {
     const base = {
-      question: "Image show hocche na in React component",
+      question: "Image show hocche na in the React component after deployment",
     };
 
     expect(
@@ -132,6 +132,39 @@ describe("product validation", () => {
         title: "Assignment Submission\nlink missing",
       }),
     ).toThrow(/one line/i);
+  });
+
+  it("requires 40 normalized detail characters only when creating", () => {
+    const validQuestion = "The production page returns a 404 after I submit the assignment.";
+
+    expect(
+      createSupportIssueInputSchema.parse({
+        title: "Assignment submission returns 404",
+        question: validQuestion,
+      }).question,
+    ).toBe(validQuestion);
+
+    expect(() =>
+      createSupportIssueInputSchema.parse({
+        title: "Assignment submission returns 404",
+        question: "The page is broken after submit.",
+      }),
+    ).toThrow(/at least 40 characters/i);
+
+    expect(() =>
+      createSupportIssueInputSchema.parse({
+        title: "Assignment submission returns 404",
+        question: "Two words" + " \n ".repeat(30),
+      }),
+    ).toThrow(/at least 40 characters/i);
+
+    // Legacy rows written under the old rule remain editable.
+    expect(
+      supportIssueInputSchema.parse({
+        title: "Legacy short issue",
+        question: "Short",
+      }).question,
+    ).toBe("Short");
   });
 
   it("keeps the wider title limit when editing a legacy issue", () => {

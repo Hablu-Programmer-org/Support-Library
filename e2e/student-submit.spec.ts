@@ -26,25 +26,28 @@ test.describe("STUDENT issue submission", () => {
     // The student picks no identity — it is derived from the session.
     await expect(form.locator('input[name="studentEmail"]')).toHaveCount(0);
     await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
+    await expect(form.getByLabel(/Issue title/)).toBeVisible();
+    await expect(form.getByLabel(/Problem title/)).toHaveCount(0);
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
       .fill("The lecture video keeps buffering on the third module.");
-    // Uploaded image attachments are covered in attachments.spec.ts; videos remain
-    // external HTTPS links.
-    await form
-      .locator('textarea[name="videoLinks"]')
-      .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
-
-    // Course context is open by default; the list comes from the LMS enrolments
-    // and the batch fills itself once a course is picked.
-    const additional = form.locator("details").filter({ hasText: "Additional Details" });
-    await expect(additional.locator("summary")).toBeVisible();
-    const courseSelect = additional.locator('select[name="courseSlug"]');
+    // Required course context is never hidden in the optional disclosure.
+    const courseSelect = form.locator('select[name="courseSlug"]');
     await expect(courseSelect).toBeVisible();
     await courseSelect.selectOption("jfwd");
-    await expect(additional.locator('input[aria-label="Batch (filled from your enrolment)"]')).toHaveValue("2");
-    await additional.locator('input[name="tags"]').fill("buffering, video");
+    await expect(form.locator('input[aria-label="Batch (filled from your enrolment)"]')).toHaveValue("2");
+
+    const optional = form
+      .locator("details")
+      .filter({ hasText: "Add module, lesson, tags or video links" });
+    await optional.locator("summary").click();
+    // Uploaded image attachments are covered in attachments.spec.ts; videos remain
+    // external HTTPS links inside the optional context disclosure.
+    await optional
+      .locator('textarea[name="videoLinks"]')
+      .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
+    await optional.locator('input[name="tags"]').fill("buffering, video");
 
     await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
     await expect(page.getByRole("status")).toContainText("Your request has been submitted.");
@@ -74,6 +77,27 @@ test.describe("STUDENT issue submission", () => {
     await expect(adminPage.getByText("jfwd")).toBeVisible();
 
     await adminContext.close();
+  });
+
+  test("requires useful details and stays responsive", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/dashboard/issues/new");
+
+    const form = formFor(page, "Submit request");
+    const details = form.locator('textarea[name="question"]');
+    await form.locator('input[name="title"]').fill("Assignment page does not load");
+    await details.fill("Page broken");
+
+    expect(await details.evaluate((field) => (field as HTMLTextAreaElement).validity.tooShort)).toBe(true);
+    await form.getByRole("button", { name: "Submit request" }).click();
+    await expect(page).toHaveURL("/dashboard/issues/new");
+    await expect(form.getByText("Add at least 40 characters.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Submit request" })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
   });
 
   test("never exposes staff surfaces", async ({ page }) => {

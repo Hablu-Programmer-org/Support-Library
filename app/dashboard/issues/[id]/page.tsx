@@ -6,6 +6,7 @@ import {
   deleteIssueAction,
 } from "@/actions/issues";
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
+import { CopyForAiButton } from "@/components/issues/copy-for-ai-button";
 import { IssueStatusForm } from "@/components/issues/issue-status-form";
 import { PublishIssueForm } from "@/components/issues/publish-issue-form";
 import { StudentRequestView } from "@/components/issues/student-request-view";
@@ -36,6 +37,7 @@ import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/li
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
+import { buildIssueResponsePrompt } from "@/lib/issue-response-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +113,40 @@ export default async function IssueDetailPage({
   const replies = await listReplies(supportIssue.id, { redactActorIds: !canEdit });
   const csrfToken = await generateCsrfToken(session.user.id);
 
+  // Admin-only: the prompt carries the full thread, which mentors can read but
+  // only admins may hand to an external assistant. It is built from an explicit
+  // allowlist on the server, never scraped from the rendered page, and contains
+  // no student identity, internal ids or private attachment URLs.
+  const aiPrompt =
+    canPublish && staffIssue
+      ? buildIssueResponsePrompt({
+          issue: {
+            title: staffIssue.title,
+            question: staffIssue.question,
+            status: staffIssue.status,
+            priority: staffIssue.priority,
+            courseSlug: staffIssue.courseSlug,
+            batchNo: staffIssue.batchNo,
+            moduleSlug: staffIssue.moduleSlug,
+            contentSlug: staffIssue.contentSlug,
+            tags: staffIssue.tags,
+            createdAt: staffIssue.createdAt,
+            updatedAt: staffIssue.updatedAt,
+            videoLinks: staffIssue.videoLinks,
+            attachments: staffIssue.uploads.map((upload) => ({
+              mimeType: upload.mimeType,
+            })),
+          },
+          replies: replies.map((reply) => ({
+            isStaffReply: reply.isStaffReply,
+            body: reply.body,
+            createdAt: reply.createdAt,
+            videoLinks: reply.videoLinks,
+            attachments: reply.uploads.map((upload) => ({ mimeType: upload.mimeType })),
+          })),
+        })
+      : null;
+
   return (
     <div className="mx-auto w-full max-w-6xl py-6">
       <Link
@@ -148,15 +184,18 @@ export default async function IssueDetailPage({
           </div>
 
           {canEdit && (
-            // Editing the case is a page-level action: keep it beside the title so
-            // it stays reachable before the sidebar is scrolled into view.
-            <Link
-              href={buildIssueEditHref(supportIssue.id, returnTo)}
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              <PencilIcon size={16} />
-              Edit issue details
-            </Link>
+            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-start">
+              {aiPrompt ? <CopyForAiButton prompt={aiPrompt} /> : null}
+              {/* Editing the case is a page-level action: keep it beside the title so
+                  it stays reachable before the sidebar is scrolled into view. */}
+              <Link
+                href={buildIssueEditHref(supportIssue.id, returnTo)}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                <PencilIcon size={16} />
+                Edit issue details
+              </Link>
+            </div>
           )}
         </div>
       </header>

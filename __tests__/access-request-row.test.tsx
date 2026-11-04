@@ -12,6 +12,12 @@ vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { AccessRequestRow, type AccessRowRequest } from "@/components/tool-access/access-request-row";
+import {
+  ProfileAvatar,
+  profileInitials,
+  safeProfileImageUrl,
+} from "@/components/shared/profile-avatar";
+import { rowHoverClass } from "@/lib/ui";
 
 const base: AccessRowRequest = {
   id: "req-1",
@@ -20,6 +26,7 @@ const base: AccessRowRequest = {
   statusTone: "waiting",
   dateLabel: "3 Nov 2026, 19:08",
   studentName: "Ahmad Musa",
+  studentImage: null,
   email: "ahmad@test.com",
   batchLabel: "Batch 4",
   historyLabel: "n8n access sent 2× · Last 1 Nov",
@@ -36,10 +43,43 @@ describe("AccessRequestRow", () => {
   it("shows the batch and access history on one compact line", () => {
     render(<AccessRequestRow request={base} csrfToken="csrf" requiresReauth={false} />);
 
+    const row = screen.getByRole("listitem");
+    // The hover/focus feedback comes from the shared row token, so a page can
+    // never drift to a one-off hover colour.
+    expect(row.className).toContain(rowHoverClass);
+    expect(rowHoverClass).toContain("focus-within:bg-slate-50");
+    expect(rowHoverClass).toContain("motion-reduce:transition-none");
     expect(screen.getByRole("heading", { name: "Ahmad Musa" })).toBeTruthy();
     expect(screen.getByText("Batch 4")).toBeTruthy();
     expect(screen.getByText("n8n access sent 2× · Last 1 Nov")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Copy ahmad@test\.com/i })).toBeTruthy();
+    expect(screen.queryByText("Copy email")).toBeNull();
+    expect(screen.getByText("AM")).toBeTruthy();
+  });
+
+  it("shows an allowlisted profile image and falls back when it fails", () => {
+    const { container } = render(
+      <ProfileAvatar
+        imageUrl="https://lh3.googleusercontent.com/a/profile-photo"
+        name="Ahmad Musa"
+      />,
+    );
+
+    const image = container.querySelector("img");
+    expect(image).not.toBeNull();
+    fireEvent.error(image!);
+    expect(screen.getByText("AM")).toBeTruthy();
+  });
+
+  it("rejects unsupported avatar URLs and creates stable initials", () => {
+    expect(safeProfileImageUrl("http://lh3.googleusercontent.com/a/photo")).toBeNull();
+    expect(safeProfileImageUrl("https://attacker.example/avatar.png")).toBeNull();
+    expect(safeProfileImageUrl("not a url")).toBeNull();
+    expect(profileInitials("  Ahmad   Musa Rahman ")).toBe("AM");
+    expect(profileInitials(null)).toBe("?");
+
+    render(<ProfileAvatar imageUrl="https://attacker.example/avatar.png" name="Ahmad Musa" />);
+    expect(screen.getByText("AM")).toBeTruthy();
   });
 
   it("shows the n8n action directly and gates send on a link", () => {

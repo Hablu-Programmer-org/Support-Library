@@ -15,7 +15,9 @@ test.describe("edit-mode attachments", () => {
     await createForm.locator('input[name="studentName"]').fill("E2E Attachment Student");
     await createForm.locator('input[name="studentEmail"]').fill(`e2e.attach.${Date.now()}@test.com`);
     await createForm.locator('input[name="title"]').fill(title);
-    await createForm.locator('textarea[name="question"]').fill("Edit-mode attachment test.");
+    await createForm
+      .locator('textarea[name="question"]')
+      .fill("This request verifies that an existing image can be replaced safely in edit mode.");
     await createForm.locator('input[name="solveIssue"]').uncheck();
 
     const oldPng = Buffer.alloc(24);

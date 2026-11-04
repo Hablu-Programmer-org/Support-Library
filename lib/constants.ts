@@ -11,6 +11,12 @@ export const CASE_STATUSES = ["OPEN", "SOLVED", "PENDING", "AWAITING_STUDENT", "
 export const ISSUE_TITLE_CREATE_MAX = 80;
 export const ISSUE_TITLE_WARN_AT = 60;
 export const ISSUE_TITLE_MAX = 200;
+/**
+ * New requests need enough context for staff to act on them. Existing short
+ * rows remain editable through the legacy five-character update contract.
+ */
+export const ISSUE_DETAILS_CREATE_MIN = 40;
+export const ISSUE_DETAILS_MAX = 20_000;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 
 export const CASE_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;

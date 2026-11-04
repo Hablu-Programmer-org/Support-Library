@@ -87,11 +87,11 @@ export function AccessRequestToolbar({
   const searching = isPending;
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div
           aria-label="Access request type"
-          className="inline-flex rounded-xl border border-slate-200 bg-slate-100/80 p-1 dark:border-slate-800 dark:bg-slate-900/70"
+          className="inline-flex gap-4 border-b border-slate-200 dark:border-slate-800"
           role="group"
         >
           {TABS.map((tab) => {
@@ -101,17 +101,17 @@ export function AccessRequestToolbar({
               <button
                 key={tab.id}
                 aria-pressed={active}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-0.5 pb-2 text-sm font-semibold transition-colors ${
                   active
-                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
-                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+                    ? "border-cyan-500 text-slate-900 dark:text-white"
+                    : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
                 }`}
                 onClick={() => navigate({ tab: tab.id })}
                 type="button"
               >
                 {tab.label}
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
                     count > 0
                       ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                       : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
@@ -139,7 +139,7 @@ export function AccessRequestToolbar({
         </label>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sr-only" htmlFor="access-batch-filter">
             Filter by batch

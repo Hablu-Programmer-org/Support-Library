@@ -1,18 +1,28 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import {
+  CaseIcon,
+  MessageSquareIcon,
+  UserIcon,
+  VideoIcon,
+} from "@/components/icons";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { LiveSupportJoinQueue } from "@/components/live-support/join-queue";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
+import { AccessRequestSummary } from "@/components/tool-access/access-request-summary";
 import { getDashboardStats, getRecentUnresolvedIssues, getTopTags } from "@/lib/services/analytics";
 import { requireSession } from "@/lib/auth-guard";
 import { dayKeyInDhaka, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 import { buildIssueDetailHref } from "@/lib/issue-list-params";
-import { canMutate } from "@/lib/roles";
+import { isN8nAdmin } from "@/lib/n8n-request-policy";
+import { canMutate, isAdmin } from "@/lib/roles";
 import { listStudentRequestsAwaitingStaff } from "@/lib/services/issues";
 import { countStillWaiting, listLiveSupportQueue } from "@/lib/services/live-support-joins";
+import { countPendingN8nRequests } from "@/lib/services/n8n-requests";
+import { rowHoverClass, secondaryButtonClass, surfaceClass, surfaceHeaderClass } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -27,82 +37,123 @@ const timestamp = (date?: Date | null) =>
 
 export default async function DashboardPage() {
   const session = await requireSession();
-  if (!canMutate(session.user.role ?? "STUDENT")) redirect("/dashboard/issues");
+  const role = session.user.role ?? "STUDENT";
+  if (!canMutate(role)) redirect("/dashboard/issues");
 
   const dayKey = dayKeyInDhaka(new Date());
-  const [stats, recentIssues, topTags, waiting, awaitingMentor] = await Promise.all([
+  // The access queue is a separate admin surface with its own exact-role gate,
+  // so the dashboard only advertises it to someone who can actually open it.
+  const showAccessQueue = isAdmin(role) && (await isN8nAdmin(session.user.email));
+
+  const [stats, recentIssues, topTags, waiting, awaitingMentor, accessCounts] = await Promise.all([
     getDashboardStats(false),
-    getRecentUnresolvedIssues(8, false),
+    getRecentUnresolvedIssues(6, false),
     getTopTags(10, false),
     listLiveSupportQueue(dayKey),
-    listStudentRequestsAwaitingStaff(8),
+    listStudentRequestsAwaitingStaff(6),
+    showAccessQueue
+      ? Promise.all([
+          countPendingN8nRequests(["OPENAI_ACCESS"]),
+          countPendingN8nRequests(["ACCESS", "PASSWORD_RESET"]),
+        ])
+      : Promise.resolve(null),
   ]);
   // A join row survives after a case is solved, so the card counts only those
   // requests that are still unresolved (the list below stays a full log).
   const waitingNow = countStillWaiting(waiting);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <PageHeader
         action={
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            href="/dashboard/live-support"
-          >
+          <Link className={secondaryButtonClass} href="/dashboard/live-support">
             Open live support queue
           </Link>
         }
-        description="What came in, and who is waiting in the room right now."
+        description="What came in, who is waiting in the room, and how much admin work is left."
+        eyebrow="Operations"
         title="Dashboard"
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard hint="Total issues" label="Support Issues" value={stats.totalIssues} />
-        <StatCard hint="Open, pending or follow-up" label="Unresolved" value={stats.unresolvedIssues} />
-        <StatCard hint="New issues in the last 7 days" label="Issues This Week" value={stats.weeklyIssues} />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          hint="Every request ever submitted"
+          href="/dashboard/issues"
+          icon={<CaseIcon size={16} />}
+          label="Support Issues"
+          value={stats.totalIssues}
+        />
+        <StatCard
+          hint="Open, pending or follow-up"
+          href="/dashboard/issues"
+          icon={<MessageSquareIcon size={16} />}
+          label="Unresolved"
+          tone="warning"
+          value={stats.unresolvedIssues}
+        />
+        <StatCard
+          hint="New issues in the last 7 days"
+          icon={<UserIcon size={16} />}
+          label="Issues This Week"
+          tone="primary"
+          value={stats.weeklyIssues}
+        />
         <StatCard
           hint="Unresolved requests with a student in the room"
+          href="/dashboard/live-support"
+          icon={<VideoIcon size={16} />}
           label="Waiting Now"
+          tone="success"
           value={waitingNow}
         />
       </div>
 
+      {accessCounts && (
+        <AccessRequestSummary openAiPending={accessCounts[0]} n8nPending={accessCounts[1]} />
+      )}
+
       <LiveSupportJoinQueue dayKey={dayKey} entries={waiting} />
 
-      <section
-        aria-labelledby="awaiting-mentor-heading"
-        className="space-y-3 border-t border-slate-200 pt-6 dark:border-slate-800"
-      >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2
-            id="awaiting-mentor-heading"
-            className="text-lg font-semibold text-slate-900 dark:text-white"
+      <section aria-labelledby="awaiting-mentor-heading" className={surfaceClass}>
+        <div className={surfaceHeaderClass}>
+          <div className="min-w-0">
+            <h2
+              className="text-sm font-semibold text-slate-900 dark:text-white"
+              id="awaiting-mentor-heading"
+            >
+              Student requests awaiting a mentor
+            </h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              Submitted by students and not assigned to a mentor yet — oldest first.
+            </p>
+          </div>
+          <Link
+            className="text-xs font-semibold text-cyan-700 hover:underline dark:text-cyan-300"
+            href="/dashboard/issues"
           >
-            Student requests awaiting a mentor
-          </h2>
-          <Link className="text-xs font-semibold text-primary hover:underline" href="/dashboard/issues">
-            All issues
+            All issues →
           </Link>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Submitted by students and not assigned to a mentor yet — oldest first.
-        </p>
 
         {awaitingMentor.length === 0 ? (
-          <EmptyState>No student request is waiting to be picked up.</EmptyState>
+          <EmptyState className="rounded-none border-0 bg-transparent dark:bg-transparent">
+            No student request is waiting to be picked up.
+          </EmptyState>
         ) : (
-          <ul className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          <ul className="divide-y divide-slate-200 dark:divide-slate-800">
             {awaitingMentor.map((issue) => (
               <li key={issue.id}>
                 <Link
-                  className="flex flex-col gap-2 py-3 transition hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between dark:hover:bg-slate-800/60"
+                  className={`flex flex-col gap-1.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${rowHoverClass}`}
                   href={buildIssueDetailHref(issue.id, "/dashboard")}
                 >
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-cyan-700 dark:text-cyan-300">{issue.title}</span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="truncate font-medium text-slate-900 dark:text-white">
+                      {issue.title}
+                    </span>
                     <StatusBadge status={issue.status} />
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
                     {timestamp(issue.createdAt)}
                   </span>
                 </Link>
@@ -112,37 +163,64 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="border-t border-slate-200 pt-5 dark:border-slate-800">
-          <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Recent Unresolved Issues</h2>
-          <div className="space-y-2">
-            {recentIssues.length === 0 ? (
-              <EmptyState>No unresolved issues.</EmptyState>
-            ) : (
-              recentIssues.map((item) => (
-                <Link
-                  key={item.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 p-3 transition hover:border-cyan-500 dark:border-slate-800"
-                  href={buildIssueDetailHref(item.id, "/dashboard")}
-                >
-                  <span className="font-medium text-cyan-600 dark:text-cyan-400">{item.title}</span>
-                  <StatusBadge status={item.status} />
-                </Link>
-              ))
-            )}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section aria-labelledby="recent-issues-heading" className={surfaceClass}>
+          <div className={surfaceHeaderClass}>
+            <h2
+              className="text-sm font-semibold text-slate-900 dark:text-white"
+              id="recent-issues-heading"
+            >
+              Recent Unresolved Issues
+            </h2>
+            <Link
+              className="text-xs font-semibold text-cyan-700 hover:underline dark:text-cyan-300"
+              href="/dashboard/issues"
+            >
+              View all →
+            </Link>
           </div>
+          {recentIssues.length === 0 ? (
+            <EmptyState className="rounded-none border-0 bg-transparent dark:bg-transparent">
+              No unresolved issues.
+            </EmptyState>
+          ) : (
+            <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+              {recentIssues.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    className={`flex items-center justify-between gap-3 px-4 py-3 ${rowHoverClass}`}
+                    href={buildIssueDetailHref(item.id, "/dashboard")}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-white">
+                      {item.title}
+                    </span>
+                    <StatusBadge status={item.status} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
-        <section className="border-t border-slate-200 pt-5 dark:border-slate-800">
-          <h2 className="mb-3 font-semibold text-slate-900 dark:text-white">Popular Tags</h2>
+        <section aria-labelledby="popular-tags-heading" className={surfaceClass}>
+          <div className={surfaceHeaderClass}>
+            <h2
+              className="text-sm font-semibold text-slate-900 dark:text-white"
+              id="popular-tags-heading"
+            >
+              Popular Tags
+            </h2>
+          </div>
           {topTags.length === 0 ? (
-            <EmptyState>No tags yet.</EmptyState>
+            <EmptyState className="rounded-none border-0 bg-transparent dark:bg-transparent">
+              No tags yet.
+            </EmptyState>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 p-4">
               {topTags.map((item) => (
                 <Link
                   key={item.tag}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-sm transition hover:bg-cyan-100 hover:text-cyan-700 dark:bg-slate-800 dark:hover:bg-cyan-900/40"
+                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 transition-colors duration-150 hover:bg-cyan-100 hover:text-cyan-800 motion-reduce:transition-none dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-cyan-900/40 dark:hover:text-cyan-200"
                   href={`/dashboard/issues?tag=${encodeURIComponent(item.tag)}`}
                 >
                   {item.tag} ({item.count})

@@ -109,7 +109,7 @@ test.describe("uploaded attachments", () => {
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
-      .fill("My selected image is actually text.");
+      .fill("My selected image is actually a text file and should be rejected safely.");
     await chooseStudentCourse(form);
 
     await form
