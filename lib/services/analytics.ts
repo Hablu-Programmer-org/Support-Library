@@ -20,7 +20,7 @@ export async function getDashboardStats(publicOnly = false): Promise<DashboardSt
 
   const [totalIssues, unresolvedIssues, staffCount, weeklyIssues] = await Promise.all([
     SupportIssueModel.countDocuments(baseFilter),
-    SupportIssueModel.countDocuments({ ...baseFilter, status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] } }),
+    SupportIssueModel.countDocuments({ ...baseFilter, status: { $in: ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP"] } }),
     UserModel.countDocuments({}),
     SupportIssueModel.countDocuments({ ...baseFilter, createdAt: { $gte: weekStart } }),
   ]);
@@ -51,7 +51,7 @@ export async function getRecentUnresolvedIssues(limit = 8, publicOnly = false) {
   const issues = await SupportIssueModel.find({
     deletedAt: null,
     ...(publicOnly ? { visibility: "PUBLISHED" } : {}),
-    status: { $in: ["OPEN", "PENDING", "FOLLOW_UP"] },
+    status: { $in: ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP"] },
   })
     .sort({ updatedAt: -1 })
     .limit(limit)

@@ -17,7 +17,7 @@ describe("shouldPublishOnSolve", () => {
   });
 
   it("only auto-publishes for the SOLVED status", () => {
-    for (const status of ["OPEN", "PENDING", "FOLLOW_UP", "ARCHIVED"] as const) {
+    for (const status of ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP", "ARCHIVED"] as const) {
       expect(shouldPublishOnSolve({ status, role: "ADMIN", confirmed: true })).toBe(false);
     }
   });

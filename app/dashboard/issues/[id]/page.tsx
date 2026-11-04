@@ -43,6 +43,7 @@ const statusLabels = {
   OPEN: "Open",
   SOLVED: "Solved",
   PENDING: "Pending",
+  AWAITING_STUDENT: "Needs your reply",
   FOLLOW_UP: "Follow-up",
   ARCHIVED: "Archived",
 };

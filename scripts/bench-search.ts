@@ -90,7 +90,7 @@ const TOPICS = [
   "regex lookahead validation pattern",
 ];
 const COURSES = ["react-basics", "nextjs-advanced", "node-backend", "typescript-core", "database-design"];
-const STATUSES = ["OPEN", "PENDING", "FOLLOW_UP", "SOLVED", "ARCHIVED"];
+const STATUSES = ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP", "SOLVED", "ARCHIVED"];
 
 const tokenize = (value: string) =>
   value

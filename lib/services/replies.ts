@@ -246,7 +246,12 @@ export async function addStudentReply(
         createOperationHash: requestHash,
       }], { session });
 
-      const nextStatus = supportIssue.status === "SOLVED" ? "FOLLOW_UP" : supportIssue.status;
+      const nextStatus =
+        supportIssue.status === "SOLVED"
+          ? "FOLLOW_UP"
+          : supportIssue.status === "AWAITING_STUDENT"
+            ? "OPEN"
+            : supportIssue.status;
       // Preserve the latest staff reply timestamp while marking this as waiting.
       const currentIssue = await SupportIssueModel.findById(parsed.issueId)
         .select("lastStaffReplyAt")

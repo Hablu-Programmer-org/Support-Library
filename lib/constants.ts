@@ -1,4 +1,4 @@
-export const CASE_STATUSES = ["OPEN", "SOLVED", "PENDING", "FOLLOW_UP", "ARCHIVED"] as const;
+export const CASE_STATUSES = ["OPEN", "SOLVED", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP", "ARCHIVED"] as const;
 
 /**
  * Title limits.
