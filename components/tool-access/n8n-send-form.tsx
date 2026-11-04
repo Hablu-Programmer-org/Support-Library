@@ -22,15 +22,17 @@ export function N8nSendForm({
   const needsReauth = requiresReauth || state.errorCode === "REAUTH_REQUIRED";
 
   return (
-    <form action={action} className="min-w-0">
+    <form action={action} className="w-full min-w-0 space-y-1.5">
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="requestId" value={requestId} />
-      <div className="flex min-w-0 items-center justify-end gap-2 max-[359px]:flex-col max-[359px]:items-stretch">
+      <div className="flex min-w-0 items-center gap-2 max-[420px]:flex-col max-[420px]:items-stretch">
         {needsReauth ? (
           <GoogleReverifyButton />
         ) : (
           <>
-            <label className="sr-only" htmlFor={`link-${requestId}`}>n8n link</label>
+            <label className="sr-only" htmlFor={`link-${requestId}`}>
+              n8n link
+            </label>
             <input
               id={`link-${requestId}`}
               name="link"
@@ -38,7 +40,14 @@ export function N8nSendForm({
               required
               autoComplete="off"
               placeholder="Paste secure n8n link…"
-              className={`${nativeFieldClass} min-w-0 flex-1 px-3 py-2 text-xs`}
+              aria-describedby={
+                state.error
+                  ? `link-error-${requestId}`
+                  : state.success
+                    ? `link-success-${requestId}`
+                    : undefined
+              }
+              className={`${nativeFieldClass} min-w-45 flex-1 px-3 py-2 text-xs`}
               value={link}
               onChange={(event) => setLink(event.target.value)}
             />
@@ -52,8 +61,24 @@ export function N8nSendForm({
           </>
         )}
       </div>
-      {state.error && <p role="alert" className="mt-1.5 text-xs text-red-600">{state.error}</p>}
-      {state.success && <p role="status" className="mt-1.5 text-xs text-emerald-600">{state.success}</p>}
+      {state.error && (
+        <p
+          id={`link-error-${requestId}`}
+          role="alert"
+          className="wrap-break-word text-xs text-red-600"
+        >
+          {state.error}
+        </p>
+      )}
+      {state.success && (
+        <p
+          id={`link-success-${requestId}`}
+          role="status"
+          className="wrap-break-word text-xs text-emerald-600"
+        >
+          {state.success}
+        </p>
+      )}
     </form>
   );
 }
