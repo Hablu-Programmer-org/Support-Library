@@ -48,6 +48,9 @@ describe("AccessRequestRow", () => {
     expect(screen.queryByRole("button", { name: "Process" })).toBeNull();
     const link = screen.getByLabelText("n8n link") as HTMLInputElement;
     const send = screen.getByRole("button", { name: "Send email" }) as HTMLButtonElement;
+    expect(send.className).toContain("w-auto");
+    expect(send.className).not.toContain("w-full");
+    expect(link.className).toContain("flex-1");
     expect(send.disabled).toBe(true);
     fireEvent.change(link, { target: { value: "https://n8n.hablu-programmer.com/invite" } });
     expect(send.disabled).toBe(false);
@@ -64,6 +67,8 @@ describe("AccessRequestRow", () => {
 
     const checkbox = screen.getByRole("checkbox", { name: "Added this exact email" }) as HTMLInputElement;
     const confirm = screen.getByRole("button", { name: "Confirm & email student" }) as HTMLButtonElement;
+    expect(confirm.className).toContain("w-auto");
+    expect(confirm.className).not.toContain("w-full");
     expect(checkbox.checked).toBe(false);
     expect(confirm.disabled).toBe(true);
     fireEvent.click(screen.getByText("Added this exact email"));

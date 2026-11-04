@@ -80,7 +80,7 @@ export function AdminCreateAccessRequestForm({
           {requiresReauth || state.errorCode === "REAUTH_REQUIRED" ? (
             <GoogleReverifyButton />
           ) : (
-            <PendingSubmitButton label="Create selected requests" pendingLabel="Creating requests…" className="w-auto px-3 py-2 text-xs" />
+            <PendingSubmitButton label="Create selected requests" pendingLabel="Creating requests…" className="px-3 py-2 text-xs" />
           )}
         </div>
       </form>

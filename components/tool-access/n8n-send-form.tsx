@@ -22,7 +22,7 @@ export function N8nSendForm({
   const needsReauth = requiresReauth || state.errorCode === "REAUTH_REQUIRED";
 
   return (
-    <form action={action} className="w-full min-w-0 space-y-1.5">
+    <form action={action} className="w-full min-w-0 space-y-1.5 lg:w-auto lg:flex-1">
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="requestId" value={requestId} />
       <div className="flex min-w-0 items-center gap-2 max-[420px]:flex-col max-[420px]:items-stretch">
@@ -47,13 +47,14 @@ export function N8nSendForm({
                     ? `link-success-${requestId}`
                     : undefined
               }
-              className={`${nativeFieldClass} min-w-45 flex-1 px-3 py-2 text-xs`}
+              className={`${nativeFieldClass} min-w-0 flex-1 px-3 py-2 text-xs xl:min-w-45`}
               value={link}
               onChange={(event) => setLink(event.target.value)}
             />
             <PendingSubmitButton
-              className="w-auto shrink-0 px-3 py-2 text-xs shadow-sm disabled:shadow-none"
+              className="px-3 py-2 text-xs shadow-sm disabled:shadow-none"
               disabled={!link.trim()}
+              fullWidth={false}
               label="Send email"
               leadingIcon={<SendIcon size={14} />}
               pendingLabel="Sending…"

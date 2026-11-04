@@ -113,8 +113,9 @@ export function RejectAccessRequestForm({
             Cancel
           </button>
           <PendingSubmitButton
-            className="w-auto bg-rose-600 px-3 py-2 text-xs shadow-sm hover:bg-rose-700 disabled:shadow-none"
+            className="bg-rose-600 px-3 py-2 text-xs shadow-sm hover:bg-rose-700 disabled:shadow-none"
             disabled={!reason}
+            fullWidth={false}
             label="Reject & notify"
             pendingLabel="Rejecting…"
           />

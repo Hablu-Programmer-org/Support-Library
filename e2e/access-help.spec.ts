@@ -130,6 +130,17 @@ test.describe("access request administration", () => {
     await n8nLink.fill("https://n8n.hablu-programmer.com/invite/test");
     await expect(sendEmail).toBeEnabled();
 
+    // Geometry guard: the link input keeps the space, the action stays compact.
+    const linkBox = await n8nLink.boundingBox();
+    const sendBox = await sendEmail.boundingBox();
+    expect(linkBox!.width).toBeGreaterThanOrEqual(180);
+    expect(linkBox!.width).toBeLessThan(520);
+    expect(sendBox!.width).toBeLessThan(linkBox!.width);
+
+    // Send and Reject share one line: the reject control must not drop below.
+    const rejectBox = await n8nQueue.getByRole("button", { name: "Reject" }).first().boundingBox();
+    expect(Math.abs(rejectBox!.y - sendBox!.y)).toBeLessThan(8);
+
     // Email search is server-side and live: no submit button, and it survives a
     // refresh because the query lives in the URL.
     const search = adminPage.getByRole("searchbox", { name: "Search by student email" });

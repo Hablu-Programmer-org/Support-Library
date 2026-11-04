@@ -146,7 +146,7 @@ export function AccessRequestRow({
           </div>
 
           {(canProcess || canReject) && !rejectMode && (
-            <div className={`flex min-w-0 shrink-0 flex-wrap items-start justify-end gap-2 ${request.variant === "n8n" ? "lg:w-[48%]" : ""}`}>
+            <div className={`flex min-w-0 shrink-0 flex-wrap items-start justify-end gap-2 ${request.variant === "n8n" ? "lg:w-[48%] lg:flex-nowrap xl:w-[36%]" : ""}`}>
               {canProcess && (
                 request.variant === "openai" ? (
                   <OpenAiConfirmForm
