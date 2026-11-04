@@ -21,13 +21,14 @@ export function RejectAccessRequestForm({
   requestId,
   csrfToken,
   onDecisionSaved,
+  onCancel,
 }: {
   requestId: string;
   csrfToken: string;
   onDecisionSaved: () => void;
+  onCancel: () => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [state, action] = useActionState(rejectAccessRequestAction, {});
 
@@ -37,19 +38,6 @@ export function RejectAccessRequestForm({
     const timer = window.setTimeout(() => router.refresh(), 1_200);
     return () => window.clearTimeout(timer);
   }, [state.success, onDecisionSaved, router]);
-
-  if (!open) {
-    return (
-      <button
-        aria-expanded="false"
-        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30 dark:border-rose-900 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/30"
-        onClick={() => setOpen(true)}
-        type="button"
-      >
-        Reject
-      </button>
-    );
-  }
 
   if (state.success) {
     return (
@@ -93,7 +81,7 @@ export function RejectAccessRequestForm({
         <div className="flex flex-wrap justify-end gap-2">
           <button
             className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            onClick={() => setOpen(false)}
+            onClick={onCancel}
             type="button"
           >
             Cancel
