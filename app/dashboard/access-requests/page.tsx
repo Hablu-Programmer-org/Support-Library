@@ -129,7 +129,7 @@ export default async function AccessRequestsPage({
       batchNo: state.batch,
       page: state.page,
     }),
-    listAccessRequestBatchNumbers(TAB_TYPES[state.tab]),
+    listAccessRequestBatchNumbers([...TAB_TYPES.openai, ...TAB_TYPES.n8n]),
     countPendingN8nRequests(TAB_TYPES.openai),
     countPendingN8nRequests(TAB_TYPES.n8n),
     generateCsrfToken(session.user.id),

@@ -15,7 +15,7 @@ type AccountSheetProps = {
 };
 
 /**
- * Mobile-only account menu. It intentionally contains NO navigation links so it
+ * Tablet-and-below account menu. It intentionally contains NO navigation links so it
  * stays outside `header nav[aria-label="Primary"]` (whose link count is part of
  * the shell E2E contract); it only surfaces identity, appearance and sign-out.
  */
@@ -39,6 +39,17 @@ export function AccountSheet({ user }: AccountSheetProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = () => {
+      if (media.matches) setOpen(false);
+    };
+    closeOnDesktop();
+    media.addEventListener("change", closeOnDesktop);
+    return () => media.removeEventListener("change", closeOnDesktop);
+  }, []);
 
   const initials = (user.name ?? user.email ?? "U")
     .split(" ")
@@ -64,7 +75,7 @@ export function AccountSheet({ user }: AccountSheetProps) {
         aria-label="Account menu"
         aria-expanded={open}
         aria-controls="account-sheet"
-        className="rounded-full p-2 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-cyan-500 sm:hidden dark:text-white dark:hover:bg-slate-800"
+        className="rounded-full p-2 text-slate-700 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-cyan-500 lg:hidden dark:text-white dark:hover:bg-slate-800"
       >
         <MenuIcon size={20} />
       </button>
@@ -72,7 +83,7 @@ export function AccountSheet({ user }: AccountSheetProps) {
       <AnimatePresence>
         {open ? (
           <motion.div
-            className="fixed inset-0 z-60 sm:hidden"
+            className="fixed inset-0 z-60 lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

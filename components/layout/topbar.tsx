@@ -47,13 +47,13 @@ export function Topbar({ user }: TopbarProps) {
         className="pointer-events-none absolute inset-0 bg-linear-to-r from-cyan-500/10 via-transparent to-violet-500/10"
       />
 
-      <PageContainer className="relative z-10 flex items-center justify-between gap-2">
-        <div className="flex min-w-fit items-center gap-2.5">
+      <PageContainer className="relative z-10 flex min-w-0 items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center gap-2.5">
           <Link
             className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-cyan-500"
             href="/"
           >
-            <span className="brand-bg flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 transition group-hover:brightness-110 group-hover:ring-white/50 dark:ring-white/20">
+            <span className="brand-bg flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 transition group-hover:brightness-110 group-hover:ring-white/50 dark:ring-white/20">
               <Image
                 alt="Hablu Support Library"
                 className="h-8 w-auto"
@@ -62,7 +62,7 @@ export function Topbar({ user }: TopbarProps) {
                 width={499}
               />
             </span>
-            <span className="hidden text-lg font-semibold sm:block lg:text-xl">
+            <span className="hidden text-lg font-semibold lg:block lg:text-xl">
               <span className="text-slate-900 dark:text-white">Hablu</span>{" "}
               <span className="brand-text">Support Library</span>
             </span>
@@ -71,12 +71,12 @@ export function Topbar({ user }: TopbarProps) {
 
         <nav
           aria-label="Primary"
-          className="flex flex-1 items-center justify-center gap-1 sm:gap-1.5"
+          className="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto sm:gap-1.5"
         >
           {navItems.map((item) => {
             const active = item.href === activeHref;
             const Icon = item.icon;
-            const className = `group relative flex items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
+            const className = `group relative flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-cyan-500 ${
               active
                 ? "bg-primary-500/10 text-cyan-700 ring-1 ring-cyan-500/25 dark:bg-primary-500/15 dark:text-cyan-300"
                 : "text-slate-700 hover:bg-slate-100/80 dark:text-slate-200 dark:hover:bg-slate-800/70"
@@ -96,7 +96,7 @@ export function Topbar({ user }: TopbarProps) {
                       : "text-slate-400 transition group-hover:text-slate-500 dark:group-hover:text-slate-300"
                   }
                 />
-                <span className="hidden lg:inline">{item.label}</span>
+                <span className="hidden xl:inline">{item.label}</span>
               </>
             );
 
@@ -126,10 +126,10 @@ export function Topbar({ user }: TopbarProps) {
         </nav>
 
         {/* The bar follows the active theme, so ThemeToggle/UserMenu inherit it. */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           {user ? (
             <>
-              <div className="hidden items-center gap-2 sm:flex">
+              <div className="hidden items-center gap-2 lg:flex">
                 <ThemeToggle />
                 <UserMenu user={user} />
                 <SignOutButton />

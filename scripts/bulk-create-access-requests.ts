@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 
 import { parseBulkAccessInput, maskEmail } from "../lib/bulk-access-input";
+import { getAgentEnrollment } from "../lib/lms";
 import { mapLmsRole } from "../lib/lms-roles";
 import { N8nAccessRequestModel, UserModel } from "../models";
 
@@ -306,8 +307,13 @@ async function main() {
     throw new Error("Refusing apply: run the approved access-request index migration first");
   }
 
-  const counts = { created: 0, activeSkipped: 0, sentSkipped: 0, failed: 0 };
+  const counts = { created: 0, activeSkipped: 0, sentSkipped: 0, failed: 0, agentIneligible: 0 };
   for (const { email, user } of eligible) {
+    const agent = await getAgentEnrollment(email);
+    if (!agent.enrolled || agent.blocked || agent.batchNo === null) {
+      counts.agentIneligible += 1;
+      continue;
+    }
     try {
       await mongoose.connection.transaction(async (session) => {
         const localUser = await UserModel.findOneAndUpdate(
@@ -348,6 +354,12 @@ async function main() {
             status: "PENDING",
             purpose: PURPOSE,
             createdBy: null,
+            courseSlug: "agent",
+            batchNo: agent.batchNo,
+            enrollmentId:
+              agent.enrollmentId && mongoose.isValidObjectId(agent.enrollmentId)
+                ? new mongoose.Types.ObjectId(agent.enrollmentId)
+                : null,
           }], { session });
           counts.created += 1;
         }
@@ -362,7 +374,7 @@ async function main() {
     }
   }
 
-  console.info(`[bulk-access] summary mode=${apply ? "APPLY" : "DRY RUN"} eligible-students=${eligible.length} requests-created=${counts.created} active-skipped=${counts.activeSkipped} sent-skipped=${counts.sentSkipped} student-failures=${counts.failed}`);
+  console.info(`[bulk-access] summary mode=${apply ? "APPLY" : "DRY RUN"} eligible-students=${eligible.length} requests-created=${counts.created} active-skipped=${counts.activeSkipped} sent-skipped=${counts.sentSkipped} agent-ineligible=${counts.agentIneligible} student-failures=${counts.failed}`);
   if (!apply) console.info(`[bulk-access] dry run only; apply with --apply --confirm=${supportDbName}`);
   if (counts.failed > 0) throw new Error(`${counts.failed} student(s) failed; inspect the masked errors before retrying`);
 }

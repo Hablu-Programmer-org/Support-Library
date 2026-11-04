@@ -32,7 +32,8 @@
     "db:backfill-case-refs": "tsx scripts/backfill-case-refs.ts",
     "db:backfill-reply-state": "tsx scripts/backfill-reply-state.ts",
     "db:bulk-access-requests": "tsx scripts/bulk-create-access-requests.ts",
-    "db:backfill-tool-access-entitlements": "tsx scripts/backfill-tool-access-entitlements.ts"
+    "db:backfill-tool-access-entitlements": "tsx scripts/backfill-tool-access-entitlements.ts",
+  "db:backfill-access-request-batch-snapshots": "tsx scripts/backfill-access-request-batch-snapshots.ts"
   },
   "dependencies": {
     "aws4fetch": "^1.0.20",

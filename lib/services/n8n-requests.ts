@@ -288,7 +288,7 @@ export async function listN8nRequestQueue({
         student: student ? { name: student.name, email: student.email } : null,
         // Rows created before the snapshot existed fall back to the live batch,
         // so an eligible student never reads "not enrolled".
-        batchNo: (request.batchNo as number | null) ?? agent?.batchNo ?? null,
+        batchNo: (request.batchNo as number | null) ?? null,
         accessHistory: {
           firstRequestedAt: history?.firstRequestedAt ?? (request.createdAt as Date),
           count: history?.count ?? 0,
