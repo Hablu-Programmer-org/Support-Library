@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { AutoRefresh } from "@/components/shared/auto-refresh";
 import { AccessRequestRow } from "@/components/tool-access/access-request-row";
 import { AccessRequestToolbar } from "@/components/tool-access/access-request-toolbar";
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
@@ -16,7 +17,6 @@ import { accessHistoryLabel } from "@/lib/access-history-label";
 import { requireRole } from "@/lib/auth-guard";
 import { generateCsrfToken } from "@/lib/csrf";
 import { formatSupportDate, formatSupportShortDate } from "@/lib/format-date";
-import { isN8nAdmin } from "@/lib/n8n-request-policy";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import {
   countPendingN8nRequests,
@@ -24,6 +24,7 @@ import {
   listN8nRequestQueue,
 } from "@/lib/services/n8n-requests";
 import { requestEntitlementAllowsProcessing } from "@/lib/tool-access-policy";
+import { getAccessRequestActivitySnapshot } from "@/lib/services/access-request-activity";
 import type { N8nRequestType } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +49,7 @@ const STATUS_META: Record<
   }
 > = {
   PENDING: { label: "Waiting", tone: "waiting" },
-  PROCESSING: { label: "Processing", tone: "processing" },
+  PROCESSING: { label: "Email queued", tone: "processing" },
   SENT: { label: "Sent", tone: "sent" },
   FAILED: { label: "Failed", tone: "failed" },
   REJECTED: { label: "Rejected", tone: "failed" },
@@ -117,10 +118,10 @@ export default async function AccessRequestsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await requireRole("ADMIN");
-  if (!(await isN8nAdmin(session.user.email))) redirect("/unauthorized");
+  if (!session.user.canManageToolAccess) redirect("/unauthorized");
 
   const state = parseAccessRequestListState(await searchParams);
-  const [requests, batchNumbers, openAiPending, n8nPending, csrfToken, isRecent] = await Promise.all([
+  const [requests, batchNumbers, openAiPending, n8nPending, csrfToken, isRecent, activity] = await Promise.all([
     listN8nRequestQueue({
       requestTypes: TAB_TYPES[state.tab],
       statuses: accessQueueStatuses(state.showSent),
@@ -133,6 +134,7 @@ export default async function AccessRequestsPage({
     countPendingN8nRequests(TAB_TYPES.n8n),
     generateCsrfToken(session.user.id),
     recentlySignedIn(session.user.id),
+    getAccessRequestActivitySnapshot(),
   ]);
 
   // A stale link or a deleted last row must land on a real page, not
@@ -150,6 +152,16 @@ export default async function AccessRequestsPage({
         eyebrow="Admin"
         title="Access requests"
       />
+
+      <div className="flex justify-end">
+        <AutoRefresh
+          endpoint="/api/access-requests/activity"
+          initialRevision={activity.revision}
+          intervalMs={10_000}
+          enabled={activity.count > 0}
+          idleLabel={activity.count > 0 ? `${activity.count} email queued` : "Queue up to date"}
+        />
+      </div>
 
       <AdminCreateAccessRequestForm csrfToken={csrfToken} requiresReauth={!isRecent} />
 
@@ -225,6 +237,8 @@ export default async function AccessRequestsPage({
                         request.entitlement?.state ?? null,
                       ),
                     canReject: request.status === "PENDING" || request.status === "FAILED",
+                    rejectionNotificationFailed:
+                      request.status === "REJECTED" && request.rejectionEmailStatus === "FAILED",
                     firstRequestedLabel: `Requested ${formatSupportShortDate(request.accessHistory.firstRequestedAt) ?? "unknown"}`,
                     enrollmentLabel: request.currentBatchNo && request.currentBatchNo !== request.batchNo
                       ? `Now Batch ${request.currentBatchNo}`

@@ -36,6 +36,10 @@ toolAccessEntitlementSchema.index(
   { expiresAt: 1, revokedAt: 1 },
   { name: "tool-access-entitlements-expiry-queue" },
 );
+toolAccessEntitlementSchema.index(
+  { studentId: 1, tool: 1 },
+  { name: "tool-access-entitlements-student-tool" },
+);
 
 export type ToolAccessEntitlementDocument = InferSchemaType<typeof toolAccessEntitlementSchema> & {
   _id: mongoose.Types.ObjectId;

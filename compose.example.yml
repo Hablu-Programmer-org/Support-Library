@@ -10,7 +10,8 @@
 #   MONGODB_URI, MONGODB_DB, LMS_MONGODB_URI, LMS_MONGODB_DB
 #   AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_URL, AUTH_TRUST_HOST
 #   TRUSTED_PROXY_HOPS, STUDENT_EMAIL_KEY_VERSION
-#   STUDENT_EMAIL_ENCRYPTION_KEYS, STUDENT_EMAIL_LOOKUP_KEYS
+#   STUDENT_EMAIL_ENCRYPTION_KEYS, STUDENT_EMAIL_LOOKUP_KEYS,
+#   ACCESS_EMAIL_KEY_VERSION, ACCESS_EMAIL_ENCRYPTION_KEYS
 #   NEXT_PUBLIC_APP_URL, NODE_ENV
 #   LIVE_SUPPORT_JOIN_URL (the room is a credential on Google Meet, so it has no
 #   source default; without it production refuses to boot)
@@ -23,6 +24,8 @@
 # Upload storage: set UPLOAD_STORAGE=cloudinary with CLOUDINARY_CLOUD_NAME,
 #   CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET; or configure the documented R2
 #   variables. Leave UPLOAD_STORAGE unset to disable uploads in production.
+# Access email: SMTP_HOST (or SMTP_SERVICE), SMTP_MAIL and SMTP_PASSWORD are
+#   required; the access-email-worker service must run or queued emails never send.
 
 name: support-library
 
@@ -94,6 +97,49 @@ services:
     stop_grace_period: 10s
     networks:
       - support_library_network
+
+  # Confirm/Send/Reject only queue a durable job; this worker delivers it. Without
+  # this service decisions succeed but no email is ever sent.
+  access-email-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ops
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ${APP_ENV_FILE:-.env.production}
+    environment:
+      NODE_ENV: production
+    command:
+      - node
+      - --conditions=react-server
+      - --import
+      - tsx
+      - scripts/access-email-worker.ts
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - const fs=require('node:fs');const age=Date.now()-fs.statSync('/tmp/access-email-worker.heartbeat').mtimeMs;if(age>120000)process.exit(1)
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    networks:
+      - support_library_network
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m,uid=1000,gid=1000,mode=1770
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    cpus: 0.5
+    mem_limit: 512m
+    stop_grace_period: 30s
 
 networks:
   support_library_network:

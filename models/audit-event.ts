@@ -21,6 +21,10 @@ export const AUDIT_ACTIONS = [
   "OPENAI_ACCESS_CONFIRM",
   "ACCESS_REQUEST_REJECT",
   "ACCESS_REJECTION_EMAIL_RETRY",
+  "ACCESS_EMAIL_QUEUED",
+  "ACCESS_EMAIL_DELIVERED",
+  "ACCESS_EMAIL_DELIVERY_FAILED",
+  "ACCESS_EMAIL_FINALIZE_CONFLICT",
   "TOOL_ACCESS_REVOKE",
 ] as const;
 
@@ -39,6 +43,7 @@ const auditEventSchema = new mongoose.Schema(
         "OAuthCallback",
         "LiveSupportQuickJoin",
         "N8nAccessRequest",
+        "AccessEmailOutbox",
       ],
       required: true,
     },

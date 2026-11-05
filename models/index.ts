@@ -8,3 +8,4 @@ export * from "./audit-event";
 export * from "./rate-limit-bucket";
 export * from "./n8n-access-request";
 export * from "./tool-access-entitlement";
+export * from "./access-email-outbox";

@@ -236,7 +236,8 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 ## Monitoring
 
 - Health endpoints: `/api/health/live`, `/api/health/ready`
-- Logs: `docker compose logs -f support-library`
+- Logs: `docker compose logs -f support-library access-email-worker`
+- Worker health: `docker compose ps access-email-worker` must show `healthy`; a stale `/tmp/access-email-worker.heartbeat` fails the check
 - Metrics: Traefik dashboard (if using Traefik)
 
 ## Troubleshooting
@@ -247,6 +248,7 @@ mongorestore --uri="mongodb://user:pass@host:27017/?replicaSet=rs0" --db=support
 | `AUTH_SECRET` invalid | Regenerate with `npx auth secret` (32+ chars) |
 | Google OAuth redirect mismatch | Verify exact URI in Google Console |
 | Health check fails | Check MongoDB connectivity, `docker compose logs` |
+| Access email stays queued | Check `access-email-worker` health/logs, `SMTP_*`, and that `ACCESS_EMAIL_ENCRYPTION_KEYS` matches the key used when the job was queued |
 | Rate limited | Check `rate-limit-buckets` collection, adjust limits |
 
 ## Security Checklist

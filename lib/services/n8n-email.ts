@@ -10,15 +10,33 @@ const escapeHtml = (value: string) =>
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[character] ?? character);
 
+type AccessEmailTransport = ReturnType<typeof nodemailer.createTransport>;
+const globalForEmail = globalThis as unknown as {
+  __accessEmailTransport?: AccessEmailTransport;
+};
+
 function transporter() {
+  if (globalForEmail.__accessEmailTransport) return globalForEmail.__accessEmailTransport;
   const port = Number(process.env.SMTP_PORT ?? "587");
-  return nodemailer.createTransport({
+  globalForEmail.__accessEmailTransport = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port,
     secure: port === 465,
     service: process.env.SMTP_SERVICE || undefined,
     auth: { user: process.env.SMTP_MAIL, pass: process.env.SMTP_PASSWORD },
+    pool: true,
+    maxConnections: 2,
+    maxMessages: 50,
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 20_000,
   });
+  return globalForEmail.__accessEmailTransport;
+}
+
+export function closeAccessEmailTransport() {
+  globalForEmail.__accessEmailTransport?.close();
+  globalForEmail.__accessEmailTransport = undefined;
 }
 
 export async function sendN8nHelpEmail(input: {
@@ -27,7 +45,9 @@ export async function sendN8nHelpEmail(input: {
   requestType: N8nRequestType;
   link: string;
   requestId: string;
-}) {  const reset = input.requestType === "PASSWORD_RESET";
+  messageId?: string;
+}) {
+  const reset = input.requestType === "PASSWORD_RESET";
   const openAi = input.requestType === "OPENAI_ACCESS";
   const title = openAi ? "Your OpenAI access is ready" : reset ? "Reset your n8n password" : "Your n8n access is ready";
   const action = openAi ? "Accept OpenAI access" : reset ? "Reset n8n password" : "Set up n8n access";
@@ -39,8 +59,8 @@ export async function sendN8nHelpEmail(input: {
     ? "Use the secure button below to choose a new password."
     : "Use the secure button below to accept your invitation and set up your n8n account.";
 
-  await transporter().sendMail({
-    messageId: `<access-${input.requestId}@hablu-programmer.com>`,
+  return transporter().sendMail({
+    messageId: input.messageId ?? `<access-${input.requestId}@hablu-programmer.com>`,
     from: `Hablu Support Library <${process.env.SMTP_MAIL}>`,
     to: input.to,
     subject: `${title} | Hablu Programmer`,
@@ -58,13 +78,14 @@ export async function sendOpenAiConfirmationEmail(input: {
   to: string;
   studentName: string;
   requestId: string;
+  messageId?: string;
 }) {
   const name = escapeHtml(input.studentName);
   const email = escapeHtml(input.to);
   const text = `Your email (${input.to}) was added to the Hablu Programmer OpenAI API workspace invitation list. OpenAI sends the invitation separately — check your inbox and Spam/Promotions. Access is complete only after you accept that invitation. Sign in at https://platform.openai.com/ using this address. We never email API keys, so never share a key with anyone.`;
 
-  await transporter().sendMail({
-    messageId: `<openai-access-${input.requestId}@hablu-programmer.com>`,
+  return transporter().sendMail({
+    messageId: input.messageId ?? `<openai-access-${input.requestId}@hablu-programmer.com>`,
     from: `Hablu Support Library <${process.env.SMTP_MAIL}>`,
     to: input.to,
     subject: "Your OpenAI workspace invitation was sent | Hablu Programmer",
@@ -111,6 +132,7 @@ export async function sendAccessRejectionEmail(input: {
   reason: AccessRejectionReason;
   batchNo: number | null;
   requestId: string;
+  messageId?: string;
 }) {
   const copy = REJECTION_COPY[input.reason];
   const tool = input.requestType === "OPENAI_ACCESS"
@@ -125,8 +147,8 @@ export async function sendAccessRejectionEmail(input: {
   const safeBody = escapeHtml(copy.body);
   const safeBatch = escapeHtml(batch);
 
-  await transporter().sendMail({
-    messageId: `<access-rejected-${input.requestId}@hablu-programmer.com>`,
+  return transporter().sendMail({
+    messageId: input.messageId ?? `<access-rejected-${input.requestId}@hablu-programmer.com>`,
     from: `Hablu Support Library <${process.env.SMTP_MAIL}>`,
     to: input.to,
     subject: `আপনার ${tool} access request সম্পর্কে | Hablu Programmer`,

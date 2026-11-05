@@ -18,7 +18,8 @@ export type AuditResourceType =
   | "SupportAttachment"
   | "OAuthCallback"
   | "LiveSupportQuickJoin"
-  | "N8nAccessRequest";
+  | "N8nAccessRequest"
+  | "AccessEmailOutbox";
 
 export interface AuditEventContext {
   ip?: string;

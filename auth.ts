@@ -125,6 +125,7 @@ const lmsUser = await findLmsUserByEmail(user.email);
       if (!email) {
         token.role = undefined;
         token.isActive = false;
+        token.canManageToolAccess = false;
         return token;
       }
 
@@ -133,6 +134,7 @@ const lmsUser = await findLmsUserByEmail(user.email);
         await markStaffInactive(email);
         token.role = undefined;
         token.isActive = false;
+        token.canManageToolAccess = false;
         return token;
       }
 
@@ -149,6 +151,9 @@ const lmsUser = await findLmsUserByEmail(user.email);
       token.id = profile._id.toString();
       token.role = profile.role as UserRole;
       token.isActive = true;
+      token.canManageToolAccess = new Set(["ADMIN", "SUPER_ADMIN"]).has(
+        (lmsUser.role ?? "").toUpperCase(),
+      );
       return token;
     },
     async session({ session, token }) {

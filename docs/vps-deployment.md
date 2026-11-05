@@ -17,6 +17,15 @@ Create `root_default` before the first deployment and pre-authenticate Docker to
 
 Create `/opt/hablu-support-library/shared/.env.production` owned by the deploy user, mode `0600` (use root only when root is the deploy user). Populate the runtime names from `.env.example` with production values, including separate `MONGODB_URI` and `LMS_MONGODB_URI` credentials, `AUTH_URL=https://support.hablu-programmer.com`, and `NODE_ENV=production`. Never store this file in GitHub or copy it during deployment.
 
+Access-request delivery also requires `SMTP_*` plus a dedicated keyring:
+
+```dotenv
+ACCESS_EMAIL_KEY_VERSION=v1
+ACCESS_EMAIL_ENCRYPTION_KEYS=v1:<32-byte-base64>
+```
+
+Generate each key with `openssl rand -base64 32`. This keyring must be different from `STUDENT_EMAIL_ENCRYPTION_KEYS`, because it protects short-lived n8n invitation/reset links. To rotate, append `v2:<base64>` to `ACCESS_EMAIL_ENCRYPTION_KEYS`, set `ACCESS_EMAIL_KEY_VERSION=v2`, and keep `v1` until the queue is drained and the 30-minute payload TTL has elapsed. Apply it with `hablu-env set support ACCESS_EMAIL_ENCRYPTION_KEYS`, which recreates and health-checks both the web app and the worker.
+
 **Attachments are off unless you configure a store.** `UPLOAD_STORAGE` is unset by default and therefore resolves to `disabled` in production; the form then answers `File uploads are not enabled on this server. Attach a link instead.` To enable private image attachments, also put these in the same file and restart:
 
 ```dotenv
@@ -46,14 +55,15 @@ A manual deploy requires the numeric run ID of a successful `Publish GHCR image`
 
 1. Back up the support database and verify the protected env file and Atlas roles.
 2. Merge to `main`, wait for CI and image publication, then approve the production deployment.
-3. Check `docker ps --filter name=hablu-support-library` and `docker inspect --format '{{json .State.Health}}' hablu-support-library`.
+3. Check `docker ps --filter name=hablu-support-library` and `docker inspect --format '{{json .State.Health}}' hablu-support-library`. The access-email worker must also be healthy: `docker compose -p hablu-support-library -f /srv/hablu/support-library/compose.production.yml ps access-email-worker`.
 4. Check `/api/health/live` for process liveness and `/api/health/ready` for support/LMS database readiness. In production the health payload omits the release SHA (it is only returned outside production), so confirm the deployed revision from the recorded `state/current-release` file or the running image digest.
 5. Sign in through Google, load the issue library, create/read a disposable support issue with an authorized staff account, then remove it.
 6. Confirm Traefik serves the expected certificate and no container port is published on the host.
+7. Queue one controlled access decision to a test student and confirm the worker logs `delivery_finished` with `outcome: SENT`, the request becomes `SENT`, and the outbox row no longer holds ciphertext.
 
 ## Rollback
 
-Run `Deploy production` manually with action `rollback` and approve the protected environment; no publish run ID is needed. The workflow restores the recorded previous release/image pair and swaps the state files so the displaced release remains available. A failed cutover automatically restores the prior image when one exists; on the first managed deployment, a failed new container is stopped because no prior managed image may be available. Additive indexes are not rolled back. Re-run liveness, readiness, login, and issue-library smoke checks after rollback.
+Run `Deploy production` manually with action `rollback` and approve the protected environment; no publish run ID is needed. The workflow restores the recorded previous app **and** operations image pair and swaps the state files so the displaced release remains available. A failed cutover automatically restores the prior pair when both are recorded; on the first managed deployment, a failed new container is stopped because no prior managed image may be available. A rollback target whose Compose file predates `access-email-worker` is refused: pause new decisions, keep the current worker running until the queue drains, and then move the web image. Additive indexes are not rolled back. Re-run liveness, readiness, worker health, login, and issue-library smoke checks after rollback.
 
 ## Backup and recovery
 

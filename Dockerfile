@@ -31,6 +31,9 @@ COPY scripts ./scripts
 COPY lib ./lib
 COPY models ./models
 
+RUN chown -R node:node /app
+USER node
+
 CMD ["node", "--version"]
 
 FROM node:24.21.0-bookworm-slim AS runner

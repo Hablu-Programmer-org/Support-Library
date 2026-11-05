@@ -62,6 +62,8 @@ MONGODB_URI: process.env.MONGODB_URI ?? "",
       SMTP_PASSWORD: "e2e-placeholder",
       STUDENT_EMAIL_KEY_VERSION: "v1",
       STUDENT_EMAIL_ENCRYPTION_KEYS: "v1:ezMkYRRrMWFYEPJtuOpRHGOpVV2Qm6wJy83CjIzf6q4=",
+      ACCESS_EMAIL_KEY_VERSION: "v1",
+      ACCESS_EMAIL_ENCRYPTION_KEYS: "v1:Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc=",
       STUDENT_EMAIL_LOOKUP_KEYS: "v1:xuWpNME8qkz3rrhdE3y+pCa5AJP0zI8HPg98MyzxPdg=",
       // Uploads stay in memory for the duration of the run: the E2E database is
       // throwaway and the bucket would otherwise have to be real R2 credentials.

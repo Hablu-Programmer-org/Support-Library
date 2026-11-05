@@ -62,6 +62,7 @@ export default {
         session.user.id = (token.id as string) ?? token.sub ?? "";
         session.user.role = token.role as UserRole | undefined;
         session.user.isActive = token.isActive === true;
+        session.user.canManageToolAccess = token.canManageToolAccess === true;
       }
 
       return session;

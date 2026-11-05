@@ -12,6 +12,8 @@ const MANAGED_VARS = [
   "STUDENT_EMAIL_KEY_VERSION",
   "STUDENT_EMAIL_ENCRYPTION_KEYS",
   "STUDENT_EMAIL_LOOKUP_KEYS",
+  "ACCESS_EMAIL_KEY_VERSION",
+  "ACCESS_EMAIL_ENCRYPTION_KEYS",
   "MONGODB_URI",
   "LMS_MONGODB_URI",
   "MONGODB_DB",
@@ -88,6 +90,8 @@ const studentEmailVars = {
   STUDENT_EMAIL_KEY_VERSION: "v1",
   STUDENT_EMAIL_ENCRYPTION_KEYS: validKeyring(1),
   STUDENT_EMAIL_LOOKUP_KEYS: validKeyring(2),
+  ACCESS_EMAIL_KEY_VERSION: "v1",
+  ACCESS_EMAIL_ENCRYPTION_KEYS: validKeyring(3),
 };
 
 describe("validateEnv", () => {
@@ -101,6 +105,13 @@ describe("validateEnv", () => {
     setEnv({ NODE_ENV: "development" });
 
     expect(() => validateEnv()).toThrow(/student email encryption environment/i);
+  });
+
+  it("requires the access email keyring in development too", () => {
+    setEnv({ NODE_ENV: "development", ...studentEmailVars });
+    delete process.env.ACCESS_EMAIL_ENCRYPTION_KEYS;
+
+    expect(() => validateEnv()).toThrow(/access email encryption environment/i);
   });
 
   it("rejects a placeholder keyring from the example file", () => {

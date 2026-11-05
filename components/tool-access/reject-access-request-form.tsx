@@ -46,8 +46,7 @@ export function RejectAccessRequestForm({
   useEffect(() => {
     if (!state.success) return;
     onDecisionSaved();
-    const timer = window.setTimeout(() => router.refresh(), 1_200);
-    return () => window.clearTimeout(timer);
+    router.refresh();
   }, [state.success, onDecisionSaved, router]);
 
   if (state.success) {

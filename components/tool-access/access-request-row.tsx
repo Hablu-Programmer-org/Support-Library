@@ -7,6 +7,7 @@ import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
 import { RejectAccessRequestForm } from "@/components/tool-access/reject-access-request-form";
+import { RetryRejectionEmailForm } from "@/components/tool-access/retry-rejection-email-form";
 import { chipClass, rowHoverClass } from "@/lib/ui";
 
 export type AccessRowRequest = {
@@ -30,6 +31,7 @@ export type AccessRowRequest = {
   variant: "openai" | "n8n";
   canApprove: boolean;
   canReject: boolean;
+  rejectionNotificationFailed: boolean;
 };
 
 const STATUS_TONES: Record<AccessRowRequest["statusTone"], string> = {
@@ -183,6 +185,13 @@ export function AccessRequestRow({
                   </button>
                 )}
               </div>
+            )}
+            {request.rejectionNotificationFailed && (
+              <RetryRejectionEmailForm
+                requestId={request.id}
+                csrfToken={csrfToken}
+                requiresReauth={requiresReauth}
+              />
             )}
           </div>
 

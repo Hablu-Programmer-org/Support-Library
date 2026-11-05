@@ -34,6 +34,7 @@ export function AutoRefresh({
   label = "Refresh",
   pendingLabel = "Refreshing…",
   idleLabel = "Auto-updates",
+  enabled = true,
 }: {
   endpoint: string;
   initialRevision: string;
@@ -41,6 +42,8 @@ export function AutoRefresh({
   label?: string;
   pendingLabel?: string;
   idleLabel?: string;
+  /** Disable interval polling while retaining manual and focus-triggered probes. */
+  enabled?: boolean;
 }) {
   const router = useRouter();
   const revision = useRef(initialRevision);
@@ -98,14 +101,14 @@ export function AutoRefresh({
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
-    schedule();
+    if (enabled) schedule();
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [intervalMs, probe]);
+  }, [enabled, intervalMs, probe]);
 
   return (
     <div className="flex items-center gap-2">

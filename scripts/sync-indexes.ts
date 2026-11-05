@@ -12,6 +12,7 @@ import {
   UserModel,
   N8nAccessRequestModel,
   ToolAccessEntitlementModel,
+  AccessEmailOutboxModel,
 } from "../models";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
@@ -25,6 +26,7 @@ const models = [
   RateLimitBucketModel,
   N8nAccessRequestModel,
   ToolAccessEntitlementModel,
+  AccessEmailOutboxModel,
 ];
 
 async function main() {

@@ -33,29 +33,56 @@ Readiness verifies production environment configuration plus support/LMS databas
 2. Open `Deploy production` and choose `deploy`.
 3. Enter the successful publish run ID.
 4. Review and approve the protected `production` environment deployment.
-5. The workflow verifies the artifact, trusted SSH host, image digests, additive indexes, index state, and transaction preflight before cutover.
-6. Confirm readiness, release identity, Google login, issue browsing, and an authorized disposable create/read flow.
+5. The workflow verifies the artifact, trusted SSH host, image digests, additive indexes, index state, and transaction preflight before cutover. It also boots the operations image with `worker:access-email -- --check`, which validates the full environment (including the access-email keyring) and support database readiness before any container is replaced.
+6. Cutover recreates **both** `support-library` and `access-email-worker` from the same release and waits for both health checks; a release whose Compose file has no worker is refused.
+7. Confirm readiness, release identity, Google login, issue browsing, an authorized disposable create/read flow, and that `docker compose ... ps` shows the worker as `healthy`.
+
+`hablu-env set support …` recreates and health-checks both services, because the worker keeps its own process environment. Rotating `SMTP_*` or `ACCESS_EMAIL_*` without recreating the worker would leave it unable to decrypt newly queued links.
 
 Deployments are serialized. Do not cancel an in-progress production deployment unless incident response requires it.
+
+### First access-email release (one-time order)
+
+The workflow applies additive indexes and refuses a worker-less release, but it cannot create the new keyring or take a backup. Run this exact order once, before the first deploy that contains the outbox:
+
+1. Add `ACCESS_EMAIL_KEY_VERSION=v1` and `ACCESS_EMAIL_ENCRYPTION_KEYS=v1:<32-byte-base64>` to the production environment (`hablu-env set support …`, or the supported env-file flow on a brand-new install). Do this before the new web image starts, because it refuses to boot without the keyring; `hablu-env` recreates and health-checks web + worker.
+2. Take and verify an encrypted support-database backup.
+3. `npm run db:indexes -- --apply --create-only` then `npm run db:indexes -- --verify` using the new OPS image (the deploy workflow repeats both).
+4. Deploy the web app and worker together through `Deploy production`.
+5. Run one controlled decision to a test student: expect the request to reach `SENT`, the worker log to show `delivery_finished` with `outcome: SENT`, and the outbox row to hold no ciphertext.
+
+Never deploy only one of the two services: the web app would accept decisions that no worker can deliver.
 
 ## Rollback
 
 1. Open `Deploy production`, choose `rollback`, and leave `publish_run_id` empty.
 2. Review and approve the protected environment deployment.
-3. The workflow restores the exact recorded previous image and release Compose file.
-4. Recheck liveness, readiness, release identity, login, and issue access.
+3. The workflow restores the recorded previous app **and** operations image pair plus that release's Compose file.
+4. Recheck liveness, readiness, release identity, login, issue access, and worker health.
 
-Index creation is additive and is not reversed by application rollback. If rollback state is absent, stop and investigate rather than selecting an arbitrary tag.
+Index creation is additive and is not reversed by application rollback. If rollback state is absent, stop and investigate rather than selecting an arbitrary tag. A rollback target that predates the worker service is refused: pause new decisions, keep the current worker running until the queue drains, and only then move the web image.
+
+## Access email queue
+
+Decisions are durable before delivery: Confirm/Send/Reject commits the request state change and one outbox job atomically, then returns "Email queued". Delivery is a separate service:
+
+```bash
+docker logs --tail 100 hablu-support-library-access-email-worker-1
+docker compose -p hablu-support-library -f /srv/hablu/support-library/compose.production.yml ps access-email-worker
+```
+
+Alert when the worker restarts repeatedly, when queued jobs are older than 15 minutes, or when `ACCESS_EMAIL_DELIVERY_FAILED` / `MAX_ATTEMPTS_EXHAUSTED` audit events appear. A failed or expired job can be retried from the queue (a fresh generation, and for links a freshly pasted link); a failed rejection notification has its own "Retry notification" control in the sent view. Never inspect or log decrypted links; they are stored only as short-lived AES-256-GCM ciphertext and removed on delivery or expiry.
+
 
 ## Incident containment
 
 If the application must be stopped immediately:
 
 ```bash
-docker stop hablu-support-library
+docker stop hablu-support-library hablu-support-library-access-email-worker-1
 ```
 
-Preserve container logs and the four state files before cleanup. Rotate affected OAuth, Atlas, GHCR, SSH, or `AUTH_SECRET` credentials after suspected exposure; rotating `AUTH_SECRET` invalidates active sessions. Never paste `.env.production` or credentials into an issue, workflow input, or chat.
+Preserve container logs and the six state files (current/previous app image, current/previous operations image, current/previous release) before cleanup. Rotate affected OAuth, Atlas, GHCR, SSH, or `AUTH_SECRET` credentials after suspected exposure; rotating `AUTH_SECRET` invalidates active sessions. Rotating `ACCESS_EMAIL_ENCRYPTION_KEYS` keeps old versions in the keyring until queued payloads expire. Never paste `.env.production` or credentials into an issue, workflow input, or chat.
 
 ## Database recovery
 

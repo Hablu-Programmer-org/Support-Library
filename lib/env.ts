@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 import { LIVE_SUPPORT_PLATFORM } from "@/lib/config/live-support";
+import { validateAccessEmailKeyring } from "@/lib/access-email-payload-crypto";
 
 const mongoUriSchema = z
   .string()
@@ -406,6 +407,13 @@ export function validateEnv() {
   const accessEmail = accessEmailEnvSchema.safeParse(process.env);
   if (!accessEmail.success) {
     throw new Error(`Invalid access email environment: ${issueNames(accessEmail.error)}`);
+  }
+  try {
+    validateAccessEmailKeyring();
+  } catch (error) {
+    throw new Error(
+      `Invalid access email encryption environment: ${error instanceof Error ? error.message : "invalid keyring"}`,
+    );
   }
 
   const liveSupport = liveSupportEnvSchema.safeParse(process.env);

@@ -30,7 +30,8 @@ export type RateLimitScope =
   | "access.request.decision"
   | "issues.activity"
   | "my-requests.activity"
-  | "access.eligibility";
+  | "access.eligibility"
+  | "access.requests.activity";
 
 const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> = {
   "lms.lookup": { limit: 30, windowMs: 60_000 },
@@ -66,6 +67,7 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   // tab is visible, so the budget is the same shape as the staff one.
   "my-requests.activity": { limit: 120, windowMs: 60_000 },
   "access.eligibility": { limit: 60, windowMs: 60_000 },
+  "access.requests.activity": { limit: 120, windowMs: 60_000 },
 };
 
 export class MutationRateLimitError extends Error {

@@ -59,6 +59,10 @@ const n8nAccessRequestSchema = new mongoose.Schema(
 
 n8nAccessRequestSchema.index({ createdAt: -1 });
 n8nAccessRequestSchema.index(
+  { updatedAt: -1, _id: -1 },
+  { name: "n8n-access-requests-activity-revision" },
+);
+n8nAccessRequestSchema.index(
   { studentId: 1, requestType: 1, status: 1, createdAt: 1 },
   { name: "n8n-access-requests-student-type-history" },
 );

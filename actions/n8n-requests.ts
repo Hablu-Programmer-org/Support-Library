@@ -13,19 +13,14 @@ import { getRequestContext } from "@/lib/request-context";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { authorizeToolAccessDecision } from "@/lib/tool-access-authorization";
 import {
-  sendAccessRejectionEmail,
-  sendN8nHelpEmail,
-  sendOpenAiConfirmationEmail,
-} from "@/lib/services/n8n-email";
+  queueAccessApprovalEmail,
+  queueRejectionEmailRetry,
+} from "@/lib/services/access-email-outbox";
 import {
-  claimN8nRequest,
   createN8nRequest,
-  getN8nRequestType,
   getStudentAgentEnrollment,
-  markN8nRequestFailed,
-  markN8nRequestSent,
-  markRejectionEmailResult,
   rejectN8nRequest,
 } from "@/lib/services/n8n-requests";
 import { consumeRateLimit, MutationRateLimitError } from "@/lib/services/rate-limit";
@@ -48,6 +43,7 @@ const rejectRequestSchema = z.object({
   reason: z.enum(ACCESS_REJECTION_REASONS),
   note: z.string().trim().max(300).optional(),
 });
+const requestIdSchema = z.string().regex(/^[a-f\d]{24}$/i);
 
 export async function createN8nRequestAction(
   _state: N8nActionState,
@@ -180,67 +176,35 @@ export async function sendN8nLinkAction(
   _state: N8nActionState,
   formData: FormData,
 ): Promise<N8nActionState> {
-  if (!(await csrfTokenIsValid(formData))) return { error: "Your session expired. Refresh and try again." };
-  const guard = await assertRole("ADMIN");
-  if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) return { error: "You do not have permission to send n8n links." };
+  const authorization = await authorizeToolAccessDecision(formData);
+  if (!authorization.ok) return authorization.state;
 
   const requestId = String(formData.get("requestId") ?? "");
   let link: string;
   try {
-    const requestType = await getN8nRequestType(requestId);
-    if (!requestType) return { error: "This request no longer exists." };
-    link = validateAccessLink(
-      String(formData.get("link") ?? ""),
-      requestType === "OPENAI_ACCESS" ? "openai" : "n8n",
-    );
+    link = validateAccessLink(String(formData.get("link") ?? ""), "n8n");
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Enter a valid n8n link." };
   }
 
   try {
-    if (!(await recentlySignedIn(guard.session.user.id))) {
-      return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
-    }
-    await consumeRateLimit("n8n.email.send", guard.session.user.id);
-    const claimed = await claimN8nRequest(requestId, guard.session.user.id);
-    if (!claimed) {
+    await consumeRateLimit("n8n.email.send", authorization.actor.id);
+    const queued = await queueAccessApprovalEmail({
+      requestId,
+      adminId: authorization.actor.id,
+      expectedTypes: ["ACCESS", "PASSWORD_RESET"],
+      link,
+      context: authorization.context,
+    });
+    if (!queued) {
       return {
         error:
           "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
       };
     }
-    if (!claimed.student.isActive) {
-      await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
-      return { error: "This student account is inactive." };
-    }
-
-    try {
-      await sendN8nHelpEmail({
-        to: claimed.student.email,
-        studentName: claimed.student.name,
-        requestType: claimed.request.requestType,
-        link,
-        requestId,
-      });
-    } catch {
-      await markN8nRequestFailed(requestId, claimed.leaseId);
-      return { error: "Email could not be sent. Check SMTP and retry with a fresh link." };
-    }
-
-    const finalized = await markN8nRequestSent(requestId, claimed.leaseId);
-    if (!finalized) {
-      return { error: "The email may have been sent, but status confirmation failed. Refresh before retrying." };
-    }
-    await recordAuditEvent({
-      actorId: guard.session.user.id,
-      action: "N8N_LINK_EMAIL_SEND",
-      resourceType: "N8nAccessRequest",
-      resourceId: requestId,
-      result: "SUCCEEDED",
-    }, await getRequestContext());
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
-    return { success: "The email was sent and the request status was updated." };
+    return { success: "Decision saved. Email queued for delivery." };
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many send attempts. Try again later." };
     return { error: "The request could not be processed safely. Please try again." };
@@ -259,64 +223,31 @@ export async function confirmOpenAiAccessAction(
   _state: N8nActionState,
   formData: FormData,
 ): Promise<N8nActionState> {
-  if (!(await csrfTokenIsValid(formData))) return { error: "Your session expired. Refresh and try again." };
-  const guard = await assertRole("ADMIN");
-  if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) {
-    return { error: "You do not have permission to confirm OpenAI access." };
-  }
+  const authorization = await authorizeToolAccessDecision(formData);
+  if (!authorization.ok) return authorization.state;
 
   const requestId = String(formData.get("requestId") ?? "");
-  const requestType = await getN8nRequestType(requestId);
-  if (!requestType) return { error: "This request no longer exists." };
-  if (requestType !== "OPENAI_ACCESS") {
-    return { error: "This is not an OpenAI access request. Send an invitation link instead." };
-  }
   if (formData.get("confirmed") !== "yes") {
     return { error: "Confirm that you added the exact student email in OpenAI." };
   }
 
   try {
-    if (!(await recentlySignedIn(guard.session.user.id))) {
-      return { error: "Verify with Google to continue.", errorCode: "REAUTH_REQUIRED" };
-    }
-    await consumeRateLimit("n8n.email.send", guard.session.user.id);
-    const claimed = await claimN8nRequest(requestId, guard.session.user.id);
-    if (!claimed) {
+    await consumeRateLimit("n8n.email.send", authorization.actor.id);
+    const queued = await queueAccessApprovalEmail({
+      requestId,
+      adminId: authorization.actor.id,
+      expectedTypes: ["OPENAI_ACCESS"],
+      context: authorization.context,
+    });
+    if (!queued) {
       return {
         error:
           "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
       };
     }
-    if (!claimed.student.isActive) {
-      await markN8nRequestFailed(requestId, claimed.leaseId, "STUDENT_INACTIVE");
-      return { error: "This student account is inactive." };
-    }
-
-    try {
-      await sendOpenAiConfirmationEmail({
-        to: claimed.student.email,
-        studentName: claimed.student.name,
-        requestId,
-      });
-    } catch {
-      await markN8nRequestFailed(requestId, claimed.leaseId);
-      return { error: "Confirmation email could not be sent. Check SMTP and try again." };
-    }
-
-    const finalized = await markN8nRequestSent(requestId, claimed.leaseId);
-    if (!finalized) {
-      return { error: "The confirmation may have been emailed, but status update failed. Refresh before retrying." };
-    }
-    await recordAuditEvent({
-      actorId: guard.session.user.id,
-      action: "OPENAI_ACCESS_CONFIRM",
-      resourceType: "N8nAccessRequest",
-      resourceId: requestId,
-      result: "SUCCEEDED",
-    }, await getRequestContext());
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
-    return { success: "Confirmed. A confirmation email is on its way to the student." };
+    return { success: "Decision saved. Confirmation email queued." };
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many attempts. Try again later." };
     return { error: "The request could not be confirmed safely. Please try again." };
@@ -327,13 +258,8 @@ export async function rejectAccessRequestAction(
   _state: N8nActionState,
   formData: FormData,
 ): Promise<N8nActionState> {
-  if (!(await csrfTokenIsValid(formData))) {
-    return { error: "Your session expired. Refresh and try again." };
-  }
-  const guard = await assertRole("ADMIN");
-  if (!guard.ok || !(await isN8nAdmin(guard.session.user.email))) {
-    return { error: "You do not have permission to reject access requests." };
-  }
+  const authorization = await authorizeToolAccessDecision(formData);
+  if (!authorization.ok) return authorization.state;
   const parsed = rejectRequestSchema.safeParse({
     requestId: String(formData.get("requestId") ?? ""),
     reason: String(formData.get("reason") ?? ""),
@@ -344,21 +270,20 @@ export async function rejectAccessRequestAction(
   }
 
   try {
-    await consumeRateLimit("access.request.decision", guard.session.user.id, {
+    await consumeRateLimit("access.request.decision", authorization.actor.id, {
       action: "ACCESS_REQUEST_REJECT",
       resourceType: "N8nAccessRequest",
       resourceId: parsed.data.requestId,
     });
     // Consume the email budget before the transaction. A rate-limit failure must
     // never commit a rejection whose promised notification was not attempted.
-    await consumeRateLimit("n8n.email.send", guard.session.user.id);
-    const context = await getRequestContext();
+    await consumeRateLimit("n8n.email.send", authorization.actor.id);
     const rejected = await rejectN8nRequest({
       requestId: parsed.data.requestId,
-      adminId: guard.session.user.id,
+      adminId: authorization.actor.id,
       reason: parsed.data.reason,
       note: parsed.data.note,
-      context,
+      context: authorization.context,
     });
     if (!rejected) {
       return { error: "This request was already handled or is being processed. Refresh to see its latest status." };
@@ -374,28 +299,41 @@ export async function rejectAccessRequestAction(
       };
     }
 
-    try {
-      await sendAccessRejectionEmail({
-        to: rejected.student.email,
-        studentName: rejected.student.name,
-        requestType: rejected.request.requestType,
-        reason: parsed.data.reason,
-        batchNo: rejected.request.batchNo ?? null,
-        requestId: parsed.data.requestId,
-      });
-      await markRejectionEmailResult(parsed.data.requestId, true);
-      return { success: "Request rejected and the student was notified by email." };
-    } catch {
-      await markRejectionEmailResult(parsed.data.requestId, false);
-      return {
-        success: "Request rejected.",
-        warning: "The notification email failed. The decision is saved; retry delivery after checking SMTP.",
-      };
-    }
+    return { success: "Request rejected. Notification email queued." };
   } catch (error) {
     if (error instanceof MutationRateLimitError) {
       return { error: "Too many decisions in a short time. Try again later." };
     }
     return { error: "The request could not be rejected safely. Please try again." };
+  }
+}
+
+export async function retryRejectionEmailAction(
+  _previous: N8nActionState,
+  formData: FormData,
+): Promise<N8nActionState> {
+  const authorization = await authorizeToolAccessDecision(formData);
+  if (!authorization.ok) return authorization.state;
+  const parsed = requestIdSchema.safeParse(String(formData.get("requestId") ?? ""));
+  if (!parsed.success) return { error: "Invalid request." };
+
+  try {
+    await consumeRateLimit("access.request.decision", authorization.actor.id, {
+      action: "ACCESS_REJECTION_EMAIL_RETRY",
+      resourceType: "N8nAccessRequest",
+      resourceId: parsed.data,
+    });
+    await consumeRateLimit("n8n.email.send", authorization.actor.id);
+    const queued = await queueRejectionEmailRetry({
+      requestId: parsed.data,
+      adminId: authorization.actor.id,
+      context: authorization.context,
+    });
+    if (!queued) return { error: "This notification is no longer retryable. Refresh the queue." };
+    revalidatePath("/dashboard/access-requests");
+    return { success: "Rejection notification queued again." };
+  } catch (error) {
+    if (error instanceof MutationRateLimitError) return { error: error.message };
+    return { error: "Notification could not be queued. Try again." };
   }
 }

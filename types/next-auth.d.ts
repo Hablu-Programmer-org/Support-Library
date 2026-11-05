@@ -5,6 +5,7 @@ type StaffSessionUser = DefaultSession["user"] & {
   id: string;
   role?: UserRole;
   isActive?: boolean;
+  canManageToolAccess?: boolean;
 };
 
 declare module "next-auth" {
@@ -23,6 +24,7 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: UserRole;
     isActive?: boolean;
+    canManageToolAccess?: boolean;
   }
 }
 

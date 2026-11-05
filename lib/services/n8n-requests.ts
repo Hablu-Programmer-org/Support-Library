@@ -1,6 +1,5 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 
 import { dbConnect } from "@/lib/db";
@@ -21,14 +20,12 @@ import {
 } from "@/lib/agent-enrollment-rules";
 import { getAgentEnrollment, getAgentEnrollmentsByEmails } from "@/lib/lms";
 import {
-  accessExpiresAt,
   entitlementToolForRequest,
-  requestCreatesEntitlement,
   requestEntitlementAllowsProcessing,
-  TOOL_ACCESS_POLICY,
   toolEntitlementState,
 } from "@/lib/tool-access-policy";
 import { recordAuditEvent, type AuditEventContext } from "@/lib/services/audit";
+import { createRejectionEmailJob } from "@/lib/services/access-email-outbox";
 
 /** Resolves the local student row into its `agent` enrolment snapshot. */
 export async function getStudentAgentEnrollment(
@@ -286,6 +283,7 @@ export async function listN8nRequestQueue({
         id: request._id.toString(),
         requestType: request.requestType as N8nRequestType,
         status: request.status,
+        rejectionEmailStatus: request.rejectionEmailStatus,
         attempts: request.attempts,
         createdAt: request.createdAt as Date,
         sentAt: request.sentAt as Date | null,
@@ -358,161 +356,6 @@ export async function getN8nRequestType(requestId: string) {
   return request?.requestType ?? null;
 }
 
-export async function claimN8nRequest(requestId: string, adminId: string) {
-  if (!mongoose.isValidObjectId(requestId)) return null;
-  await dbConnect();
-  const now = new Date();
-  const leaseId = randomUUID();
-  const expiresAt = new Date(now.getTime() + 10 * 60_000);
-
-  // The LMS lives in another database/client, so its read stays outside the
-  // transaction (only transactional DB work runs inside).
-  const owner = await N8nAccessRequestModel.findById(requestId)
-    .select("studentId requestType")
-    .lean();
-  const ownerStudent = owner
-    ? await UserModel.findById(owner.studentId).select("email").lean()
-    : null;
-  const agentAllowed = agentEnrollmentAllows(
-    await getAgentEnrollment(ownerStudent?.email ?? null),
-  );
-
-  return mongoose.connection.transaction(async (session) => {
-    const candidate = await N8nAccessRequestModel.findById(requestId).session(session).lean();
-    if (
-      !candidate ||
-      candidate.status === "SENT" ||
-      candidate.status === "REJECTED" ||
-      candidate.status === "SUPERSEDED"
-    ) return null;
-
-    const tool = entitlementToolForRequest(candidate.requestType);
-    const entitlement = await ToolAccessEntitlementModel.findOne({
-      studentId: candidate.studentId,
-      tool,
-    }).session(session).lean();
-    const entitlementState = entitlement ? toolEntitlementState(entitlement) : null;
-    if (!requestEntitlementAllowsProcessing(candidate.requestType, entitlementState)) return null;
-
-    const newerActive = await N8nAccessRequestModel.exists({
-      _id: { $ne: candidate._id },
-      studentId: candidate.studentId,
-      requestType: candidate.requestType,
-      status: { $in: ["PENDING", "PROCESSING"] },
-      createdAt: { $gt: candidate.createdAt },
-    }).session(session);
-    if (newerActive) {
-      await N8nAccessRequestModel.updateOne(
-        { _id: candidate._id, status: { $in: ["PENDING", "FAILED"] } },
-        { $set: { status: "SUPERSEDED" } },
-        { session },
-      );
-      return null;
-    }
-
-    const request = await N8nAccessRequestModel.findOneAndUpdate(
-      {
-        _id: candidate._id,
-        $or: [
-          { status: { $in: ["PENDING", "FAILED"] } },
-          { status: "PROCESSING", processingExpiresAt: { $lte: now } },
-        ],
-      },
-      {
-        $set: {
-          status: "PROCESSING",
-          processingStartedAt: now,
-          processingExpiresAt: expiresAt,
-          processingLeaseId: leaseId,
-          handledBy: new mongoose.Types.ObjectId(adminId),
-          failureCode: null,
-        },
-        $inc: { attempts: 1 },
-      },
-      { new: true, session, select: "+processingLeaseId" },
-    ).lean();
-    if (!request) return null;
-    const student = await UserModel.findById(request.studentId)
-      .select("name email isActive")
-      .session(session)
-      .lean();
-    if (!student || !agentAllowed) {
-      await N8nAccessRequestModel.updateOne(
-        { _id: request._id, processingLeaseId: leaseId },
-        {
-          $set: {
-            status: "FAILED",
-            failureCode: student ? "AGENT_ENROLLMENT_UNAVAILABLE" : "STUDENT_NOT_FOUND",
-          },
-          $unset: { processingLeaseId: "", processingExpiresAt: "" },
-        },
-        { session },
-      );
-      return null;
-    }
-    return { request, student, leaseId };
-  });
-}
-
-export async function markN8nRequestSent(requestId: string, leaseId: string) {
-  const grantedAt = new Date();
-  return mongoose.connection.transaction(async (session) => {
-    const request = await N8nAccessRequestModel.findOne({
-      _id: requestId,
-      status: "PROCESSING",
-      processingLeaseId: leaseId,
-    }).session(session).lean();
-    if (!request) return false;
-
-    if (requestCreatesEntitlement(request.requestType)) {
-      const tool = entitlementToolForRequest(request.requestType);
-      const existing = await ToolAccessEntitlementModel.exists({
-        studentId: request.studentId,
-        tool,
-      }).session(session);
-      if (existing) return false;
-      const policy = TOOL_ACCESS_POLICY[tool];
-      await ToolAccessEntitlementModel.create([{
-        studentId: request.studentId,
-        tool,
-        policyKey: policy.key,
-        policyDurationMonths: policy.durationMonths,
-        courseSlug: request.courseSlug || ACCESS_COURSE_SLUG,
-        enrollmentId: request.enrollmentId ?? null,
-        grantedBatchNo: request.batchNo ?? null,
-        sourceRequestId: request._id,
-        grantedAt,
-        expiresAt: accessExpiresAt(tool, grantedAt),
-      }], { session });
-    }
-
-    const result = await N8nAccessRequestModel.updateOne(
-      { _id: request._id, status: "PROCESSING", processingLeaseId: leaseId },
-      {
-        $set: { status: "SENT", sentAt: grantedAt, failureCode: null },
-        $unset: { processingLeaseId: "", processingExpiresAt: "" },
-      },
-      { session },
-    );
-    return result.modifiedCount === 1;
-  });
-}
-
-export async function markN8nRequestFailed(
-  requestId: string,
-  leaseId: string,
-  failureCode = "EMAIL_SEND_FAILED",
-) {
-  const result = await N8nAccessRequestModel.updateOne(
-    { _id: requestId, status: "PROCESSING", processingLeaseId: leaseId },
-    {
-      $set: { status: "FAILED", failureCode },
-      $unset: { processingLeaseId: "", processingExpiresAt: "" },
-    },
-  );
-  return result.modifiedCount === 1;
-}
-
 export async function rejectN8nRequest(input: {
   requestId: string;
   adminId: string;
@@ -556,6 +399,11 @@ export async function rejectN8nRequest(input: {
         { $set: { rejectionEmailStatus: "FAILED" } },
         { session },
       );
+    } else {
+      await createRejectionEmailJob({
+        requestId: request._id.toString(),
+        adminId: input.adminId,
+      }, session);
     }
 
     await recordAuditEvent({
@@ -568,14 +416,4 @@ export async function rejectN8nRequest(input: {
 
     return { request, student };
   });
-}
-
-export async function markRejectionEmailResult(requestId: string, sent: boolean) {
-  const result = await N8nAccessRequestModel.updateOne(
-    { _id: requestId, status: "REJECTED", rejectionEmailStatus: "PENDING" },
-    sent
-      ? { $set: { rejectionEmailStatus: "SENT", rejectionEmailSentAt: new Date() } }
-      : { $set: { rejectionEmailStatus: "FAILED" } },
-  );
-  return result.modifiedCount === 1;
 }

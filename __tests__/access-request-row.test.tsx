@@ -7,6 +7,7 @@ vi.mock("@/actions/n8n-requests", () => ({
   confirmOpenAiAccessAction: vi.fn(async () => ({})),
   sendN8nLinkAction: vi.fn(async () => ({})),
   rejectAccessRequestAction: vi.fn(async () => ({})),
+  retryRejectionEmailAction: vi.fn(async () => ({})),
 }));
 vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -37,6 +38,7 @@ const base: AccessRowRequest = {
   variant: "n8n",
   canApprove: true,
   canReject: true,
+  rejectionNotificationFailed: false,
 };
 
 describe("AccessRequestRow", () => {

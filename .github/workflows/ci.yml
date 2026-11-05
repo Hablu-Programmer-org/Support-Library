@@ -122,6 +122,8 @@ jobs:
           SMTP_HOST=smtp.invalid
           SMTP_MAIL=ci@hablu-programmer.com
           SMTP_PASSWORD=ci-placeholder
+          ACCESS_EMAIL_KEY_VERSION=v1
+          ACCESS_EMAIL_ENCRYPTION_KEYS=v1:Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc=
           LIVE_SUPPORT_MEETING_ID=abc-defg-hij
           NODE_ENV=production
           EOF
