@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { createN8nRequestAction } from "@/actions/n8n-requests";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import { cn } from "@/lib/cn";
-import { formatSupportShortDate } from "@/lib/format-date";
+import { formatSupportDateOnly, formatSupportShortDate } from "@/lib/format-date";
 
 type RequestType = "ACCESS" | "PASSWORD_RESET" | "OPENAI_ACCESS";
 type RequestStatus = "PENDING" | "PROCESSING" | "SENT" | "FAILED" | "REJECTED" | "SUPERSEDED";
@@ -17,6 +17,22 @@ type RequestSummary = {
   sentAt?: string | null;
 };
 
+/**
+ * What the student already holds. Optional: the card still works without it,
+ * and the server remains the single authority on every decision — this only
+ * stops the UI offering a request the policy will always refuse.
+ */
+export type ToolEntitlementSummary = {
+  state: "ACTIVE" | "EXPIRED" | "REVOKED";
+  expiresAt: string;
+  revokedAt?: string | null;
+};
+
+export type AccessHelpEntitlements = {
+  n8n?: ToolEntitlementSummary | null;
+  openai?: ToolEntitlementSummary | null;
+};
+
 const choices = [
   { value: "ACCESS", label: "n8n access" },
   { value: "PASSWORD_RESET", label: "n8n password reset" },
@@ -24,6 +40,58 @@ const choices = [
 ] as const;
 
 const active = (status: RequestStatus) => status === "PENDING" || status === "PROCESSING";
+
+const TOOL_FOR_TYPE: Record<RequestType, "n8n" | "openai"> = {
+  ACCESS: "n8n",
+  PASSWORD_RESET: "n8n",
+  OPENAI_ACCESS: "openai",
+};
+const TOOL_NAMES = { n8n: "n8n", openai: "OpenAI" } as const;
+
+/**
+ * Why a choice cannot be requested, or `null` when it still can.
+ *
+ * Mirrors `requestEntitlementAllowsProcessing`: new access needs no entitlement
+ * yet, while a password reset needs an active one.
+ */
+function entitlementNotice(
+  requestType: RequestType,
+  entitlements: AccessHelpEntitlements,
+): { chip: string; title: string } | null {
+  const tool = TOOL_FOR_TYPE[requestType];
+  const entitlement = entitlements[tool];
+  const toolName = TOOL_NAMES[tool];
+
+  if (requestType === "PASSWORD_RESET") {
+    if (entitlement?.state === "ACTIVE") return null;
+    return {
+      chip: "Needs n8n access",
+      title: "A password reset needs active n8n access. Request n8n access first.",
+    };
+  }
+
+  if (!entitlement) return null;
+
+  const revokedOn = formatSupportDateOnly(entitlement.revokedAt);
+  const expiresOn = formatSupportDateOnly(entitlement.expiresAt);
+
+  if (entitlement.state === "ACTIVE") {
+    return {
+      chip: expiresOn ? `Until ${expiresOn}` : "Active",
+      title: `Your ${toolName} access is active${expiresOn ? ` until ${expiresOn}` : ""}.`,
+    };
+  }
+  if (entitlement.state === "EXPIRED") {
+    return {
+      chip: expiresOn ? `Expired ${expiresOn}` : "Expired",
+      title: `Your ${toolName} access expired${expiresOn ? ` on ${expiresOn}` : ""}. Renewal is not available in this form yet.`,
+    };
+  }
+  return {
+    chip: revokedOn ? `Revoked ${revokedOn}` : "Revoked",
+    title: `Your ${toolName} access was revoked${revokedOn ? ` on ${revokedOn}` : ""}. A new request is blocked by policy.`,
+  };
+}
 
 const STATUS_TEXT: Record<RequestStatus, string> = {
   PENDING: "Request received",
@@ -155,7 +223,15 @@ function StatusChip({ status, sentAt }: { status: RequestStatus; sentAt?: string
   );
 }
 
-export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; requests: RequestSummary[] }) {
+export function AccessHelpCard({
+  csrfToken,
+  requests,
+  entitlements,
+}: {
+  csrfToken: string;
+  requests: RequestSummary[];
+  entitlements?: AccessHelpEntitlements;
+}) {
   const [state, action] = useActionState(createN8nRequestAction, {});
   const statusMessage = requestStatusMessage(requests);
   // Tone follows the same newest-per-type view as the sentence, so a replaced
@@ -168,11 +244,16 @@ export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; req
       : ("muted" as const);
   const message = state.error
     ? { text: state.error, tone: "error" as const }
-    : statusMessage
-      ? { text: statusMessage, tone: statusTone }
-      : state.success
-        ? { text: state.success, tone: "success" as const }
-        : { text: "Select the access you need.", tone: "muted" as const };
+    : state.warning
+      ? {
+          text: `${state.success ? `${state.success} ` : ""}${state.warning}`,
+          tone: "warning" as const,
+        }
+      : statusMessage
+        ? { text: statusMessage, tone: statusTone }
+        : state.success
+          ? { text: state.success, tone: "success" as const }
+          : { text: "Select the access you need.", tone: "muted" as const };
 
   return (
     <section
@@ -206,24 +287,37 @@ export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; req
               {choices.map((choice) => {
                 const latest = requests.find((request) => request.requestType === choice.value);
                 const isActive = Boolean(latest && active(latest.status));
+                const notice = entitlements ? entitlementNotice(choice.value, entitlements) : null;
+                const disabled = isActive || Boolean(notice);
+                const hintId = `access-hint-${choice.value}`;
                 return (
                   <label
                     key={choice.value}
+                    title={notice?.title}
                     className="group flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-xs transition hover:border-cyan-300 hover:bg-cyan-50/40 has-checked:border-cyan-500 has-checked:bg-cyan-50 has-checked:ring-1 has-checked:ring-cyan-500/30 has-disabled:cursor-not-allowed has-disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-cyan-700 dark:hover:bg-cyan-950/20 dark:has-checked:bg-cyan-950/40"
                   >
                     <input
+                      aria-describedby={notice ? hintId : undefined}
+                      aria-label={choice.label}
                       className="h-3.5 w-3.5 shrink-0 accent-cyan-600"
                       type="checkbox"
                       name="requestTypes"
                       value={choice.value}
-                      disabled={isActive}
+                      disabled={disabled}
                     />
                     <span className="truncate font-medium text-slate-700 dark:text-slate-200">{choice.label}</span>
-                    {latest && (
+                    {notice ? (
+                      <span
+                        className="ml-auto shrink-0 truncate text-[10px] font-medium text-slate-500 dark:text-slate-400"
+                        id={hintId}
+                      >
+                        {notice.chip}
+                      </span>
+                    ) : latest ? (
                       <span className="ml-auto">
                         <StatusChip status={latest.status} sentAt={latest.sentAt} />
                       </span>
-                    )}
+                    ) : null}
                   </label>
                 );
               })}
@@ -243,6 +337,7 @@ export function AccessHelpCard({ csrfToken, requests }: { csrfToken: string; req
                 "min-w-0 sm:truncate",
                 message.tone === "error" && "text-red-600",
                 message.tone === "success" && "text-emerald-600",
+                message.tone === "warning" && "text-amber-600",
                 message.tone === "muted" && "text-slate-500 dark:text-slate-400",
               )}
             >

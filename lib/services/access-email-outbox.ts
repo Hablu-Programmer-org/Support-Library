@@ -63,34 +63,57 @@ function isDuplicateKey(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
+export type QueueAccessEmailResult =
+  | { ok: true; jobId: string }
+  | {
+      ok: false;
+      code:
+        | "INVALID_REQUEST"
+        | "REQUEST_NOT_ACTIONABLE"
+        | "STUDENT_UNAVAILABLE"
+        | "ENROLLMENT_BLOCKED"
+        | "ENTITLEMENT_MISMATCH"
+        | "SUPERSEDED"
+        | "DUPLICATE_JOB"
+        | "LINK_REQUIRED";
+      requestType: N8nRequestType | null;
+    };
+
 export async function queueAccessApprovalEmail(input: {
   requestId: string;
   adminId: string;
   expectedTypes: readonly N8nRequestType[];
   link?: string;
   context?: AuditEventContext;
-}) {
+}): Promise<QueueAccessEmailResult> {
   if (!mongoose.isValidObjectId(input.requestId) || !mongoose.isValidObjectId(input.adminId)) {
-    return null;
+    return { ok: false, code: "INVALID_REQUEST", requestType: null };
   }
   await dbConnect();
 
   const owner = await N8nAccessRequestModel.findById(input.requestId)
     .select("studentId requestType")
     .lean();
-  if (!owner || !input.expectedTypes.includes(owner.requestType)) return null;
+  if (!owner || !input.expectedTypes.includes(owner.requestType)) {
+    return { ok: false, code: "REQUEST_NOT_ACTIONABLE", requestType: owner?.requestType ?? null };
+  }
+  const requestType = owner.requestType as N8nRequestType;
   const student = await UserModel.findById(owner.studentId).select("email isActive").lean();
-  if (!student?.email || !student.isActive) return null;
+  if (!student?.email || !student.isActive) {
+    return { ok: false, code: "STUDENT_UNAVAILABLE", requestType };
+  }
   const enrollmentAllowed = agentEnrollmentAllows(await getAgentEnrollment(student.email));
-  if (!enrollmentAllowed) return null;
+  if (!enrollmentAllowed) {
+    return { ok: false, code: "ENROLLMENT_BLOCKED", requestType };
+  }
 
-  const notificationType = notificationForRequest(owner.requestType);
+  const notificationType = notificationForRequest(requestType);
   const jobId = new mongoose.Types.ObjectId();
   const now = new Date();
   let encryptedPayload: AccessEmailEncryptedPayload | null = null;
   let payloadExpiresAt: Date | null = null;
   if (notificationType === "N8N_ACCESS" || notificationType === "N8N_PASSWORD_RESET") {
-    if (!input.link) return null;
+    if (!input.link) return { ok: false, code: "LINK_REQUIRED", requestType };
     encryptedPayload = encryptAccessEmailPayload(input.link, {
       jobId: jobId.toString(),
       requestId: input.requestId,
@@ -100,13 +123,15 @@ export async function queueAccessApprovalEmail(input: {
   }
 
   try {
-    return await mongoose.connection.transaction(async (session) => {
+    return await mongoose.connection.transaction<QueueAccessEmailResult>(async (session) => {
       const candidate = await N8nAccessRequestModel.findOne({
         _id: input.requestId,
         status: { $in: ["PENDING", "FAILED"] },
         requestType: { $in: input.expectedTypes },
       }).session(session).lean();
-      if (!candidate) return null;
+      if (!candidate) {
+        return { ok: false, code: "REQUEST_NOT_ACTIONABLE", requestType };
+      }
 
       const tool = entitlementToolForRequest(candidate.requestType);
       const entitlement = await ToolAccessEntitlementModel.findOne({
@@ -116,7 +141,9 @@ export async function queueAccessApprovalEmail(input: {
       if (!requestEntitlementAllowsProcessing(
         candidate.requestType,
         entitlement ? toolEntitlementState(entitlement) : null,
-      )) return null;
+      )) {
+        return { ok: false, code: "ENTITLEMENT_MISMATCH", requestType };
+      }
 
       const newerActive = await N8nAccessRequestModel.exists({
         _id: { $ne: candidate._id },
@@ -131,7 +158,7 @@ export async function queueAccessApprovalEmail(input: {
           { $set: { status: "SUPERSEDED" } },
           { session },
         );
-        return null;
+        return { ok: false, code: "SUPERSEDED", requestType };
       }
 
       const updated = await N8nAccessRequestModel.updateOne(
@@ -147,7 +174,9 @@ export async function queueAccessApprovalEmail(input: {
         },
         { session },
       );
-      if (updated.modifiedCount !== 1) return null;
+      if (updated.modifiedCount !== 1) {
+        return { ok: false, code: "REQUEST_NOT_ACTIONABLE", requestType };
+      }
 
       const previousJob = await AccessEmailOutboxModel.findOne({
         requestId: candidate._id,
@@ -176,10 +205,10 @@ export async function queueAccessApprovalEmail(input: {
         resourceId: job._id.toString(),
         result: "SUCCEEDED",
       }, input.context, session);
-      return job;
+      return { ok: true, jobId: job._id.toString() };
     });
   } catch (error) {
-    if (isDuplicateKey(error)) return null;
+    if (isDuplicateKey(error)) return { ok: false, code: "DUPLICATE_JOB", requestType };
     throw error;
   }
 }

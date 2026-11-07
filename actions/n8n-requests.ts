@@ -9,6 +9,7 @@ import { normalizeEmail } from "@/lib/email";
 import { findLmsUserByEmail, getAgentEnrollment } from "@/lib/lms";
 import { mapLmsRole } from "@/lib/lms-roles";
 import { isN8nAdmin, validateAccessLink } from "@/lib/n8n-request-policy";
+import { describeQueueEmailFailure, summarizeCreateAttempt } from "@/lib/access-request-messages";
 import { getRequestContext } from "@/lib/request-context";
 import { recentlySignedIn } from "@/lib/recent-auth";
 import { csrfTokenIsValid } from "@/lib/safe-action";
@@ -19,7 +20,7 @@ import {
   queueRejectionEmailRetry,
 } from "@/lib/services/access-email-outbox";
 import {
-  createN8nRequest,
+  createN8nRequests,
   getStudentAgentEnrollment,
   rejectN8nRequest,
 } from "@/lib/services/n8n-requests";
@@ -65,27 +66,31 @@ export async function createN8nRequestAction(
 
   try {
     await consumeRateLimit("n8n.request.create", guard.session.user.id);
-    const created = [];
-    for (const requestType of parsed.data) {
-      const request = await createN8nRequest(guard.session.user.id, requestType);
-      if (!request) continue;
-      created.push(request);
+    const result = await createN8nRequests({
+      studentId: guard.session.user.id,
+      requestTypes: parsed.data,
+    });
+    const context = await getRequestContext();
+    for (const request of result.created) {
       await recordAuditEvent({
         actorId: guard.session.user.id,
         action: "N8N_REQUEST_CREATE",
         resourceType: "N8nAccessRequest",
         resourceId: request._id.toString(),
         result: "SUCCEEDED",
-      }, await getRequestContext());
+      }, context);
     }
-    if (created.length === 0) return { error: "Every selected access type already has an active request." };
+    const summary = summarizeCreateAttempt({
+      createdTypes: result.created.map((request) => request.requestType),
+      skipped: result.skipped,
+      audience: "STUDENT",
+    });
+    if (result.created.length === 0) {
+      return { error: summary.error ?? "We could not submit your request. Please try again." };
+    }
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
-    const skipped = parsed.data.length - created.length;
-    const submitted = `${created.length} request${created.length === 1 ? "" : "s"} submitted`;
-    return { success: skipped > 0
-      ? `${submitted} · ${skipped} already active.`
-      : `${submitted} successfully.` };
+    return summary;
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many requests. Please try again later." };
     return { error: "We could not submit your request. Please try again." };
@@ -139,17 +144,13 @@ export async function createAccessRequestsForStudentAction(
     );
     if (!target) return { error: "The account could not be prepared. Please try again." };
 
-    const created = [];
+    const created = await createN8nRequests({
+      studentId: target._id.toString(),
+      requestTypes: parsed.data.requestTypes,
+      createdBy: guard.session.user.id,
+    });
     const context = await getRequestContext();
-    for (const requestType of parsed.data.requestTypes) {
-      const request = await createN8nRequest(
-        target._id.toString(),
-        requestType,
-        undefined,
-        guard.session.user.id,
-      );
-      if (!request) continue;
-      created.push(request);
+    for (const request of created.created) {
       await recordAuditEvent({
         actorId: guard.session.user.id,
         action: "N8N_REQUEST_CREATE_BY_ADMIN",
@@ -158,14 +159,19 @@ export async function createAccessRequestsForStudentAction(
         result: "SUCCEEDED",
       }, context);
     }
-    if (created.length === 0) return { error: "Every selected type already has an active request for this account." };
+    const summary = summarizeCreateAttempt({
+      createdTypes: created.created.map((request) => request.requestType),
+      skipped: created.skipped,
+      audience: "ADMIN",
+      email: parsed.data.email,
+    });
+    if (created.created.length === 0) {
+      return { error: summary.error ?? "The access requests could not be created safely. Please try again." };
+    }
 
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
-    const skipped = parsed.data.requestTypes.length - created.length;
-    return { success: skipped > 0
-      ? `${created.length} request(s) created. ${skipped} active duplicate skipped.`
-      : `${created.length} request(s) created for ${parsed.data.email}.` };
+    return summary;
   } catch (error) {
     if (error instanceof MutationRateLimitError) return { error: "Too many requests. Try again in a minute." };
     return { error: "The access requests could not be created safely. Please try again." };
@@ -196,11 +202,8 @@ export async function sendN8nLinkAction(
       link,
       context: authorization.context,
     });
-    if (!queued) {
-      return {
-        error:
-          "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
-      };
+    if (!queued.ok) {
+      return { error: describeQueueEmailFailure(queued.code, queued.requestType) };
     }
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");
@@ -239,11 +242,8 @@ export async function confirmOpenAiAccessAction(
       expectedTypes: ["OPENAI_ACCESS"],
       context: authorization.context,
     });
-    if (!queued) {
-      return {
-        error:
-          "This request was already handled, is being processed, or the student is no longer in the AI Agent course.",
-      };
+    if (!queued.ok) {
+      return { error: describeQueueEmailFailure(queued.code, queued.requestType) };
     }
     revalidatePath("/dashboard/access-requests");
     revalidatePath("/dashboard/issues");

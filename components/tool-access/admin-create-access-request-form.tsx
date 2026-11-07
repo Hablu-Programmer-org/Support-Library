@@ -98,6 +98,12 @@ export function AdminCreateAccessRequestForm({
             {state.success}
           </p>
         )}
+        {/* Partial success: one request was created but another was refused. */}
+        {state.warning && (
+          <p className="text-sm text-amber-600 dark:text-amber-400" role="status">
+            {state.warning}
+          </p>
+        )}
         <div className="max-w-xs">
           {requiresReauth || state.errorCode === "REAUTH_REQUIRED" ? (
             <GoogleReverifyButton />

@@ -30,8 +30,9 @@ import { agentEnrollmentAllows } from "@/lib/agent-enrollment-rules";
 import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
-import { getStudentAgentEnrollment, listOwnN8nRequests } from "@/lib/services/n8n-requests";
+import { getStudentAgentEnrollment, listOwnN8nRequests, listOwnToolEntitlements } from "@/lib/services/n8n-requests";
 import { listAssignableMentors } from "@/lib/services/staff";
+import { toolEntitlementState } from "@/lib/tool-access-policy";
 import { CASE_STATUSES } from "@/models";
 
 export const dynamic = "force-dynamic";
@@ -118,6 +119,23 @@ export default async function IssuesPage({
     showQuickJoin && agentEnrollmentAllows(agentAccess)
       ? await listOwnN8nRequests(session.user.id)
       : [];
+  const toolEntitlements =
+    showQuickJoin && agentEnrollmentAllows(agentAccess)
+      ? await listOwnToolEntitlements(session.user.id)
+      : [];
+  const entitlementFor = (tool: "N8N" | "OPENAI") => {
+    const row = toolEntitlements.find((entitlement) => entitlement.tool === tool);
+    if (!row) return null;
+    return {
+      state: toolEntitlementState(row),
+      expiresAt: row.expiresAt.toISOString(),
+      revokedAt: row.revokedAt?.toISOString() ?? null,
+    };
+  };
+  const accessEntitlements = {
+    n8n: entitlementFor("N8N"),
+    openai: entitlementFor("OPENAI"),
+  };
   const activity = canManage ? await getIssueActivitySnapshot() : null;
   // Both are resolved here, server-side: the browser clock is display only and
   // the room URL never leaves the action.
@@ -191,6 +209,7 @@ export default async function IssuesPage({
       {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
         <AccessHelpCard
           csrfToken={csrfToken}
+          entitlements={accessEntitlements}
           requests={accessRequests.map((request) => ({
             id: request._id.toString(),
             requestType: request.requestType,

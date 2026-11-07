@@ -97,7 +97,7 @@ test.describe("access request administration", () => {
     await adminPage.getByRole("checkbox", { name: "n8n access" }).check();
     await adminPage.getByRole("checkbox", { name: "OpenAI API access" }).check();
     await adminPage.getByRole("button", { name: "Create selected requests" }).click();
-    await expect(adminPage.getByRole("status")).toContainText("2 request(s) created");
+    await expect(adminPage.getByRole("status")).toContainText("2 requests created");
 
     // The OpenAI tab is open by default and shows only its own request.
     const openAiQueue = adminPage.getByRole("region", { name: "OpenAI API access" });

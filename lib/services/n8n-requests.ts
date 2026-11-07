@@ -21,9 +21,13 @@ import {
 import { getAgentEnrollment, getAgentEnrollmentsByEmails } from "@/lib/lms";
 import {
   entitlementToolForRequest,
-  requestEntitlementAllowsProcessing,
   toolEntitlementState,
 } from "@/lib/tool-access-policy";
+import {
+  classifyCreateFailure,
+  isDuplicateActiveRequestError,
+  type CreateFailure,
+} from "@/lib/access-request-outcome";
 import { recordAuditEvent, type AuditEventContext } from "@/lib/services/audit";
 import { createRejectionEmailJob } from "@/lib/services/access-email-outbox";
 
@@ -37,48 +41,141 @@ export async function getStudentAgentEnrollment(
   return getAgentEnrollment(student?.email ?? null);
 }
 
+type InsertN8nRequestInput = {
+  studentId: string;
+  requestType: N8nRequestType;
+  agent: LmsAgentEnrollment;
+  purpose?: string;
+  createdBy?: string;
+};
+
+async function insertN8nRequest(input: InsertN8nRequestInput) {
+  const { studentId, requestType, agent } = input;
+  return mongoose.connection.transaction(async (session) => {
+    // A student may retry after a failure, but the old row must no longer be
+    // actionable or an admin could send both the old and the new request.
+    await N8nAccessRequestModel.updateMany(
+      { studentId, requestType, status: "FAILED" },
+      { $set: { status: "SUPERSEDED" } },
+      { session },
+    );
+    const [created] = await N8nAccessRequestModel.create([{
+      studentId,
+      requestType,
+      purpose: input.purpose || null,
+      createdBy: input.createdBy || null,
+      courseSlug: ACCESS_COURSE_SLUG,
+      batchNo: agent.batchNo,
+      enrollmentId:
+        agent.enrollmentId && mongoose.isValidObjectId(agent.enrollmentId)
+          ? new mongoose.Types.ObjectId(agent.enrollmentId)
+          : null,
+    }], { session });
+    return created;
+  });
+}
+
+export type CreatedN8nRequest = Awaited<ReturnType<typeof insertN8nRequest>>;
+
+export type CreateN8nRequestsResult = {
+  created: CreatedN8nRequest[];
+  skipped: CreateFailure[];
+};
+
+/**
+ * Creates one request per selected type, resolving the LMS enrolment and the
+ * entitlements once instead of once per type.
+ *
+ * Every refusal carries a reason code (`CreateFailure`) so callers can explain
+ * whether an active request exists, the student already holds access, or a
+ * password reset needs access first — instead of mislabelling all of them.
+ */
+export async function createN8nRequests(input: {
+  studentId: string;
+  requestTypes: readonly N8nRequestType[];
+  purpose?: string;
+  createdBy?: string;
+}): Promise<CreateN8nRequestsResult> {
+  await dbConnect();
+  const requestTypes = [...new Set(input.requestTypes)];
+
+  // Defence in depth: the actions check this too, but the service is the last
+  // gate for any future caller.
+  const agent = await getStudentAgentEnrollment(input.studentId);
+  if (!agentEnrollmentAllows(agent)) {
+    return {
+      created: [],
+      skipped: requestTypes.map((requestType) => ({
+        ok: false as const,
+        code: "ENROLLMENT_BLOCKED" as const,
+        requestType,
+      })),
+    };
+  }
+
+  const entitlements = await ToolAccessEntitlementModel.find({
+    studentId: input.studentId,
+    tool: { $in: ["N8N", "OPENAI"] },
+  }).lean();
+  const byTool = new Map(entitlements.map((row) => [row.tool, row]));
+
+  const created: CreatedN8nRequest[] = [];
+  const skipped: CreateFailure[] = [];
+
+  for (const requestType of requestTypes) {
+    const entitlement = byTool.get(entitlementToolForRequest(requestType));
+    const snapshot = entitlement
+      ? {
+          state: toolEntitlementState(entitlement),
+          expiresAt: entitlement.expiresAt,
+          revokedAt: entitlement.revokedAt ?? null,
+        }
+      : null;
+    const failureCode = classifyCreateFailure(requestType, snapshot?.state ?? null);
+    if (failureCode) {
+      skipped.push({
+        ok: false,
+        code: failureCode,
+        requestType,
+        entitlement: snapshot ?? undefined,
+      });
+      continue;
+    }
+
+    try {
+      created.push(await insertN8nRequest({
+        studentId: input.studentId,
+        requestType,
+        agent,
+        purpose: input.purpose,
+        createdBy: input.createdBy,
+      }));
+    } catch (error) {
+      if (isDuplicateActiveRequestError(error)) {
+        skipped.push({ ok: false, code: "ACTIVE_REQUEST_EXISTS", requestType });
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  return { created, skipped };
+}
+
+/** Single-type wrapper so future callers cannot bypass the entitlement gate. */
 export async function createN8nRequest(
   studentId: string,
   requestType: N8nRequestType,
   purpose?: string,
   createdBy?: string,
-) {
-  await dbConnect();
-  const agent = await getStudentAgentEnrollment(studentId);
-  // Defence in depth: the actions check this too, but the service is the last
-  // gate for any future caller.
-  if (!agentEnrollmentAllows(agent)) return null;
-  const tool = entitlementToolForRequest(requestType);
-  const entitlement = await ToolAccessEntitlementModel.findOne({ studentId, tool }).lean();
-  const entitlementState = entitlement ? toolEntitlementState(entitlement) : null;
-  if (!requestEntitlementAllowsProcessing(requestType, entitlementState)) return null;
-  try {
-    return await mongoose.connection.transaction(async (session) => {
-      // A student may retry after a failure, but the old row must no longer be
-      // actionable or an admin could send both the old and the new request.
-      await N8nAccessRequestModel.updateMany(
-        { studentId, requestType, status: "FAILED" },
-        { $set: { status: "SUPERSEDED" } },
-        { session },
-      );
-      const [created] = await N8nAccessRequestModel.create([{
-        studentId,
-        requestType,
-        purpose: purpose || null,
-        createdBy: createdBy || null,
-        courseSlug: ACCESS_COURSE_SLUG,
-        batchNo: agent.batchNo,
-        enrollmentId:
-          agent.enrollmentId && mongoose.isValidObjectId(agent.enrollmentId)
-            ? new mongoose.Types.ObjectId(agent.enrollmentId)
-            : null,
-      }], { session });
-      return created;
-    });
-  } catch (error) {
-    if (typeof error === "object" && error && "code" in error && error.code === 11000) return null;
-    throw error;
-  }
+): Promise<CreatedN8nRequest | CreateFailure> {
+  const result = await createN8nRequests({
+    studentId,
+    requestTypes: [requestType],
+    purpose,
+    createdBy,
+  });
+  return result.created[0] ?? result.skipped[0];
 }
 
 export async function listOwnN8nRequests(studentId: string) {

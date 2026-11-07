@@ -13,6 +13,7 @@ import { AccessHelpCard, requestStatusMessage, sentRequestsMessage } from "@/com
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
+import { createAccessRequestsForStudentAction } from "@/actions/n8n-requests";
 
 describe("sentRequestsMessage", () => {
   it("returns null until an email has been sent", () => {
@@ -132,6 +133,49 @@ describe("AccessHelpCard", () => {
     expect(screen.getByText("OpenAI API request submitted — awaiting admin approval.")).toBeTruthy();
   });
 
+  it("disables new n8n access while it is still active", () => {
+    render(<AccessHelpCard
+      csrfToken="csrf"
+      requests={[]}
+      entitlements={{ n8n: { state: "ACTIVE", expiresAt: "2027-11-07T05:04:52.000Z" }, openai: null }}
+    />);
+    const access = screen.getByRole("checkbox", { name: /n8n access/i }) as HTMLInputElement;
+    expect(access.disabled).toBe(true);
+    // A reset needs exactly this active entitlement, so it stays open.
+    expect((screen.getByRole("checkbox", { name: /n8n password reset/i }) as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByText("Until 7 Nov 2027")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /OpenAI API access/i })).not.toBeNull();
+  });
+
+  it("requires an active entitlement before offering a password reset", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[]} entitlements={{ n8n: null, openai: null }} />);
+    expect((screen.getByRole("checkbox", { name: /n8n password reset/i }) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("checkbox", { name: /n8n access/i }) as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByText("Needs n8n access")).toBeTruthy();
+  });
+
+  it("blocks new access after expiry instead of pretending a request exists", () => {
+    render(<AccessHelpCard
+      csrfToken="csrf"
+      requests={[]}
+      entitlements={{ n8n: { state: "EXPIRED", expiresAt: "2026-10-01T05:00:00.000Z" }, openai: null }}
+    />);
+    expect((screen.getByRole("checkbox", { name: /n8n access/i }) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("checkbox", { name: /n8n password reset/i }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByText("Expired 1 Oct 2026")).toBeTruthy();
+  });
+
+  it("disables OpenAI only while its own entitlement is active", () => {
+    render(<AccessHelpCard
+      csrfToken="csrf"
+      requests={[]}
+      entitlements={{ n8n: null, openai: { state: "ACTIVE", expiresAt: "2027-01-03T05:00:00.000Z" } }}
+    />);
+    expect((screen.getByRole("checkbox", { name: /OpenAI API access/i }) as HTMLInputElement).disabled).toBe(true);
+    expect((screen.getByRole("checkbox", { name: /n8n access/i }) as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByText("Until 3 Jan 2027")).toBeTruthy();
+  });
+
   it("explains mixed sent and pending requests", () => {
     render(<AccessHelpCard csrfToken="csrf" requests={[
       { id: "request-1", requestType: "ACCESS", status: "SENT" },
@@ -225,6 +269,20 @@ describe("AdminCreateAccessRequestForm", () => {
     expect(screen.getByRole("checkbox", { name: "n8n access" })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: "n8n password reset" })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: "OpenAI API access" })).not.toBeNull();
+  });
+
+  it("shows a partial-success warning instead of hiding the skipped type", async () => {
+    vi.mocked(createAccessRequestsForStudentAction).mockResolvedValueOnce({
+      success: "1 request created for student@example.com.",
+      warning: "Skipped n8n access (n8n access is active until 7 Nov 2027).",
+    });
+    const { container } = render(<AdminCreateAccessRequestForm csrfToken="csrf" />);
+    fireEvent.change(screen.getByLabelText("Student email"), {
+      target: { value: "student@example.com" },
+    });
+    fireEvent.submit(container.querySelector("form")!);
+    await waitFor(() => expect(screen.getByText(/Skipped n8n access/)).toBeTruthy());
+    expect(screen.getByText("1 request created for student@example.com.")).toBeTruthy();
   });
 
   it("offers Google step-up instead of forcing a sign-out", () => {

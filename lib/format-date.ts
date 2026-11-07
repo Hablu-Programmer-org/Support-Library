@@ -25,6 +25,20 @@ export function formatSupportDate(date?: Date | string | null): string {
  * browser (en-GB → "3 Nov") produced different text and React threw a
  * hydration mismatch. Returns `null` when there is no usable date.
  */
+/** Date without a time, for expiry lines such as "7 Nov 2027". */
+export function formatSupportDateOnly(date?: Date | string | null): string | null {
+  if (!date) return null;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return null;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: SUPPORT_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
 export function formatSupportShortDate(date?: Date | string | null): string | null {
   if (!date) return null;
   const d = typeof date === "string" ? new Date(date) : date;
