@@ -157,14 +157,28 @@ jobs:
           }
 
           wait_healthy() {
+            # Read the worker presence straight from the compose file: calling
+            # `docker compose ps` here needs APP_IMAGE/OPS_IMAGE interpolation
+            # and would silently return nothing, which made every deploy time
+            # out (and the old pre-worker release un-rollbackable).
+            has_worker=false
+            if grep -qE '^  access-email-worker:' "$active_compose" 2>/dev/null; then
+              has_worker=true
+            fi
             for attempt in $(seq 1 40); do
               web_status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' hablu-support-library 2>/dev/null || true)
-              worker_id=$(docker compose -p "$project" -f "$active_compose" ps -q access-email-worker 2>/dev/null || true)
+              worker_id=$(docker ps -q --filter "label=com.docker.compose.project=$project" --filter "label=com.docker.compose.service=access-email-worker" | head -1 || true)
               worker_status=""
               if [ -n "$worker_id" ]; then
                 worker_status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$worker_id" 2>/dev/null || true)
               fi
-              if [ "$web_status" = healthy ] && [ "$worker_status" = healthy ] && curl --fail --silent https://support.hablu-programmer.com/api/health/ready >/dev/null; then
+              worker_ok=false
+              if [ "$has_worker" = true ]; then
+                if [ "$worker_status" = healthy ]; then worker_ok=true; fi
+              else
+                worker_ok=true
+              fi
+              if [ "$web_status" = healthy ] && [ "$worker_ok" = true ] && curl --fail --silent https://support.hablu-programmer.com/api/health/ready >/dev/null; then
                 return 0
               fi
               sleep 5
@@ -178,18 +192,25 @@ jobs:
             compose_file="$1"
             app="$2"
             ops="$3"
+            # A rollback target predates the worker and must still be able to
+            # bring the site back; a candidate release must always ship it.
+            require_worker="${4:-true}"
             active_compose="$compose_file"
+            services="support-library"
             if APP_ENV_FILE="$env_file" APP_IMAGE="$app" OPS_IMAGE="$ops" \
               docker compose -p "$project" -f "$compose_file" config --services 2>/dev/null \
               | grep -qx access-email-worker; then
-              APP_ENV_FILE="$env_file" APP_IMAGE="$app" OPS_IMAGE="$ops" \
-                docker compose -p "$project" -f "$compose_file" up -d --no-build --force-recreate support-library access-email-worker
-            else
+              services="support-library access-email-worker"
+            elif [ "$require_worker" = true ]; then
               # A release without the worker would accept decisions but never
               # deliver them, so refuse instead of leaving jobs orphaned.
               echo "Compose file $compose_file has no access-email-worker service" >&2
               return 1
+            else
+              echo "warning: $compose_file has no access-email-worker; starting the app only" >&2
             fi
+            APP_ENV_FILE="$env_file" APP_IMAGE="$app" OPS_IMAGE="$ops" \
+              docker compose -p "$project" -f "$compose_file" up -d --no-build --force-recreate $services
           }
 
           if [ "$action" = rollback ]; then
@@ -206,7 +227,7 @@ jobs:
             old_app_image=$(cat "$state/current-app-image")
             old_ops_image=$(cat "$state/current-ops-image")
             old_release=$(cat "$state/current-release")
-            run_compose "$previous_compose" "$previous_app_image" "$previous_ops_image"
+            run_compose "$previous_compose" "$previous_app_image" "$previous_ops_image" false
             wait_healthy
             write_state previous-app-image "$old_app_image"
             write_state previous-ops-image "$old_ops_image"
@@ -260,7 +281,9 @@ jobs:
           fi
           rollback() {
             if [ -n "$old_app_image" ] && [ -n "$old_ops_image" ]; then
-              run_compose "$rollback_compose" "$old_app_image" "$old_ops_image" || true
+              # Service first: an old release without the worker must still be
+              # able to restore the site.
+              run_compose "$rollback_compose" "$old_app_image" "$old_ops_image" false || true
               wait_healthy || true
             else
               APP_ENV_FILE="$env_file" APP_IMAGE="$app_image" OPS_IMAGE="$ops_image" \
