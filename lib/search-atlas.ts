@@ -149,10 +149,49 @@ export function buildAtlasSearchStage({ query, scope, filters = {} }: AtlasSearc
  * no `SEARCH_ENGINE` override, so the deployed engine choice cannot drift from
  * the committed runbook after a stale `.env.local` edit. Local/CI databases
  * (loopback) stay on the regex engine; any remote (Atlas) database uses
- * Atlas Search, with the automatic regex fallback when Atlas errors.
+ * Atlas Search when its index exists (see `createAtlasReadinessChecker`), and
+ * the automatic regex fallback otherwise.
  */
 export function resolveSearchEngine(uri = process.env.MONGODB_URI ?? "") {
   return /(?:^|[/@])(localhost|127\.0\.0\.1|\[::1\])/i.test(uri) ? "regex" as const : "atlas" as const;
+}
+
+/** How long an index-readiness answer is reused before re-checking. */
+export const ATLAS_READINESS_TTL_MS = 5 * 60_000;
+
+/**
+ * A readiness check for the two Atlas indexes.
+ *
+ * A cluster before `search:indexes:apply` has a *missing* index, and `$search`
+ * against a missing index silently returns zero rows instead of an error —
+ * which would make every search return nothing with no error to catch. So the
+ * service asks this checker whether the index it needs is actually queryable,
+ * and takes the regex engine when it is not. The result is cached for a few
+ * minutes so creating the indexes later enables Atlas without a restart.
+ *
+ * `load` returns the names of the indexes that are currently queryable;
+ * `now` is injectable for tests. Any load failure means "not ready" (regex).
+ */
+export function createAtlasReadinessChecker(
+  load: () => Promise<ReadonlySet<string>>,
+  options: { ttlMs?: number; now?: () => number } = {},
+) {
+  const ttlMs = options.ttlMs ?? ATLAS_READINESS_TTL_MS;
+  const now = options.now ?? Date.now;
+  let cached: ReadonlySet<string> | null = null;
+  let cachedAt = 0;
+
+  return async (indexName: string): Promise<boolean> => {
+    if (cached === null || now() - cachedAt >= ttlMs) {
+      try {
+        cached = await load();
+        cachedAt = now();
+      } catch {
+        return false;
+      }
+    }
+    return cached.has(indexName);
+  };
 }
 
 const EMAIL_QUERY = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -36,7 +36,7 @@ stale `.env.local` edit can never drift the deployed engine from this runbook:
 | URI | Engine |
 | --- | --- |
 | loopback (`localhost`, `127.0.0.1`, `::1`) | plain Mongo `$regex` substring match — local, CI, Playwright |
-| anything else (Atlas) | Atlas Search, with automatic regex fallback when Atlas itself errors |
+| anything else (Atlas) | Atlas Search **when its index is verified queryable**, otherwise the regex engine; Atlas errors also fall back to regex |
 
 When a query is present the list defaults to `sort=relevance`; an explicit sort
 from the URL always wins. Without a query the staff default stays
@@ -133,12 +133,13 @@ Atlas keys / ops approval, never on a whim against the shared cluster.
 ### 4. Engine rollout
 
 There is no engine switch to flip: the engine is derived from the database URI
-(loopback → regex, remote Atlas → Atlas Search). On the Atlas cluster the
-engine is Atlas as soon as the code deploys, and before the indexes exist the
-first search per process fails, Atlas disables itself for five minutes, and the
-regex fallback answers — so no search is ever broken, only briefly degraded.
-Run `search:indexes:verify --wait` after step 3 until both indexes report
-queryable, and `search:verify` until drift is zero.
+(loopback → regex, remote Atlas → Atlas Search when ready). Before the indexes
+exist, `$search` against a missing index would silently return zero rows, so
+the service verifies the scope's index is queryable (`$listSearchIndexes`,
+cached a few minutes) and uses the regex engine until then — search always
+works, it is just unranked. Once `search:indexes:verify` reports both indexes
+queryable, Atlas turns on by itself with no restart; `search:verify` must
+report zero drift before relying on Atlas relevance.
 
 ## UI behaviour
 
@@ -173,6 +174,7 @@ queryable, and `search:verify` until drift is zero.
 | E2E | `e2e/search.spec.ts` | reply-body match, case-insensitivity, Bengali, instant clear, backspace delete, relevance default, student PII isolation (run; 11/11 passing) |
 
 | Unit | `__tests__/search-script-flags.test.ts` | ops-script flag parsing: dry-run default, `--confirm`/`--yes` write guards, timeout |
+| Unit | `__tests__/search-atlas-readiness.test.ts` | index guard: only queryable index runs Atlas, load failure means regex, TTL caching |
 
 The Atlas query builder is unit-tested; there is **no Atlas integration test**
 yet — it needs the indexes and a non-local database. Until one exists,

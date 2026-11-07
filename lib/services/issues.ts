@@ -14,7 +14,10 @@ import {
   normalizeSearchQuery,
 } from "@/lib/search";
 import {
+  ATLAS_PUBLIC_INDEX,
+  ATLAS_STAFF_INDEX,
   buildAtlasSearchStage,
+  createAtlasReadinessChecker,
   isAtlasEligibleQuery,
   resolveSearchEngine,
 } from "@/lib/search-atlas";
@@ -956,6 +959,24 @@ const SEARCH_MAX_TIME_MS = 5000;
 const shouldUseAtlasSearch = () =>
   resolveSearchEngine() === "atlas" && Date.now() >= atlasDisabledUntil;
 
+/**
+ * Whether the Atlas index this scope needs is actually queryable.
+ *
+ * `$search` against a missing index returns zero rows silently (no error), so
+ * the regex fallback alone cannot save a cluster where the indexes were never
+ * created. The check is cached; once the indexes exist, Atlas turns on by
+ * itself within a few minutes with no restart or redeploy.
+ */
+const isAtlasIndexReady = createAtlasReadinessChecker(async () => {
+  const rows = (await SupportIssueModel.db
+    .collection("support-issues")
+    .aggregate([{ $listSearchIndexes: {} }])
+    .toArray()) as Array<{ name?: unknown; queryable?: unknown }>;
+  return new Set(
+    rows.filter((row) => row.queryable === true && typeof row.name === "string").map((row) => row.name as string),
+  );
+});
+
 const disableAtlasSearch = (error: unknown) => {
   atlasDisabledUntil = Date.now() + 5 * 60_000;
   const code =
@@ -1105,7 +1126,13 @@ export async function listIssues(
 
   let result: { items: LeanDoc[]; total: number };
   try {
-    if (atlasEligible && shouldUseAtlasSearch()) {
+    // A missing index makes `$search` return zero rows silently, so Atlas only
+    // runs when this scope's index is verified queryable; otherwise regex.
+    const indexReady =
+      atlasEligible && shouldUseAtlasSearch()
+        ? await isAtlasIndexReady(publicOnly ? ATLAS_PUBLIC_INDEX : ATLAS_STAFF_INDEX)
+        : false;
+    if (indexReady) {
       try {
         result = await runAtlasIssueSearch(effectiveParams, filter, publicOnly, skip, limit);
       } catch (error) {
