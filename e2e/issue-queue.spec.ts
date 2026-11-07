@@ -149,7 +149,9 @@ test.describe("staff queue ordering", () => {
   test.use({ storageState: "e2e/.auth/mentor.json" });
 
   test("shows newest answer-needed unresolved first and solved last", async ({ page }) => {
-    await page.goto(`/dashboard/issues?q=${token}`);
+    // Explicit `sort=answer`: a bare `?q=` now defaults to relevance ranking,
+    // which is not the queue order this suite asserts.
+    await page.goto(`/dashboard/issues?q=${token}&sort=answer`);
 
     await expect(page.getByText(`E2E queue ${token} never answered`)).toBeVisible();
 
@@ -174,7 +176,7 @@ test.describe("staff queue ordering", () => {
   });
 
   test("manual refresh keeps the filter and the same ordering", async ({ page }) => {
-    await page.goto(`/dashboard/issues?q=${token}`);
+    await page.goto(`/dashboard/issues?q=${token}&sort=answer`);
 
     await expect.poll(async () => queue(page).count()).toBe(6);
     await page.getByRole("button", { name: "Refresh", exact: true }).click();
@@ -192,7 +194,7 @@ test.describe("staff queue ordering", () => {
   });
 
   test("does not label a legacy answered issue as no reply", async ({ page }) => {
-    await page.goto(`/dashboard/issues?q=${token}`);
+    await page.goto(`/dashboard/issues?q=${token}&sort=answer`);
 
     const legacyAnswered = page
       .getByRole("heading", { name: title("legacy answered") })
