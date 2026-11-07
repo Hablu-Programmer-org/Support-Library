@@ -24,7 +24,7 @@ test.describe("student access help", () => {
       labels.map((label) => Math.round(label.getBoundingClientRect().top)),
     );
     const buttonTop = await card
-      .getByRole("button", { name: "Send selected requests" })
+      .getByRole("button", { name: "Submit request" })
       .evaluate((button) => Math.round(button.getBoundingClientRect().top));
     expect(new Set([...optionTops, buttonTop]).size).toBe(1);
 
@@ -59,7 +59,7 @@ test.describe("student access help gating", () => {
       await page.goto("/dashboard/issues");
       await expect(page.getByRole("region", { name: "Help & access" })).toHaveCount(0);
       await expect(page.getByRole("checkbox", { name: /n8n access/i })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: "Send selected requests" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Submit request" })).toHaveCount(0);
     } finally {
       await db.collection("EnrolledCourse").updateOne(
         { userId: lmsUser._id, courseSlug: "agent" },
@@ -96,7 +96,7 @@ test.describe("access request administration", () => {
     await adminPage.getByLabel("Student email", { exact: true }).fill("e2e.lms.student@test.com");
     await adminPage.getByRole("checkbox", { name: "n8n access" }).check();
     await adminPage.getByRole("checkbox", { name: "OpenAI API access" }).check();
-    await adminPage.getByRole("button", { name: "Create selected requests" }).click();
+    await adminPage.getByRole("button", { name: "Create requests" }).click();
     await expect(adminPage.getByRole("status")).toContainText("2 requests created");
 
     // The OpenAI tab is open by default and shows only its own request.

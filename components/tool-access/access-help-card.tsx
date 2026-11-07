@@ -323,8 +323,8 @@ export function AccessHelpCard({
               })}
             </fieldset>
             <PendingSubmitButton
-              label="Send selected requests"
-              pendingLabel="Sending…"
+              label="Submit request"
+              pendingLabel="Submitting…"
               className="w-full shrink-0 lg:h-auto lg:w-auto lg:self-stretch lg:px-4"
             />
           </div>

@@ -111,7 +111,7 @@ export function AdminCreateAccessRequestForm({
             <PendingSubmitButton
               className="px-3 py-2 text-xs"
               fullWidth={false}
-              label="Create selected requests"
+              label="Create requests"
               pendingLabel="Creating requests…"
             />
           )}
