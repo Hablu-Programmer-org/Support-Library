@@ -302,6 +302,12 @@ cmd /c "npm run test:e2e"
 - `searchUpdatedAt` model comment corrected: write bookkeeping only; verification recomputes and compares text, it never reads the timestamp.
 - Gates: typecheck clean; lint clean; 75 test files / 555 tests passing (1 skipped, gated); production build clean. Remaining: Atlas integration test (needs indexes), live backfill `--apply`, `search:indexes:apply` (Admin API + approval).
 
+### Session log — env minimization (2026-11-07)
+- Search no longer reads any tuning env: index names (`ATLAS_PUBLIC_INDEX`/`ATLAS_STAFF_INDEX`), wildcard cap (24) and the per-query budget (5000 ms) are hardcoded constants, and `resolveSearchEngine` is a pure URI rule (loopback → regex, remote → Atlas) with no `SEARCH_ENGINE` override to drift from the runbook. `.env.example` keeps only the script-only `ATLAS_*` secrets; the Playwright `SEARCH_ENGINE` pin is gone (the URI rule covers the loopback case).
+- `__tests__/search-atlas.test.ts` engine tests now assert the pure URI rule (loopback regex incl. `::1`, remote atlas, no override) instead of stubbing env.
+- Deployment note: on the Atlas cluster the engine is Atlas immediately; before indexes exist the first search per process falls back to regex (5-minute disable), so no search is ever broken.
+- Gates: typecheck clean; lint clean; tests passing; production build clean.
+
 ### Session log — legacy URL branch + staff window note (2026-11-07)
 - **Public legacy $or** now also matches `videoLinks.url` and `videoLinks.timestamp`, so a pre-backfill public row is findable by YouTube ID / in-video time before the backfill runs — matching the indexed-text coverage from the previous session. `__tests__/issue-search-filter.test.ts` pins the new branches.
 - **Runbook step 1** now states the staff window explicitly: staff has no legacy branches, so pre-backfill staff rows only match whatever their old `searchText` held; batch / video URLs / reply links become searchable after the backfill.

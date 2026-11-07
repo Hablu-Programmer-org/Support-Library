@@ -1,31 +1,28 @@
 import { ObjectId } from "mongodb";
 
 import {
-  SEARCH_MAX_QUERY_LENGTH,
   SEARCH_MIN_QUERY_LENGTH,
   buildSearchTokens,
   normalizeSearchQuery,
 } from "@/lib/search";
 
 /**
- * Atlas Search index names.
+ * Atlas Search index names (match `search/indexes/*.json`).
  *
  * Two indexes, not one: the public index simply has no mapping for
  * `searchText`/`studentName`/`caseRef`/attachment fields, so a bug in the query
- * builder cannot leak staff-only content to a student.
+ * builder cannot leak staff-only content to a student. Hardcoded on purpose —
+ * there is no environment override, so deployed code and committed index
+ * payloads can never disagree about names.
  */
-export const ATLAS_PUBLIC_INDEX = process.env.SEARCH_INDEX_PUBLIC?.trim() || "issues_public";
-export const ATLAS_STAFF_INDEX = process.env.SEARCH_INDEX_STAFF?.trim() || "issues_staff";
+export const ATLAS_PUBLIC_INDEX = "issues_public";
+export const ATLAS_STAFF_INDEX = "issues_staff";
 
 /**
  * Longest query that also runs the infix wildcard clause. A short query is the
  * common case; a very long one is served by the token/autocomplete clauses only.
  */
-const configuredWildcardMax = Number(process.env.SEARCH_WILDCARD_MAX_LENGTH);
-export const ATLAS_WILDCARD_MAX_LENGTH =
-  Number.isFinite(configuredWildcardMax) && configuredWildcardMax >= SEARCH_MIN_QUERY_LENGTH
-    ? Math.min(Math.trunc(configuredWildcardMax), SEARCH_MAX_QUERY_LENGTH)
-    : 24;
+export const ATLAS_WILDCARD_MAX_LENGTH = 24;
 
 export type AtlasSearchScope = "public" | "staff";
 
@@ -147,11 +144,14 @@ export function buildAtlasSearchStage({ query, scope, filters = {} }: AtlasSearc
   };
 }
 
-/** `auto` stays on the regex engine for local/CI databases. */
+/**
+ * The engine is derived from the database URI alone — there is intentionally
+ * no `SEARCH_ENGINE` override, so the deployed engine choice cannot drift from
+ * the committed runbook after a stale `.env.local` edit. Local/CI databases
+ * (loopback) stay on the regex engine; any remote (Atlas) database uses
+ * Atlas Search, with the automatic regex fallback when Atlas errors.
+ */
 export function resolveSearchEngine(uri = process.env.MONGODB_URI ?? "") {
-  const configured = (process.env.SEARCH_ENGINE ?? "auto").trim().toLowerCase();
-  if (configured === "regex") return "regex" as const;
-  if (configured === "atlas") return "atlas" as const;
   return /(?:^|[/@])(localhost|127\.0\.0\.1|\[::1\])/i.test(uri) ? "regex" as const : "atlas" as const;
 }
 

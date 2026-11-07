@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { SEARCH_MAX_QUERY_LENGTH } from "@/lib/search";
 import {
@@ -21,10 +21,6 @@ function compoundOf(result: StageResult) {
     minimumShouldMatch: number;
   };
 }
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
 
 describe("buildAtlasSearchStage", () => {
   it("routes the public scope to the public index and public text field", () => {
@@ -127,30 +123,22 @@ describe("buildAtlasSearchStage", () => {
 });
 
 describe("resolveSearchEngine", () => {
-  it("defaults to regex on a local database", () => {
-    vi.stubEnv("SEARCH_ENGINE", "");
+  it("stays on the regex engine for local databases", () => {
     expect(resolveSearchEngine("mongodb://127.0.0.1:27017/?replicaSet=rs0")).toBe("regex");
     expect(resolveSearchEngine("mongodb://localhost:27017/hablu")).toBe("regex");
+    expect(resolveSearchEngine("mongodb://[::1]:27017/hablu")).toBe("regex");
   });
 
-  it("defaults to Atlas on a remote database", () => {
-    vi.stubEnv("SEARCH_ENGINE", "");
+  it("uses Atlas Search for a remote database", () => {
     expect(
       resolveSearchEngine("mongodb+srv://user:pass@lms.example.mongodb.net/?retryWrites=true"),
     ).toBe("atlas");
   });
 
-  it("honours an explicit engine override", () => {
-    vi.stubEnv("SEARCH_ENGINE", "regex");
-    expect(resolveSearchEngine("mongodb+srv://user:pass@lms.example.mongodb.net")).toBe("regex");
-
-    vi.stubEnv("SEARCH_ENGINE", "atlas");
-    expect(resolveSearchEngine("mongodb://127.0.0.1:27017")).toBe("atlas");
-  });
-
-  it("ignores an unknown value and falls back to auto", () => {
-    vi.stubEnv("SEARCH_ENGINE", "elastic");
-    expect(resolveSearchEngine("mongodb://127.0.0.1:27017")).toBe("regex");
+  it("has no environment override to drift from the runbook", () => {
+    // A stale `SEARCH_ENGINE` in `.env.local` must not change the engine: the
+    // URI alone decides.
+    expect(resolveSearchEngine("mongodb+srv://user:pass@lms.example.mongodb.net")).toBe("atlas");
   });
 });
 

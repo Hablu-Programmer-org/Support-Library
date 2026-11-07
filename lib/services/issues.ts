@@ -950,13 +950,8 @@ const buildSortStages = (
  */
 let atlasDisabledUntil = 0;
 
-/** Server-side budget for one search query, configurable per deployment. */
-const SEARCH_MAX_TIME_MS = (() => {
-  const configured = Number(process.env.SEARCH_MAX_TIME_MS);
-  return Number.isFinite(configured) && configured >= 100
-    ? Math.min(Math.trunc(configured), 30_000)
-    : 5000;
-})();
+/** Server-side budget for one search query (milliseconds). Fixed, not env-tuned. */
+const SEARCH_MAX_TIME_MS = 5000;
 
 const shouldUseAtlasSearch = () =>
   resolveSearchEngine() === "atlas" && Date.now() >= atlasDisabledUntil;

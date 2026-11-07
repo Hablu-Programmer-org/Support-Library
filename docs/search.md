@@ -29,13 +29,14 @@ Hard limits: 2 characters minimum, 200 characters maximum, 8 query tokens,
 
 ## Engines
 
-`SEARCH_ENGINE` selects the engine:
+There is exactly one engine choice, derived from the database URI alone
+(`resolveSearchEngine`) — deliberately **no `SEARCH_ENGINE` variable**, so a
+stale `.env.local` edit can never drift the deployed engine from this runbook:
 
-| Value | Behaviour |
+| URI | Engine |
 | --- | --- |
-| `auto` (default) | regex on localhost/loopback URIs, Atlas Search everywhere else |
-| `regex` | plain Mongo `$regex` substring match — CI, local, Playwright |
-| `atlas` | Atlas Search (falls back to regex only when Atlas itself errors) |
+| loopback (`localhost`, `127.0.0.1`, `::1`) | plain Mongo `$regex` substring match — local, CI, Playwright |
+| anything else (Atlas) | Atlas Search, with automatic regex fallback when Atlas itself errors |
 
 When a query is present the list defaults to `sort=relevance`; an explicit sort
 from the URL always wins. Without a query the staff default stays
@@ -62,7 +63,9 @@ Two indexes are committed under `search/indexes/`:
 
 Both use `lucene.bengali`, `dynamic: false` and a keyword sub-field (`raw`) for
 infix wildcard parity with the regex engine. The wildcard clause only runs for
-queries up to `SEARCH_WILDCARD_MAX_LENGTH`.
+queries up to the hardcoded `ATLAS_WILDCARD_MAX_LENGTH` (24). Index names are
+hardcoded constants (`ATLAS_PUBLIC_INDEX` / `ATLAS_STAFF_INDEX`) matching the
+committed payloads — no env override exists to disagree with them.
 
 Atlas failures disable Atlas for five minutes **per process** and fall back to
 the regex engine; a Mongo max-time error (`code 50`) becomes
@@ -71,15 +74,16 @@ the regex engine; a Mongo max-time error (`code 50`) becomes
 
 ## Environment
 
-| Variable | Default | Purpose |
+Search needs **no configuration environment at all** — the engine is derived
+from `MONGODB_URI`, index names are constants matching `search/indexes/*.json`,
+and both budgets (wildcard length, per-query `maxTimeMS`) are hardcoded. The
+only search-related secrets are the Atlas Admin API credentials used solely by
+the `search:indexes:apply` script:
+
+| Variable | Required for | Purpose |
 | --- | --- | --- |
-| `SEARCH_ENGINE` | `auto` | `auto` / `regex` / `atlas` |
-| `SEARCH_INDEX_PUBLIC` | `issues_public` | public Atlas index name |
-| `SEARCH_INDEX_STAFF` | `issues_staff` | staff Atlas index name |
-| `SEARCH_WILDCARD_MAX_LENGTH` | `24` | longest query that also runs the infix wildcard |
-| `SEARCH_MAX_TIME_MS` | `5000` | server-side budget per search query |
-| `ATLAS_PUBLIC_KEY` / `ATLAS_PRIVATE_KEY` | — | Admin API only, for `search:indexes:apply` |
-| `ATLAS_PROJECT_ID` / `ATLAS_CLUSTER_NAME` | — | Admin API only |
+| `ATLAS_PUBLIC_KEY` / `ATLAS_PRIVATE_KEY` | `search:indexes:apply` only | Admin API auth |
+| `ATLAS_PROJECT_ID` / `ATLAS_CLUSTER_NAME` | `search:indexes:apply` only | Admin API target |
 
 The running application's database user does **not** need Atlas admin rights;
 it only reads `$listSearchIndexes`. Keep the Admin API credentials out of the
@@ -126,14 +130,15 @@ database name, so a wrong environment is visible before anything is created.
 Index creation is a control-plane action: it must be run by someone with the
 Atlas keys / ops approval, never on a whim against the shared cluster.
 
-### 4. Switch the engine (optional)
+### 4. Engine rollout
 
-Deployments run **`SEARCH_ENGINE=regex` until the indexes are verified**. `auto`
-resolves to Atlas Search on a non-local database, so leaving it on an Atlas
-cluster with no indexes would fail the first search per process (Atlas then
-disables itself for five minutes). Set `SEARCH_ENGINE=atlas` only after
-`search:indexes:verify` reports both indexes queryable and `search:verify`
-reports zero drift. `SEARCH_ENGINE=regex` is the rollback.
+There is no engine switch to flip: the engine is derived from the database URI
+(loopback → regex, remote Atlas → Atlas Search). On the Atlas cluster the
+engine is Atlas as soon as the code deploys, and before the indexes exist the
+first search per process fails, Atlas disables itself for five minutes, and the
+regex fallback answers — so no search is ever broken, only briefly degraded.
+Run `search:indexes:verify --wait` after step 3 until both indexes report
+queryable, and `search:verify` until drift is zero.
 
 ## UI behaviour
 
@@ -171,9 +176,11 @@ reports zero drift. `SEARCH_ENGINE=regex` is the rollback.
 
 The Atlas query builder is unit-tested; there is **no Atlas integration test**
 yet — it needs the indexes and a non-local database. Until one exists,
-`search:indexes:verify` is the operational check that the indexes are
-queryable, and Playwright pins `SEARCH_ENGINE=regex` so the specs never
-depend on a stale `.env.local`.
+`search:indexes:verify` is the operational check that the indexes are queryable.
+The search specs assert the regex engine's behaviour, which the URI rule gives
+them on any loopback database; a non-loopback `MONGODB_URI` in a stale
+`.env.local` would route the webServer to Atlas instead, so point
+`MONGODB_URI` at a local replica set when running the search specs locally.
 
 ## Open product decisions
 

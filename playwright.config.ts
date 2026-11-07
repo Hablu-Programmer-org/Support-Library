@@ -42,12 +42,6 @@ export default defineConfig({
       MONGODB_TEST_DB: testDb,
       MONGODB_DEV_DB: devDb ?? "",
       LMS_MONGODB_DB: testDb,
-      // Pinned for the second reason above: the search specs assert the regex
-      // engine's behaviour (case-insensitive substring, `relevance` ranking by
-      // the title/question weights). On a localhost URI `auto` also resolves to
-      // regex, but an Atlas URI in a stale .env.local must not silently switch
-      // the specs to `$search` against an index that does not exist.
-      SEARCH_ENGINE: "regex",
       AUTH_SECRET: process.env.AUTH_SECRET,
       AUTH_URL: baseURL,
       // Pinned rather than inherited so the student-only "My Courses" link
