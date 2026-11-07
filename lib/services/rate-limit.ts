@@ -29,6 +29,7 @@ export type RateLimitScope =
   | "n8n.email.send"
   | "access.request.decision"
   | "issues.activity"
+  | "issues.search"
   | "my-requests.activity"
   | "access.eligibility"
   | "access.requests.activity";
@@ -63,6 +64,12 @@ const RATE_LIMITS: Record<RateLimitScope, { limit: number; windowMs: number }> =
   "n8n.email.send": { limit: 60, windowMs: 10 * 60_000 },
   "access.request.decision": { limit: 30, windowMs: 10 * 60_000 },
   "issues.activity": { limit: 120, windowMs: 60_000 },
+  // Optional: the search list is a cacheable read and the query itself is
+  // already bounded by `SEARCH_MAX_TIME_MS`. This scope exists so a deployment
+  // that wants per-user search throttling can consume it without editing the
+  // union; the default page render does not consume it (a bucket write per
+  // keystroke would cost more than the search).
+  "issues.search": { limit: 60, windowMs: 60_000 },
   // The student list and an open request both probe this every 10s while the
   // tab is visible, so the budget is the same shape as the staff one.
   "my-requests.activity": { limit: 120, windowMs: 60_000 },

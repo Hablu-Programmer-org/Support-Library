@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
+import { SearchTimeoutNotice } from "@/components/issues/search-timeout-notice";
 import { IssueRefreshControl } from "@/components/issues/issue-refresh-control";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
@@ -22,13 +23,14 @@ import {
   buildIssueListHref,
   hasActiveIssueFilters,
   parseIssueListFilters,
+  resolveDefaultIssueSort,
   toIssueDateRange,
 } from "@/lib/issue-list-params";
 import { isLiveSupportConfigured } from "@/lib/live-support";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { agentEnrollmentAllows } from "@/lib/agent-enrollment-rules";
 import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
-import { listIssueFilterOptions, listIssues } from "@/lib/services/issues";
+import { listIssueFilterOptions, listIssues, SearchTimeoutError } from "@/lib/services/issues";
 import { listJoinIssueIdsForDay } from "@/lib/services/live-support-joins";
 import { getStudentAgentEnrollment, listOwnN8nRequests, listOwnToolEntitlements } from "@/lib/services/n8n-requests";
 import { listAssignableMentors } from "@/lib/services/staff";
@@ -61,30 +63,40 @@ export default async function IssuesPage({
   // Submitting a request is a separate, narrower right that students also hold.
   const canSubmit = canCreateIssue(session.user.role);
   const publicOnly = !canManage;
-  const defaultSort = canManage ? "answer" : "newest";
 
   // One parser for the URL state: it drops invalid values (so `?page=abc` or
   // `?status=NOPE` render the default list instead of throwing) and produces the
   // exact shape the filter panel and the detail page's `returnTo` use.
   const filters = parseIssueListFilters(resolvedSearchParams, { canManage });
+  const defaultSort = resolveDefaultIssueSort({ canManage, q: filters.q });
   const { from, to } = toIssueDateRange(filters);
 
-  const issues = await listIssues(
-    {
-      q: filters.q || undefined,
-      status: filters.status ? (filters.status as CaseStatus) : undefined,
-      tag: filters.tag || undefined,
-      courseSlug: filters.courseSlug || undefined,
-      batchNo: filters.batchNo ? Number(filters.batchNo) : undefined,
-      mentorId: filters.mentorId || undefined,
-      from,
-      to,
-      sort: filters.sort,
-      page: filters.page,
-      limit: 20,
-    },
-    { publicOnly },
-  );
+  let issues: Awaited<ReturnType<typeof listIssues>>;
+  let searchFailed = false;
+  try {
+    issues = await listIssues(
+      {
+        q: filters.q || undefined,
+        status: filters.status ? (filters.status as CaseStatus) : undefined,
+        tag: filters.tag || undefined,
+        courseSlug: filters.courseSlug || undefined,
+        batchNo: filters.batchNo ? Number(filters.batchNo) : undefined,
+        mentorId: filters.mentorId || undefined,
+        from,
+        to,
+        sort: filters.sort,
+        page: filters.page,
+        limit: 20,
+      },
+      { publicOnly },
+    );
+  } catch (error) {
+    if (!(error instanceof SearchTimeoutError)) throw error;
+    // A slow index is a recoverable condition, not a broken dashboard: render a
+    // notice with the way out instead of the generic error boundary.
+    searchFailed = true;
+    issues = { items: [], page: 1, limit: 20, total: 0, totalPages: 1 };
+  }
 
   // A stale link, a typo, or deleting the only row on the last page leaves no
   // rows to show. Send the viewer to the last real page instead of rendering
@@ -95,7 +107,7 @@ export default async function IssuesPage({
     );
   }
 
-  const [{ courseSlugs, batchNos }, mentors, waitingIssueIds] =
+  const [{ courseSlugs, batchNos, tags }, mentors, waitingIssueIds] =
     await Promise.all([
       listIssueFilterOptions(publicOnly),
       canManage ? listAssignableMentors() : Promise.resolve([]),
@@ -219,9 +231,58 @@ export default async function IssuesPage({
         />
       )}
 
+      <p aria-live="polite" className="text-sm text-slate-500 dark:text-slate-400">
+        {searchFailed
+          ? "Search is temporarily unavailable."
+          : filters.q
+            ? `${issues.total} result${issues.total === 1 ? "" : "s"} for “${filters.q}”`
+            : `Total ${issues.total} issue${issues.total === 1 ? "" : "s"}`}
+      </p>
+
       <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {issues.items.length === 0 ? (
-          <EmptyState>No issues found.</EmptyState>
+          searchFailed ? (
+            <SearchTimeoutNotice
+              href={buildIssueListHref(
+                { ...filters, q: "", page: 1 },
+                { defaultSort },
+              )}
+            />
+          ) : filters.q ? (
+            <div className="px-4 py-10 text-center">
+              <p className="font-semibold">No results for “{filters.q}”.</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Try fewer words, a different spelling, or browse a tag.
+              </p>
+              <Link
+                className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-100 dark:hover:bg-primary-800"
+                href={buildIssueListHref(
+                  { ...filters, q: "", page: 1 },
+                  { defaultSort },
+                )}
+              >
+                Clear search
+              </Link>
+              {tags.length > 0 && (
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {tags.slice(0, 8).map((tag) => (
+                    <Link
+                      key={tag}
+                      className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      href={buildIssueListHref(
+                        { ...filters, q: "", tag, page: 1 },
+                        { defaultSort },
+                      )}
+                    >
+                      #{tag}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <EmptyState>No issues found.</EmptyState>
+          )
         ) : (
           <div className="divide-y divide-slate-200 dark:divide-slate-800">
             {issues.items.map((supportIssue) => {

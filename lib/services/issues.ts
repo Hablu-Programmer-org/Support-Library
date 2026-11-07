@@ -6,7 +6,18 @@ import { dbConnect } from "@/lib/db";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { buildOwnIssueFilter } from "@/lib/issue-ownership";
 import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
-import { buildIssueSearchText, buildIssueSearchTextWithReplies, buildSearchRegex } from "@/lib/search";
+import {
+  buildIssuePublicSearchText,
+  buildIssueStaffSearchText,
+  buildSearchRegex,
+  escapeRegex,
+  normalizeSearchQuery,
+} from "@/lib/search";
+import {
+  buildAtlasSearchStage,
+  isAtlasEligibleQuery,
+  resolveSearchEngine,
+} from "@/lib/search-atlas";
 import {
   createStudentEmailLookupCandidates,
   normalizeStudentEmail,
@@ -22,6 +33,7 @@ import {
 import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "@/lib/reply-state";
 import { recordAuditEvent } from "@/lib/services/audit";
 import { nextCaseRef } from "@/lib/services/case-ref";
+import { rebuildIssueSearchFields } from "@/lib/services/search-index";
 import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
@@ -273,7 +285,7 @@ const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
   };
 };
 
-function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
+export function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   const filter: Record<string, unknown> = { deletedAt: null };
 
   if (publicOnly) filter.visibility = "PUBLISHED";
@@ -296,15 +308,39 @@ function buildIssueFilter(params: IssueListParams = {}, publicOnly = false) {
   const referenceQuery =
     !publicOnly && /^\d{6}$/.test((params.q ?? "").trim()) ? (params.q ?? "").trim() : null;
   const searchRegex = buildSearchRegex(params.q);
+  const normalizedSearch = normalizeSearchQuery(params.q);
+  // Pre-backfill public rows have no `publicSearchText`, so a batch query
+  // needs the numeric field itself: `batchNo` is already public (it is in
+  // `PUBLIC_ISSUE_FIELDS`), and the labelled "Batch 12" form is what the
+  // backfilled text contains. Accept both "12" and "batch 12".
+  const batchPhrase = /^batch\s+(\d{1,4})$/.exec(normalizedSearch);
+  const batchNumberQuery = /^\d{1,4}$/.test(normalizedSearch)
+    ? Number(normalizedSearch)
+    : batchPhrase
+      ? Number(batchPhrase[1])
+      : null;
   if (!publicOnly && isExactEmailQuery) {
     filter.$or = createStudentEmailLookupCandidates(normalizedQuery);
   } else if (searchRegex || referenceQuery) {
     if (publicOnly) {
+      // `publicSearchText` is the normalized superset (content + staff answers).
+      // The legacy per-field branches stay in place so documents written before
+      // the backfill — and the pre-backfill deploy window — remain searchable
+      // for issue/video-link fields. Reply bodies only enter the public text
+      // once the backfill has run; there is no cross-collection branch here.
       filter.$or = [
+        { publicSearchText: searchRegex },
         { title: searchRegex },
         { question: searchRegex },
         { tags: searchRegex },
         { courseSlug: searchRegex },
+        { moduleSlug: searchRegex },
+        { contentSlug: searchRegex },
+        { "videoLinks.title": searchRegex },
+        { "videoLinks.summary": searchRegex },
+        { "videoLinks.url": searchRegex },
+        { "videoLinks.timestamp": searchRegex },
+        ...(batchNumberQuery !== null ? [{ batchNo: batchNumberQuery }] : []),
       ];
     } else {
       filter.$or = [
@@ -383,11 +419,11 @@ export async function createIssue(
       const finalStatus = initialReply && solveIssue ? "SOLVED" : "OPEN";
       const initialReplyAt = initialReply ? new Date() : null;
       const initialReplyIsStaff = Boolean(initialReply && actorRole !== "STUDENT");
-      // Filenames are deliberately kept out of `searchText`: an image attachment named
-      // after the student would otherwise become searchable PII.
-      const searchText = initialReply
-        ? buildIssueSearchTextWithReplies(parsed, [initialReply.body])
-        : buildIssueSearchText(parsed);
+      // Two scopes, one source: staff text also carries identity and attachment
+      // names; public text carries only content plus staff answers. The initial
+      // reply is folded in by `rebuildIssueSearchFields` right after insertion.
+      const searchText = buildIssueStaffSearchText(parsed, []);
+      const publicSearchText = buildIssuePublicSearchText(parsed, []);
       // Sequential and unique; allocated inside this transaction so an aborted
       // create does not burn a number.
       const caseRef = await nextCaseRef(session);
@@ -407,6 +443,7 @@ export async function createIssue(
         lastStaffReplyAt: initialReplyIsStaff ? initialReplyAt : null,
         lastStudentReplyAt: initialReply && !initialReplyIsStaff ? initialReplyAt : null,
         searchText,
+        publicSearchText,
         mentorId: effectiveMentorId,
         uploads,
         createdBy: actorObjectId,
@@ -451,6 +488,8 @@ export async function createIssue(
           result: "SUCCEEDED",
         }, context, session);
       }
+      // The initial reply (if any) is now stored, so fold it into both texts.
+      await rebuildIssueSearchFields(String(createdIssue._id), session, { touchUpdatedAt: false });
 
       await recordAuditEvent({
         actorId,
@@ -557,15 +596,6 @@ export async function updateIssue(
       );
       removedUploads = removed as unknown as { key: string }[];
 
-      const replies = await SupportReplyModel.find({ issueId: id, deletedAt: null })
-        .select("body")
-        .session(session)
-        .lean();
-      updateData.searchText = buildIssueSearchTextWithReplies(
-        parsed,
-        replies.map((reply) => reply.body),
-      );
-
       // Guard the per-item cap across kept + newly added uploads: ingestUploads
       // only sees the incoming batch, so the combined total must be checked here.
       const remaining = uploadLimit() - kept.length;
@@ -622,6 +652,11 @@ export async function updateIssue(
         );
         return null;
       }
+
+      // Rebuild both scopes from the stored document (not from `parsed`): the
+      // update may have cleared fields via `$unset`, and the reply thread is not
+      // part of the submitted form.
+      await rebuildIssueSearchFields(id, session, { touchUpdatedAt: false });
 
       const context = await getRequestContext();
       for (const upload of uploads) {
@@ -811,6 +846,240 @@ export async function softDeleteIssue(id: string, actorId: string) {
   return supportIssue ? toIssueListItem(supportIssue) : null;
 }
 
+/**
+ * Thrown when a search exceeds its server-side time budget.
+ *
+ * The page turns this into a recoverable notice (with a clear-search action)
+ * instead of the generic dashboard error boundary.
+ */
+export class SearchTimeoutError extends Error {
+  constructor() {
+    super("Search took too long");
+    this.name = "SearchTimeoutError";
+  }
+}
+
+export const isSearchTimeoutError = (error: unknown) =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  (error as { code?: number }).code === 50;
+
+const PUBLIC_ISSUE_PROJECTION: Record<string, 1> = Object.fromEntries(
+  PUBLIC_ISSUE_FIELDS.split(/\s+/)
+    .filter(Boolean)
+    .map((field) => [field, 1 as const]),
+);
+
+/** Computed URGENT-high rank; a plain field sort cannot express it. */
+const priorityRankStage = (): mongoose.PipelineStage => ({
+  $addFields: {
+    priorityRank: {
+      $switch: {
+        branches: CASE_PRIORITIES.map((priority) => ({
+          case: { $eq: ["$priority", priority] },
+          then: CASE_PRIORITY_RANK[priority],
+        })),
+        default: CASE_PRIORITY_RANK.NORMAL,
+      },
+    },
+  },
+});
+
+/**
+ * Substring score for the regex engine's "Best match" sort.
+ *
+ * A title hit outranks a question hit, which outranks a hit that exists only in
+ * the denormalized text (a reply body, slug or tag). This only needs to be a
+ * useful ordering for the local/CI engine: Atlas Search scores properly with
+ * `$meta: "searchScore"`. Takes the normalized query and owns regex escaping,
+ * so callers cannot forget it. Exported for the unit test.
+ */
+export const relevanceRankStage = (
+  normalizedQuery: string,
+  publicOnly: boolean,
+): mongoose.PipelineStage => {
+  const pattern = escapeRegex(normalizedQuery);
+  const match = (expression: unknown): Record<string, unknown> => ({
+    $regexMatch: { input: { $ifNull: [expression, ""] }, regex: pattern, options: "i" },
+  });
+
+  return {
+    $addFields: {
+      relevanceRank: {
+        $add: [
+          { $cond: [match("$title"), 4, 0] },
+          { $cond: [match("$question"), 2, 0] },
+          { $cond: [match(publicOnly ? "$publicSearchText" : "$searchText"), 1, 0] },
+        ],
+      },
+    },
+  };
+};
+
+const SEARCH_RELEVANCE_SORT: mongoose.PipelineStage[] = [
+  { $sort: { relevanceRank: -1, updatedAt: -1, _id: 1 } },
+];
+
+const buildSortStages = (
+  sort: IssueListParams["sort"],
+  publicOnly: boolean,
+): mongoose.PipelineStage[] => {
+  if (sort === "answer" && !publicOnly) return ISSUE_ANSWER_SORT_STAGES;
+  if (sort === "priority") {
+    return [
+      priorityRankStage(),
+      { $sort: { priorityRank: -1, updatedAt: -1, _id: 1 } },
+    ];
+  }
+  if (sort === "relevance") {
+    // Atlas injects `searchScore`; the regex path instead uses
+    // `relevanceRankStage` (see `runMongoIssueSearch`). Both are selected when
+    // the URL carries a query, because `parseIssueListFilters` rejects a
+    // `relevance` sort without one.
+    return [{ $sort: { searchScore: -1, updatedAt: -1, _id: 1 } }];
+  }
+  return [
+    { $sort: sort === "oldest" ? { updatedAt: 1, _id: 1 } : { updatedAt: -1, _id: 1 } },
+  ];
+};
+
+/**
+ * Once Atlas fails, stay on the regex engine for a few minutes instead of
+ * paying a failed round trip on every request. Kept per process on purpose.
+ */
+let atlasDisabledUntil = 0;
+
+/** Server-side budget for one search query, configurable per deployment. */
+const SEARCH_MAX_TIME_MS = (() => {
+  const configured = Number(process.env.SEARCH_MAX_TIME_MS);
+  return Number.isFinite(configured) && configured >= 100
+    ? Math.min(Math.trunc(configured), 30_000)
+    : 5000;
+})();
+
+const shouldUseAtlasSearch = () =>
+  resolveSearchEngine() === "atlas" && Date.now() >= atlasDisabledUntil;
+
+const disableAtlasSearch = (error: unknown) => {
+  atlasDisabledUntil = Date.now() + 5 * 60_000;
+  const code =
+    typeof error === "object" && error !== null && "codeName" in error
+      ? String((error as { codeName?: unknown }).codeName ?? "")
+      : "";
+  console.warn("[search] atlas search unavailable; falling back to regex", {
+    code,
+    message: error instanceof Error ? error.message.slice(0, 200) : "unknown error",
+  });
+};
+
+async function runAtlasIssueSearch(
+  params: IssueListParams,
+  filter: Record<string, unknown>,
+  publicOnly: boolean,
+  skip: number,
+  limit: number,
+) {
+  const stage = buildAtlasSearchStage({
+    query: params.q ?? "",
+    scope: publicOnly ? "public" : "staff",
+    filters: {
+      status: params.status ?? null,
+      courseSlug: params.courseSlug ?? null,
+      batchNo: typeof params.batchNo === "number" ? params.batchNo : null,
+      tag: params.tag ?? null,
+      mentorId: params.mentorId ?? null,
+      from: params.from ? new Date(params.from) : null,
+      to: params.to ? new Date(params.to) : null,
+    },
+  });
+
+  // The free-text `$or` must not be re-applied after `$search`: Atlas already
+  // matched the query (tokens, fuzzy, autocomplete, infix wildcard) and a
+  // substring regex would silently discard every non-literal match. Everything
+  // else — visibility, status, course, batch, mentor, dates, soft delete — stays
+  // authoritative, and the public index has no staff-only mapping anyway.
+  const authoritativeFilter: Record<string, unknown> = { ...filter };
+  delete authoritativeFilter.$or;
+
+  const pipeline: mongoose.PipelineStage[] = [
+    stage as mongoose.PipelineStage,
+    { $addFields: { searchScore: { $meta: "searchScore" } } },
+    { $match: authoritativeFilter },
+    ...buildSortStages(params.sort, publicOnly),
+    { $skip: skip },
+    { $limit: limit },
+    ...(publicOnly ? [{ $project: PUBLIC_ISSUE_PROJECTION }] : []),
+  ];
+
+  const countPipeline: mongoose.PipelineStage[] = [
+    stage as mongoose.PipelineStage,
+    { $match: authoritativeFilter },
+    { $count: "total" },
+  ];
+
+  const [items, countRows] = await Promise.all([
+    SupportIssueModel.aggregate(pipeline, { maxTimeMS: SEARCH_MAX_TIME_MS }),
+    SupportIssueModel.aggregate(countPipeline, { maxTimeMS: SEARCH_MAX_TIME_MS }),
+  ]);
+
+  return {
+    items: items as LeanDoc[],
+    total: Number((countRows[0] as { total?: number } | undefined)?.total ?? 0),
+  };
+}
+
+async function runMongoIssueSearch(
+  params: IssueListParams,
+  filter: Record<string, unknown>,
+  publicOnly: boolean,
+  skip: number,
+  limit: number,
+) {
+  const queryOptions = { maxTimeMS: SEARCH_MAX_TIME_MS };
+  const searchQuery = normalizeSearchQuery(params.q);
+  const itemsQuery =
+    params.sort === "answer" && !publicOnly
+      ? SupportIssueModel.aggregate([
+          { $match: filter },
+          ...ISSUE_ANSWER_SORT_STAGES,
+          { $skip: skip },
+          { $limit: limit },
+        ], { maxTimeMS: SEARCH_MAX_TIME_MS })
+      : params.sort === "priority"
+      ? SupportIssueModel.aggregate([
+          { $match: filter },
+          priorityRankStage(),
+          { $sort: { priorityRank: -1, updatedAt: -1, _id: 1 } },
+          { $skip: skip },
+          { $limit: limit },
+          ...(publicOnly ? [{ $project: PUBLIC_ISSUE_PROJECTION }] : []),
+        ], { maxTimeMS: SEARCH_MAX_TIME_MS })
+      : params.sort === "relevance"
+      ? SupportIssueModel.aggregate([
+          { $match: filter },
+          relevanceRankStage(searchQuery, publicOnly),
+          ...SEARCH_RELEVANCE_SORT,
+          { $skip: skip },
+          { $limit: limit },
+          ...(publicOnly ? [{ $project: PUBLIC_ISSUE_PROJECTION }] : []),
+        ], { maxTimeMS: SEARCH_MAX_TIME_MS })
+      : SupportIssueModel.find(filter, null, queryOptions)
+          .select(publicOnly ? PUBLIC_ISSUE_FIELDS : "")
+          .select(publicOnly ? "" : "+studentEmail")
+          .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean();
+
+  const [items, total] = await Promise.all([
+    itemsQuery,
+    SupportIssueModel.countDocuments(filter).maxTimeMS(SEARCH_MAX_TIME_MS),
+  ]);
+
+  return { items: items as LeanDoc[], total };
+}
+
 export async function listIssues(
   params: IssueListParams = {},
   options: { publicOnly?: boolean } = {},
@@ -825,82 +1094,48 @@ export async function listIssues(
     ? Math.min(Math.max(1, Math.trunc(requestedPage)), MAX_ISSUE_PAGE)
     : 1;
   const limit = Math.min(100, Math.max(1, params.limit ?? 20));
-  const filter = buildIssueFilter(params, options.publicOnly === true);
+  const publicOnly = options.publicOnly === true;
+  // One normalization for both engines: the regex fallback and the Atlas query
+  // must see the same capped, lowercased string.
+  const query = normalizeSearchQuery(params.q);
+  const effectiveParams: IssueListParams = { ...params, q: query || undefined };
+  const filter = buildIssueFilter(effectiveParams, publicOnly);
   const skip = (page - 1) * limit;
 
-  const queryOptions = { maxTimeMS: 5000 }; // 5 second timeout for search queries
+  // Exact lookups are not part of the free-text index: a six-digit case
+  // reference and an e-mail address are matched by dedicated fields. Sending
+  // them through Atlas would return nothing because `$search` only sees the
+  // denormalized text, so those queries always take the Mongo path.
+  const atlasEligible = isAtlasEligibleQuery(query, publicOnly);
 
-  // `priority` needs a computed rank (URGENT highest), which a plain field
-  // sort can't express; other modes sort on `updatedAt` directly.
-  const itemsQuery =
-    params.sort === "answer" && !options.publicOnly
-      ? SupportIssueModel.aggregate([
-          { $match: filter },
-          ...ISSUE_ANSWER_SORT_STAGES,
-          { $skip: skip },
-          { $limit: limit },
-        ], { maxTimeMS: 5000 })
-      : params.sort === "priority"
-      ? SupportIssueModel.aggregate([
-          { $match: filter },
-          {
-            $addFields: {
-              priorityRank: {
-                $switch: {
-                  branches: CASE_PRIORITIES.map((priority) => ({
-                    case: { $eq: ["$priority", priority] },
-                    then: CASE_PRIORITY_RANK[priority],
-                  })),
-                  default: CASE_PRIORITY_RANK.NORMAL,
-                },
-              },
-            },
-          },
-          { $sort: { priorityRank: -1, updatedAt: -1 } },
-          { $skip: skip },
-          { $limit: limit },
-          ...(options.publicOnly
-            ? [{
-                $project: {
-                  title: 1,
-                  question: 1,
-                  videoLinks: 1,
-                  status: 1,
-                  priority: 1,
-                  courseSlug: 1,
-                  batchNo: 1,
-                  tags: 1,
-                  visibility: 1,
-                  publishedAt: 1,
-                  createdAt: 1,
-                  updatedAt: 1,
-                },
-              }]
-            : []),
-        ], { maxTimeMS: 5000 })
-      : SupportIssueModel.find(filter, null, queryOptions)
-          .select(options.publicOnly ? PUBLIC_ISSUE_FIELDS : "")
-          .select(options.publicOnly ? "" : "+studentEmail")
-          .sort(params.sort === "oldest" ? { updatedAt: 1 } : { updatedAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .lean();
-
-  const [items, total] = await Promise.all([
-    itemsQuery,
-    SupportIssueModel.countDocuments(filter).maxTimeMS(5000),
-  ]);
+  let result: { items: LeanDoc[]; total: number };
+  try {
+    if (atlasEligible && shouldUseAtlasSearch()) {
+      try {
+        result = await runAtlasIssueSearch(effectiveParams, filter, publicOnly, skip, limit);
+      } catch (error) {
+        if (isSearchTimeoutError(error)) throw new SearchTimeoutError();
+        disableAtlasSearch(error);
+        result = await runMongoIssueSearch(effectiveParams, filter, publicOnly, skip, limit);
+      }
+    } else {
+      result = await runMongoIssueSearch(effectiveParams, filter, publicOnly, skip, limit);
+    }
+  } catch (error) {
+    if (isSearchTimeoutError(error)) throw new SearchTimeoutError();
+    throw error;
+  }
 
   const pageMeta = {
     page,
     limit,
-    total,
-    totalPages: Math.max(1, Math.ceil(total / limit)),
+    total: result.total,
+    totalPages: Math.max(1, Math.ceil(result.total / limit)),
   };
 
-  if (options.publicOnly) {
+  if (publicOnly) {
     return {
-      items: (items as LeanDoc[]).map((item) => toPublicIssueListItem(item)),
+      items: result.items.map((item) => toPublicIssueListItem(item)),
       ...pageMeta,
     };
   }
@@ -908,7 +1143,7 @@ export async function listIssues(
   return {
     // Legacy rows created before the reply-state fields existed would otherwise
     // show "No reply yet" on an answered ticket until the backfill runs.
-    items: await withDerivedReplyState((items as LeanDoc[]).map((item) => toIssueListItem(item))),
+    items: await withDerivedReplyState(result.items.map((item) => toIssueListItem(item))),
     ...pageMeta,
   };
 }
@@ -960,16 +1195,17 @@ async function withDerivedReplyState(items: SupportIssueListItem[]) {
 }
 
 /**
- * Distinct course slugs and batch numbers that actually exist on live issues, for
- * populating the filter dropdowns. Reading them from the data keeps the dropdowns
- * from offering combinations that can never match.
+ * Distinct course slugs, batch numbers and tags that actually exist on live
+ * issues, for populating the filter dropdowns and the no-results suggestions.
+ * Reading them from the data keeps the dropdowns from offering combinations
+ * that can never match.
  */
 export async function listIssueFilterOptions(publicOnly = false) {
   await dbConnect();
 
   const visibilityFilter = publicOnly ? { visibility: "PUBLISHED" } : {};
 
-  const [courseSlugs, batchNos] = await Promise.all([
+  const [courseSlugs, batchNos, tags] = await Promise.all([
     SupportIssueModel.distinct("courseSlug", {
       deletedAt: null,
       ...visibilityFilter,
@@ -980,11 +1216,20 @@ export async function listIssueFilterOptions(publicOnly = false) {
       ...visibilityFilter,
       batchNo: { $nin: [null] },
     }) as Promise<unknown[]>,
+    SupportIssueModel.distinct("tags", {
+      deletedAt: null,
+      ...visibilityFilter,
+      tags: { $nin: [null, ""] },
+    }) as Promise<unknown[]>,
   ]);
 
   return {
     courseSlugs: courseSlugs.filter((value): value is string => typeof value === "string").sort(),
     batchNos: batchNos.filter((value): value is number => typeof value === "number").sort((a, b) => a - b),
+    tags: tags
+      .filter((value): value is string => typeof value === "string")
+      .sort()
+      .slice(0, 30),
   };
 }
 

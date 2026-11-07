@@ -6,6 +6,14 @@
  * case-insensitive *substring* regex. That combination can never use the index
  * for the lookup itself, which is what this script quantifies.
  *
+ * Atlas Search (`$search` with the `issues_staff` / `issues_public` indexes) is
+ * deliberately not a strategy here: it is an aggregation stage that needs the
+ * indexes to exist on a non-local cluster, so it cannot run against the
+ * throwaway local/test database this script seeds. The `$text` and
+ * token-exact strategies stand in as the indexed-alternative references; the
+ * shipped fallback remains the substring regex, and relevance ranking on the
+ * regex engine is covered by unit tests, not this benchmark.
+ *
  * Usage:
  *   npm run bench:search            # 5000 docs, 5 iterations per strategy
  *   npm run bench:search -- --docs 20000 --iterations 9

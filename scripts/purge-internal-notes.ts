@@ -3,8 +3,8 @@ import path from "path";
 import dotenv from "dotenv";
 
 import { dbConnect } from "../lib/db";
-import { buildIssueSearchTextWithReplies } from "../lib/search";
-import { SupportIssueModel, SupportReplyModel } from "../models";
+import { buildSearchFieldUpdate } from "../lib/search-index-build";
+import { SupportIssueModel, SupportReplyModel, UserModel } from "../models";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 
@@ -86,27 +86,19 @@ async function main() {
 
     const replies = await collection
       .find({ issueId, deletedAt: null })
-      .project({ body: 1 })
+      .project({ body: 1, isStaffReply: 1, authorId: 1, videoLinks: 1, uploads: 1 })
       .toArray();
+
+    const authorIds = [...new Set(replies.map((reply) => String(reply.authorId ?? "")).filter(Boolean))];
+    const authors = authorIds.length
+      ? await UserModel.find({ _id: { $in: authorIds } }).select("role").lean()
+      : [];
+    const roleById = new Map(authors.map((author) => [String(author._id), String(author.role ?? "")]));
 
     await SupportIssueModel.updateOne(
       { _id: issueId },
-      {
-        $set: {
-          searchText: buildIssueSearchTextWithReplies(
-            {
-              title: supportIssue.title,
-              studentName: supportIssue.studentName,
-              question: supportIssue.question,
-              courseSlug: supportIssue.courseSlug,
-              moduleSlug: supportIssue.moduleSlug,
-              contentSlug: supportIssue.contentSlug,
-              tags: supportIssue.tags,
-            },
-            replies.map((reply) => String(reply.body)),
-          ),
-        },
-      },
+      { $set: buildSearchFieldUpdate(supportIssue, replies, roleById) },
+      { timestamps: false },
     );
     rebuilt += 1;
   }

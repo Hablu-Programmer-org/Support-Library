@@ -1,4 +1,5 @@
 import { CASE_STATUSES } from "@/lib/constants";
+import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search";
 
 /**
  * The issue list keeps its whole state in the URL (filters + page), because the
@@ -19,8 +20,27 @@ import { CASE_STATUSES } from "@/lib/constants";
 
 export const ISSUES_PATH = "/dashboard/issues";
 
-export const ISSUE_SORTS = ["answer", "newest", "oldest", "priority"] as const;
+export const ISSUE_SORTS = ["answer", "newest", "oldest", "priority", "relevance"] as const;
 export type IssueSort = (typeof ISSUE_SORTS)[number];
+
+/**
+ * The sort a list uses when the URL does not name one.
+ *
+ * A query without an explicit sort should be relevance-ranked; the staff queue's
+ * "answer needed first" and the student "newest first" remain the defaults for
+ * browsing without a query. One helper keeps the page, the filter panel and the
+ * `returnTo` rebuild in agreement (they used to duplicate this rule).
+ */
+export function resolveDefaultIssueSort({
+  canManage,
+  q,
+}: {
+  canManage: boolean;
+  q?: string | null;
+}): IssueSort {
+  if (q?.trim()) return "relevance";
+  return canManage ? "answer" : "newest";
+}
 
 export type IssueListFilters = {
   q: string;
@@ -133,9 +153,17 @@ export function parseIssueListFilters(
   const to = text(params.to, 10);
   const sort = text(params.sort, 16);
   const mentorId = text(params.mentorId, MAX_ID_LENGTH);
+  const rawQuery = text(params.q);
+  // A one-character query is not a search: `?q=a` (typed, pasted or bookmarked)
+  // would otherwise list everything while the page claims "N results for a" and
+  // switches to the relevance sort. Drop it here so the whole list — count,
+  // sort and active-filter state — stays consistent with the search field's
+  // two-character minimum (the single source of truth is `SEARCH_MIN_QUERY_LENGTH`).
+  const q = rawQuery.length < SEARCH_MIN_QUERY_LENGTH ? "" : rawQuery;
+  const defaultSort = resolveDefaultIssueSort({ canManage: options.canManage, q });
 
   return {
-    q: text(params.q),
+    q,
     status: (CASE_STATUSES as readonly string[]).includes(status) ? status : "",
     tag: text(params.tag, MAX_TAG_LENGTH),
     courseSlug: text(params.courseSlug, MAX_SLUG_LENGTH),
@@ -145,10 +173,12 @@ export function parseIssueListFilters(
     mentorId: options.canManage && OBJECT_ID.test(mentorId) ? mentorId : "",
     from: isCalendarDate(from) ? from : "",
     to: isCalendarDate(to) ? to : "",
+    // `relevance` only makes sense with a query; `answer` is staff-only.
     sort: (ISSUE_SORTS as readonly string[]).includes(sort) &&
-      (sort !== "answer" || options.canManage)
+      (sort !== "answer" || options.canManage) &&
+      (sort !== "relevance" || q.length > 0)
       ? (sort as IssueSort)
-      : options.canManage ? "answer" : "newest",
+      : defaultSort,
     page: parsePage(params.page),
   };
 }
@@ -240,8 +270,12 @@ export function parseIssueListReturnTo(
     if (!(paramName in filters)) filters[paramName] = paramValue;
   });
 
-  return buildIssueListHref(parseIssueListFilters(filters, options), {
-    defaultSort: options.canManage ? "answer" : "newest",
+  const parsedFilters = parseIssueListFilters(filters, options);
+  return buildIssueListHref(parsedFilters, {
+    defaultSort: resolveDefaultIssueSort({
+      canManage: options.canManage,
+      q: parsedFilters.q,
+    }),
   });
 }
 

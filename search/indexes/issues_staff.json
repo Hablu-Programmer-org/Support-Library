@@ -1,0 +1,50 @@
+{
+  "name": "issues_staff",
+  "type": "search",
+  "definition": {
+    "analyzer": "lucene.bengali",
+    "searchAnalyzer": "lucene.bengali",
+    "dynamic": false,
+    "storedSource": false,
+    "mappings": {
+      "dynamic": false,
+      "fields": {
+        "visibility": { "type": "string", "analyzer": "lucene.keyword" },
+        "status": { "type": "string", "analyzer": "lucene.keyword" },
+        "priority": { "type": "string", "analyzer": "lucene.keyword" },
+        "courseSlug": { "type": "string", "analyzer": "lucene.keyword" },
+        "moduleSlug": { "type": "string", "analyzer": "lucene.keyword" },
+        "contentSlug": { "type": "string", "analyzer": "lucene.keyword" },
+        "tags": { "type": "string", "analyzer": "lucene.keyword" },
+        "batchNo": { "type": "number" },
+        "createdAt": { "type": "date" },
+        "updatedAt": { "type": "date" },
+        "publishedAt": { "type": "date" },
+        "deletedAt": { "type": "date" },
+        "mentorId": { "type": "objectId" },
+        "studentName": { "type": "string", "analyzer": "lucene.bengali" },
+        "title": {
+          "type": "string",
+          "analyzer": "lucene.bengali",
+          "multi": {
+            "autocomplete": {
+              "type": "autocomplete",
+              "tokenization": "edgeGram",
+              "minGrams": 2,
+              "maxGrams": 20,
+              "foldDiacritics": true
+            }
+          }
+        },
+        "question": { "type": "string", "analyzer": "lucene.bengali" },
+        "searchText": {
+          "type": "string",
+          "analyzer": "lucene.bengali",
+          "multi": {
+            "raw": { "type": "string", "analyzer": "lucene.keyword" }
+          }
+        }
+      }
+    }
+  }
+}

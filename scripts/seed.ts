@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 import { dbConnect } from "../lib/db";
-import { buildIssueSearchText } from "../lib/search";
+import { buildSearchFieldUpdate } from "../lib/search-index-build";
 import { protectStudentEmail } from "../lib/student-email-crypto";
 import { SupportIssueModel, UserModel } from "../models";
 
@@ -54,7 +54,9 @@ async function seedDemo(actorId: mongoose.Types.ObjectId) {
         ...issueFields,
         studentEmailEncrypted: protectedEmail.encrypted,
         studentEmailLookup: protectedEmail.lookup,
-        searchText: buildIssueSearchText(demoIssue),
+        // The same builder the live write path and backfill use, so seed rows
+        // never drift from production text.
+        ...buildSearchFieldUpdate(demoIssue, [], new Map()),
         mentorId: actorId,
         createdBy: actorId,
         updatedBy: actorId,

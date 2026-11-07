@@ -72,7 +72,21 @@ const supportIssueSchema = new mongoose.Schema(
     publishedBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     publicationHistory: { type: [publicationEventSchema], default: [] },
     mentorId: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null, index: true },
+    /**
+     * Staff-visible denormalized text: title, question, slugs, tags, video
+     * links, attachment names and every reply. Backs the staff search.
+     */
     searchText: { type: String, required: true, trim: true, index: true },
+    /**
+     * Student-visible text: the same body content but **only staff replies** and
+     * never the student's identity, case reference or attachment filenames.
+     *
+     * It is not `required` so documents written before this field existed stay
+     * valid; the fallback filter keeps them searchable until the backfill runs.
+     */
+    publicSearchText: { type: String, default: "" },
+    /** Last rebuild of either denormalized field (write bookkeeping only). */
+    searchUpdatedAt: { type: Date, default: null },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "user", default: null },
     deletedAt: { type: Date, default: null },

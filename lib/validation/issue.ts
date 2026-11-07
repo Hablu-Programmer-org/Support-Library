@@ -83,7 +83,7 @@ export const supportIssueFilterSchema = z.strictObject({
   mentorId: objectIdSchema.optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
-  sort: z.enum(["answer", "newest", "oldest", "priority"]).optional(),
+  sort: z.enum(["answer", "newest", "oldest", "priority", "relevance"]).optional(),
 });
 
 export type SupportIssueInput = z.infer<typeof supportIssueInputSchema>;

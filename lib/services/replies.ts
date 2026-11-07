@@ -5,8 +5,8 @@ import mongoose, { type ClientSession } from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import { isAdmin, type UserRole } from "@/lib/roles";
-import { buildIssueSearchTextWithReplies } from "@/lib/search";
 import { recordAuditEvent } from "@/lib/services/audit";
+import { rebuildIssueSearchFields } from "@/lib/services/search-index";
 import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION, isEffectiveStaffReply } from "@/lib/reply-state";
@@ -78,34 +78,7 @@ async function buildAuthorMap(replies: LeanDoc[]) {
  * reply text behind once the last public reply was removed.
  */
 async function refreshIssueReplySearchText(issueId: string, session: ClientSession) {
-  const [supportIssue, replies] = await Promise.all([
-    SupportIssueModel.findById(issueId).session(session).lean(),
-    SupportReplyModel.find({ issueId, deletedAt: null })
-      .select("body")
-      .session(session)
-      .lean(),
-  ]);
-  if (!supportIssue) return;
-
-  await SupportIssueModel.updateOne(
-    { _id: issueId },
-    {
-      $set: {
-        searchText: buildIssueSearchTextWithReplies(
-          {
-            title: supportIssue.title,
-            studentName: supportIssue.studentName,
-            question: supportIssue.question,
-            courseSlug: supportIssue.courseSlug,
-            moduleSlug: supportIssue.moduleSlug,
-            contentSlug: supportIssue.contentSlug,
-            tags: supportIssue.tags,
-          },
-          replies.map((reply) => reply.body),
-        ).slice(0, 100000),
-      },
-    },
-  ).session(session);
+  await rebuildIssueSearchFields(issueId, session, { touchUpdatedAt: false });
 }
 
 /** Recompute from live replies so edits/deletes and retries can never drift the queue state. */

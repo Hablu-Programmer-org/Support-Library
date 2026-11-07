@@ -23,6 +23,14 @@
 - `clean:e2e-artifacts` script to purge E2E leftovers from the dev database
 - Reply edit/delete: inline edit UI plus author-or-ADMIN guard in the service layer
 - Reply-body search: `searchText` is rebuilt from case fields + every non-deleted reply (no stale/dropped slugs)
+- **Scoped issue search.** Two denormalized fields, built from source on every
+  write: `searchText` (staff: identity, attachment names, every reply) and
+  `publicSearchText` (students: content + staff answers only, never identity,
+  `caseRef` or filenames). Atlas Search with two indexes (`issues_public`,
+  `issues_staff`) and a regex fallback (`SEARCH_ENGINE=auto|regex|atlas`),
+  relevance as the default sort for a query, instant clear/delete in the search
+  field, IME-safe typing, and `search:backfill` / `search:verify` /
+  `search:indexes:*` runbooks. Details: `docs/search.md`.
 - Cases list filters: course, batch, mentor, date range, preserving filters across pagination
 - List context round-trip: a case opened from a filtered page carries `returnTo`
   (validated + rebuilt in `lib/issue-list-params.ts`), so `Back to results` and
@@ -248,3 +256,53 @@ cmd /c "npm run test:e2e"
 - **Tests:** 2 new validation tests (80 accepted / 81 rejected / newline rejected; the edit schema still accepts 200).
 - **Docs:** `docs/student-guide.md`, `docs/mentor-guide.md`, `docs/admin-guide.md` updated for the new section names and title rule.
 - Gates: lint clean; typecheck clean; 35 test files / 275 tests passing; production build clean. Targeted Playwright not run in this session (needs the seeded database and auth state).
+
+### Session log — scoped search overhaul (2026-11-07)
+- **Why:** keyword search was title/question-only for staff, silently ignored reply bodies on the public list, and the input could keep an old query after the user deleted it. The earlier `bench:search` run showed the substring regex cannot use a B-tree index, so the plan was Atlas Search with a regex fallback.
+- **Text model:** `lib/search.ts` now builds two fields from source. `searchText` (staff) adds student name, mentor-visible fields, attachment filenames and every reply; `publicSearchText` (student) adds **staff reply bodies only** and excludes student identity, `caseRef`, e-mail and filenames. Legacy replies without `isStaffReply` fall back to the author's role. `lib/search-index-build.ts` is the pure builder shared by the live path and scripts (no `server-only`, so scripts can import it).
+- **Write paths:** `createIssue`, `updateIssue` and all four reply paths call `rebuildIssueSearchFields` after the write; it recomputes rather than appends. `updateIssue` no longer hand-builds `searchText`, and reply refresh no longer drops slugs. Backfill-like writes use `timestamps: false` so `updatedAt` stays honest.
+- **Query paths:** `lib/services/issues.ts` grew `buildIssueFilter` (exported for tests), an Atlas path (`lib/search-atlas.ts`), a regex fallback, a per-process five-minute Atlas disable window, a configurable `SEARCH_MAX_TIME_MS` and `SearchTimeoutError`. Two indexes live in `search/indexes/`: `issues_public` maps no staff-only field at all.
+- **UX:** `issue-search-field.tsx` is echo-safe (tracks in-flight values), clears immediately, debounces typing 200 ms, guards IME composition, shows a one-character hint and owns an explicit "Clear search" button. `issue-filter-panel.tsx` keeps fields mounted while collapsed, adds removable chips and the relevance option. The page defaults to relevance when `q` exists, survives a search timeout, and offers tag suggestions on no results.
+- **Ops:** `scripts/backfill-search-text.ts` (dry-run/apply/verify, `--confirm`), `scripts/search-indexes.ts` (print/verify/apply via the Atlas Admin API, `--wait`), npm scripts `search:backfill`, `search:verify`, `search:indexes:{print,verify,apply}`, and new `.env.example` keys (`SEARCH_ENGINE`, index names, wildcard/limit, Admin API). `issues.search` is an optional rate-limit scope that the default page does not consume.
+- **Tests:** new `__tests__/search-atlas.test.ts` and `__tests__/search-index-build.test.ts`; `search.test.ts` covers public/staff text, PII exclusion and role fallback; `issue-list-params.test.ts` covers the relevance default and `returnTo` round-trip. New gated `e2e/search.spec.ts` covers reply-body matching, case-insensitivity, Bengali, instant clear, relevance default and student PII isolation.
+- **Not run (needs approval / credentials):** Atlas index creation and the live backfill. The app user has `readWriteAnyDatabase` only (`$listSearchIndexes` returns `[]`). Run `search:backfill`, `search:indexes:apply` and `search:indexes:verify` against production only after ops approval; roll back with `SEARCH_ENGINE=regex`.
+- Gates: typecheck clean; lint clean; 67 test files / 510 tests passing; production build clean. Playwright not run in this session (no app on port 12000). Repo revision: `support-library@2d2c203` (implementation uncommitted).
+
+### Session log — search gap remediation (2026-11-07)
+- **Batch searchable:** `batchText()` (`Batch 12`) now feeds both scopes in `lib/search.ts`; `search-index-build.ts`, the service select, the backfill selects and `seed.ts` (now via shared `buildSearchFieldUpdate`) all carry `batchNo`. The dead `mentorName` field (never on `SupportIssue`) was removed from the search source type; mentor stays a dedicated filter.
+- **Relevance on the regex engine:** `relevanceRankStage` (title×4, question×2, indexed text×1) ranks `sort=relevance` before pagination on the Mongo path, so "Best match" is meaningful without Atlas. `parseIssueListFilters` drops one-character queries, so `?q=a` no longer lists everything under a "results for a" label. `IssueSearchField` echo tracking prunes by age (10 s) instead of FIFO; the filter panel no longer auto-expands on a keyword alone.
+- **Second pass (investigation follow-up):** Atlas tag filter now lowercases (`search-atlas.ts`), matching stored tags and the Mongo filter; public legacy branches also match numeric `batchNo` (`12` / `batch 12`) and `videoLinks.title/summary` for pre-backfill rows; runbook now says deployments run `SEARCH_ENGINE=regex` until `search:indexes:verify` passes (`.env.example` warns the same); multi-word phrase-vs-token divergence is documented as an accepted regex/Atlas difference; `bench:search` documents why Atlas `$search` is not a benchmark strategy. MIN-query length now comes from the single `SEARCH_MIN_QUERY_LENGTH`.
+- **Tests:** new `__tests__/issue-search-filter.test.ts` (scope isolation, legacy branches, batch/video branches, phrase pin); gated `__tests__/search-write-path.integration.test.ts` (`SEARCH_WRITE_PATH_TEST=1`) proves the live write path indexes a staff reply body and drops it on delete. No Atlas integration test yet (needs indexes + non-local DB); Playwright and the live backfill/index apply remain approval-pending.
+- Gates: typecheck clean; lint clean; 70 test files / 536 tests passing (1 skipped, gated); production build clean.
+
+### Session log — filter panel resync (2026-11-07)
+- **Bug:** advanced filter fields were uncontrolled (`defaultValue`), so client-side navigations (chip removal, tag suggestion, Reset, back/forward) left selects/inputs showing mount-time values while chips (from props) were correct; and the chips lived inside the collapsed panel, so a client-added advanced filter's chips were invisible until the user opened it.
+- **Fix:** advanced fields + sort are now controlled drafts that adopt the URL's advanced defaults on navigation. `q` is excluded from the draft sync, so typing a search (which navigates on `q` and flips the sort default) keeps unsubmitted field edits; the sort adopts the URL separately. The panel auto-opens when a navigation adds the first advanced filter, and never force-closes a user-opened panel.
+- **Tests:** new `__tests__/issue-filter-panel.test.tsx` (5 tests: external removal adopted, auto-open + chip visible, keyword alone stays closed, edits survive q-only navigation, sort adopted).
+- Gates: typecheck clean; lint clean; 71 test files / 541 tests passing (1 skipped, gated); production build clean. Still pending: Atlas integration test, Playwright run, live backfill/index apply (approval).
+
+### Session log — search coverage & test gaps (2026-11-07)
+- **Video URL/timestamp now searchable:** `SearchableVideoLink` gained `url`/`timestamp` and `linkText` folds them into both scopes, so a YouTube ID in the URL finds the link. Safe for the public scope because `videoLinks` (with URLs) is already in `PUBLIC_ISSUE_FIELDS`; only attachment filenames stay staff-only. Existing rows pick this up on the next rebuild/backfill.
+- **Timeout contract tested:** `isSearchTimeoutError` exported; `__tests__/search-timeout.test.ts` pins that only Mongo code 50 becomes the recoverable `SearchTimeoutError` and real errors propagate.
+- **Index payloads pinned:** `__tests__/search-index-definitions.test.ts` reads the committed Atlas JSONs and fails if the public index ever maps a staff-only field, if Bengali analysis drops, or if the keyword `raw` sub-field disappears.
+- Gates: typecheck clean; lint clean; 73 test files / 548 tests passing (1 skipped, gated); production build clean.
+
+### Session log — timeout notice component (2026-11-07)
+- The search-timeout recovery notice was inline JSX in the list page (untestable without booting the whole page). Extracted to `components/issues/search-timeout-notice.tsx` with an `href` prop; the page passes the clear-search URL as before. `__tests__/search-timeout-notice.test.tsx` pins the copy and the action href, alongside the existing `isSearchTimeoutError` mapping test.
+- Gates: typecheck clean; lint clean; 74 test files / 549 tests passing (1 skipped, gated); production build clean. Script flag handling stays manual (entrypoints execute `main()` on import, so they are not unit-testable); Playwright, Atlas integration test and the live backfill/index apply remain approval-pending.
+
+### Session log — DB-backed verification run (2026-11-07)
+- **Read-only ops against production (`support_library`, no writes):** `search:backfill` dry-run scanned 263 issues — 257 staff texts and all 263 public texts would change, 263 public texts currently missing; `search:verify` reports 520 mismatches as expected pre-backfill; `search:indexes:verify` confirms both Atlas indexes are absent. Live drift numbers confirm the deploy window is real.
+- **Gated integration executed** against the `support_library_e2e` Atlas database (never production; `MONGODB_DB` overridden): create → staff reply → `listIssues` finds the token → reply delete removes it. The test needed a `@/lib/request-context` mock (services read `next/headers`, which only exists in a request scope) — now included in the test file.
+- **Playwright `e2e/search.spec.ts` executed:** 11/11 passing (plus 4 auth/lms setup), against the pinned `SEARCH_ENGINE=regex` webServer.
+- Gates: typecheck clean; lint clean; 74 test files / 549 tests passing (+1 integration passing when gated on); production build clean. **Not run:** Atlas integration test (needs indexes), the live backfill `--apply`, `search:indexes:apply` (Admin API + approval).
+
+### Session log — script flags + final test gaps (2026-11-07)
+- `parseBackfillFlags` / `parseSearchIndexFlags` exported from the two new ops scripts; both scripts now run `main()` only when executed directly (`process.argv[1]` guard), so flag parsing is unit-testable without side effects. `__tests__/search-script-flags.test.ts` (6 tests) pins dry-run default, `--apply`+`--confirm`, `--verify` separation, `--wait`/`--timeout`, and `--yes` write confirmation. Both entrypoints re-verified (`search:backfill` dry-run + `search:indexes:print` identical to before).
+- `searchUpdatedAt` model comment corrected: write bookkeeping only; verification recomputes and compares text, it never reads the timestamp.
+- Gates: typecheck clean; lint clean; 75 test files / 555 tests passing (1 skipped, gated); production build clean. Remaining: Atlas integration test (needs indexes), live backfill `--apply`, `search:indexes:apply` (Admin API + approval).
+
+### Session log — legacy URL branch + staff window note (2026-11-07)
+- **Public legacy $or** now also matches `videoLinks.url` and `videoLinks.timestamp`, so a pre-backfill public row is findable by YouTube ID / in-video time before the backfill runs — matching the indexed-text coverage from the previous session. `__tests__/issue-search-filter.test.ts` pins the new branches.
+- **Runbook step 1** now states the staff window explicitly: staff has no legacy branches, so pre-backfill staff rows only match whatever their old `searchText` held; batch / video URLs / reply links become searchable after the backfill.
+- Gates: typecheck clean; lint clean; 73 test files / 548 tests passing (1 skipped, gated); production build clean.

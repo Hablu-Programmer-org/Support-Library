@@ -9,6 +9,7 @@ import {
   hasActiveIssueFilters,
   parseIssueListFilters,
   parseIssueListReturnTo,
+  resolveDefaultIssueSort,
   sanitizeIssueListReturnTo,
   toIssueDateRange,
 } from "@/lib/issue-list-params";
@@ -120,6 +121,54 @@ describe("parseIssueListFilters", () => {
   it("caps an oversized keyword", () => {
     const filters = parseIssueListFilters({ q: "a".repeat(500) }, staff);
     expect(filters.q).toHaveLength(200);
+  });
+});
+
+describe("resolveDefaultIssueSort", () => {
+  it("ranks by relevance whenever a query is present", () => {
+    expect(resolveDefaultIssueSort({ canManage: true, q: "image" })).toBe("relevance");
+    expect(resolveDefaultIssueSort({ canManage: false, q: "image" })).toBe("relevance");
+  });
+
+  it("keeps the role default when browsing without a query", () => {
+    expect(resolveDefaultIssueSort({ canManage: true })).toBe("answer");
+    expect(resolveDefaultIssueSort({ canManage: false })).toBe("newest");
+    expect(resolveDefaultIssueSort({ canManage: true, q: "   " })).toBe("answer");
+  });
+});
+
+describe("relevance sort", () => {
+  it("becomes the default when a query is present", () => {
+    expect(parseIssueListFilters({ q: "image" }, staff).sort).toBe("relevance");
+    expect(parseIssueListFilters({ q: "image" }, student).sort).toBe("relevance");
+  });
+
+  it("drops a one-character query entirely", () => {
+    const filters = parseIssueListFilters({ q: "a" }, staff);
+    expect(filters.q).toBe("");
+    expect(filters.sort).toBe("answer");
+    expect(parseIssueListFilters({ q: "a" }, student).sort).toBe("newest");
+    expect(parseIssueListFilters({ q: "ab" }, staff).q).toBe("ab");
+  });
+
+  it("keeps an explicit sort chosen by the user", () => {
+    expect(parseIssueListFilters({ q: "image", sort: "oldest" }, staff).sort).toBe("oldest");
+    expect(parseIssueListFilters({ q: "image", sort: "priority" }, staff).sort).toBe("priority");
+  });
+
+  it("rejects relevance without a query", () => {
+    expect(parseIssueListFilters({ sort: "relevance" }, staff).sort).toBe("answer");
+    expect(parseIssueListFilters({ sort: "relevance" }, student).sort).toBe("newest");
+  });
+
+  it("round-trips through a returnTo link without an explicit sort", () => {
+    expect(parseIssueListReturnTo(`${ISSUES_PATH}?q=image&sort=relevance`, staff)).toBe(
+      `${ISSUES_PATH}?q=image`,
+    );
+    // An explicit non-default sort still survives.
+    expect(parseIssueListReturnTo(`${ISSUES_PATH}?q=image&sort=oldest`, staff)).toBe(
+      `${ISSUES_PATH}?q=image&sort=oldest`,
+    );
   });
 });
 
