@@ -1,11 +1,13 @@
-import { Buffer } from "node:buffer";
 import { test, expect } from "@playwright/test";
 
 import { chooseStudentCourse, formFor, submitAndWait } from "./form-helpers";
+import { TINY_PNG, tinyPngFile } from "./image-fixture";
 
 /**
- * Uploaded image attachments: stored server-side, never published, and served only
- * through the authorized download route.
+ * Uploaded image attachments: stored server-side and served only through the
+ * authorized download route. Staff, the uploader and the case owner can read
+ * them while the case is internal; publishing makes them readable by every
+ * signed-in student.
  */
 test.describe("uploaded attachments", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
@@ -28,18 +30,10 @@ test.describe("uploaded attachments", () => {
     // The course is required once the account has LMS enrolments.
     await chooseStudentCourse(form);
 
-    const png = Buffer.alloc(24);
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0);
-    png.writeUInt32BE(13, 8);
-    png.write("IHDR", 12, "latin1");
-    png.writeUInt32BE(2, 16);
-    png.writeUInt32BE(3, 20);
+    const png = TINY_PNG;
 
     const uploadInput = form.locator('input[name="uploads"]');
-    await uploadInput.setInputFiles([
-      { name: "attachment.png", mimeType: "image/png", buffer: png },
-      { name: "remove-me.png", mimeType: "image/png", buffer: Buffer.from(png) },
-    ]);
+    await uploadInput.setInputFiles([tinyPngFile("attachment.png"), tinyPngFile("remove-me.png")]);
 
     const localPreview = form.locator('img[alt="Preview of attachment.png"]');
     await expect(localPreview).toBeVisible();
@@ -81,6 +75,37 @@ test.describe("uploaded attachments", () => {
     // The uploader may still fetch their own file directly.
     const studentResponse = await page.request.get(src!);
     expect(studentResponse.status()).toBe(200);
+
+    // The team answers with a screenshot. The owner of the case can now open the
+    // team's image on their own request page (not just the file they uploaded).
+    const replyForm = formFor(adminPage, "Add response");
+    await replyForm.locator('textarea[name="body"]').fill("Look at this screenshot for the fix.");
+    await replyForm.getByText("Add attachments or video links").click();
+    await replyForm.locator('input[type="file"]').setInputFiles(tinyPngFile("answer.png"));
+    await replyForm.getByRole("button", { name: "Add response" }).click();
+
+    const answerImage = adminPage.locator('img[alt="answer.png"]');
+    await expect(answerImage).toBeVisible();
+    const answerSrc = await answerImage.first().getAttribute("src");
+    expect(answerSrc).toMatch(/^\/api\/attachments\/[a-f0-9]{24}$/);
+
+    await page.reload();
+    // The request page auto-refreshes; a refresh can leave the previous tree in
+    // the DOM briefly, so scope the visibility check to the first match.
+    await expect(page.locator('img[alt="answer.png"]').first()).toBeVisible();
+    const ownerResponse = await page.request.get(answerSrc!);
+    expect(ownerResponse.status()).toBe(200);
+
+    // An admin can remove a sensitive screenshot from the reply before publishing.
+    const answerReply = adminPage
+      .locator('[data-testid^="reply-"]')
+      .filter({ hasText: "Look at this screenshot for the fix." });
+    await answerReply.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(answerReply.getByText("Existing attachments")).toBeVisible();
+    await answerReply.locator('input[name="removeUploadIds"]').check();
+    await answerReply.getByRole("button", { name: "Save" }).click();
+    await expect(answerReply.locator('img[alt="answer.png"]')).toHaveCount(0);
+    expect((await adminPage.request.get(answerSrc!)).status()).toBe(404);
 
     // An unauthenticated client is turned away with 401, not a login redirect.
     const anonContext = await browser.newContext({

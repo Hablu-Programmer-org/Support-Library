@@ -119,7 +119,7 @@ export function IssueStatusForm({
               required
               className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500"
             />
-            <span>No student personal information in this issue.</span>
+            <span>No student personal information in this issue, including its images and video links.</span>
           </label>
           <PendingSubmitButton
             label="Save and publish"

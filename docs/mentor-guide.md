@@ -196,7 +196,7 @@ Click `New Issue` from the issue list.
 
 The create page has these main sections, in order:
 
-- Issue Details (title, problem description, private image attachments, and optional video links).
+- Issue Details (title, problem description, image attachments, and optional video links).
 - Answer (Optional).
 - Student Identity (optional).
 - Additional Details.
@@ -309,7 +309,7 @@ The create form includes `Answer (Optional)`.
 You can add:
 
 - Answer body.
-- Private image attachments.
+- Image attachments.
 - Video links.
 - Solve checkbox.
 
@@ -438,7 +438,7 @@ and `No student identity recorded` instead.
 
 This information is for staff context only.
 
-Do not copy student name, email, phone, ID, payment details, or private image content into fields that may be published:
+Do not copy student name, email, phone, ID, payment details, or sensitive image content into fields that may be published:
 
 - Issue title.
 - Problem description.
@@ -580,7 +580,7 @@ Important side effects:
 
 Even a small typo fix can temporarily remove a published issue from the Student Library.
 
-The issue edit form shows current video links as editable lines and authorized thumbnail previews for private image attachments. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another image attachment. Attachments are never included in the published projection.
+The issue edit form shows current video links as editable lines and authorized thumbnail previews for image attachments. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another image attachment. Attachments are private while the case is internal, and become part of the Student Library once the case is published — so remove any sensitive screenshot before publishing. A reply's edit form has the same Remove checkbox for its attachments.
 
 ## 22. Archive Issue
 
@@ -630,8 +630,10 @@ Mentors cannot:
 Admins must confirm:
 
 ```text
-No student personal information in this issue.
+No student personal information in this issue, including its images and video links.
 ```
+
+Publishing also makes every attachment on the case public: the student's evidence images and the images on each reply. Remove a sensitive screenshot first — use the checkbox on the issue edit form, or the checkbox on a reply's edit form (reply attachments can be removed there). Any edit or new reply automatically puts the case back into review, so the next publish needs the same confirmation again.
 
 Mentors can mark an issue `SOLVED`, but that only changes the status; it never
 publishes. An admin publishes, either from the publish form or by confirming the
@@ -647,8 +649,10 @@ Check these fields:
 
 - Issue title.
 - Problem description.
+- Issue image attachments (all of them become public on publish).
 - Issue video link title/summary.
 - Reply body.
+- Reply image attachments.
 - Reply video link title.
 - Reply video link summary.
 
@@ -659,7 +663,7 @@ Remove or generalize:
 - Phone number.
 - Discord/Facebook profile.
 - Payment transaction ID.
-- Private image attachment content.
+- Sensitive image content (screenshots are public once published).
 - LMS ID.
 - Address or location.
 - Any account-sensitive detail.

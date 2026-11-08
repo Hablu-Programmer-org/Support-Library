@@ -17,7 +17,7 @@ You can use it to:
 - Open attached video walkthrough links.
 - Join the daily live support session while the support room is open.
 - Open `My Courses` to jump back to your courses in the Hablu Programmer LMS.
-- Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. Attachments are only visible to the support team, not published.
+- Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. They stay private until the team publishes the request to the Student Library; after that, every student can open them.
 - Submit a new support request with a title, a description, and optional attachments/video links.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
@@ -328,7 +328,7 @@ The form asks for two things:
 
 You can also add optional evidence:
 
-- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. These are uploaded privately, visible only to the support team, and not published in the Student Library. On your request page, click an attached image to preview it in a dialog without leaving the page.
+- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. They stay private until the team publishes the request to the Student Library; after that, every student can open them. On your request page, click an attached image to preview it in a dialog without leaving the page.
 - **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
 
 Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
@@ -345,7 +345,7 @@ Fill the lesson fields in only if you know them; leaving them empty is fine. If 
 
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email. Your identity is taken from your signed-in account automatically.
 
-After you submit, you land on **your request page**. It shows the status (`Open`), the request reference, everything you wrote, your images and video links, and a **Live support** panel you can use while the room is open. Updates the team writes appear on the same page; they also answer by email. You cannot add replies there, and other students cannot read your request unless the team publishes it to the Student Library.
+After you submit, you land on **your request page**. It shows the status (`Open`), the request reference, everything you wrote, your images and video links, and a **Live support** panel you can use while the room is open. Updates the team writes appear on the same page, along with any images the team attached to their answer; they also answer by email. You cannot add replies there, and other students cannot read your request unless the team publishes it to the Student Library. Once it is published, its images and video links are visible to every student.
 
 If you submit the same request twice, only one request is created.
 
@@ -361,9 +361,9 @@ Students do not see:
 - Internal staff-only controls.
 - Internal/unpublished issues.
 
-Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, status, priority, course, batch, tags, visibility, and dates. Private image attachments are excluded.
+Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, images, status, priority, course, batch, tags, visibility, and dates. Once an issue is published, its review images (the student's evidence and the team's answer images) are visible to every signed-in student; before publishing, staff must remove any image that contains personal information. Unpublished issues keep their images private.
 
-Staff must review an issue before publishing it to the student library. The review is a single short confirmation that no student personal information is present in the title, problem, video links, or replies.
+Staff must review an issue before publishing it to the student library. The review is a single short confirmation that no student personal information is present in the title, problem, video links, images, or replies.
 
 ## 15. Why A Link May Show 404
 

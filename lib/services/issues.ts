@@ -37,7 +37,7 @@ import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION } from "@/lib/r
 import { recordAuditEvent } from "@/lib/services/audit";
 import { nextCaseRef } from "@/lib/services/case-ref";
 import { rebuildIssueSearchFields } from "@/lib/services/search-index";
-import { toAttachmentViews, settleReplayedUploads, type AttachmentView } from "@/lib/services/attachments";
+import { toAttachmentViews, toPublicAttachmentViews, settleReplayedUploads, type AttachmentView, type PublicAttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { uploadLimit } from "@/lib/uploads/limits";
@@ -59,6 +59,17 @@ type LeanDoc = Record<string, unknown>;
  */
 export const PUBLIC_ISSUE_FIELDS =
   "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+
+/**
+ * The published **detail** projection adds the evidence images.
+ *
+ * Kept separate from the list allowlist so a queue page never selects upload
+ * subdocuments it does not render. Upload ids are the only handle that leaves the
+ * server; the object key and `uploadedBy` never do (see
+ * `toPublicAttachmentViews`). Unpublishing the case removes the whole projection
+ * immediately, so a stale id stops resolving.
+ */
+export const PUBLIC_ISSUE_DETAIL_FIELDS = `${PUBLIC_ISSUE_FIELDS} uploads`;
 
 /**
  * Staff queue ordering, computed before pagination:
@@ -198,6 +209,33 @@ export type SupportIssueListItem = {
   lastStudentReplyAt?: Date | null;
 };
 
+/**
+ * The owner's own request.
+ *
+ * An explicit allowlist, not the staff list item: the owner must not receive
+ * `uploadedBy` (an internal user id) or the staff reply-state fields
+ * (`awaitingStaff`, `lastStaffReplyAt`, `lastStudentReplyAt`), which drive queue
+ * ordering and are staff-workload data.
+ */
+export type OwnIssueDetail = Pick<
+  SupportIssueListItem,
+  | "id"
+  | "title"
+  | "question"
+  | "videoLinks"
+  | "status"
+  | "courseSlug"
+  | "batchNo"
+  | "tags"
+  | "visibility"
+  | "publishedAt"
+  | "caseRef"
+  | "createdAt"
+  | "updatedAt"
+> & {
+  uploads: PublicAttachmentView[];
+};
+
 export type PublicIssueDetail = Pick<
   SupportIssueListItem,
   | "id"
@@ -213,9 +251,12 @@ export type PublicIssueDetail = Pick<
   | "publishedAt"
   | "createdAt"
   | "updatedAt"
->;
+> & {
+  /** Reviewed evidence images; the internal `uploadedBy` id is never exposed. */
+  uploads: PublicAttachmentView[];
+};
 
-type PublicIssueListItem = PublicIssueDetail & {
+type PublicIssueListItem = Omit<PublicIssueDetail, "uploads"> & {
   studentName?: never;
   studentEmail?: never;
   lmsUserId?: never;
@@ -1287,8 +1328,26 @@ export async function getOwnIssueDetail(id: string, studentUserId: string) {
   if (!supportIssue) return null;
 
   // The viewer is the owner: their own email, mentor and audit fields are not
-  // part of this DTO and must not be added.
-  return toIssueListItem(supportIssue as LeanDoc, false);
+  // part of this DTO and must not be added. Uploads keep their ids for the
+  // authorized download route, but `uploadedBy` stays server-side, and the
+  // staff reply-state fields are deliberately omitted.
+  const mapped = toIssueListItem(supportIssue as LeanDoc, false);
+  return {
+    id: mapped.id,
+    title: mapped.title,
+    question: mapped.question,
+    videoLinks: mapped.videoLinks,
+    status: mapped.status,
+    courseSlug: mapped.courseSlug,
+    batchNo: mapped.batchNo,
+    tags: mapped.tags,
+    visibility: mapped.visibility,
+    publishedAt: mapped.publishedAt,
+    caseRef: mapped.caseRef,
+    createdAt: mapped.createdAt,
+    updatedAt: mapped.updatedAt,
+    uploads: toPublicAttachmentViews((supportIssue as LeanDoc).uploads),
+  } satisfies OwnIssueDetail;
 }
 
 /** Newest-first list of the student's own requests, bounded for one page. */
@@ -1346,7 +1405,7 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     deletedAt: null,
     visibility: "PUBLISHED",
   })
-    .select(PUBLIC_ISSUE_FIELDS)
+    .select(PUBLIC_ISSUE_DETAIL_FIELDS)
     .lean();
   if (!supportIssue) return null;
 
@@ -1356,6 +1415,7 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     title: mapped.title,
     question: mapped.question,
     videoLinks: mapped.videoLinks,
+    uploads: toPublicAttachmentViews((supportIssue as LeanDoc).uploads),
     status: mapped.status,
     priority: mapped.priority,
     courseSlug: mapped.courseSlug,

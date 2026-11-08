@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { deleteReplyAction, editReplyAction, type ReplyFormState } from "@/actions/replies";
 import { PencilIcon, TrashIcon } from "@/components/icons";
-import { AttachmentList } from "@/components/shared/attachment-list";
+import { AttachmentList, formatByteSize } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 import { formatSupportDate } from "@/lib/format-date";
@@ -164,6 +164,66 @@ export function ReplyItem({
           <p className="text-xs text-slate-500 dark:text-slate-400">
             One per line: title|https://url|timestamp|summary. Leave empty to remove all links.
           </p>
+          {reply.uploads.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Existing attachments
+              </span>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Tick an image to remove it when you save. Removing a picture puts the case back
+                into review before it can appear in the Student Library again.
+              </p>
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {reply.uploads.map((upload) => {
+                  const src = `/api/attachments/${upload.id}`;
+                  return (
+                    <li key={upload.id} className="space-y-1">
+                      <a
+                        href={src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
+                        aria-label={`Open ${upload.originalName}`}
+                      >
+                        {/* A direct image request carries the staff session cookie;
+                            next/image's optimizer request would not. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={src}
+                          alt={upload.originalName}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-32 w-full object-contain"
+                        />
+                      </a>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div
+                            className="truncate text-sm text-slate-700 dark:text-slate-300"
+                            title={upload.originalName}
+                          >
+                            {upload.originalName}
+                          </div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500">
+                            {formatByteSize(upload.byteSize)}
+                          </div>
+                        </div>
+                        <label className="flex shrink-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <input
+                            type="checkbox"
+                            name="removeUploadIds"
+                            value={upload.id}
+                            className="h-4 w-4 rounded border-slate-300 text-danger focus:ring-danger-500"
+                          />
+                          Remove
+                        </label>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
           {editError && (
             <p role="alert" className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300">
               {editError}

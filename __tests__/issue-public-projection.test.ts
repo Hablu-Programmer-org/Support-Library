@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { PUBLIC_ISSUE_FIELDS } from "@/lib/services/issues";
+import { PUBLIC_ISSUE_DETAIL_FIELDS, PUBLIC_ISSUE_FIELDS } from "@/lib/services/issues";
 
 /**
  * Reply-state fields drive the staff queue ordering and are staff-workload data.
@@ -26,5 +26,10 @@ describe("public issue projection", () => {
     expect(fields).toEqual(
       expect.arrayContaining(["title", "question", "status", "tags"]),
     );
+  });
+
+  it("keeps uploads off the list projection but on the published detail", () => {
+    expect(PUBLIC_ISSUE_FIELDS.split(/\s+/)).not.toContain("uploads");
+    expect(PUBLIC_ISSUE_DETAIL_FIELDS.split(/\s+/)).toContain("uploads");
   });
 });

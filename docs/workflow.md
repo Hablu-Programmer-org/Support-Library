@@ -54,8 +54,8 @@ Help Center (dashboard sidebar)
    - title (≥ 5 chars) and problem (≥ 5 chars);
    - **required course** picked from the student's LMS enrolments, with the batch
      filled from the same enrolment (the server re-derives both);
-   - optional evidence: up to 3 private images (PNG/JPEG/GIF/WebP, 5 MB each) and
-     external HTTPS video links;
+   - optional evidence: up to 3 images (PNG/JPEG/GIF/WebP, 5 MB each, private
+     until the case is published) and external HTTPS video links;
    - optional module/content/tags;
    - identity comes from the session, never the form;
    - rate limit 5 / 10 min, duplicate submit creates one issue.
@@ -151,7 +151,10 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | No open request | The issues-page shortcut still joins (not queued, no reference); the request page shows no join panel until one is submitted |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
-| Another student's published issue | Read-only library view |
+| Another student's published issue | Read-only library view — text, videos, and every attachment (issue and replies) |
+| Attachment of an internal case, viewer is neither staff, uploader nor case owner | `404` |
+| Attachment of a published case | Any signed-in student may read it; unpublishing revokes it immediately |
+| Image with personal information before publishing | Admin removes it via the issue/reply edit form; the edit also re-opens review |
 | Double submit within one shift | One join row |
 | Second visit in the other shift | A separate row with the correct shift/time |
 | Duplicate issue submission | One issue (operation id + unique index) |

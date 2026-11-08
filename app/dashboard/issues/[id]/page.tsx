@@ -89,7 +89,7 @@ export default async function IssueDetailPage({
     const ownedIssue = await getOwnIssueDetail(id, session.user.id);
     if (ownedIssue) {
       const [replies, csrfToken, activity] = await Promise.all([
-        listReplies(ownedIssue.id, { viewerId: session.user.id ?? undefined, redactActorIds: true }),
+        listReplies(ownedIssue.id, { viewerId: session.user.id ?? undefined, viewer: "owner" }),
         generateCsrfToken(session.user.id),
         getOwnIssueActivitySnapshot(session.user.id),
       ]);
@@ -110,7 +110,9 @@ export default async function IssueDetailPage({
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  const replies = await listReplies(supportIssue.id, { redactActorIds: !canEdit });
+  const replies = await listReplies(supportIssue.id, {
+    viewer: canEdit ? "staff" : "public",
+  });
   const csrfToken = await generateCsrfToken(session.user.id);
 
   // Admin-only: the prompt carries the full thread, which mentors can read but
@@ -209,9 +211,9 @@ export default async function IssueDetailPage({
                 {supportIssue.question}
               </p>
               <LinkList videoLinks={supportIssue.videoLinks} />
-              {/* `staffIssue` is set only for staff; the published projection has
-                  no uploads at all, so students never receive their ids. */}
-              <AttachmentList uploads={staffIssue?.uploads ?? []} />
+              {/* Published cases are reviewed before they reach the library, so
+                  their evidence images are part of the student-facing answer. */}
+              <AttachmentList uploads={supportIssue.uploads ?? []} />
               {supportIssue.tags.length > 0 && (
                 <div
                   className="mt-7 flex flex-wrap gap-2"
@@ -245,6 +247,7 @@ export default async function IssueDetailPage({
                       viewerRole={session.user.role}
                       csrfToken={csrfToken}
                       variant="solution"
+                      publicView={!canEdit}
                     />
                   </div>
                 </section>
@@ -264,6 +267,7 @@ export default async function IssueDetailPage({
                         viewerId={session.user.id}
                         viewerRole={session.user.role}
                         csrfToken={csrfToken}
+                        publicView={!canEdit}
                       />
                     </div>
                   </section>

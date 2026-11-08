@@ -85,8 +85,8 @@ Help Center (dashboard sidebar)
 3. **Search before asking** — the library searches published titles, problems,
    tags and course slugs. An existing answer is the fastest fix.
 4. Nothing matches → **Submit an issue**. Identity comes from the session (never
-   the form); optional evidence is up to 3 private images (PNG/JPEG/GIF/WebP,
-   5 MB each) and external HTTPS video links. The problem title is one line,
+   the form); optional evidence is up to 3 images (PNG/JPEG/GIF/WebP,
+   5 MB each, private until the case is published) and external HTTPS video links. The problem title is one line,
    max 80 characters — name the problem (`Assignment submission link not found`),
    not the topic.
 5. Submission lands on the student's **own request page**
@@ -285,12 +285,12 @@ cmd /c "npm run test:e2e"
 - Google login for all Hablu Programmer LMS members (roles read from hp-v2)
 - hp-v2 roles map to `ADMIN` / `MENTOR` / `STUDENT`; an unknown or inactive account is denied
 - Issue forms take a student name + email, autocompleting the name from hp-v2 by email (write-only snapshot; hp-v2 is never written to)
-- Issues carry optional private image attachments and issue-level video links as reporter evidence
+- Issues carry optional image attachments and issue-level video links as reporter evidence (private until the case is published)
 - Mentor creates support issues with an optional first answer (text, image attachments, video links)
 - If an answer is provided, it becomes the first reply and the issue can auto-close as SOLVED
-- Mentor adds replies with private image attachments and external video links
+- Mentor adds replies with image attachments and external video links
 - STUDENT (students) can submit a new issue with optional attachments/video links — identity comes from the session, never the form — read published issues, and read their **own** request (owner-scoped, anything its visibility), but never another student's unpublished one, and can never reply
-- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to their own request page (status, team replies, live support panel) instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, or replies
+- STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to their own request page (status, team replies, live support panel) instead of the internal case view; publish requires the admin to confirm no PII in the title, description, video links, images, or replies — publishing makes every attachment on the case readable by all students
 - Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library

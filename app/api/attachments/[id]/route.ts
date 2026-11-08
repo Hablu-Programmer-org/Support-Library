@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { canDownloadAttachment } from "@/lib/attachment-access";
 import { canMutate } from "@/lib/roles";
 import { findAttachmentForDownload } from "@/lib/services/attachments";
 import { consumeRateLimit, MutationRateLimitError } from "@/lib/services/rate-limit";
@@ -17,10 +18,16 @@ export const dynamic = "force-dynamic";
  * access can be revoked by changing the document.
  *
  * Authorization:
- * - any ACTIVE staff member (ADMIN/MENTOR) may read any attachment, and
- * - the uploader may read their own upload, so a student can retrieve the
- *   image attachment they submitted even though uploads are never published.
+ * - any ACTIVE staff member (ADMIN/MENTOR) may read any attachment,
+ * - the uploader may read their own upload,
+ * - the owner of the case may read every attachment on it (their own evidence
+ *   plus the images the team added while answering), and
+ * - once the case is PUBLISHED, any signed-in student may read its attachments,
+ *   because the Student Library shows the reviewed problem and solution —
+ *   including images — to everyone.
  *
+ * The parent case is re-read on every request, so unpublishing the case (or any
+ * edit/reply, which forces a re-review) revokes public access immediately.
  * Everything else is answered with 404 (never 403) so the endpoint cannot be
  * used to probe whether an arbitrary attachment id exists.
  */
@@ -63,8 +70,17 @@ export async function GET(
   if (!attachment) return NOT_FOUND();
 
   const isStaff = Boolean(session.user.role && canMutate(session.user.role));
-  const isUploader = attachment.uploadedBy === session.user.id;
-  if (!isStaff && !isUploader) return NOT_FOUND();
+  if (
+    !canDownloadAttachment({
+      viewerId: session.user.id,
+      isStaff,
+      uploaderId: attachment.uploadedBy,
+      ownerId: attachment.ownerId,
+      parentVisibility: attachment.parentVisibility,
+    })
+  ) {
+    return NOT_FOUND();
+  }
 
   try {
     await consumeRateLimit("attachment.download", session.user.id);

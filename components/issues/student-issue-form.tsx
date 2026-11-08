@@ -165,7 +165,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
           <div className="flex flex-col gap-1.5">
             <AttachmentField
               label="Attachments"
-              description="Images only: PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Attachments are only visible to the support team."
+              description="Images only: PNG, JPEG, GIF or WebP, up to 3 images of 5 MB each. Private until the team publishes this request to the Student Library."
             />
             {state.fieldErrors?.uploads?.[0] && (
               <p

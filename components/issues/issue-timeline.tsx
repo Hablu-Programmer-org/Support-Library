@@ -9,6 +9,7 @@ export function IssueTimeline({
   viewerRole,
   csrfToken = "",
   variant = "response",
+  publicView = false,
 }: {
   issueId: string;
   replies: SupportReplyListItem[];
@@ -17,6 +18,11 @@ export function IssueTimeline({
   csrfToken?: string;
   /** The first reply is the answer people came for; later ones are follow-ups. */
   variant?: "solution" | "response";
+  /**
+   * Student Library view: the author's name is not part of the projection, so a
+   * student reply is labelled generically instead of falling back to "You".
+   */
+  publicView?: boolean;
 }) {
   if (replies.length === 0) {
     return (
@@ -48,6 +54,7 @@ export function IssueTimeline({
               canEdit={canEdit}
               csrfToken={csrfToken}
               variant={variant}
+              authorLabel={publicView && !reply.isStaffReply ? "Student" : undefined}
             />
           </li>
         );

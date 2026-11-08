@@ -13,16 +13,17 @@ import { SectionLabel } from "@/components/shared/section-label";
 import { currentShift } from "@/lib/config/live-support";
 import { formatSupportDate } from "@/lib/format-date";
 import { getLiveSupportConfig } from "@/lib/live-support";
-import type { SupportIssueListItem } from "@/lib/services/issues";
+import type { OwnIssueDetail } from "@/lib/services/issues";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
 /**
  * A student's own support request.
  *
  * This is the only place a student sees an unpublished case, so it shows exactly
- * what they submitted plus the team's public replies — never the internal
- * snapshot (staff email fields, mentor, publication history, audit), and never
- * attachments staff added to a reply (the reply projection strips those).
+ * what they submitted plus the team's answers — never the internal snapshot
+ * (staff email fields, mentor, publication history, audit). The team's reply
+ * images are shown (the owner may open them on their own case), but no reply
+ * author identity is exposed.
  *
  * The live support panel is scoped to this request, which is what makes "join
  * with the request you submitted" the only available path: there is no picker
@@ -35,7 +36,7 @@ export function StudentRequestView({
   created,
   activityRevision,
 }: {
-  issue: SupportIssueListItem;
+  issue: OwnIssueDetail;
   replies: SupportReplyListItem[];
   csrfToken: string;
   created: boolean;

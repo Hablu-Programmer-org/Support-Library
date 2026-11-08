@@ -337,6 +337,14 @@ export async function editReplyAction(
       return { fieldErrors: { videoLinks: [VIDEO_LINKS] }, values };
     }
 
+    // Admins remove a sensitive screenshot from a reply the same way they do on
+    // the issue form: a checkbox per existing image. The service only removes
+    // ids that actually belong to this reply, so an injected id is inert.
+    const removeUploadIds = formData
+      .getAll("removeUploadIds")
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .slice(0, 10);
+
     try {
       await consumeRateLimit("reply.edit", guard.session.user.id, {
         action: "REPLY_EDIT",
@@ -358,6 +366,7 @@ export async function editReplyAction(
       guard.session.user.id,
       guard.session.user.role,
       videoLinks,
+      removeUploadIds,
     );
     if (!reply) {
       return { fieldErrors: { _form: ["This response can no longer be edited."] }, values };

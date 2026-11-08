@@ -13,6 +13,7 @@ import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION, isEffectiveSta
 import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { buildOwnIssueFilter } from "@/lib/issue-ownership";
+import { projectRepliesForViewer, type ReplyViewer } from "@/lib/reply-view";
 import { SupportIssueModel, SupportReplyModel, UserModel } from "@/models";
 
 type LeanDoc = Record<string, unknown>;
@@ -391,12 +392,16 @@ export async function addReply(
 
 export type ListRepliesOptions = {
   viewerId?: string;
-  redactActorIds?: boolean;
+  /**
+   * Defaults to `staff`. Every student-facing caller must say `owner` or
+   * `public`; the redaction itself lives in `lib/reply-view.ts`.
+   */
+  viewer?: ReplyViewer;
 };
 
 export async function listReplies(issueId: string, options?: ListRepliesOptions) {
+  const viewer = options?.viewer ?? "staff";
   const viewerId = options?.viewerId;
-  const redactActorIds = options?.redactActorIds ?? false;
   if (!mongoose.Types.ObjectId.isValid(issueId)) return [];
   await dbConnect();
 
@@ -404,22 +409,8 @@ export async function listReplies(issueId: string, options?: ListRepliesOptions)
 
   const replies = await SupportReplyModel.find(filter).sort({ createdAt: 1, _id: 1 }).lean();
   const authors = await buildAuthorMap(replies as LeanDoc[]);
-  return (replies as LeanDoc[]).map((reply) => {
-    const mapped = toReplyListItem(reply, authors);
-    // The public projection strips staff uploads entirely, while preserving
-    // the owner's own uploaded images so a follow-up remains usable.
-    if (!redactActorIds) return mapped;
-    const isOwnReply = Boolean(viewerId && String(reply.authorId) === viewerId);
-    // A redacted student view must never expose another student's reply body,
-    // links, metadata or attachments. Only effective staff replies and the
-    // viewer's own replies survive the projection.
-    if (!mapped.isStaffReply && !isOwnReply) return null;
-    return {
-      ...mapped,
-      authorId: "",
-      uploads: mapped.isStaffReply || !isOwnReply ? [] : mapped.uploads,
-    };
-  }).filter((reply): reply is SupportReplyListItem => reply !== null);
+  const mapped = (replies as LeanDoc[]).map((reply) => toReplyListItem(reply, authors));
+  return projectRepliesForViewer(mapped, viewer, viewerId);
 }
 
 /**
@@ -446,15 +437,20 @@ export async function editReply(
   actorId: string,
   actorRole?: UserRole | null,
   videoLinks?: SupportReplyInput["videoLinks"],
+  removeUploadIds: readonly string[] = [],
 ) {
   if (!mongoose.Types.ObjectId.isValid(issueId) || !mongoose.Types.ObjectId.isValid(replyId)) {
     return null;
   }
   await dbConnect();
 
-  return mongoose.connection.transaction(async (session) => {
+  let removedUploads: { key: string }[] = [];
+  const result = await mongoose.connection.transaction(async (session) => {
     const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
-    const existingReply = await SupportReplyModel.findOne(filter).select("_id").session(session).lean();
+    const existingReply = await SupportReplyModel.findOne(filter)
+      .select("_id uploads")
+      .session(session)
+      .lean();
     if (!existingReply) {
       const context = await getRequestContext();
       await recordAuditEvent({
@@ -467,11 +463,21 @@ export async function editReply(
       return null;
     }
 
+    // Only ids that really belong to **this** reply can be removed; an id from
+    // another case or reply simply matches nothing.
+    const removeSet = new Set(removeUploadIds);
+    const currentUploads = (existingReply.uploads ?? []) as unknown as LeanDoc[];
+    const removed = currentUploads.filter((entry) => removeSet.has(String(entry._id)));
+    const kept = currentUploads.filter((entry) => !removeSet.has(String(entry._id)));
+    removedUploads = removed as unknown as { key: string }[];
+
     // Video links are replace-only: the edit form always posts the full list, so
     // omitting the field leaves the stored links untouched and an empty string
-    // clears them.
+    // clears them. Uploads follow the same rule — an empty `removeUploadIds`
+    // leaves the existing images alone.
     const update: Record<string, unknown> = { body: body.trim(), editedAt: new Date() };
     if (videoLinks !== undefined) update.videoLinks = videoLinks;
+    if (removed.length) update.uploads = kept;
 
     const reply = await SupportReplyModel.findOneAndUpdate(
       filter,
@@ -483,6 +489,15 @@ export async function editReply(
     await refreshIssueReplySearchText(issueId, session);
     await refreshIssueReplyState(issueId, session);
     const context = await getRequestContext();
+    for (const entry of removed) {
+      await recordAuditEvent({
+        actorId,
+        action: "ATTACHMENT_DELETE",
+        resourceType: "SupportAttachment",
+        resourceId: String(entry._id),
+        result: "SUCCEEDED",
+      }, context, session);
+    }
     await recordAuditEvent({
       actorId,
       action: "REPLY_EDIT",
@@ -492,6 +507,12 @@ export async function editReply(
     }, context, session);
     return toReplyListItem(reply);
   });
+
+  // The removed objects are no longer referenced by any document. Delete them
+  // only after the write committed, so a failed edit cannot destroy a live image.
+  if (!result) return null;
+  await discardUploads(removedUploads);
+  return result;
 }
 
 export async function softDeleteReply(

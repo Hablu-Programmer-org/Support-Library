@@ -69,7 +69,7 @@ export function PublishIssueForm({
           value="true"
           className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500"
         />
-        <span>No student personal information in this issue.</span>
+        <span>No student personal information in this issue, including its images and video links.</span>
       </label>
       {state.fieldErrors?.reviewConfirmed && (
         <p className="text-sm text-danger-600 dark:text-danger-400 ml-6" role="alert">

@@ -2,7 +2,7 @@
 
 ## Uploaded image attachments
 
-Issues and replies may carry uploaded image attachments (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, or the uploader) before streaming. Uploads are never published and never appear in the public library projection. Existing attachments show authorized thumbnail previews on the issue edit form; select a preview to open the original, or use its checkbox to remove it. New image attachments can also be added there. Replies cannot be edited for attachments in this phase.
+Issues and replies may carry uploaded image attachments (PNG/JPEG/GIF/WebP). They render under an "Attachments" heading and download through `/api/attachments/<id>`, which authorizes the session (ADMIN/MENTOR, the uploader, or the owner of the case) before streaming. **Once a case is published**, its issue images and the images on every reply are part of the Student Library, so any signed-in student can open them. Before publishing, check every image for student personal information and remove the sensitive ones with the checkbox on the issue edit form or on the reply's edit form (reply attachments can now be removed there too). Unpublishing, editing, or adding/editing a reply puts the case back into review and immediately stops public downloads. Existing attachments show authorized thumbnail previews; select a preview to open the original. New image attachments can also be added on the issue edit form.
 
 Every attachment picker also shows a browser-local preview immediately after image selection, before the create/edit/reply form is submitted. A preview card's `Remove` button removes that image from the submitted file list. The local preview does not upload or expose the file early.
 
@@ -178,7 +178,7 @@ Admins can see:
 - The first reply as `Solution` (solved) or `Answer`, then later replies as `Responses`.
 - Reply author names.
 - Reply creation and edited markers.
-- Video links and private image attachments.
+- Video links and image attachments (private until the case is published).
 - Course.
 - Batch.
 - Published date.
@@ -236,7 +236,7 @@ Before publishing, remove or generalize:
 - Phone number.
 - Discord/Facebook profile.
 - Payment transaction ID.
-- Private image attachment content.
+- Image attachment content, once the case is published.
 - LMS user ID.
 - Address or location.
 - Passwords, tokens, OTPs, or recovery codes.
@@ -303,17 +303,18 @@ Publish workflow:
 
 1. Open `/dashboard/issues/[id]`.
 2. Review the issue title and problem description.
-3. Review the issue-level video links and all replies and their link metadata.
-4. Confirm no student personal information is present in public content.
-5. In the publish form, check the confirmation checkbox.
-6. Click `Publish to library`.
-7. Confirm the page returns to the issue detail page.
-8. Confirm the `Student Library` badge appears.
+3. Review every image attachment on the issue and on each reply, and remove any sensitive one with its edit form before publishing.
+4. Review the issue-level video links and all replies and their link metadata.
+5. Confirm no student personal information is present in public content.
+6. In the publish form, check the confirmation checkbox.
+7. Click `Publish to library`.
+8. Confirm the page returns to the issue detail page.
+9. Confirm the `Student Library` badge appears.
 
 The confirmation text is:
 
 ```text
-No student personal information in this issue.
+No student personal information in this issue, including its images and video links.
 ```
 
 ## 11a. Publish While Solving
@@ -322,10 +323,10 @@ Marking an issue `SOLVED` can publish it in the same step, so a finished answer
 does not need a second visit to the publish form.
 
 1. Open `/dashboard/issues/[id]`.
-2. Review the public content (title, problem, video links, replies) against the
+2. Review the public content (title, problem, images, video links, replies) against the
    PII checklist.
 3. Choose `SOLVED` in the status dropdown.
-4. Check `No student personal information in this issue.`
+4. Check `No student personal information in this issue, including its images and video links.`
 5. Click `Save and publish`.
 
 The write sets the status and the publication fields together. This path is
@@ -734,7 +735,7 @@ Before publishing:
 - [ ] Review every reply body.
 - [ ] Review every video link title, timestamp, summary, hostname, and URL.
 - [ ] Confirm expected links actually saved and open correctly.
-- [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or private image attachments are visible.
+- [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or sensitive images are visible. Every attachment on the case becomes public when you publish, so remove anything identifying.
 - [ ] Confirm status is appropriate for students.
 - [ ] Check the PII confirmation box.
 - [ ] Click `Publish to library`.

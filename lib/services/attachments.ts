@@ -41,6 +41,30 @@ export const toAttachmentView = (upload: LeanDoc): AttachmentView => ({
 export const toAttachmentViews = (value: unknown): AttachmentView[] =>
   Array.isArray(value) ? (value as LeanDoc[]).map(toAttachmentView) : [];
 
+/**
+ * Public view of one uploaded image on a **published** case.
+ *
+ * `uploadedBy` is deliberately absent: it is an internal user id, and the
+ * Student Library is read by students who never need to know who uploaded the
+ * file. Everything else (id, name, type, size, dimensions) is what the public
+ * attachment card renders and what `/api/attachments/<id>` authorizes.
+ */
+export type PublicAttachmentView = Omit<AttachmentView, "uploadedBy">;
+
+export const toPublicAttachmentViews = (value: unknown): PublicAttachmentView[] =>
+  (Array.isArray(value) ? (value as LeanDoc[]) : []).map((upload) => {
+    const view = toAttachmentView(upload);
+    return {
+      id: view.id,
+      originalName: view.originalName,
+      mimeType: view.mimeType,
+      byteSize: view.byteSize,
+      width: view.width,
+      height: view.height,
+      createdAt: view.createdAt,
+    };
+  });
+
 /** Everything the download route needs to authorize and stream one object. */
 export type AttachmentDownload = {
   id: string;
@@ -51,6 +75,13 @@ export type AttachmentDownload = {
   uploadedBy: string;
   parentType: "SupportIssue" | "SupportReply";
   parentId: string;
+  /** `SupportIssue.createdBy`: the student who owns the case, or "" when unknown. */
+  ownerId: string;
+  /**
+   * Live visibility of the parent case. Re-read on every request so unpublishing
+   * (or any edit, which forces a re-review) revokes public access immediately.
+   */
+  parentVisibility: "PUBLISHED" | "INTERNAL";
 };
 
 /**
@@ -68,13 +99,22 @@ export async function findAttachmentForDownload(
   await dbConnect();
 
   const [issue, reply] = await Promise.all([
-    SupportIssueModel.findOne({ "uploads._id": attachmentId, deletedAt: null }).select("uploads").lean(),
-    SupportReplyModel.findOne({ "uploads._id": attachmentId, deletedAt: null }).select("uploads issueId").lean(),
+    SupportIssueModel.findOne({ "uploads._id": attachmentId, deletedAt: null })
+      .select("uploads visibility createdBy")
+      .lean(),
+    SupportReplyModel.findOne({ "uploads._id": attachmentId, deletedAt: null })
+      .select("uploads issueId")
+      .lean(),
   ]);
 
-  if (reply) {
-    const parentIssue = await SupportIssueModel.findById(reply.issueId).select("deletedAt").lean();
-    if (!parentIssue || (parentIssue as { deletedAt?: Date | null }).deletedAt) return null;
+  // The owning case decides owner-scoped and published reads, so it is always
+  // resolved fresh — never cached, never trusted from the attachment id alone.
+  let parentIssue = (issue as LeanDoc | null) ?? null;
+  if (!parentIssue && reply) {
+    parentIssue = (await SupportIssueModel.findById(reply.issueId)
+      .select("deletedAt visibility createdBy")
+      .lean()) as LeanDoc | null;
+    if (!parentIssue || parentIssue.deletedAt) return null;
   }
 
   const parent = issue
@@ -98,6 +138,8 @@ export async function findAttachmentForDownload(
     uploadedBy: String(upload.uploadedBy ?? ""),
     parentType: parent.parentType,
     parentId: parent.parentId,
+    ownerId: parentIssue?.createdBy ? String(parentIssue.createdBy) : "",
+    parentVisibility: parentIssue?.visibility === "PUBLISHED" ? "PUBLISHED" : "INTERNAL",
   };
 }
 
