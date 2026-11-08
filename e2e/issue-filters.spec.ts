@@ -91,20 +91,25 @@ test.describe("Issue list filters (mentor)", () => {
     await expect(page.locator('select[name="courseSlug"] option[value="react-beginner"]')).toHaveCount(1);
     await expect(page.locator('select[name="batchNo"] option[value="7"]')).toHaveCount(1);
 
-    await filterWith(page, /courseSlug=react-beginner/, () =>
-      page.selectOption('main select[name="courseSlug"]:visible', "react-beginner"),
-    );
+    await filterWith(page, /courseSlug=react-beginner/, async () => {
+      await openFilters(page);
+      await page.selectOption('main select[name="courseSlug"]:visible', "react-beginner");
+    });
     await expect(issueHeading(page, "E2E filter react issue")).toBeVisible();
     await expect(issueHeading(page, "E2E filter python issue")).toHaveCount(0);
 
     // Adding a batch that belongs to the other course must yield nothing.
-    await filterWith(page, /batchNo=9/, () => page.selectOption('main select[name="batchNo"]:visible', "9"));
+    // Applying a filter reloads the page, so the second line collapses again.
+    await filterWith(page, /batchNo=9/, async () => {
+      await openFilters(page);
+      await page.selectOption('main select[name="batchNo"]:visible', "9");
+    });
     await expect(issueHeading(page, "E2E filter react issue")).toHaveCount(0);
     await expect(issueHeading(page, "E2E filter python issue")).toHaveCount(0);
 
-    // HeroUI renders its polymorphic Button as `<a role="button">`, so the
-    // explicit ARIA role wins over the implicit link role.
-    await page.getByRole("button", { name: "Reset" }).click();
+    // The toolbar has no Reset button; the chip summary clears every filter
+    // (the keyword is empty here, so this lands on the plain list URL).
+    await page.getByRole("link", { name: "Clear filters" }).click();
     await expect(page).toHaveURL(/\/dashboard\/issues$/);
     await expect(issueHeading(page, "E2E filter react issue")).toBeVisible();
     await expect(issueHeading(page, "E2E filter python issue")).toBeVisible();
@@ -122,6 +127,7 @@ test.describe("Issue list filters (mentor)", () => {
       page,
       /mentorId=[a-f0-9]{24}&from=2000-01-01&to=2999-12-31/,
       async () => {
+        await openFilters(page);
         await page.selectOption('main select[name="mentorId"]:visible', { label: "Mentor User" });
         await page.locator('main input[name="from"]:visible').fill("2000-01-01");
         await page.locator('main input[name="to"]:visible').fill("2999-12-31");
@@ -131,6 +137,7 @@ test.describe("Issue list filters (mentor)", () => {
 
     // A date range that ends before the issue was created must exclude it.
     await filterWith(page, /from=2000-01-01&to=2000-01-02/, async () => {
+      await openFilters(page);
       await page.locator('main input[name="from"]:visible').fill("2000-01-01");
       await page.locator('main input[name="to"]:visible').fill("2000-01-02");
     });

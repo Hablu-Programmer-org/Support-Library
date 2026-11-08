@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
-import { ChevronDownIcon, CloseIcon, SearchIcon } from "@/components/icons";
+import { CloseIcon, SearchIcon } from "@/components/icons";
 import { nativeFieldClass } from "@/lib/config/fields";
 import {
   buildIssueListHref,
@@ -44,13 +44,9 @@ const IN_FLIGHT_MAX = 100;
 export function IssueSearchField({
   defaults,
   defaultSort,
-  open,
-  onToggle,
 }: {
   defaults: IssueFilterDefaults;
   defaultSort?: "answer" | "newest" | "oldest" | "priority" | "relevance";
-  open: boolean;
-  onToggle: () => void;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(defaults.q);
@@ -169,7 +165,7 @@ export function IssueSearchField({
           aria-describedby={showHint ? "issue-search-hint" : undefined}
           aria-label="Search issues"
           autoComplete="off"
-          className={`${nativeFieldClass} pl-10 pr-16`}
+          className={`${nativeFieldClass} pl-10 pr-10`}
           enterKeyHint="search"
           name="q"
           placeholder="Search by problem, answer or keyword"
@@ -201,25 +197,13 @@ export function IssueSearchField({
         {value !== "" && (
           <button
             aria-label="Clear search"
-            className="absolute right-10 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             onClick={clear}
             type="button"
           >
             <CloseIcon size={14} />
           </button>
         )}
-        <button
-          aria-expanded={open}
-          aria-label="Advanced filters"
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          onClick={onToggle}
-          type="button"
-        >
-          <ChevronDownIcon
-            className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            size={18}
-          />
-        </button>
         <span aria-live="polite" className="sr-only">
           {isPending ? "Searching" : ""}
         </span>

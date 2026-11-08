@@ -28,8 +28,6 @@ const renderField = (overrides: Partial<IssueFilterDefaults> = {}) =>
     <IssueSearchField
       defaults={defaults(overrides)}
       defaultSort="relevance"
-      open={false}
-      onToggle={() => {}}
     />,
   );
 
@@ -136,12 +134,7 @@ describe("IssueSearchField", () => {
 
     // The server render comes back with the same value: the draft is untouched.
     view.rerender(
-      <IssueSearchField
-        defaults={defaults({ q: "im" })}
-        defaultSort="relevance"
-        open={false}
-        onToggle={() => {}}
-      />,
+      <IssueSearchField defaults={defaults({ q: "im" })} defaultSort="relevance" />,
     );
     expect(input().value).toBe("im");
   });
@@ -151,12 +144,7 @@ describe("IssueSearchField", () => {
     expect(input().value).toBe("image");
 
     view.rerender(
-      <IssueSearchField
-        defaults={defaults({ q: "" })}
-        defaultSort="answer"
-        open={false}
-        onToggle={() => {}}
-      />,
+      <IssueSearchField defaults={defaults({ q: "" })} defaultSort="answer" />,
     );
     expect(input().value).toBe("");
   });

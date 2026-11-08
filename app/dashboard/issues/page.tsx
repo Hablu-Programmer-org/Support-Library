@@ -216,6 +216,13 @@ export default async function IssuesPage({
         mentors={mentors}
         showMentor={canManage}
         statuses={CASE_STATUSES}
+        summary={
+          searchFailed
+            ? "Search is temporarily unavailable."
+            : filters.q
+              ? `${issues.total} result${issues.total === 1 ? "" : "s"} for “${filters.q}”`
+              : `Total ${issues.total} issue${issues.total === 1 ? "" : "s"}`
+        }
       />
 
       {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
@@ -230,14 +237,6 @@ export default async function IssuesPage({
           }))}
         />
       )}
-
-      <p aria-live="polite" className="text-sm text-slate-500 dark:text-slate-400">
-        {searchFailed
-          ? "Search is temporarily unavailable."
-          : filters.q
-            ? `${issues.total} result${issues.total === 1 ? "" : "s"} for “${filters.q}”`
-            : `Total ${issues.total} issue${issues.total === 1 ? "" : "s"}`}
-      </p>
 
       <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {issues.items.length === 0 ? (
