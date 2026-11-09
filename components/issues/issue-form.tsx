@@ -451,7 +451,7 @@ export function IssueForm({
               image attachments below and provides a second picker for additions. */}
           {!supportIssue && (
             <div className="flex flex-col gap-1.5">
-              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only staff can open them until the case is published." />
+              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published." />
               <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
             </div>
           )}
@@ -518,7 +518,10 @@ export function IssueForm({
 
           {supportIssue && (
             <div className="flex flex-col gap-1.5">
-              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only staff can open them until the case is published." />
+              <AttachmentField
+                existingCount={supportIssue.uploads?.length ?? 0}
+                description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published."
+              />
               <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
             </div>
           )}
@@ -558,7 +561,7 @@ export function IssueForm({
               <AttachmentField
                 name="solutionUploads"
                 label="Answer attachments"
-                description="Images only: PNG, JPEG, GIF or WebP. Add up to 3 images, 5 MB each. Only staff can open them until the case is published."
+                description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published."
               />
               <ErrorMessage error={state.fieldErrors?.solutionUploads?.[0]} />
             </div>

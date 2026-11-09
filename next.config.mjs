@@ -18,7 +18,7 @@ function configuredAllowedOrigins() {
  */
 function serverActionBodySizeLimit() {
   const count = Number(process.env.MAX_UPLOADS_PER_ITEM ?? "");
-  const uploads = Number.isInteger(count) && count >= 1 && count <= 10 ? count : 3;
+  const uploads = Number.isInteger(count) && count >= 1 && count <= 10 ? count : 5;
 
   const bytes = Number(process.env.MAX_UPLOAD_BYTES ?? "");
   const perFile =

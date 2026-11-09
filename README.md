@@ -85,7 +85,7 @@ Help Center (dashboard sidebar)
 3. **Search before asking** — the library searches published titles, problems,
    tags and course slugs. An existing answer is the fastest fix.
 4. Nothing matches → **Submit an issue**. Identity comes from the session (never
-   the form); optional evidence is up to 3 images (PNG/JPEG/GIF/WebP,
+   the form); optional evidence is up to 5 images (PNG/JPEG/GIF/WebP,
    5 MB each, private until the case is published) and external HTTPS video links. The problem title is one line,
    max 80 characters — name the problem (`Assignment submission link not found`),
    not the topic.

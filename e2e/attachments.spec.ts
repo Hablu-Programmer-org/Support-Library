@@ -151,4 +151,29 @@ test.describe("uploaded attachments", () => {
     await expect(form.getByRole("alert")).toContainText(/not a supported image/i);
     await expect(page).toHaveURL(/\/dashboard\/issues\/new$/);
   });
+
+  test("picking images twice adds them instead of replacing the first batch", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Submit request");
+    await form.locator('input[name="title"]').fill(`E2E multi pick ${Date.now()}`);
+    await form
+      .locator('textarea[name="question"]')
+      .fill("Two separate picks must both stay attached to the request.");
+    await chooseStudentCourse(form);
+
+    const uploadInput = form.locator('input[name="uploads"]');
+    // Most file managers only allow one file per pick, so the same input is used
+    // again — the second batch must be appended, not substituted.
+    await uploadInput.setInputFiles(tinyPngFile("first.png"));
+    await uploadInput.setInputFiles(tinyPngFile("second.png"));
+
+    await expect(form.locator('img[alt="Preview of first.png"]')).toBeVisible();
+    await expect(form.locator('img[alt="Preview of second.png"]')).toBeVisible();
+    await expect(form.getByText("2 of 5")).toBeVisible();
+    expect(
+      await uploadInput.evaluate((input: HTMLInputElement) =>
+        Array.from(input.files ?? []).map((file) => file.name),
+      ),
+    ).toEqual(["first.png", "second.png"]);
+  });
 });

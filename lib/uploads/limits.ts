@@ -12,7 +12,7 @@
  */
 
 /** Default cap on uploaded files per issue or reply when `MAX_UPLOADS_PER_ITEM` is unset. */
-export const UPLOAD_LIMIT_DEFAULT = 3;
+export const UPLOAD_LIMIT_DEFAULT = 5;
 
 /** Hard ceiling for `MAX_UPLOADS_PER_ITEM`, independent of the environment. */
 export const UPLOAD_LIMIT_MAX = 10;

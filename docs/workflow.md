@@ -54,7 +54,7 @@ Help Center (dashboard sidebar)
    - title (≥ 5 chars) and problem (≥ 5 chars);
    - **required course** picked from the student's LMS enrolments, with the batch
      filled from the same enrolment (the server re-derives both);
-   - optional evidence: up to 3 images (PNG/JPEG/GIF/WebP, 5 MB each, private
+   - optional evidence: up to 5 images (PNG/JPEG/GIF/WebP, 5 MB each, private
      until the case is published) and external HTTPS video links;
    - optional module/content/tags;
    - identity comes from the session, never the form;
