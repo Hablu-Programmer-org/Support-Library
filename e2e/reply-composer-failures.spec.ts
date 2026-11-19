@@ -1,7 +1,3 @@
-import { writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
 import { test, expect } from "@playwright/test";
 import mongoose from "mongoose";
 
@@ -46,14 +42,17 @@ test.beforeEach(async ({ page }) => {
 
 test.describe("Reply composer failure reporting", () => {
   test("a rejected attachment shows the reason and keeps the typed response", async ({ page }) => {
-    // A temp file: `test-results/` may not exist on a clean run.
-    const filePath = join(tmpdir(), `reply-not-an-image-${Date.now()}.txt`);
-    writeFileSync(filePath, "this is not an image");
-
+    // The picker drops a declared text/plain file before it is ever submitted, so
+    // this has to look like an image to the client and fail the server's
+    // magic-byte check — that is the rejection this test is about.
     const replyForm = formFor(page, "Add response");
     await replyForm.locator('textarea[name="body"]').fill("Reply with a bad attachment");
     await replyForm.getByText("Add attachments or video links").click();
-    await replyForm.locator('input[type="file"]').setInputFiles(filePath);
+    await replyForm.locator('input[type="file"]').setInputFiles({
+      name: "reply-not-an-image.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("this is not an image"),
+    });
     await replyForm.getByRole("button", { name: "Add response" }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: /not a supported image/ })).toBeVisible();
