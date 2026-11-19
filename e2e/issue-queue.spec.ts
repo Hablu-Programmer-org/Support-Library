@@ -145,6 +145,16 @@ test.afterAll(async () => {
 /** Row headings in render order; scoped to visible nodes only. */
 const queue = (page: Page) => page.locator("main h2:visible");
 
+/**
+ * The visible row for one seeded issue.
+ *
+ * Addressed through `queue` rather than `getByRole("heading")` because streaming
+ * plus hydration can briefly leave a second copy of the route in the DOM; a
+ * page-wide locator fails strict mode on that copy before it is replaced.
+ */
+const rowFor = (page: Page, name: string) =>
+  queue(page).filter({ hasText: name }).first().locator("..");
+
 test.describe("staff queue ordering", () => {
   test.use({ storageState: "e2e/.auth/mentor.json" });
 
@@ -153,7 +163,13 @@ test.describe("staff queue ordering", () => {
     // which is not the queue order this suite asserts.
     await page.goto(`/dashboard/issues?q=${token}&sort=answer`);
 
-    await expect(page.getByText(`E2E queue ${token} never answered`)).toBeVisible();
+    // Scoped to the same visible rows the order assertion reads: streaming plus
+    // hydration can leave a second copy of the route in the DOM, and an unscoped
+    // `getByText` fails strict mode on it before it is replaced. The exact
+    // `allInnerTexts()` check below still proves there is one row per issue.
+    await expect(
+      queue(page).filter({ hasText: title("never answered") }).first(),
+    ).toBeVisible();
 
     await expect.poll(async () => queue(page).allInnerTexts()).toEqual([
       title("legacy unanswered"),
@@ -165,12 +181,8 @@ test.describe("staff queue ordering", () => {
     ]);
 
     // Staff-only badges: no reply vs. the student's later message.
-    const neverAnswered = page
-      .getByRole("heading", { name: title("never answered") })
-      .locator("..");
-    const studentReplied = page
-      .getByRole("heading", { name: title("student replied") })
-      .locator("..");
+    const neverAnswered = rowFor(page, title("never answered"));
+    const studentReplied = rowFor(page, title("student replied"));
     await expect(neverAnswered.getByText("No reply yet", { exact: true })).toBeVisible();
     await expect(studentReplied.getByText("Student replied", { exact: true })).toBeVisible();
   });
@@ -196,12 +208,8 @@ test.describe("staff queue ordering", () => {
   test("does not label a legacy answered issue as no reply", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${token}&sort=answer`);
 
-    const legacyAnswered = page
-      .getByRole("heading", { name: title("legacy answered") })
-      .locator("..");
-    const legacyUnanswered = page
-      .getByRole("heading", { name: title("legacy unanswered") })
-      .locator("..");
+    const legacyAnswered = rowFor(page, title("legacy answered"));
+    const legacyUnanswered = rowFor(page, title("legacy unanswered"));
 
     // The pre-migration reply is derived from the author's role on read.
     await expect(legacyAnswered.getByText("No reply yet", { exact: true })).toHaveCount(0);
