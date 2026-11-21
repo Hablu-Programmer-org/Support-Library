@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.describe("Landing", () => {
   test("guest sees only the sign-in path, no library chrome", async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe("Landing staff cards", () => {
 });
 
 /** Collects the bodies of every script the page loads. */
-async function loadedScripts(page: import("@playwright/test").Page) {
+async function loadedScripts(page: Page) {
   const bodies: Promise<string>[] = [];
   page.on("response", (response) => {
     if (response.request().resourceType() === "script" && response.ok()) {
@@ -155,18 +155,78 @@ test.describe("Landing bundle (signed in)", () => {
   });
 });
 
-/** WCAG relative-luminance contrast between two computed `rgb(...)` colors. */
-function contrastRatio(foreground: string, background: string) {
-  const luminance = (color: string) => {
-    const [r, g, b] = (color.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number).map((value) => {
+type Rgb = [number, number, number];
+
+/**
+ * Resolves CSS colors to opaque sRGB (0-255) by painting each on a 1x1 canvas
+ * in the page. Computed styles come back as rgb(), lab(), oklch() or color()
+ * depending on the source (Tailwind v4 uses oklch), so the browser does the
+ * conversion instead of a regex. Unknown or translucent colors throw rather
+ * than silently producing a wrong ratio.
+ */
+async function toRgb(page: Page, colors: string[]): Promise<Rgb[]> {
+  return page.evaluate((list) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) throw new Error("2d canvas unavailable");
+    return list.map((color) => {
+      const sentinel = "#010203";
+      ctx.fillStyle = sentinel;
+      ctx.fillStyle = color;
+      if (ctx.fillStyle === sentinel && color.toLowerCase() !== sentinel) {
+        throw new Error(`unparseable color: ${color}`);
+      }
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      if (a !== 255) throw new Error(`translucent color, contrast undefined: ${color}`);
+      return [r, g, b] as [number, number, number];
+    });
+  }, colors);
+}
+
+/** WCAG 2 contrast ratio between two opaque sRGB colors. */
+function contrastRatio(foreground: Rgb, background: Rgb) {
+  const luminance = ([r, g, b]: Rgb) => {
+    const [lr, lg, lb] = [r, g, b].map((value) => {
       const channel = value / 255;
       return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
     });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
   };
   const [light, dark] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
   return (light + 0.05) / (dark + 0.05);
 }
+
+/** Every color function inside a computed background-image, in order. */
+const colorTokens = (value: string) =>
+  value.match(/(?:rgba?|hsla?|lab|lch|oklab|oklch|color)\([^()]*\)/g) ?? [];
+
+test.describe("Contrast helper (guards against a vacuous pass)", () => {
+  test("converts modern color formats and flags a known failing pair", async ({ page }) => {
+    await page.setContent("<!doctype html><title>contrast</title>");
+    const [white, labWhite, cyan500, oklchCyan] = await toRgb(page, [
+      "white",
+      "lab(100 0 0)",
+      "rgb(6, 182, 212)",
+      "oklch(71.5% 0.143 215.221)", // Tailwind v4 cyan-500
+    ]);
+    expect(white).toEqual([255, 255, 255]);
+    expect(labWhite).toEqual([255, 255, 255]);
+    // White on cyan-500 is the pair that failed Lighthouse (2.42:1); the
+    // helper must reproduce that and reject it, whatever format it arrives in.
+    for (const cyan of [cyan500, oklchCyan]) {
+      const ratio = contrastRatio(white, cyan);
+      expect(ratio).toBeGreaterThan(2.2);
+      expect(ratio).toBeLessThan(2.7);
+      expect(ratio).toBeLessThan(4.5);
+    }
+    await expect(toRgb(page, ["not-a-color"])).rejects.toThrow(/unparseable/);
+    await expect(toRgb(page, ["rgb(0 0 0 / 0.5)"])).rejects.toThrow(/translucent/);
+  });
+});
 
 test.describe("Landing contrast", () => {
   test("sign-in CTAs meet WCAG AA at rest and on hover", async ({ page }) => {
@@ -176,20 +236,17 @@ test.describe("Landing contrast", () => {
     await expect(links).toHaveCount(2); // topbar "Sign in" + hero "Staff Sign In"
 
     for (const link of await links.all()) {
-      const colors = () =>
-        link.evaluate((el) => {
-          const style = getComputedStyle(el);
-          return { color: style.color, background: style.backgroundColor };
+      const ratio = async () => {
+        const style = await link.evaluate((el) => {
+          const computed = getComputedStyle(el);
+          return { color: computed.color, background: computed.backgroundColor };
         });
-      const rest = await colors();
-      expect(contrastRatio(rest.color, rest.background)).toBeGreaterThanOrEqual(4.5);
+        const [color, background] = await toRgb(page, [style.color, style.background]);
+        return contrastRatio(color, background);
+      };
+      expect(await ratio()).toBeGreaterThanOrEqual(4.5);
       await link.hover();
-      await expect
-        .poll(async () => {
-          const hover = await colors();
-          return contrastRatio(hover.color, hover.background);
-        })
-        .toBeGreaterThanOrEqual(4.5);
+      await expect.poll(ratio).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
@@ -259,19 +316,19 @@ test.describe("Landing search button contrast", () => {
       return { color: computed.color, image: computed.backgroundImage };
     });
 
-    // brand-bg is a two-stop linear gradient; sample both ends and the middle.
-    const stops = (style.image.match(/rgba?\([^)]*\)/g) ?? []).map((value) =>
-      (value.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number),
+    // brand-bg is a two-stop linear gradient; sample both ends and the middle
+    // (legacy-color gradients interpolate in sRGB).
+    const tokens = colorTokens(style.image);
+    expect(tokens, style.image).toHaveLength(2);
+    const [text, from, to] = await toRgb(page, [style.color, ...tokens]);
+    const samples = [0, 0.5, 1].map(
+      (t) => from.map((channel, i) => Math.round(channel + (to[i] - channel) * t)) as Rgb,
     );
-    expect(stops, style.image).toHaveLength(2);
-    const [from, to] = stops;
-    const samples = [0, 0.5, 1].map((t) => from.map((channel, i) => channel + (to[i] - channel) * t));
     // hover:brightness-110 multiplies each channel by 1.1 (clamped).
-    const hovered = samples.map((rgb) => rgb.map((channel) => Math.min(255, channel * 1.1)));
+    const hovered = samples.map((rgb) => rgb.map((channel) => Math.min(255, Math.round(channel * 1.1))) as Rgb);
 
-    for (const rgb of [...samples, ...hovered]) {
-      const background = `rgb(${rgb.map(Math.round).join(", ")})`;
-      expect(contrastRatio(style.color, background), background).toBeGreaterThanOrEqual(4.5);
+    for (const background of [...samples, ...hovered]) {
+      expect(contrastRatio(text, background), `text ${text} on ${background}`).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
