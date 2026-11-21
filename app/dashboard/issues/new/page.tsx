@@ -22,46 +22,31 @@ export default async function NewIssuePage() {
   if (!canManage) {
     const courses = await listStudentCourses(session.user.email);
 
+    // Same width and header rhythm as the issue details page: `PageContainer`
+    // already caps the width, so the page adds no narrower max-width of its own.
     return (
-      <div className="flex flex-col">
-        <header className="w-full px-4 py-3">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-            <Link
-              href="/dashboard/issues"
-              className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              aria-label="Back to Support Library"
-            >
-              <ArrowLeftIcon size={18} />
-              Back to Support Library
-            </Link>
-            <div className="flex-1" />
-          </div>
+      <div className="w-full py-6">
+        <header className="mb-8">
+          <Link
+            href="/dashboard/issues"
+            className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-cyan-700 transition hover:text-cyan-600 hover:underline dark:text-cyan-300 dark:hover:text-cyan-200"
+          >
+            <ArrowLeftIcon size={18} />
+            Back to Support Library
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-white">
+            Create an issue
+          </h1>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="space-y-8">
-            <div className="space-y-2">
-              <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Create an issue
-                  </h1>
-                  <p className="text-slate-600 dark:text-slate-400">
-                     Describe the issue clearly so the support team can help
-                     faster.
-                  </p>
-              </div>
-            </div>
-
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-8">
-              <div className="order-2 min-w-0 lg:order-1">
-                <StudentIssueForm courses={courses} csrfToken={csrfToken} />
-              </div>
-              <div className="order-1 min-w-0 lg:order-2">
-                <BeforeSubmitGuide />
-              </div>
-            </div>
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+          <div className="order-2 min-w-0 lg:order-1">
+            <StudentIssueForm courses={courses} csrfToken={csrfToken} />
           </div>
-        </main>
+          <div className="order-1 min-w-0 lg:order-2">
+            <BeforeSubmitGuide />
+          </div>
+        </div>
       </div>
     );
   }
