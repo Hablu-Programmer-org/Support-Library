@@ -64,10 +64,10 @@ LMS roles are mapped to Support Library's three-tier system:
 | `COORDINATOR` | `ADMIN` | Full access, publish/unpublish |
 | `MODERATOR` | `ADMIN` | Full access, publish/unpublish |
 | `INSTRUCTOR` | `MENTOR` | Create/edit issues, replies |
-| `MEMBER` | `STUDENT` | Submit an issue, read published issues |
-| `STUDENT` | `STUDENT` | Submit an issue, read published issues |
-| `USER` | `STUDENT` | Submit an issue, read published issues |
-| (unknown) | `STUDENT` | Submit an issue, read published issues |
+| `MEMBER` | `STUDENT` | Create an issue, read published issues |
+| `STUDENT` | `STUDENT` | Create an issue, read published issues |
+| `USER` | `STUDENT` | Create an issue, read published issues |
+| (unknown) | `STUDENT` | Create an issue, read published issues |
 
 **Mapping logic** (from `lib/lms-roles.ts`):
 ```typescript

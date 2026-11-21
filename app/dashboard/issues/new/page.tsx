@@ -43,7 +43,7 @@ export default async function NewIssuePage() {
             <div className="space-y-2">
               <div>
                   <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Submit an issue
+                    Create an issue
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400">
                      Describe the issue clearly so the support team can help

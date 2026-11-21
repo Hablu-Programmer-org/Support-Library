@@ -49,7 +49,7 @@ export default async function MyIssuesPage() {
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
               href="/dashboard/issues/new"
             >
-              Submit an issue
+              Create an issue
             </Link>
           </div>
         }

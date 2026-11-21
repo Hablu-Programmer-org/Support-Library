@@ -20,9 +20,9 @@ test.describe("STUDENT issue submission", () => {
     const title = `E2E student request ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    await expect(page.getByRole("heading", { name: "Submit an issue" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create an issue" })).toBeVisible();
 
-    const form = formFor(page, "Submit issue");
+    const form = formFor(page, "Create issue");
     // The student picks no identity — it is derived from the session.
     await expect(form.locator('input[name="studentEmail"]')).toHaveCount(0);
     await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
@@ -49,7 +49,7 @@ test.describe("STUDENT issue submission", () => {
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
     await optional.locator('input[name="tags"]').fill("buffering, video");
 
-    await submitAndWait(page, "Submit issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
     await expect(page.getByRole("status")).toContainText("Your issue has been submitted.");
     await expect(pageErrors).toEqual([]);
 
@@ -83,16 +83,16 @@ test.describe("STUDENT issue submission", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dashboard/issues/new");
 
-    const form = formFor(page, "Submit issue");
+    const form = formFor(page, "Create issue");
     const details = form.locator('textarea[name="question"]');
     await form.locator('input[name="title"]').fill("Assignment page does not load");
     await details.fill("Page broken");
 
     expect(await details.evaluate((field) => (field as HTMLTextAreaElement).validity.tooShort)).toBe(true);
-    await form.getByRole("button", { name: "Submit issue" }).click();
+    await form.getByRole("button", { name: "Create issue" }).click();
     await expect(page).toHaveURL("/dashboard/issues/new");
     await expect(form.getByText("Add at least 40 characters.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Submit issue" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create issue" })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
@@ -104,7 +104,7 @@ test.describe("STUDENT issue submission", () => {
     await page.goto("/dashboard/issues");
 
     // Students get only the self-service entry point, never staff actions.
-    await expect(page.getByRole("link", { name: "Submit an issue" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Create an issue" })).toBeVisible();
     await expect(page.getByRole("link", { name: "New Issue" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Edit issue details" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Add response" })).toHaveCount(0);

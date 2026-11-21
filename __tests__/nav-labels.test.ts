@@ -13,7 +13,7 @@ describe("nav labels", () => {
   it("student sees one word for their own cases: issue", () => {
     expect(internal("STUDENT")).toEqual([
       ["Issues", "/dashboard/issues"],
-      ["Submit issue", "/dashboard/issues/new"],
+      ["Create issue", "/dashboard/issues/new"],
       ["My issues", "/dashboard/my-issues"],
     ]);
     expect(

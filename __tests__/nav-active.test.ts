@@ -6,7 +6,7 @@ const Icon = () => null;
 const items: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", exact: true, icon: Icon },
   { label: "Issues", href: "/dashboard/issues", icon: Icon },
-  { label: "Submit issue", href: "/dashboard/issues/new", exact: true, icon: Icon },
+  { label: "Create issue", href: "/dashboard/issues/new", exact: true, icon: Icon },
   { label: "My Courses", href: "https://lms.example.com/dashboard/my-courses", external: true, icon: Icon },
 ];
 

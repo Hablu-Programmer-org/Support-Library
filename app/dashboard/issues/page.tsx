@@ -118,7 +118,7 @@ export default async function IssuesPage({
   const waitingIds = new Set(waitingIssueIds);
 
   const canDelete = canManage; // Same roles can delete
-  // Students also get the request-less quick join beside "Submit an issue";
+  // Students also get the request-less quick join beside "Create an issue";
   // staff run the room from `/dashboard/support`, so they keep just "New Issue".
   const showQuickJoin = canSubmit && !canManage;
   // One token covers both student actions; staff never see the quick join.
@@ -176,7 +176,7 @@ export default async function IssuesPage({
                 className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
                 href="/dashboard/issues/new"
               >
-                {canManage ? "New Issue" : "Submit an issue"}
+                {canManage ? "New Issue" : "Create an issue"}
               </Link>
               {showQuickJoin && (
                 <QuickLiveSupportButton

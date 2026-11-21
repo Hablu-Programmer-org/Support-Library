@@ -367,12 +367,12 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 motion-reduce:transition-none dark:focus:ring-offset-slate-950 sm:w-auto sm:min-w-52"
         >
           <CheckCircleIcon size={18} />
-          {pending ? "Submitting..." : "Submit issue"}
+          {pending ? "Creating..." : "Create issue"}
         </button>
       </div>
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        After submitting, track replies and open Live support from the issue page.
+        After creating it, track replies and open Live support from the issue page.
       </p>
     </form>
   );

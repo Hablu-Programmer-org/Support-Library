@@ -47,7 +47,7 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
   { label: "Dashboard", href: "/dashboard", exact: true, minRole: "MENTOR", icon: DashboardIcon },
   { label: "Issues", href: "/dashboard/issues", icon: CaseIcon },
   {
-    label: "Submit issue",
+    label: "Create issue",
     href: "/dashboard/issues/new",
     exact: true,
     maxRole: "STUDENT",

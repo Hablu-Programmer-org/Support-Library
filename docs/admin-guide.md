@@ -76,7 +76,7 @@ Admins see these primary navigation links:
 
 - `Dashboard` -> `/dashboard`
 - `Issues` -> `/dashboard/issues`
-- `Submit issue` -> `/dashboard/issues/new`
+- `Create issue` -> `/dashboard/issues/new`
 - `Live support` -> `/dashboard/support`
 - `Support queue` -> `/dashboard/live-support`
 
@@ -557,7 +557,7 @@ Archive only when no further staff action is needed.
 
 Students are `STUDENT` users.
 
-Students see only published issues, and can submit a new issue from **Submit an issue** in the topbar. A student submission is always created as OPEN and internal, with no mentor assigned, and the student lands on a confirmation page rather than the case view.
+Students see only published issues, and can submit a new issue from **Create issue** in the topbar. A student submission is always created as OPEN and internal, with no mentor assigned, and the student lands on a confirmation page rather than the case view.
 
 Student issue list can show:
 

@@ -30,7 +30,7 @@ function GuideContent() {
         Search published answers first →
       </Link>
       <p className="border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500 dark:border-slate-800 dark:text-slate-400">
-        After submitting, track replies and open Live support from the issue
+        After creating it, track replies and open Live support from the issue
         page during support hours.
       </p>
     </div>

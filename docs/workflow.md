@@ -25,7 +25,7 @@ Help Center (dashboard sidebar)
   "সাপোর্ট কীভাবে পাবেন"        ──────────►  /dashboard/issues
   [ সাপোর্ট লাইব্রেরিতে যান ]                 search published answers
                                               │  found → read the answer, done
-                                              │  new   → Submit issue
+                                              │  new   → Create issue
                                               ▼
                                      /dashboard/issues/new
                                        title · problem · images · video links
@@ -50,7 +50,7 @@ Help Center (dashboard sidebar)
 3. **Search first.** `/dashboard/issues` is the published library: search by
    keyword, filter by tag/status/course/batch/date. An existing answer is the
    fastest fix.
-4. **Submit if new.** `Submit an issue` (`/dashboard/issues/new`):
+4. **Create if new.** `Create an issue` (`/dashboard/issues/new`):
    - title (≥ 5 chars) and problem (≥ 5 chars);
    - **required course** picked from the student's LMS enrolments, with the batch
      filled from the same enrolment (the server re-derives both);
@@ -79,7 +79,7 @@ Help Center (dashboard sidebar)
    `Open Live support` link, which is also a new tab.
 8. **Come back.** `My issues` (`/dashboard/my-issues`) lists the student's own
    issues (newest first) with status and a `Live now` chip during a shift. The
-   nav also keeps `Submit issue` and `My Courses` (back to the LMS).
+   nav also keeps `Create issue` and `My Courses` (back to the LMS).
 
 > **Request-less shortcut (owner decision, 2026-11-01).** Students also get a
 > **Join Live support** button at the top of the issues page, beside **Submit an

@@ -242,7 +242,7 @@ Students see:
 
 - Hablu Support Library brand link.
 - `Issues` navigation link.
-- `Submit an issue` navigation link.
+- `Create issue` navigation link.
 - `My issues` navigation link, which lists the issues you submitted and opens them.
 - `My Courses` navigation link, which opens your courses in the Hablu Programmer LMS in a new tab. It appears only when the deployment has the LMS address configured.
 - Theme toggle.
@@ -281,7 +281,7 @@ Requests themselves can be submitted at any time — the Support Library is open
 
 The flow:
 
-1. Submit an issue (**Submit issue**), or open one you already submitted from **My issues**.
+1. Create an issue (**Create issue**), or open one you already submitted from **My issues**.
 2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images and video links, and any update the team has written.
 3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Live support` button, plus the meeting code in case you want to enter it in the room yourself. You may be asked to sign in before the room lets you in. The button opens the room **in a new tab**, so your request page stays open; if your browser blocks the new tab, an `Open Live support` link appears instead.
 4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
@@ -318,7 +318,7 @@ If you try to open a staff-only page, you may be redirected to `/unauthorized`.
 
 ## 13a. Submitting a Support Request
 
-Open **Submit an issue** in the topbar, or press **Submit an issue** on the issues list.
+Open **Create issue** in the topbar, or press **Create an issue** on the issues list.
 
 The form asks for two things:
 
@@ -414,7 +414,7 @@ Unexpected error:
 | I cannot see a known issue. | It may be unpublished, archived, edited, or not yet reviewed for the student library. |
 | Search does not find an answer. | Search does not search answer/reply body text; try words from the title, problem, tag, or course slug. |
 | A link opens a new tab. | Video links are external resources and are opened separately. |
-| I need to submit a new problem. | Use **Submit an issue** to send a request; the team replies by email. |
+| I need to submit a new problem. | Use **Create an issue** to send a request; the team replies by email. |
 | My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
 | The live support join button is disabled. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
 | The live support panel offers no join button. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
@@ -433,7 +433,7 @@ Unexpected error:
 | Open video links | Yes | Issue details and replies |
 | Toggle theme | Yes | Topbar (desktop) / menu ☰ → Appearance (mobile) |
 | Sign out | Yes | Profile menu (avatar) |
-| Submit an issue | Yes | `/dashboard/issues/new` |
+| Create an issue | Yes | `/dashboard/issues/new` |
 | My issues | Yes | `/dashboard/my-issues` |
 | Read one of your requests and the team's updates | Yes, your own only | `/dashboard/issues/[id]` |
 | Join live support | Yes, from an unresolved request, during a support shift | The request page |

@@ -63,7 +63,7 @@ Help Center (dashboard sidebar)
   "সাপোর্ট কীভাবে পাবেন"        ──────────►  /dashboard/issues
   [ সাপোর্ট লাইব্রেরিতে যান ]                 search published answers
                                               │  found → read the answer, done
-                                              │  new   → Submit issue
+                                              │  new   → Create issue
                                               ▼
                                      /dashboard/issues/new
                                        title · problem · images · video links
@@ -84,7 +84,7 @@ Help Center (dashboard sidebar)
    (first visit: Google sign-in).
 3. **Search before asking** — the library searches published titles, problems,
    tags and course slugs. An existing answer is the fastest fix.
-4. Nothing matches → **Submit an issue**. Identity comes from the session (never
+4. Nothing matches → **Create an issue**. Identity comes from the session (never
    the form); optional evidence is up to 5 images (PNG/JPEG/GIF/WebP,
    5 MB each, private until the case is published) and external HTTPS video links. The problem title is one line,
    max 80 characters — name the problem (`Assignment submission link not found`),
@@ -111,7 +111,7 @@ Help Center (dashboard sidebar)
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
 > **Request-less shortcut (owner decision, 2026-11-01).** The issues page also
-> shows **Join Live support** beside **Submit an issue**. It enters the room with
+> shows **Join Live support** beside **Create an issue**. It enters the room with
 > no request (CSRF, shift, the `live-support.join` budget and a
 > `LIVE_SUPPORT_QUICK_JOIN` audit row still apply) but creates no queue row, so
 > the student is not in `Waiting today` and has no reference. The request page
@@ -295,7 +295,7 @@ cmd /c "npm run test:e2e"
 - Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); styled like the LMS v2 navbar (text links, cyan underline on the active one, avatar Profile menu with identity and sign out); below 1024px the links move into a hamburger panel (`MobileMenu`, portalled to `<body>`) with an Appearance row
+- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Create issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); styled like the LMS v2 navbar (text links, cyan underline on the active one, avatar Profile menu with identity and sign out); below 1024px the links move into a hamburger panel (`MobileMenu`, portalled to `<body>`) with an Appearance row
 - Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Browse answers" and "My issues", and students browse published answers directly without the staff dashboard
 
 ## Design System

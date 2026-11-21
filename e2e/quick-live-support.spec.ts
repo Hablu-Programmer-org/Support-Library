@@ -12,17 +12,17 @@ import { test, expect } from "@playwright/test";
 test.describe("quick live support: students", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
 
-  test("offers a direct join beside Submit an issue, matching the shift", async ({ page }) => {
+  test("offers a direct join beside Create an issue, matching the shift", async ({ page }) => {
     await page.goto("/dashboard/issues");
 
-    await expect(page.getByRole("link", { name: "Submit an issue" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Create an issue" })).toBeVisible();
 
     const join = page.getByRole("button", { name: "Join Live support" });
     await expect(join).toBeVisible();
 
     // The status message sits above Join. Both actions must still share one
     // visual baseline instead of vertically centring Submit against two rows.
-    const submitBox = await page.getByRole("link", { name: "Submit an issue" }).boundingBox();
+    const submitBox = await page.getByRole("link", { name: "Create an issue" }).boundingBox();
     const joinBox = await join.boundingBox();
     expect(submitBox).not.toBeNull();
     expect(joinBox).not.toBeNull();

@@ -60,14 +60,14 @@ test.describe("STUDENT: a request is the way into the room", () => {
     const title = `E2E live support request ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    const requestForm = formFor(page, "Submit issue");
+    const requestForm = formFor(page, "Create issue");
     await requestForm.locator('input[name="title"]').fill(title);
     await requestForm
       .locator('textarea[name="question"]')
       .fill("The mentor needs this request reference to investigate the issue during the support room.");
     // Course is required for an account with LMS enrolments.
     await chooseStudentCourse(requestForm);
-    await submitAndWait(page, "Submit issue", REQUEST_URL);
+    await submitAndWait(page, "Create issue", REQUEST_URL);
 
     // The confirmation is the request page itself, not a dead end.
     await expect(page.getByRole("status")).toContainText("Your issue has been submitted.");

@@ -31,7 +31,7 @@ test.describe("LMS authorization freshness", () => {
       // The demotion must reach the live session: the staff create form is no
       // longer offered, only the student self-service form.
       await expect(
-        page.getByRole("heading", { name: "Submit an issue" }),
+        page.getByRole("heading", { name: "Create an issue" }),
       ).toBeVisible();
       await expect(page.getByRole("heading", { name: "New Support Issue" })).toHaveCount(0);
 
