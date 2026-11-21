@@ -114,7 +114,7 @@ describe("AutoRefresh", () => {
     const button = screen.getByRole("button", { name: "Refresh" });
     fireEvent.click(button);
     // Dhaka is UTC+6.
-    expect(button.getAttribute("title")).toBe("Updated 14:05");
-    expect(screen.getByText("Updated 14:05").className).toContain("sr-only");
+    expect(button.getAttribute("title")).toBe("Updated 2:05 PM");
+    expect(screen.getByText("Updated 2:05 PM").className).toContain("sr-only");
   });
 });

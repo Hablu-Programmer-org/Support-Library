@@ -240,5 +240,13 @@ function renderBlocks(text: string): ReactNode[] {
 }
 
 export function RichText({ text, className }: { text?: string | null; className?: string }) {
-  return <div className={`space-y-3 wrap-break-word ${className ?? ""}`.trim()}>{renderBlocks(text ?? "")}</div>;
+  const source = text ?? "";
+  // `renderBlocks` stops at MAX_LINES; say so instead of cutting off silently.
+  const truncated = source.replace(/\r\n?/g, "\n").split("\n").length > MAX_LINES;
+  return (
+    <div className={`space-y-3 wrap-break-word ${className ?? ""}`.trim()}>
+      {renderBlocks(source)}
+      {truncated ? <p data-rich-text-truncated="" className="text-slate-400 dark:text-slate-500">…</p> : null}
+    </div>
+  );
 }

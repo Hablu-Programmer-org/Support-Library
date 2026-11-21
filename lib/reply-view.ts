@@ -39,10 +39,10 @@ export function projectRepliesForViewer(
         ...reply,
         // Author ids are internal in every student-facing view.
         authorId: "",
-        // Staff names survive only for the owner (the page already labels them
-        // "Support team"). The library never receives a name, so a student's
-        // identity cannot travel with their reply.
-        authorName: viewer === "owner" ? reply.authorName : undefined,
+        // A staff member's name is shown on their answer in every view. A
+        // student's name reaches only the owner: the library never receives it,
+        // so a student's identity cannot travel with their reply.
+        authorName: viewer === "owner" || reply.isStaffReply ? reply.authorName : undefined,
       },
     ];
   });

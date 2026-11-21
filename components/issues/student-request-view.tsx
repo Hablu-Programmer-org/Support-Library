@@ -13,6 +13,7 @@ import { SectionLabel } from "@/components/shared/section-label";
 import { currentShift } from "@/lib/config/live-support";
 import { formatSupportDate } from "@/lib/format-date";
 import { getLiveSupportConfig } from "@/lib/live-support";
+import { RichText } from "@/lib/rich-text";
 import type { OwnIssueDetail } from "@/lib/services/issues";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
@@ -91,10 +92,11 @@ export function StudentRequestView({
       </header>
 
       <section aria-labelledby="request-problem-heading" className="space-y-2">
-        <SectionLabel id="request-problem-heading">Problem</SectionLabel>
-        <p className="whitespace-pre-wrap text-base leading-7 text-slate-800 dark:text-slate-100">
-          {issue.question}
-        </p>
+        <SectionLabel id="request-problem-heading">Issue details</SectionLabel>
+        <RichText
+          text={issue.question}
+          className="text-base leading-7 text-slate-800 dark:text-slate-100"
+        />
         <LinkList videoLinks={issue.videoLinks} />
         <AttachmentList uploads={issue.uploads} />
       </section>
@@ -140,7 +142,7 @@ export function StudentRequestView({
                   reply={replies[0]}
                   canEdit={false}
                   variant="solution"
-                  authorLabel={replies[0].isStaffReply ? "Support team" : "You"}
+                  authorLabel={replies[0].isStaffReply ? undefined : "You"}
                 />
               </li>
             </ol>
@@ -156,7 +158,7 @@ export function StudentRequestView({
                       issueId={issue.id}
                       reply={reply}
                       canEdit={false}
-                      authorLabel={reply.isStaffReply ? "Support team" : "You"}
+                      authorLabel={reply.isStaffReply ? undefined : "You"}
                     />
                   </li>
                 ))}

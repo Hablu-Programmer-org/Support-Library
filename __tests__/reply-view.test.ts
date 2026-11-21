@@ -34,6 +34,17 @@ const ownReply = reply({ id: "r2", authorId: "student-1" });
 const otherReply = reply({ id: "r3", authorId: "student-2" });
 
 describe("reply view projection", () => {
+  it("never lets a student's name into the library", () => {
+    const studentNamedLikeStaff = reply({ id: "r4", authorId: "student-3", authorName: "Karim (student)" });
+    const [result] = projectRepliesForViewer([studentNamedLikeStaff], "public");
+    expect(result.authorName).toBeUndefined();
+  });
+
+  it("keeps the staff name on the owner's own case", () => {
+    const [result] = projectRepliesForViewer([staffReply], "owner", "student-1");
+    expect(result.authorName).toBe("Mentor");
+  });
+
   it("returns the untouched thread for staff", () => {
     const result = projectRepliesForViewer(
       [staffReply, ownReply, otherReply],
@@ -65,14 +76,17 @@ describe("reply view projection", () => {
     expect(result.map((item) => item.id)).toEqual(["r1"]);
   });
 
-  it("shows every reply in the published library without author identity", () => {
+  it("shows every reply in the published library without student identity", () => {
     const result = projectRepliesForViewer(
       [staffReply, ownReply, otherReply],
       "public",
     );
     expect(result.map((item) => item.id)).toEqual(["r1", "r2", "r3"]);
     expect(result.every((item) => item.authorId === "")).toBe(true);
-    expect(result.every((item) => item.authorName === undefined)).toBe(true);
+    // The mentor signs their answer; students stay anonymous.
+    expect(result[0].authorName).toBe("Mentor");
+    expect(result[1].authorName).toBeUndefined();
+    expect(result[2].authorName).toBeUndefined();
     // Evidence images are part of the reviewed solution.
     expect(result.every((item) => item.uploads.length === 1)).toBe(true);
   });

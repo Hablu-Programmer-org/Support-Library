@@ -15,7 +15,8 @@ import { StatCard } from "@/components/shared/stat-card";
 import { AccessRequestSummary } from "@/components/tool-access/access-request-summary";
 import { getDashboardStats, getRecentUnresolvedIssues, getTopTags } from "@/lib/services/analytics";
 import { requireSession } from "@/lib/auth-guard";
-import { dayKeyInDhaka, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { dayKeyInDhaka } from "@/lib/config/live-support";
+import { formatSupportDate } from "@/lib/format-date";
 import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import { isN8nAdmin } from "@/lib/n8n-request-policy";
 import { canMutate, isAdmin } from "@/lib/roles";
@@ -26,14 +27,7 @@ import { rowHoverClass, secondaryButtonClass, surfaceClass, surfaceHeaderClass }
 
 export const dynamic = "force-dynamic";
 
-const timestamp = (date?: Date | null) =>
-  date
-    ? new Intl.DateTimeFormat("en-GB", {
-        timeZone: SUPPORT_TIME_ZONE,
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(date)
-    : "—";
+const timestamp = (date?: Date | null) => (date ? formatSupportDate(date) : "—");
 
 export default async function DashboardPage() {
   const session = await requireSession();

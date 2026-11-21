@@ -35,6 +35,13 @@ export const formatByteSize = (bytes: number) => {
  * with the problem text) instead of leaving to a bare tab; the dialog still
  * offers an "Open original" link for a full-size view or a download.
  */
+/** Thumbnail height in px (matches `h-48` used for unknown sizes). */
+const FRAME_HEIGHT = 192;
+
+/** Stored pixel size, when both sides are known and positive. */
+export const knownSize = ({ width, height }: Pick<Attachment, "width" | "height">) =>
+  width && height && width > 0 && height > 0 ? { width, height } : null;
+
 export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = uploads.find((upload) => upload.id === openId) ?? null;
@@ -61,17 +68,20 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
           Click to preview
         </span>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      {/* Each frame takes the image's own shape, so a small or narrow picture
+          no longer sits in a half-row of empty letterbox. */}
+      <ul className="flex flex-wrap items-start gap-3">
         {uploads.map((upload) => {
           const src = `/api/attachments/${upload.id}`;
+          const size = knownSize(upload);
           return (
-            <li key={upload.id} className="space-y-1">
+            <li key={upload.id} className="inline-flex min-w-36 max-w-full flex-col gap-1">
               <button
                 type="button"
                 onClick={() => setOpenId(upload.id)}
                 aria-label={`Preview ${upload.originalName}`}
                 title="Open preview"
-                className="group relative block w-full cursor-zoom-in overflow-hidden rounded-md border border-slate-200 bg-slate-50 transition hover:border-primary/60 hover:shadow-sm focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-950"
+                className="group relative block w-fit max-w-full cursor-zoom-in overflow-hidden rounded-lg border border-slate-200 bg-slate-50 transition hover:border-primary/60 hover:shadow-sm focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-primary dark:border-slate-700 dark:bg-slate-950"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -79,7 +89,18 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                   alt={upload.originalName}
                   loading="lazy"
                   decoding="async"
-                  className="mx-auto h-40 w-full object-contain"
+                  width={size?.width}
+                  height={size?.height}
+                  // A definite height plus the width/height attributes lets the
+                  // browser reserve the frame from the aspect ratio before the
+                  // lazy image loads (no layout jump). Small images keep their
+                  // own height instead of being blown up.
+                  style={size ? { height: Math.min(FRAME_HEIGHT, size.height) } : undefined}
+                  className={
+                    size
+                      ? "block w-auto max-w-full object-contain"
+                      : "block h-48 w-auto min-w-36 max-w-full object-contain"
+                  }
                 />
                 {/* Always-visible affordance: hover does not exist on touch. */}
                 <span
@@ -98,7 +119,8 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                   </span>
                 </span>
               </button>
-              <div className="flex items-center justify-between gap-2 text-xs">
+              {/* w-0 + min-w-full: the caption follows the image width and never widens it. */}
+              <div className="flex w-0 min-w-full items-center justify-between gap-2 text-xs">
                 <span
                   className="truncate text-slate-600 dark:text-slate-300"
                   title={upload.originalName}

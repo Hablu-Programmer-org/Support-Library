@@ -46,7 +46,7 @@ export function CopyForAiButton({ prompt }: { prompt: string }) {
         onClick={copy}
         aria-label="Copy for AI"
         title="Copy this issue's context as a structured AI prompt"
-        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 motion-reduce:transition-none dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 motion-reduce:transition-none dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
       >
         {status === "copied" ? (
           <CheckCircleIcon size={16} />

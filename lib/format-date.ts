@@ -1,20 +1,54 @@
 import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
 
+type TimeOptions = { seconds?: boolean };
+
+const hour24Formatter = new Intl.DateTimeFormat("en-GB", {
+  timeZone: SUPPORT_TIME_ZONE,
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
+const timeFormatters = new Map<boolean, Intl.DateTimeFormat>();
+const timeFormatter = (seconds: boolean) => {
+  let formatter = timeFormatters.get(seconds);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: SUPPORT_TIME_ZONE,
+      hour: "numeric",
+      minute: "2-digit",
+      ...(seconds ? { second: "2-digit" as const } : {}),
+      // h12 (1–12), never h11: midnight reads "12:05 AM", not "0:05 AM".
+      hourCycle: "h12",
+    });
+    timeFormatters.set(seconds, formatter);
+  }
+  return formatter;
+};
+
+/**
+ * 12-hour Dhaka clock time: "9:46 PM", or "9:46:05 PM" with seconds.
+ *
+ * Built from `formatToParts` so the output never depends on the locale's own
+ * spelling of the day period (en-GB says "pm", some engines "p.m.").
+ */
+export function formatSupportTime(date: Date, options: TimeOptions = {}): string {
+  const parts = timeFormatter(Boolean(options.seconds)).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  const hours = Number.parseInt(part("hour"), 10);
+  const clock = [String(hours), part("minute"), ...(options.seconds ? [part("second")] : [])].join(":");
+  // Derive AM/PM from the 24h hour, not the localized day-period string.
+  const hour24 = Number.parseInt(hour24Formatter.format(date), 10);
+  return `${clock} ${hour24 < 12 ? "AM" : "PM"}`;
+}
+
 export function formatSupportDate(date?: Date | string | null): string {
   if (!date) return "Not available";
   const d = typeof date === "string" ? new Date(date) : date;
   if (Number.isNaN(d.getTime())) return "Not available";
 
-  // Format in Dhaka time as requested: e.g. "2 Nov 2026, 12:41"
-  return new Intl.DateTimeFormat("en-GB", {
-    timeZone: SUPPORT_TIME_ZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(d);
+  // Dhaka time, 12-hour clock: e.g. "2 Nov 2026, 12:41 PM".
+  return `${formatSupportDateOnly(d)}, ${formatSupportTime(d)}`;
 }
 
 /**

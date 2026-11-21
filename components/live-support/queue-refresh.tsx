@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { cn } from "@/lib/cn";
+import { formatSupportTime } from "@/lib/format-date";
 
 /**
  * Keeps the live support queue current during a shift.
@@ -22,13 +23,7 @@ export function QueueRefresh({ intervalMs = 30_000 }: { intervalMs?: number }) {
     startTransition(() => {
       router.refresh();
       setCheckedAt(
-        new Intl.DateTimeFormat("en-GB", {
-          timeZone: "Asia/Dhaka",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hourCycle: "h23",
-        }).format(new Date()),
+        formatSupportTime(new Date(), { seconds: true }),
       );
     });
   }, [router]);

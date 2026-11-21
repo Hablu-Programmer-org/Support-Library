@@ -3,19 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
-import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+// Fixed locale + time zone inside the helper, so the status line can never
+// disagree with itself between the server render and the browser.
+import { formatSupportTime } from "@/lib/format-date";
 
 const MAX_INTERVAL = 120_000;
 const FOCUS_THROTTLE = 5_000;
 
-// Fixed locale + time zone, so the status line can never disagree with itself
-// between the server render and the browser (see `formatSupportShortDate`).
-const timeFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: SUPPORT_TIME_ZONE,
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
 
 /**
  * Keeps a server-rendered list or page current without polling the full query.
@@ -118,7 +112,7 @@ export function AutoRefresh({
     };
   }, [enabled, intervalMs, probe]);
 
-  const statusText = updatedAt ? `Updated ${timeFormatter.format(updatedAt)}` : idleLabel;
+  const statusText = updatedAt ? `Updated ${formatSupportTime(updatedAt)}` : idleLabel;
 
   if (status === "dot") {
     return (

@@ -235,7 +235,7 @@ test.describe("Issue CRUD (mentor)", () => {
     }
 
     await expect(page.getByRole("heading", { name: "E2E mobile issue article" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "The problem" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Issue details", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Responses" })).toBeVisible();
     const archiveHeading = page.getByRole("heading", { name: "Archive this issue" });
     const dangerZone = page.locator("section").filter({ has: archiveHeading });
@@ -348,6 +348,8 @@ test.describe("Issue CRUD (mentor)", () => {
     // The archive control gates submission behind window.confirm; accept it so the
     // form action actually runs, then confirm the redirect back to the issue list.
     page.on("dialog", (dialog) => dialog.accept());
+    // The danger zone is a closed <details>; open it before the button is reachable.
+    await page.getByRole("heading", { name: "Archive this issue" }).click();
     await submitAndWait(page, "Archive issue", /\/dashboard\/issues$/);
     await expect(page).toHaveURL("/dashboard/issues");
   });

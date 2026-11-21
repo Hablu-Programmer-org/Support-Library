@@ -4,7 +4,7 @@ import { VideoIcon } from "@/components/icons";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { CopyValue } from "@/components/shared/copy-value";
 import { EmptyState } from "@/components/shared/empty-state";
-import { SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
+import { formatSupportTime } from "@/lib/format-date";
 import type { LiveSupportQueueEntry } from "@/lib/services/live-support-joins";
 import { chipClass, rowHoverClass, surfaceClass, surfaceHeaderClass } from "@/lib/ui";
 
@@ -13,12 +13,6 @@ const SHIFT_LABELS: Record<string, string> = {
   night: "Night shift",
 };
 
-const timeFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: SUPPORT_TIME_ZONE,
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
 
 /**
  * Who is waiting in the room today, newest first.
@@ -108,7 +102,7 @@ export function LiveSupportJoinQueue({
                 {entry.issueStatus && <StatusBadge status={entry.issueStatus} />}
                 <span className="text-xs text-slate-500 dark:text-slate-400">
                   {SHIFT_LABELS[entry.shift] ?? entry.shift} ·{" "}
-                  {timeFormatter.format(entry.joinedAt)}
+                  {formatSupportTime(entry.joinedAt)}
                 </span>
               </div>
             </li>

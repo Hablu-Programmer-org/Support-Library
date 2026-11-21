@@ -43,6 +43,34 @@ describe("AttachmentList", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("sizes the frame from the stored image size instead of a fixed half-row box", () => {
+    const { container } = render(<AttachmentList uploads={[upload]} />);
+    const img = container.querySelector("ul img");
+    expect(img?.getAttribute("width")).toBe("800");
+    expect(img?.getAttribute("height")).toBe("600");
+    expect(img?.classList.contains("w-auto")).toBe(true);
+    expect(img?.classList.contains("w-full")).toBe(false);
+    // A definite height (not h-auto) so the frame is reserved before lazy load.
+    expect(img?.classList.contains("h-auto")).toBe(false);
+    expect((img as HTMLImageElement).style.height).toBe("192px");
+    expect(container.querySelector("ul")?.className).not.toContain("grid-cols-2");
+  });
+
+  it("does not blow a small image up past its own height", () => {
+    const { container } = render(<AttachmentList uploads={[{ ...upload, width: 120, height: 60 }]} />);
+    expect((container.querySelector("ul img") as HTMLImageElement).style.height).toBe("60px");
+  });
+
+  it("falls back to a fixed-height frame when the size is unknown or invalid", () => {
+    for (const size of [{ width: null, height: null }, { width: 0, height: 600 }, { width: -5, height: 10 }]) {
+      const { container, unmount } = render(<AttachmentList uploads={[{ ...upload, ...size }]} />);
+      const img = container.querySelector("ul img");
+      expect(img?.hasAttribute("width")).toBe(false);
+      expect(img?.className).toContain("h-48");
+      unmount();
+    }
+  });
+
   it("renders nothing without uploads", () => {
     const { container } = render(<AttachmentList uploads={[]} />);
     expect(container.innerHTML).toBe("");

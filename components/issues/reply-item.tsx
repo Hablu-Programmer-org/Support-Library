@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { deleteReplyAction, editReplyAction, type ReplyFormState } from "@/actions/replies";
-import { PencilIcon, TrashIcon } from "@/components/icons";
+import { CheckCircleIcon, PencilIcon, TrashIcon } from "@/components/icons";
 import { AttachmentList, formatByteSize } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
@@ -16,6 +16,32 @@ const secondaryButtonClass =
   "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800";
 
 const INITIAL_STATE: ReplyFormState = {};
+
+const cardBase = "rounded-2xl border p-5 shadow-sm sm:p-6";
+
+/** Solution: the answer the team stands behind, set apart with an emerald edge. */
+export const articleClass = (variant: "solution" | "response", isStaffReply: boolean) =>
+  variant === "solution"
+    ? `${cardBase} border-emerald-300 border-l-4 border-l-emerald-500 bg-white dark:border-emerald-500/30 dark:border-l-emerald-400 dark:bg-slate-900/70`
+    : isStaffReply
+      ? `${cardBase} border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/70`
+      : `${cardBase} border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40`;
+
+/**
+ * Who wrote the reply: an explicit label wins, then the staff member's name
+ * (plain "Staff" when the account has no name), then the student's name.
+ */
+export const replyAuthorLabel = (
+  reply: Pick<SupportReplyListItem, "isStaffReply" | "authorName">,
+  authorLabel?: string,
+) => {
+  if (authorLabel) return authorLabel;
+  const name = reply.authorName?.trim();
+  if (reply.isStaffReply) return name || "Staff";
+  return name || "You";
+};
+
+export const authorInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
 
 /**
  * Edit and delete report failures as form state, not as a thrown error: a
@@ -60,26 +86,53 @@ export function ReplyItem({
   const editError = editState.fieldErrors?._form?.[0] ?? editState.fieldErrors?.videoLinks?.[0];
   const deleteError = deleteState.fieldErrors?._form?.[0];
 
+  const author = replyAuthorLabel(reply, authorLabel);
+
   return (
     <article
       data-testid={`reply-${reply.id}`}
-      className="border-b border-slate-200 py-5 last:border-b-0 dark:border-slate-800"
+      data-variant={variant}
+      className={articleClass(variant, reply.isStaffReply)}
     >
-      <header className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          <span className="font-medium text-slate-700 dark:text-slate-200">
-            {authorLabel ?? (reply.isStaffReply ? "Staff" : reply.authorName ?? "You")}
+      <header className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            aria-hidden="true"
+            className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+              reply.isStaffReply
+                ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-200"
+                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            }`}
+          >
+            {authorInitial(author)}
           </span>
-          {reply.createdAt ? (
-            <>
-              {" · "}
-              <time dateTime={new Date(reply.createdAt).toISOString()}>
-                {formatSupportDate(reply.createdAt)}
-              </time>
-            </>
-          ) : null}
-          {reply.editedAt ? " · edited" : ""}
-        </p>
+          <p className="min-w-0 text-xs text-slate-500 dark:text-slate-400">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="wrap-break-word text-sm font-semibold text-slate-900 dark:text-white">
+                {author}
+              </span>
+              {reply.isStaffReply && author !== "Staff" ? (
+                <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-semibold text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-200">
+                  Staff
+                </span>
+              ) : null}
+              {variant === "solution" ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">
+                  <CheckCircleIcon size={12} aria-hidden="true" />
+                  Solution
+                </span>
+              ) : null}
+            </span>
+            <span className="mt-0.5 block">
+              {reply.createdAt ? (
+                <time dateTime={new Date(reply.createdAt).toISOString()}>
+                  {formatSupportDate(reply.createdAt)}
+                </time>
+              ) : null}
+              {reply.editedAt ? " · edited" : ""}
+            </span>
+          </p>
+        </div>
 
         {canEdit && (
           <div className="flex items-center gap-1">
@@ -121,8 +174,8 @@ export function ReplyItem({
         text={reply.body}
         className={
           variant === "solution"
-            ? "max-w-3xl text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg"
-            : "max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400"
+            ? "text-base leading-8 text-slate-800 dark:text-slate-100"
+            : "text-sm leading-7 text-slate-700 dark:text-slate-300"
         }
       />
       <LinkList videoLinks={reply.videoLinks} />

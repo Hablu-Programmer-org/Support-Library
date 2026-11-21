@@ -10,6 +10,7 @@ export function IssueTimeline({
   csrfToken = "",
   variant = "response",
   publicView = false,
+  solutionReplyId,
 }: {
   issueId: string;
   replies: SupportReplyListItem[];
@@ -23,14 +24,14 @@ export function IssueTimeline({
    * student reply is labelled generically instead of falling back to "You".
    */
   publicView?: boolean;
+  /** This reply is the accepted answer: emerald card + "Solution" badge. */
+  solutionReplyId?: string;
 }) {
   if (replies.length === 0) {
     return (
-      <section className="py-6">
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          No answer yet. The team replies by email too.
-        </p>
-      </section>
+      <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+        No answer yet.
+      </p>
     );
   }
 
@@ -39,7 +40,7 @@ export function IssueTimeline({
 
   return (
     <ol
-      className="space-y-2"
+      className="space-y-3"
       aria-label={variant === "solution" ? "Issue solution" : "Issue responses"}
     >
       {replies.map((reply) => {
@@ -53,7 +54,7 @@ export function IssueTimeline({
               reply={reply}
               canEdit={canEdit}
               csrfToken={csrfToken}
-              variant={variant}
+              variant={reply.id === solutionReplyId ? "solution" : variant}
               authorLabel={publicView && !reply.isStaffReply ? "Student" : undefined}
             />
           </li>

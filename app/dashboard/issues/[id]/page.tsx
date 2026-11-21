@@ -1,31 +1,15 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
 
 import {
   deleteIssueAction,
 } from "@/actions/issues";
-import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
-import { CopyForAiButton } from "@/components/issues/copy-for-ai-button";
-import { IssueStatusForm } from "@/components/issues/issue-status-form";
-import { PublishIssueForm } from "@/components/issues/publish-issue-form";
+import { IssueDetailHeader } from "@/components/issues/issue-detail-header";
+import { IssueDetailSidebar } from "@/components/issues/issue-detail-sidebar";
 import { StudentRequestView } from "@/components/issues/student-request-view";
-import { IssueTimeline } from "@/components/issues/issue-timeline";
+import { IssueProblemSection } from "@/components/issues/issue-problem-section";
+import { IssueThread } from "@/components/issues/issue-thread";
 import { ReplyComposer } from "@/components/issues/reply-composer";
-import { StatusBadge } from "@/components/issues/status-badge";
-import { AttachmentList } from "@/components/shared/attachment-list";
-import { CopyValue } from "@/components/shared/copy-value";
-import { LinkList } from "@/components/shared/link-list";
-import { SectionLabel } from "@/components/shared/section-label";
-import {
-  ArrowLeftIcon,
-  PencilIcon,
-  SettingsIcon,
-  UserIcon,
-  WarningTriangleIcon,
-} from "@/components/icons";
 import { requireSession } from "@/lib/auth-guard";
-import { formatSupportDate } from "@/lib/format-date";
 import {
   ISSUES_PATH,
   buildIssueEditHref,
@@ -48,13 +32,6 @@ const statusLabels = {
   AWAITING_STUDENT: "Needs your reply",
   FOLLOW_UP: "Follow-up",
   ARCHIVED: "Archived",
-};
-
-const priorityLabels: Record<string, string> = {
-  LOW: "Low priority",
-  NORMAL: "Normal priority",
-  HIGH: "High priority",
-  URGENT: "Urgent",
 };
 
 export default async function IssueDetailPage({
@@ -150,141 +127,45 @@ export default async function IssueDetailPage({
       : null;
 
   return (
-    <div className="mx-auto w-full max-w-6xl py-6">
-      <Link
-        href={backHref}
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
-      >
-        <ArrowLeftIcon size={18} />
-        {backLabel}
-      </Link>
+    // Same width as the issue list: `PageContainer` already caps it at
+    // max-w-screen-2xl, so the page adds no narrower max-width of its own.
+    <div className="w-full py-6">
+      <IssueDetailHeader
+        title={supportIssue.title}
+        status={supportIssue.status}
+        priority={supportIssue.priority}
+        isPublished={supportIssue.visibility === "PUBLISHED"}
+        createdAt={supportIssue.createdAt}
+        updatedAt={supportIssue.updatedAt}
+        backHref={backHref}
+        backLabel={backLabel}
+        canEdit={canEdit}
+        caseRef={staffIssue?.caseRef}
+        editHref={canEdit ? buildIssueEditHref(supportIssue.id, returnTo) : undefined}
+        aiPrompt={aiPrompt}
+      />
 
-      <header className="mb-8 border-b border-slate-200 pb-8 dark:border-slate-800">
-        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <StatusBadge status={supportIssue.status} />
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            {priorityLabels[supportIssue.priority ?? "NORMAL"] ??
-              supportIssue.priority}
-          </span>
-          {supportIssue.visibility === "PUBLISHED" && (
-            <span className="rounded-full bg-success-100 px-2.5 py-1 font-medium text-success-700 dark:bg-success-950/50 dark:text-success-200">
-              Student Library
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="max-w-4xl text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-              {supportIssue.title}
-            </h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Updated{" "}
-              <time dateTime={supportIssue.updatedAt?.toISOString()}>
-                {formatSupportDate(supportIssue.updatedAt)}
-              </time>
-            </p>
-          </div>
-
-          {canEdit && (
-            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-start">
-              {aiPrompt ? <CopyForAiButton prompt={aiPrompt} /> : null}
-              {/* Editing the case is a page-level action: keep it beside the title so
-                  it stays reachable before the sidebar is scrolled into view. */}
-              <Link
-                href={buildIssueEditHref(supportIssue.id, returnTo)}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                <PencilIcon size={16} />
-                Edit issue details
-              </Link>
-            </div>
-          )}
-        </div>
-      </header>
-
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
         <main className="min-w-0 space-y-10">
-          <section aria-labelledby="problem-heading">
-            <SectionLabel id="problem-heading">The problem</SectionLabel>
-            <div className="mt-3 space-y-4">
-              <p className="max-w-3xl whitespace-pre-wrap wrap-break-word text-base leading-8 text-slate-800 dark:text-slate-100 sm:text-lg">
-                {supportIssue.question}
-              </p>
-              <LinkList videoLinks={supportIssue.videoLinks} />
-              {/* Published cases are reviewed before they reach the library, so
-                  their evidence images are part of the student-facing answer. */}
-              <AttachmentList uploads={supportIssue.uploads ?? []} />
-              {supportIssue.tags.length > 0 && (
-                <div
-                  className="mt-7 flex flex-wrap gap-2"
-                  aria-label="Issue tags"
-                >
-                  {supportIssue.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
+          <IssueProblemSection
+            question={supportIssue.question}
+            videoLinks={supportIssue.videoLinks ?? []}
+            uploads={supportIssue.uploads ?? []}
+            tags={supportIssue.tags ?? []}
+          />
 
-          <div className="space-y-8 border-t border-slate-200 pt-8 dark:border-slate-800">
-            {replies.length > 0 ? (
-              <>
-                <section aria-labelledby="answer-heading">
-                  <SectionLabel id="answer-heading">
-                    {supportIssue.status === "SOLVED" ? "Solution" : "Answer"}
-                  </SectionLabel>
-                  <div className="mt-2">
-                    <IssueTimeline
-                      issueId={supportIssue.id}
-                      replies={[replies[0]]}
-                      viewerId={session.user.id}
-                      viewerRole={session.user.role}
-                      csrfToken={csrfToken}
-                      variant="solution"
-                      publicView={!canEdit}
-                    />
-                  </div>
-                </section>
-
-                {replies.length > 1 && (
-                  <section
-                    aria-labelledby="responses-heading"
-                    className="border-t border-slate-200 pt-8 dark:border-slate-800"
-                  >
-                    <SectionLabel id="responses-heading">
-                      Responses
-                    </SectionLabel>
-                    <div className="mt-2">
-                      <IssueTimeline
-                        issueId={supportIssue.id}
-                        replies={replies.slice(1)}
-                        viewerId={session.user.id}
-                        viewerRole={session.user.role}
-                        csrfToken={csrfToken}
-                        publicView={!canEdit}
-                      />
-                    </div>
-                  </section>
-                )}
-              </>
-            ) : (
-              <section aria-labelledby="responses-heading">
-                <SectionLabel id="responses-heading">Responses</SectionLabel>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                  No answer yet. The team replies by email too.
-                </p>
-              </section>
-            )}
-          </div>
+          <IssueThread
+            issueId={supportIssue.id}
+            status={supportIssue.status}
+            replies={replies}
+            viewerId={session.user.id}
+            viewerRole={session.user.role}
+            csrfToken={csrfToken}
+            canEdit={canEdit}
+          />
 
           {canEdit && (
-            <div className="border-t border-slate-200 pt-8 dark:border-slate-800">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70">
               <ReplyComposer
                 issueId={supportIssue.id}
                 csrfToken={csrfToken}
@@ -294,149 +175,25 @@ export default async function IssueDetailPage({
           )}
         </main>
 
-        <aside className="space-y-0 lg:sticky lg:top-20">
-          <section className="border-t border-slate-200 py-6 first:border-t-0 first:pt-0 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <SettingsIcon className="text-slate-400" size={16} />
-              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
-                Issue context
-              </h2>
-            </div>
-            <dl className="mt-3 space-y-3 text-sm">
-              {staffIssue && (
-                <Info
-                  label="Reference"
-                  valueNode={
-                    staffIssue.caseRef ? (
-                      <CopyValue
-                        label="reference"
-                        value={staffIssue.caseRef}
-                        variant="chip"
-                      />
-                    ) : (
-                      "—"
-                    )
-                  }
-                />
-              )}
-              <Info label="Course" value={supportIssue.courseSlug} />
-              <Info label="Batch" value={supportIssue.batchNo?.toString()} />
-              <Info
-                label="Published"
-                value={formatSupportDate(supportIssue.publishedAt)}
-              />
-              <Info
-                label="Created"
-                value={formatSupportDate(supportIssue.createdAt)}
-              />
-              {staffIssue && (
-                <Info
-                  label="Live support"
-                  value={formatSupportDate(staffIssue.lastLiveSupportAt)}
-                />
-              )}
-            </dl>
-          </section>
-
-          {staffIssue && (
-            <section className="border-t border-slate-200 py-6 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <UserIcon className="text-slate-400" size={16} />
-                <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
-                  Student snapshot
-                </h2>
-              </div>
-              <p className="mt-3 wrap-break-word font-medium text-slate-900 dark:text-white">
-                {staffIssue.studentName || "General issue (no student)"}
-              </p>
-              <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">
-                {staffIssue.studentEmail ? (
-                  <CopyValue label="student email" value={staffIssue.studentEmail} />
-                ) : (
-                  "No student identity recorded"
-                )}
-              </p>
-            </section>
+        <IssueDetailSidebar
+          issueId={supportIssue.id}
+          status={supportIssue.status}
+          isPublished={supportIssue.visibility === "PUBLISHED"}
+          updatedAtIso={supportIssue.updatedAt?.toISOString() ?? ""}
+          courseSlug={supportIssue.courseSlug}
+          batchNo={supportIssue.batchNo}
+          publishedAt={supportIssue.publishedAt}
+          csrfToken={csrfToken}
+          returnTo={returnTo ?? undefined}
+          canEdit={canEdit}
+          canPublish={canPublish}
+          staff={staffIssue}
+          statusOptions={CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
+            (status) => ({ value: status, label: statusLabels[status] }),
           )}
-
-          {canEdit && (
-            <section className="border-t border-slate-200 py-6 dark:border-slate-800">
-              <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
-                Manage issue
-              </h2>
-              <IssueStatusForm
-                autoPublish={canPublish}
-                csrfToken={csrfToken}
-                expectedUpdatedAt={supportIssue.updatedAt?.toISOString() ?? ""}
-                issueId={supportIssue.id}
-                isPublished={supportIssue.visibility === "PUBLISHED"}
-                options={CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
-                  (status) => ({ value: status, label: statusLabels[status] }),
-                )}
-                status={supportIssue.status}
-              />
-
-              {canPublish && (
-                <PublishIssueForm
-                  issueId={supportIssue.id}
-                  reviewedAt={supportIssue.updatedAt?.toISOString() ?? ""}
-                  isPublished={supportIssue.visibility === "PUBLISHED"}
-                  csrfToken={csrfToken}
-                  returnTo={returnTo ?? undefined}
-                />
-              )}
-            </section>
-          )}
-
-          {canEdit && (
-            <section className="border-t-2 border-danger-300 py-6 dark:border-danger-300/70">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-danger-600 text-white dark:bg-danger-300 dark:text-danger-900">
-                  <WarningTriangleIcon size={21} />
-                </span>
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-danger-600 dark:text-danger-700">
-                    Danger zone
-                  </p>
-                  <h2 className="mt-0.5 text-base font-bold text-danger-900 dark:text-slate-50">
-                    Archive this issue
-                  </h2>
-                </div>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-danger-900/80 dark:text-slate-300">
-                Remove this issue from active staff lists and the student
-                library. Archive it only when no further action is needed.
-              </p>
-              <ArchiveIssueButton
-                action={deleteIssueAction.bind(null, supportIssue.id)}
-                csrfToken={csrfToken}
-                returnTo={returnTo ?? undefined}
-              />
-            </section>
-          )}
-        </aside>
+          archiveAction={deleteIssueAction.bind(null, supportIssue.id)}
+        />
       </div>
-    </div>
-  );
-}
-
-function Info({
-  label,
-  value,
-  valueNode,
-}: {
-  label: string;
-  value?: string | null;
-  valueNode?: ReactNode;
-}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        {label}
-      </dt>
-      <dd className="mt-1 wrap-break-word font-medium text-slate-800 dark:text-slate-200">
-        {valueNode ?? value ?? "Not specified"}
-      </dd>
     </div>
   );
 }
