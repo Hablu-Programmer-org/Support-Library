@@ -332,3 +332,9 @@ cmd /c "npm run test:e2e"
 - **Public legacy $or** now also matches `videoLinks.url` and `videoLinks.timestamp`, so a pre-backfill public row is findable by YouTube ID / in-video time before the backfill runs — matching the indexed-text coverage from the previous session. `__tests__/issue-search-filter.test.ts` pins the new branches.
 - **Runbook step 1** now states the staff window explicitly: staff has no legacy branches, so pre-backfill staff rows only match whatever their old `searchText` held; batch / video URLs / reply links become searchable after the backfill.
 - Gates: typecheck clean; lint clean; 73 test files / 548 tests passing (1 skipped, gated); production build clean.
+
+### Session log — "My requests" renamed "My issues" (2026-11-21)
+- The student list moved from `/dashboard/my-requests` to `/dashboard/my-issues`. The old path is a redirect-only page and stays in the `returnTo` allowlist. Student copy now says "issue" from start to finish (Submit issue → My issues → issue reference). Staff copy is unchanged.
+- The n8n/OpenAI access card button is now "Request access", so "request" on a button never means a support case.
+- Unchanged internal names: `/api/my-requests/activity`, the `my-requests.activity` rate-limit key, `MyRequestsRefresh`, `StudentRequestView`.
+- Gates: typecheck clean; lint clean; 83 test files / 617 tests passing (1 skipped). Production build and Playwright not run (dev server on :12000; the e2e specs write to the dev DB).
