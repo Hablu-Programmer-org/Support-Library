@@ -28,6 +28,17 @@ describe("public issue projection", () => {
     );
   });
 
+  it("puts the case reference on the published detail only", () => {
+    expect(PUBLIC_ISSUE_DETAIL_FIELDS.split(/\s+/)).toContain("caseRef");
+    expect(PUBLIC_ISSUE_FIELDS.split(/\s+/)).not.toContain("caseRef");
+  });
+
+  it("adds nothing staff-only to the published detail", () => {
+    const list = PUBLIC_ISSUE_FIELDS.split(/\s+/);
+    const extra = PUBLIC_ISSUE_DETAIL_FIELDS.split(/\s+/).filter((field) => !list.includes(field));
+    expect(extra.sort()).toEqual(["caseRef", "uploads"]);
+  });
+
   it("keeps uploads off the list projection but on the published detail", () => {
     expect(PUBLIC_ISSUE_FIELDS.split(/\s+/)).not.toContain("uploads");
     expect(PUBLIC_ISSUE_DETAIL_FIELDS.split(/\s+/)).toContain("uploads");

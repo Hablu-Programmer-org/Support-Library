@@ -11,6 +11,7 @@ export function IssueTimeline({
   variant = "response",
   publicView = false,
   solutionReplyId,
+  ownerView = false,
 }: {
   issueId: string;
   replies: SupportReplyListItem[];
@@ -26,6 +27,8 @@ export function IssueTimeline({
   publicView?: boolean;
   /** This reply is the accepted answer: emerald card + "Solution" badge. */
   solutionReplyId?: string;
+  /** The student's own request: their replies read "You". */
+  ownerView?: boolean;
 }) {
   if (replies.length === 0) {
     return (
@@ -55,7 +58,9 @@ export function IssueTimeline({
               canEdit={canEdit}
               csrfToken={csrfToken}
               variant={reply.id === solutionReplyId ? "solution" : variant}
-              authorLabel={publicView && !reply.isStaffReply ? "Student" : undefined}
+              authorLabel={
+                reply.isStaffReply ? undefined : ownerView ? "You" : publicView ? "Student" : undefined
+              }
             />
           </li>
         );

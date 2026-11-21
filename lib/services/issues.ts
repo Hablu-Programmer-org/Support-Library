@@ -61,7 +61,9 @@ export const PUBLIC_ISSUE_FIELDS =
   "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
 
 /**
- * The published **detail** projection adds the evidence images.
+ * The published **detail** projection adds the evidence images and the case
+ * reference (a public handle such as "HSL-1042", no personal data), so a reader
+ * can quote the article to support.
  *
  * Kept separate from the list allowlist so a queue page never selects upload
  * subdocuments it does not render. Upload ids are the only handle that leaves the
@@ -69,7 +71,7 @@ export const PUBLIC_ISSUE_FIELDS =
  * `toPublicAttachmentViews`). Unpublishing the case removes the whole projection
  * immediately, so a stale id stops resolving.
  */
-export const PUBLIC_ISSUE_DETAIL_FIELDS = `${PUBLIC_ISSUE_FIELDS} uploads`;
+export const PUBLIC_ISSUE_DETAIL_FIELDS = `${PUBLIC_ISSUE_FIELDS} uploads caseRef`;
 
 /**
  * Staff queue ordering, computed before pagination:
@@ -249,6 +251,7 @@ export type PublicIssueDetail = Pick<
   | "tags"
   | "visibility"
   | "publishedAt"
+  | "caseRef"
   | "createdAt"
   | "updatedAt"
 > & {
@@ -1423,6 +1426,7 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     tags: mapped.tags,
     visibility: mapped.visibility,
     publishedAt: mapped.publishedAt,
+    caseRef: mapped.caseRef,
     createdAt: mapped.createdAt,
     updatedAt: mapped.updatedAt,
   };

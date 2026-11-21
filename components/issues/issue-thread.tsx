@@ -13,6 +13,8 @@ type IssueThreadProps = {
   csrfToken: string;
   /** Staff view. `false` is the Student Library (public) view. */
   canEdit: boolean;
+  /** The student's own request: their replies read "You", not "Student". */
+  ownerView?: boolean;
 };
 
 /**
@@ -28,6 +30,7 @@ export function IssueThread({
   viewerRole,
   csrfToken,
   canEdit,
+  ownerView = false,
 }: IssueThreadProps) {
   const solutionReplyId = status === "SOLVED" ? replies[0]?.id : undefined;
 
@@ -50,6 +53,7 @@ export function IssueThread({
         csrfToken={csrfToken}
         publicView={!canEdit}
         solutionReplyId={solutionReplyId}
+        ownerView={ownerView}
       />
     </section>
   );

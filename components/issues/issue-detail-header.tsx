@@ -1,9 +1,9 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { ArrowLeftIcon, PencilIcon } from "@/components/icons";
 import { CopyForAiButton } from "@/components/issues/copy-for-ai-button";
 import { StatusBadge } from "@/components/issues/status-badge";
-import { CopyValue } from "@/components/shared/copy-value";
 import { formatSupportDate } from "@/lib/format-date";
 import type { CaseStatus } from "@/models";
 
@@ -36,8 +36,10 @@ type IssueDetailHeaderProps = {
   backLabel: string;
   /** Staff (mentor or admin). Gates the reference and every action. */
   canEdit: boolean;
-  /** Staff-only case reference. Ignored unless `canEdit`. */
-  caseRef?: string | null;
+  /** The student's own view hides triage priority. */
+  showPriority?: boolean;
+  /** Extra control beside the back link (the owner's refresh probe). */
+  backAside?: ReactNode;
   /** Edit page link. Ignored unless `canEdit`. */
   editHref?: string;
   /** Admin-only prompt, built server-side. Ignored unless `canEdit`. */
@@ -66,32 +68,37 @@ export function IssueDetailHeader({
   backHref,
   backLabel,
   canEdit,
-  caseRef,
+  showPriority = true,
+  backAside,
   editHref,
   aiPrompt,
 }: IssueDetailHeaderProps) {
   const priorityKey = priority ?? "NORMAL";
-  const showRef = canEdit && Boolean(caseRef);
   const showAi = canEdit && Boolean(aiPrompt);
   const showEdit = canEdit && Boolean(editHref);
 
   return (
     <header className="mb-8">
-      <Link
-        href={backHref}
-        className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-cyan-700 transition hover:text-cyan-600 hover:underline dark:text-cyan-300 dark:hover:text-cyan-200"
-      >
-        <ArrowLeftIcon size={18} />
-        {backLabel}
-      </Link>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={backHref}
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-cyan-700 transition hover:text-cyan-600 hover:underline dark:text-cyan-300 dark:hover:text-cyan-200"
+        >
+          <ArrowLeftIcon size={18} />
+          {backLabel}
+        </Link>
+        {backAside}
+      </div>
 
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={status} />
-            <span className={`${chip} ${priorityClass[priorityKey] ?? neutralChip}`}>
-              {priorityLabels[priorityKey] ?? priorityKey}
-            </span>
+            {showPriority ? (
+              <span className={`${chip} ${priorityClass[priorityKey] ?? neutralChip}`}>
+                {priorityLabels[priorityKey] ?? priorityKey}
+              </span>
+            ) : null}
             {isPublished ? (
               <span className={`${chip} bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200`}>
                 Student Library
@@ -104,9 +111,6 @@ export function IssueDetailHeader({
           </h1>
 
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
-            {showRef && caseRef ? (
-              <CopyValue label="reference" value={caseRef} variant="chip" />
-            ) : null}
             <MetaTime label="Created" value={createdAt} />
             {createdAt && updatedAt ? <span aria-hidden="true">·</span> : null}
             <MetaTime label="Updated" value={updatedAt} />

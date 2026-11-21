@@ -78,7 +78,7 @@ export default async function IssueDetailPage({
           csrfToken={csrfToken}
           issue={ownedIssue}
           replies={replies}
-
+          viewerId={session.user.id}
         />
       );
     }
@@ -140,7 +140,6 @@ export default async function IssueDetailPage({
         backHref={backHref}
         backLabel={backLabel}
         canEdit={canEdit}
-        caseRef={staffIssue?.caseRef}
         editHref={canEdit ? buildIssueEditHref(supportIssue.id, returnTo) : undefined}
         aiPrompt={aiPrompt}
       />
@@ -180,6 +179,7 @@ export default async function IssueDetailPage({
           status={supportIssue.status}
           isPublished={supportIssue.visibility === "PUBLISHED"}
           updatedAtIso={supportIssue.updatedAt?.toISOString() ?? ""}
+          caseRef={supportIssue.caseRef}
           courseSlug={supportIssue.courseSlug}
           batchNo={supportIssue.batchNo}
           publishedAt={supportIssue.publishedAt}

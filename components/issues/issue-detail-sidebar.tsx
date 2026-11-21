@@ -23,6 +23,8 @@ type IssueDetailSidebarProps = {
   isPublished: boolean;
   /** ISO string of `updatedAt`, the optimistic-concurrency token for the forms. */
   updatedAtIso: string;
+  /** Public case handle ("HSL-1042"); shown to every viewer. */
+  caseRef?: string | null;
   courseSlug?: string | null;
   batchNo?: number | null;
   publishedAt?: Date | null;
@@ -34,8 +36,10 @@ type IssueDetailSidebarProps = {
   canPublish: boolean;
   /** Staff-only student identity. Ignored unless `canEdit`. */
   staff?: StaffSnapshot | null;
-  statusOptions: ComponentProps<typeof IssueStatusForm>["options"];
-  archiveAction: ComponentProps<typeof ArchiveIssueButton>["action"];
+  statusOptions?: ComponentProps<typeof IssueStatusForm>["options"];
+  archiveAction?: ComponentProps<typeof ArchiveIssueButton>["action"];
+  /** Extra cards after the context (the owner's live support panel). */
+  children?: ReactNode;
 };
 
 function CardTitle({ icon, children }: { icon: ReactNode; children: ReactNode }) {
@@ -49,7 +53,17 @@ function CardTitle({ icon, children }: { icon: ReactNode; children: ReactNode })
   );
 }
 
-function Info({ label, value, wide = false }: { label: string; value?: string | null; wide?: boolean }) {
+function Info({
+  label,
+  value,
+  valueNode,
+  wide = false,
+}: {
+  label: string;
+  value?: string | null;
+  valueNode?: ReactNode;
+  wide?: boolean;
+}) {
   return (
     // Dates ("21 Nov 2026, 12:03 PM") take the full row so AM/PM never wraps alone.
     <div className={wide ? "col-span-2 min-w-0" : "min-w-0"}>
@@ -57,7 +71,7 @@ function Info({ label, value, wide = false }: { label: string; value?: string | 
         {label}
       </dt>
       <dd className="mt-1 wrap-break-word text-sm font-medium text-slate-800 dark:text-slate-200">
-        {value || "Not specified"}
+        {valueNode ?? (value || "Not specified")}
       </dd>
     </div>
   );
@@ -68,6 +82,7 @@ export function IssueDetailSidebar({
   status,
   isPublished,
   updatedAtIso,
+  caseRef,
   courseSlug,
   batchNo,
   publishedAt,
@@ -78,6 +93,7 @@ export function IssueDetailSidebar({
   staff,
   statusOptions,
   archiveAction,
+  children,
 }: IssueDetailSidebarProps) {
   const staffView = canEdit ? (staff ?? null) : null;
 
@@ -88,7 +104,7 @@ export function IssueDetailSidebar({
       aria-label="Issue sidebar"
       className="space-y-4 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1"
     >
-      {canEdit ? (
+      {canEdit && statusOptions ? (
         <section className={card}>
           <CardTitle icon={<SettingsIcon size={16} />}>Manage issue</CardTitle>
           <IssueStatusForm
@@ -115,9 +131,14 @@ export function IssueDetailSidebar({
       <section className={card}>
         <CardTitle icon={<SettingsIcon size={16} />}>Issue context</CardTitle>
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+          <Info
+            label="Reference"
+            wide
+            valueNode={caseRef ? <CopyValue label="reference" value={caseRef} variant="chip" /> : undefined}
+          />
           <Info label="Course" value={courseSlug} />
           <Info label="Batch" value={batchNo?.toString()} />
-          <Info label="Published" value={publishedAt ? formatSupportDate(publishedAt) : null} wide />
+          <Info label="Published" value={publishedAt ? formatSupportDate(publishedAt) : "Not published"} wide />
           {staffView ? (
             <Info
               label="Live support"
@@ -144,7 +165,9 @@ export function IssueDetailSidebar({
         </section>
       ) : null}
 
-      {canEdit ? (
+      {children}
+
+      {canEdit && archiveAction ? (
         <section className="rounded-2xl border border-danger-300 bg-white shadow-sm dark:border-danger-300/70 dark:bg-slate-900/70">
           {/* Closed by default: archiving is rare and final, so it stays one line
               until opened. The heading lives in <summary> so it is always found. */}

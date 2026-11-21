@@ -1,30 +1,29 @@
-import Link from "next/link";
-
-import { ArrowLeftIcon } from "@/components/icons";
 import { LiveSupportPanel } from "@/components/live-support/live-support-panel";
+import { IssueDetailHeader } from "@/components/issues/issue-detail-header";
+import { IssueDetailSidebar } from "@/components/issues/issue-detail-sidebar";
+import { IssueProblemSection } from "@/components/issues/issue-problem-section";
+import { IssueThread } from "@/components/issues/issue-thread";
 import { MyRequestsRefresh } from "@/components/issues/my-requests-refresh";
-import { ReplyItem } from "@/components/issues/reply-item";
 import { StudentReplyComposer } from "@/components/issues/student-reply-composer";
-import { StatusBadge } from "@/components/issues/status-badge";
-import { AttachmentList } from "@/components/shared/attachment-list";
-import { CopyValue } from "@/components/shared/copy-value";
-import { LinkList } from "@/components/shared/link-list";
-import { SectionLabel } from "@/components/shared/section-label";
 import { currentShift } from "@/lib/config/live-support";
-import { formatSupportDate } from "@/lib/format-date";
 import { getLiveSupportConfig } from "@/lib/live-support";
-import { RichText } from "@/lib/rich-text";
 import type { OwnIssueDetail } from "@/lib/services/issues";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 
+const card =
+  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70";
+const note =
+  "rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-5 py-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400";
+
 /**
- * A student's own support request.
+ * A student's own support request, in the same layout as the staff and library
+ * case pages (header, Issue details, Responses, Issue context sidebar).
  *
  * This is the only place a student sees an unpublished case, so it shows exactly
  * what they submitted plus the team's answers — never the internal snapshot
- * (staff email fields, mentor, publication history, audit). The team's reply
- * images are shown (the owner may open them on their own case), but no reply
- * author identity is exposed.
+ * (student email, mentor tools, publication history, audit). Which replies
+ * appear is decided server-side (`viewer: "owner"`); staff answers carry the
+ * mentor's name, the student's own follow-ups read "You".
  *
  * The live support panel is scoped to this request, which is what makes "join
  * with the request you submitted" the only available path: there is no picker
@@ -36,6 +35,7 @@ export function StudentRequestView({
   csrfToken,
   created,
   activityRevision,
+  viewerId,
 }: {
   issue: OwnIssueDetail;
   replies: SupportReplyListItem[];
@@ -43,164 +43,107 @@ export function StudentRequestView({
   created: boolean;
   /** Student-scoped revision from the server render; a changed one pulls a new reply in. */
   activityRevision: string;
+  viewerId: string;
 }) {
   const shift = currentShift(new Date());
   const { platform, meetingId, passcode, joinUrl } = getLiveSupportConfig();
   const roomOpen = shift !== "off";
+  const archived = issue.status === "ARCHIVED";
+  const teamReplied = replies.some((reply) => reply.isStaffReply);
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 py-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href="/dashboard/my-issues"
-          className="inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
-        >
-          <ArrowLeftIcon size={18} />
-          Back to my issues
-        </Link>
-        {/* The open request stays current while the student waits: a staff reply
-            bumps the student's revision and this refreshes the RSC payload. */}
-        <MyRequestsRefresh initialRevision={activityRevision} />
-      </div>
+    <div className="w-full py-6">
+      <IssueDetailHeader
+        title={issue.title}
+        status={issue.status}
+        showPriority={false}
+        isPublished={issue.visibility === "PUBLISHED"}
+        createdAt={issue.createdAt}
+        updatedAt={issue.updatedAt}
+        backHref="/dashboard/my-issues"
+        backLabel="Back to my issues"
+        // The open request stays current while the student waits: a staff reply
+        // bumps the student's revision and this refreshes the RSC payload.
+        backAside={<MyRequestsRefresh initialRevision={activityRevision} />}
+        canEdit={false}
+      />
 
       {created && (
         <div
           role="status"
-          className="border-l-2 border-success-500 pl-4 text-sm text-success-700 dark:text-success-300"
+          className="mb-8 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-sm dark:border-emerald-500/30 dark:bg-emerald-500/10"
         >
-          <p className="font-semibold">Your issue has been submitted.</p>
-          <p className="text-slate-600 dark:text-slate-300">
+          <p className="font-semibold text-emerald-800 dark:text-emerald-200">
+            Your issue has been submitted.
+          </p>
+          <p className="mt-1 text-slate-700 dark:text-slate-300">
             The support team has it now and will reply by email. You can join live support for this
             issue while the room is open.
           </p>
         </div>
       )}
 
-      <header className="space-y-3 border-b border-slate-200 pb-6 dark:border-slate-800">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-          <StatusBadge status={issue.status} />
-          {issue.caseRef ? (
-            <CopyValue label="issue reference" value={issue.caseRef} variant="chip" />
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+        <main className="min-w-0 space-y-10">
+          <IssueProblemSection
+            question={issue.question}
+            videoLinks={issue.videoLinks ?? []}
+            uploads={issue.uploads ?? []}
+            tags={issue.tags ?? []}
+          />
+
+          <IssueThread
+            issueId={issue.id}
+            status={issue.status}
+            replies={replies}
+            viewerId={viewerId}
+            viewerRole="STUDENT"
+            csrfToken={csrfToken}
+            canEdit={false}
+            ownerView
+          />
+
+          {archived ? (
+            <p className={note}>This request is archived, so follow-up replies are closed.</p>
+          ) : teamReplied ? (
+            <div className={card}>
+              <StudentReplyComposer issueId={issue.id} csrfToken={csrfToken} />
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                Follow-ups are sent to the support team and may reopen a solved request.
+              </p>
+            </div>
           ) : (
-            <span aria-hidden="true">—</span>
+            <p className={note}>
+              Wait for the support team&apos;s first reply before sending a follow-up.
+            </p>
           )}
-          <span>Submitted {formatSupportDate(issue.createdAt)}</span>
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
-          {issue.title}
-        </h1>
-      </header>
+        </main>
 
-      <section aria-labelledby="request-problem-heading" className="space-y-2">
-        <SectionLabel id="request-problem-heading">Issue details</SectionLabel>
-        <RichText
-          text={issue.question}
-          className="text-base leading-7 text-slate-800 dark:text-slate-100"
-        />
-        <LinkList videoLinks={issue.videoLinks} />
-        <AttachmentList uploads={issue.uploads} />
-      </section>
-
-      <section aria-labelledby="request-details-heading">
-        <SectionLabel id="request-details-heading">Details</SectionLabel>
-        <dl className="mt-3 space-y-3 border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-slate-500 dark:text-slate-400">Reference</dt>
-            <dd className="font-semibold text-slate-900 dark:text-white">
-              {issue.caseRef ? (
-                <CopyValue label="issue reference" value={issue.caseRef} />
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-slate-500 dark:text-slate-400">Course</dt>
-            <dd className="text-slate-900 dark:text-white">{issue.courseSlug ?? "—"}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-slate-500 dark:text-slate-400">Batch</dt>
-            <dd className="text-slate-900 dark:text-white">{issue.batchNo ?? "—"}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-4">
-            <dt className="text-slate-500 dark:text-slate-400">Last updated</dt>
-            <dd className="text-slate-900 dark:text-white">{formatSupportDate(issue.updatedAt)}</dd>
-          </div>
-        </dl>
-      </section>
-
-      {replies.length > 0 ? (
-        <>
-          <section aria-labelledby="request-answer-heading">
-            <SectionLabel id="request-answer-heading">
-              {issue.status === "SOLVED" ? "Solution" : "Answer"}
-            </SectionLabel>
-            <ol className="mt-2">
-              <li>
-                <ReplyItem
-                  issueId={issue.id}
-                  reply={replies[0]}
-                  canEdit={false}
-                  variant="solution"
-                  authorLabel={replies[0].isStaffReply ? undefined : "You"}
-                />
-              </li>
-            </ol>
-          </section>
-
-          {replies.length > 1 && (
-            <section aria-labelledby="request-updates-heading">
-              <SectionLabel id="request-updates-heading">Updates</SectionLabel>
-              <ol className="mt-2">
-                {replies.slice(1).map((reply) => (
-                  <li key={reply.id}>
-                    <ReplyItem
-                      issueId={issue.id}
-                      reply={reply}
-                      canEdit={false}
-                      authorLabel={reply.isStaffReply ? undefined : "You"}
-                    />
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-        </>
-      ) : (
-        <section aria-labelledby="request-updates-heading">
-          <SectionLabel id="request-updates-heading">Updates</SectionLabel>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            No updates yet. The team answers by email as well, so check your inbox.
-          </p>
-        </section>
-      )}
-
-      {issue.status === "ARCHIVED" ? (
-        <p className="border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:text-slate-400">
-          This request is archived, so follow-up replies are closed.
-        </p>
-      ) : replies.some((reply) => reply.isStaffReply) ? (
-        <StudentReplyComposer issueId={issue.id} csrfToken={csrfToken} />
-      ) : (
-        <p className="border-l-2 border-slate-300 pl-3 text-sm text-slate-500 dark:text-slate-400">
-          Wait for the support team&apos;s first reply before sending a follow-up.
-        </p>
-      )}
-
-      <LiveSupportPanel
-        configured={Boolean(joinUrl)}
-        csrfToken={csrfToken}
-        issueId={issue.id}
-        meetingId={roomOpen ? meetingId : null}
-        passcode={roomOpen ? passcode : null}
-        platform={platform}
-        shift={shift}
-        status={issue.status}
-      />
-
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Follow-ups are sent to the support team and may reopen a solved request.
-      </p>
+        <IssueDetailSidebar
+          issueId={issue.id}
+          status={issue.status}
+          isPublished={issue.visibility === "PUBLISHED"}
+          updatedAtIso={issue.updatedAt?.toISOString() ?? ""}
+          caseRef={issue.caseRef}
+          courseSlug={issue.courseSlug}
+          batchNo={issue.batchNo}
+          publishedAt={issue.publishedAt}
+          csrfToken={csrfToken}
+          canEdit={false}
+          canPublish={false}
+        >
+          <LiveSupportPanel
+            configured={Boolean(joinUrl)}
+            csrfToken={csrfToken}
+            issueId={issue.id}
+            meetingId={roomOpen ? meetingId : null}
+            passcode={roomOpen ? passcode : null}
+            platform={platform}
+            shift={shift}
+            status={issue.status}
+          />
+        </IssueDetailSidebar>
+      </div>
     </div>
   );
 }

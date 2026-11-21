@@ -74,7 +74,8 @@ export function LiveSupportPanel({
   return (
     <section
       aria-labelledby="live-support-panel-heading"
-      className="space-y-5 border-t border-slate-200 pt-6 dark:border-slate-800"
+      // Same card as the rest of the request sidebar it sits in.
+      className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70"
     >
       <div className="space-y-1">
         <h2

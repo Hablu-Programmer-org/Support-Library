@@ -21,6 +21,7 @@ type Props = Parameters<typeof IssueDetailSidebar>[0];
 const base: Props = {
   issueId: "issue-1",
   status: "OPEN",
+  caseRef: "HSL-1042",
   isPublished: false,
   updatedAtIso: "2026-11-21T06:03:00.000Z",
   courseSlug: "agent",
@@ -92,9 +93,28 @@ describe("IssueDetailSidebar content", () => {
     expect(details?.open).toBe(true);
   });
 
-  it("falls back to 'Not specified' for missing course, batch and publish date", () => {
-    renderSidebar({ courseSlug: null, batchNo: null, publishedAt: null });
+  it("falls back for a missing reference, course, batch and publish date", () => {
+    renderSidebar({ caseRef: null, courseSlug: null, batchNo: null, publishedAt: null });
     expect(screen.getAllByText("Not specified")).toHaveLength(3);
+    expect(screen.getByText("Not published")).toBeTruthy();
+  });
+
+  it("shows the reference first in Issue context, copyable, for every viewer", () => {
+    for (const extra of [{}, { canEdit: true, staff }, { canEdit: true, canPublish: true, staff }]) {
+      const { unmount } = renderSidebar(extra);
+      const terms = screen.getAllByRole("term").map((t) => t.textContent);
+      expect(terms[0]).toBe("Reference");
+      expect(screen.getByText("HSL-1042")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Copy reference" })).toBeTruthy();
+      unmount();
+    }
+  });
+
+  it("renders extra cards (live support) after the context and no Manage without options", () => {
+    renderSidebar({ canEdit: true, statusOptions: undefined, children: <section><h2>Live support</h2></section> });
+    expect(screen.queryByTestId("status-form")).toBeNull();
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings.indexOf("Live support")).toBeGreaterThan(headings.indexOf("Issue context"));
   });
 
   it("labels a staff case without a student as a general issue", () => {
@@ -103,9 +123,8 @@ describe("IssueDetailSidebar content", () => {
     expect(screen.getByText("No student identity recorded")).toBeTruthy();
   });
 
-  it("no longer repeats Reference or Created, which live in the header", () => {
+  it("does not repeat Created, which lives in the header", () => {
     renderSidebar({ canEdit: true, staff });
-    expect(screen.queryByText("Reference")).toBeNull();
     expect(screen.queryByText("Created")).toBeNull();
   });
 });

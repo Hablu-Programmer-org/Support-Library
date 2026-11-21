@@ -19,7 +19,6 @@ const base: Props = {
 
 const admin: Partial<Props> = {
   canEdit: true,
-  caseRef: "HSL-1042",
   editHref: "/dashboard/issues/abc/edit",
   aiPrompt: "prompt text",
 };
@@ -28,10 +27,8 @@ const renderHeader = (extra: Partial<Props> = {}) =>
   render(<IssueDetailHeader {...base} {...extra} />);
 
 describe("IssueDetailHeader roles", () => {
-  it("admin sees the reference, Copy for AI and Edit", () => {
+  it("admin sees Copy for AI and Edit", () => {
     renderHeader(admin);
-    expect(screen.getByText("HSL-1042")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Copy reference" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy for AI" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Edit issue details" }).getAttribute("href")).toBe(
       "/dashboard/issues/abc/edit",
@@ -44,9 +41,8 @@ describe("IssueDetailHeader roles", () => {
     expect(screen.getByRole("link", { name: "Edit issue details" })).toBeTruthy();
   });
 
-  it("public viewer sees no reference and no action", () => {
+  it("public viewer sees no action", () => {
     renderHeader();
-    expect(screen.queryByText("HSL-1042")).toBeNull();
     expect(screen.queryByRole("button", { name: "Copy for AI" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Edit issue details" })).toBeNull();
   });
@@ -54,7 +50,6 @@ describe("IssueDetailHeader roles", () => {
   it("ignores staff-only props when the viewer is not staff", () => {
     // Defence in depth: even if the page passed them by mistake.
     renderHeader({ ...admin, canEdit: false });
-    expect(screen.queryByText("HSL-1042")).toBeNull();
     expect(screen.queryByRole("button", { name: "Copy for AI" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Edit issue details" })).toBeNull();
   });
@@ -83,9 +78,20 @@ describe("IssueDetailHeader content", () => {
     expect(times).toEqual(["2026-11-21T05:58:00.000Z", "2026-11-21T06:03:00.000Z"]);
   });
 
-  it("leaves no empty reference chip when staff view has no caseRef", () => {
-    renderHeader({ ...admin, caseRef: null });
+  it("no longer carries the reference (it lives in Issue context)", () => {
+    renderHeader(admin);
     expect(screen.queryByRole("button", { name: "Copy reference" })).toBeNull();
+  });
+
+  it("hides the priority chip on the student's own view", () => {
+    renderHeader({ showPriority: false });
+    expect(screen.queryByText("High priority")).toBeNull();
+    expect(screen.queryByText("Normal priority")).toBeNull();
+  });
+
+  it("renders an extra control beside the back link", () => {
+    renderHeader({ backAside: <button type="button">Refresh</button> });
+    expect(screen.getByRole("button", { name: "Refresh" })).toBeTruthy();
   });
 
   it("lets a long unbroken title wrap instead of overflowing", () => {
