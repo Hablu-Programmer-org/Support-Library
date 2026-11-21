@@ -105,6 +105,14 @@ html.dark {
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Tailwind 4's preflight leaves buttons on the default arrow (v3 used a
+     pointer). Restore it for every enabled button; a component's own
+     `cursor-*` utility still wins, and disabled buttons keep their cursor. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /*

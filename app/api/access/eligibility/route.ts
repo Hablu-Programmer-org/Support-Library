@@ -13,7 +13,7 @@ const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 /**
  * API-level eligibility check for AI-tools access (n8n / OpenAI).
  *
- * The UI hides the "Help & access" card for students who are not in the `agent`
+ * The UI hides the "Tool access" card for students who are not in the `agent`
  * course, but that is a convenience, not a security boundary. This route is the
  * authoritative server-side answer: it re-runs the LMS enrollment check on every
  * request and never trusts a client-supplied course or batch.

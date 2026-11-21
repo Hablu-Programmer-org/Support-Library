@@ -9,7 +9,14 @@ vi.mock("@/actions/n8n-requests", () => ({
 }));
 vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
 
-import { AccessHelpCard, requestStatusMessage, sentRequestsMessage } from "@/components/tool-access/access-help-card";
+import {
+  AccessHelpCard,
+  accessCardStartsOpen,
+  newestByType,
+  requestStatusMessage,
+  sentRequestsMessage,
+  toolSummary,
+} from "@/components/tool-access/access-help-card";
 import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
 import { CopyEmailButton } from "@/components/tool-access/copy-email-button";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
@@ -116,11 +123,50 @@ describe("AccessHelpCard", () => {
     expect(screen.queryByRole("button", { name: /submit request/i })).toBeNull();
   });
 
-  it("keeps a short static duration message and no invitation-only warning", () => {
+  it("shows each duration on its own tile and no invitation-only warning", () => {
     render(<AccessHelpCard csrfToken="csrf" requests={[]} />);
-    expect(screen.getByText("n8n: 1 year · OpenAI: 2 months")).toBeTruthy();
+    expect(screen.getByText("Valid for 1 year")).toBeTruthy();
+    expect(screen.getByText("Valid for 2 months")).toBeTruthy();
+    expect(screen.queryByText("n8n: 1 year · OpenAI: 2 months")).toBeNull();
     expect(screen.getByText("Select the access you need.")).toBeTruthy();
     expect(screen.queryByText(/No API key is emailed/i)).toBeNull();
+  });
+
+  it("is a region named Tool access", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[]} />);
+    expect(screen.getByRole("region", { name: "Tool access" })).toBeTruthy();
+    expect(screen.queryByText("Help & access")).toBeNull();
+  });
+
+  it("starts open for a first-time student", () => {
+    render(<AccessHelpCard csrfToken="csrf" requests={[]} />);
+    expect(screen.getByRole("button", { name: /Close/ }).getAttribute("aria-expanded")).toBe("true");
+    expect(document.getElementById("access-help-body")!.hasAttribute("inert")).toBe(false);
+  });
+
+  it("starts closed with a one-line status once access is in place, and opens on Manage", () => {
+    render(<AccessHelpCard
+      csrfToken="csrf"
+      requests={[{ id: "r1", requestType: "OPENAI_ACCESS", status: "SENT", sentAt: "2026-11-03T10:00:00.000Z" }]}
+      entitlements={{ n8n: { state: "ACTIVE", expiresAt: "2027-11-07T05:04:52.000Z" }, openai: null }}
+    />);
+    const body = document.getElementById("access-help-body")!;
+    expect(body.hasAttribute("inert")).toBe(true);
+    expect(body.dataset.state).toBe("closed");
+    expect(screen.getByTestId("access-summary-n8n").textContent).toBe("n8n: Until 7 Nov 2027");
+    expect(screen.getByTestId("access-summary-openai").textContent).toBe("OpenAI: Sent 3 Nov");
+
+    const manage = screen.getByRole("button", { name: /Manage/ });
+    expect(manage.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(manage);
+    expect(screen.getByRole("button", { name: /Close/ }).getAttribute("aria-expanded")).toBe("true");
+    expect(body.hasAttribute("inert")).toBe(false);
+    expect(body.dataset.state).toBe("open");
+  });
+
+  it("uses no brand gradient", () => {
+    const { container } = render(<AccessHelpCard csrfToken="csrf" requests={[]} />);
+    expect(container.innerHTML).not.toMatch(/bg-linear-|to-indigo|to-violet/);
   });
 
   it("disables only the type that already has an active request", () => {
@@ -226,6 +272,69 @@ describe("AccessHelpCard", () => {
     ]} />);
     expect(screen.getByText("Try again")).toBeTruthy();
     expect(screen.getByText("Replaced")).toBeTruthy();
+  });
+});
+
+describe("toolSummary", () => {
+  const latest = (requests: Parameters<typeof newestByType>[0]) => newestByType(requests);
+
+  it("prefers an active entitlement", () => {
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "ACCESS", status: "FAILED" }]), {
+      n8n: { state: "ACTIVE", expiresAt: "2027-11-07T05:04:52.000Z" },
+    })).toEqual({ label: "Until 7 Nov 2027", tone: "success" });
+  });
+
+  it("reads the newest request for the tool", () => {
+    expect(toolSummary("openai", latest([{ id: "1", requestType: "OPENAI_ACCESS", status: "PENDING" }])))
+      .toEqual({ label: "Request received", tone: "pending" });
+    expect(toolSummary("openai", latest([{ id: "1", requestType: "OPENAI_ACCESS", status: "PROCESSING" }])))
+      .toEqual({ label: "Processing", tone: "pending" });
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "ACCESS", status: "FAILED" }])))
+      .toEqual({ label: "Try again", tone: "error" });
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "ACCESS", status: "REJECTED" }])))
+      .toEqual({ label: "Not approved", tone: "error" });
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "ACCESS", status: "SENT", sentAt: "2026-11-03T10:00:00.000Z" }])))
+      .toEqual({ label: "Sent 3 Nov", tone: "success" });
+  });
+
+  it("ignores a password reset and a replaced request for the n8n state", () => {
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "PASSWORD_RESET", status: "SENT" }])))
+      .toEqual({ label: "Not requested", tone: "muted" });
+    expect(toolSummary("n8n", latest([{ id: "1", requestType: "ACCESS", status: "SUPERSEDED" }])))
+      .toEqual({ label: "Not requested", tone: "muted" });
+  });
+
+  it("falls back to an expired or revoked entitlement", () => {
+    expect(toolSummary("n8n", latest([]), { n8n: { state: "EXPIRED", expiresAt: "2026-10-01T05:00:00.000Z" } }))
+      .toEqual({ label: "Expired 1 Oct 2026", tone: "muted" });
+    expect(toolSummary("openai", latest([]), {
+      openai: { state: "REVOKED", expiresAt: "2027-01-01T00:00:00.000Z", revokedAt: "2026-09-02T05:00:00.000Z" },
+    })).toEqual({ label: "Revoked 2 Sept 2026", tone: "muted" });
+  });
+});
+
+describe("accessCardStartsOpen", () => {
+  it("opens for a first-time student", () => {
+    expect(accessCardStartsOpen([])).toBe(true);
+    expect(accessCardStartsOpen([], { n8n: null, openai: null })).toBe(true);
+  });
+
+  it("opens when the newest request failed or was not approved", () => {
+    expect(accessCardStartsOpen([{ id: "1", requestType: "OPENAI_ACCESS", status: "FAILED" }])).toBe(true);
+    expect(accessCardStartsOpen([{ id: "1", requestType: "ACCESS", status: "REJECTED" }])).toBe(true);
+  });
+
+  it("stays closed once something is pending, sent or active", () => {
+    expect(accessCardStartsOpen([{ id: "1", requestType: "ACCESS", status: "PENDING" }])).toBe(false);
+    expect(accessCardStartsOpen([{ id: "1", requestType: "ACCESS", status: "SENT" }])).toBe(false);
+    expect(accessCardStartsOpen([], { n8n: { state: "ACTIVE", expiresAt: "2027-01-01T00:00:00.000Z" } })).toBe(false);
+  });
+
+  it("ignores an older failure replaced by a newer request", () => {
+    expect(accessCardStartsOpen([
+      { id: "new", requestType: "ACCESS", status: "PENDING" },
+      { id: "old", requestType: "ACCESS", status: "FAILED" },
+    ])).toBe(false);
   });
 });
 

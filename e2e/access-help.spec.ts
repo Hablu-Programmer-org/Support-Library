@@ -3,34 +3,42 @@ import { expect, test } from "@playwright/test";
 test.describe("student access help", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
 
-  test("shows all access choices directly below issue search", async ({ page }) => {
+  test("shows the tool access strip below issue search and opens the choices", async ({ page }) => {
     await page.goto("/dashboard/issues");
     const search = page.getByPlaceholder(/Search by problem/);
-    const card = page.getByRole("region", { name: "Help & access" });
+    const card = page.getByRole("region", { name: "Tool access" });
     await expect(search).toBeVisible();
     await expect(card).toBeVisible();
     expect(await search.evaluate((element) => element.compareDocumentPosition(document.querySelector('[aria-labelledby="access-help-heading"]')!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBeTruthy();
+
+    // The strip always states both tools, open or closed.
+    await expect(card.getByTestId("access-summary-n8n")).toHaveText(/^n8n: /);
+    await expect(card.getByTestId("access-summary-openai")).toHaveText(/^OpenAI: /);
+
+    // Closed for a student who already has access or a pending request; open it.
+    const toggle = card.locator('button[aria-controls="access-help-body"]');
+    if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
 
     await expect(card.getByRole("group", { name: "Choose access requests" })).toBeVisible();
     await expect(card.getByRole("checkbox", { name: /n8n access/i })).toBeVisible();
     await expect(card.getByRole("checkbox", { name: /n8n password reset/i })).toBeVisible();
     await expect(card.getByRole("checkbox", { name: /OpenAI API access/i })).toBeVisible();
-    await expect(card.getByText("n8n: 1 year · OpenAI: 2 months")).toBeVisible();
-    await expect(card.getByText("Select the access you need.")).toBeVisible();
+    await expect(card.getByText("Valid for 1 year")).toBeVisible();
+    await expect(card.getByText("Valid for 2 months")).toBeVisible();
     await expect(card.getByText(/No API key is emailed/i)).toHaveCount(0);
+    await expect(card.getByRole("button", { name: "Request access" })).toBeVisible();
 
-    // Desktop layout: options and the send button share one row.
+    // Desktop layout: the three tiles share one row.
     const optionTops = await card.locator('label:has(input[name="requestTypes"])').evaluateAll((labels) =>
       labels.map((label) => Math.round(label.getBoundingClientRect().top)),
     );
-    const buttonTop = await card
-      .getByRole("button", { name: "Request access" })
-      .evaluate((button) => Math.round(button.getBoundingClientRect().top));
-    expect(new Set([...optionTops, buttonTop]).size).toBe(1);
+    expect(new Set(optionTops).size).toBe(1);
 
     // The message stays on a single line on desktop.
     const messageWhiteSpace = await card
-      .getByText("Select the access you need.")
+      .locator("form p")
+      .first()
       .evaluate((element) => getComputedStyle(element).whiteSpace);
     expect(messageWhiteSpace).toBe("nowrap");
 
@@ -57,7 +65,7 @@ test.describe("student access help gating", () => {
     await db.collection("EnrolledCourse").deleteOne({ userId: lmsUser._id, courseSlug: "agent" });
     try {
       await page.goto("/dashboard/issues");
-      await expect(page.getByRole("region", { name: "Help & access" })).toHaveCount(0);
+      await expect(page.getByRole("region", { name: "Tool access" })).toHaveCount(0);
       await expect(page.getByRole("checkbox", { name: /n8n access/i })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Request access" })).toHaveCount(0);
     } finally {
