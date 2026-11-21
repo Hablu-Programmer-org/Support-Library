@@ -146,9 +146,15 @@ test.describe("Issue list filters (mentor)", () => {
 
   test("applies sort order", async ({ page }) => {
     await page.goto("/dashboard/issues");
-    await openFilters(page);
 
-    await filterWith(page, /sort=oldest/, () => page.selectOption('main select[name="sort"]:visible', "oldest"));
-    await filterWith(page, /sort=priority/, () => page.selectOption('main select[name="sort"]:visible', "priority"));
+    // The filter form is a native GET form, so each Filter click is a full page
+    // load, and the advanced drawer always loads closed (the chips show active
+    // filters). Open it again before every change.
+    const pickSort = (value: string) => async () => {
+      await openFilters(page);
+      await page.selectOption('main select[name="sort"]:visible', value);
+    };
+    await filterWith(page, /sort=oldest/, pickSort("oldest"));
+    await filterWith(page, /sort=priority/, pickSort("priority"));
   });
 });
