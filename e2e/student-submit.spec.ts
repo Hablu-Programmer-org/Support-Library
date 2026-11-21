@@ -65,7 +65,9 @@ test.describe("STUDENT issue submission", () => {
     const adminPage = await adminContext.newPage();
     await adminPage.goto(`/dashboard/issues?q=${encodeURIComponent(title)}`);
     const issueHeading = adminPage.getByRole("heading", { name: title });
-    const issueCard = adminPage.locator("a").filter({ has: issueHeading });
+    // The list card is an <article> whose title link is stretched over it
+    // (issue-card.tsx), so the heading sits inside the article, not an <a>.
+    const issueCard = adminPage.locator("article").filter({ has: issueHeading });
     await expect(issueHeading).toBeVisible();
     await expect(issueCard).toContainText("student@hablu-programmer.com");
 
