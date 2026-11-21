@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
 
+import { STAFF_USERS } from "./fixtures/staff-users";
+
+const adminUser = STAFF_USERS.find((user) => user.role === "ADMIN")!;
+
 const slate950 = ["rgb(2, 6, 23)", "oklch(0.129 0.042 264.695)", "lab(1.76974 1.32743 -9.28855)"];
 const slate950Alpha80 = [
   "rgba(2, 6, 23, 0.8)",
@@ -57,11 +61,41 @@ test.describe("Shell: dashboard chrome", () => {
       .evaluate((el) => getComputedStyle(el).color);
     expect(activeColor).not.toBe(inactiveColor);
 
+    // v2-style underline: a 2px bar on the active link only.
+    const underline = (name: string) =>
+      nav.getByRole("link", { name }).evaluate((el) => {
+        const after = getComputedStyle(el, "::after");
+        return { content: after.content, height: after.height };
+      });
+    expect(await underline("Dashboard")).toEqual({ content: '""', height: "2px" });
+    expect((await underline("Issues")).content).toBe("none");
+
     // Navigation keeps the active link in sync on the client.
     await nav.getByRole("link", { name: "Issues" }).click();
     await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Issues" })).toHaveAttribute("aria-current", "page");
     await expect(nav.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current", "page");
+  });
+
+  test("profile dropdown shows identity and closes on Escape", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+
+    const trigger = page.getByRole("button", { name: "Profile menu" });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.click();
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+
+    const panel = page.locator(`[id="${await trigger.getAttribute("aria-controls")}"]`);
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText(adminUser.email)).toBeVisible();
+    await expect(panel.getByText("Admin", { exact: true })).toBeVisible();
+    // Visible only: clicking it would end the shared admin session.
+    await expect(panel.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await expect(trigger).toBeFocused();
   });
 
   test("issues list keeps native filter selects", async ({ page }) => {
@@ -82,29 +116,52 @@ test.describe("Shell: dashboard chrome", () => {
 test.describe("Shell: mobile navbar", () => {
   test.use({ storageState: "e2e/.auth/admin.json", viewport: { width: 390, height: 844 } });
 
-  test("nav links and brand stay visible on mobile and navigate", async ({ page }) => {
+  test("hamburger menu lists the links, navigates and closes", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-    const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link", { name: "Dashboard" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Issues" })).toBeVisible();
+    // Below lg the inline nav is hidden; the brand stays.
+    await expect(page.locator('header nav[aria-label="Primary"]')).toBeHidden();
+    await expect(page.locator("header").getByRole("link", { name: "Hablu Support Library home" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
+      .toBe(true);
 
-    await nav.getByRole("link", { name: "Issues" }).click();
+    await page.getByRole("button", { name: "Open menu" }).click();
+    const menu = page.getByRole("navigation", { name: "Mobile" });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("link")).toHaveCount(5);
+    await expect(menu.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByText("Appearance")).toBeVisible();
+
+    await menu.getByRole("link", { name: "Issues" }).click();
     await expect(page.getByRole("heading", { name: "Support Issues" })).toBeVisible();
+    await expect(menu).toBeHidden();
+    await expect(page.getByRole("button", { name: "Open menu" })).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("account sheet opens with identity, appearance and sign out", async ({ page }) => {
+  test("Escape closes the menu and returns focus to the hamburger", async ({ page }) => {
     await page.goto("/dashboard");
-    await page.getByRole("button", { name: "Account menu" }).click();
-
-    const sheet = page.getByRole("dialog", { name: "Account menu" });
-    await expect(sheet).toBeVisible();
-    await expect(sheet.getByText("Appearance")).toBeVisible();
-    await expect(sheet.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeVisible();
 
     await page.keyboard.press("Escape");
-    await expect(sheet).toBeHidden();
+    await expect(page.getByRole("navigation", { name: "Mobile" })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+  });
+
+  test("profile menu is reachable on mobile with identity and sign out", async ({ page }) => {
+    await page.goto("/dashboard");
+    const trigger = page.getByRole("button", { name: "Profile menu" });
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
+    const panel = page.locator(`[id="${await trigger.getAttribute("aria-controls")}"]`);
+    await expect(panel.getByText(adminUser.email)).toBeVisible();
+    // Visible only: clicking it would end the shared admin session.
+    await expect(panel.getByRole("button", { name: "Sign out" })).toBeVisible();
+    // The panel fits the phone width.
+    const box = await panel.boundingBox();
+    expect(box && box.x >= 0 && box.x + box.width <= 390).toBe(true);
   });
 });
 

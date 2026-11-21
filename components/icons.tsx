@@ -173,6 +173,13 @@ export const BookIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
+/** "Opens elsewhere" cue for external links (e.g. My Courses on the LMS). */
+export const ExternalLinkIcon: FC<IconSvgProps> = ({ size = 12, ...props }) => (
+  <svg {...base(size)} strokeWidth={2.5} {...props}>
+    <path d="M7 17 17 7M9 7h8v8" />
+  </svg>
+);
+
 export const VideoIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <polygon points="23 7 16 12 23 17 23 7" />

@@ -51,35 +51,26 @@ Important access behavior:
 - If the LMS role is changed from staff to student, an existing session can lose mentor access.
 - If sign-in fails because the email is missing from LMS, use the correct LMS-linked Google email.
 
-## 3. Navigation And Account Menu
+## 3. Navigation And Profile Menu
 
 Mentors see these primary navigation links:
 
 - `Dashboard` -> `/dashboard`
 - `Issues` -> `/dashboard/issues`
 
-Desktop topbar includes:
+Desktop topbar (1024px and wider) includes:
 
 - Brand link.
-- Dashboard and Issues navigation.
+- Navigation as text links. The current page has cyan text and a cyan underline.
 - Theme toggle.
-- User menu with name, email, role.
-- Sign out button.
+- Profile menu (your avatar): opens your name, email, role and **Sign out**.
 
-Mobile topbar includes:
+On narrower screens the topbar shows the brand, your avatar (the same Profile menu) and a menu button (☰). The menu button opens a panel under the topbar with:
 
-- Brand and navigation.
-- Account menu button.
+- Every navigation link, one per row. The current page is highlighted.
+- **Appearance**: the theme toggle.
 
-Mobile account sheet includes:
-
-- Name.
-- Email.
-- Role.
-- Theme toggle.
-- Sign out button.
-
-The mobile account sheet intentionally does not contain navigation links.
+Choosing a link, pressing `Escape`, or pressing ✕ closes the panel.
 
 ## 4. Dashboard Overview
 
@@ -737,10 +728,9 @@ Mentors can use the app on mobile.
 Mobile behavior:
 
 - Topbar remains fixed.
-- Dashboard/Issues navigation remains in the topbar.
-- Account menu opens as a sheet.
-- Account sheet shows identity, role, theme toggle, and sign out.
-- Pressing `Escape` closes the account sheet on keyboard-capable devices.
+- Navigation is in the menu (☰) panel; your avatar opens identity, role and sign out.
+- The theme toggle is under **Appearance** in the menu panel.
+- Pressing `Escape` closes the menu panel or the profile menu on keyboard-capable devices.
 - Issue detail is designed to avoid horizontal overflow on phones.
 
 ## 28. Troubleshooting

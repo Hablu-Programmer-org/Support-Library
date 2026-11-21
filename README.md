@@ -295,7 +295,7 @@ cmd /c "npm run test:e2e"
 - Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
+- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); styled like the LMS v2 navbar (text links, cyan underline on the active one, avatar Profile menu with identity and sign out); below 1024px the links move into a hamburger panel (`MobileMenu`, portalled to `<body>`) with an Appearance row
 - Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Browse answers" and "My issues", and students browse published answers directly without the staff dashboard
 
 ## Design System
@@ -303,7 +303,7 @@ cmd /c "npm run test:e2e"
 Support-library chrome uses a light "glass + gradient" language on top of the shared Tailwind tokens (`app/globals.css`):
 
 - **Brand gradient** cyan `#06b6d4` → violet `#8b5cf6` (`brand-text`, `brand-bg`).
-- **Glass surfaces** (`.glass`): translucent white/slate with `backdrop-blur`, used on the topbar actions, account sheet, landing cards and the login/unauthorized cards.
+- **Glass surfaces** (`.glass`): translucent white/slate with `backdrop-blur`, used on the landing cards and the login/unauthorized cards.
 - **Aurora backdrop** (`.aurora-blob`): slow drifting gradient blobs on public pages and the dashboard shell; disabled under `prefers-reduced-motion`.
 - **Issue surfaces** use a flat document style: reading content (problem, replies, attachments, links) has no card or shadow, only section headings and `divide-y` rows; interactive surfaces (forms, reply composer, filter panel, aside, danger zone) use a single `Panel` (`rounded-lg border`, no shadow). Icon badge squares and the `Required` pill are removed from section headings. See `components/shared/panel.tsx`, `components/shared/section-heading.tsx`.
 

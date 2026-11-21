@@ -2,11 +2,18 @@
 
 ## Completed
 
+- **Topbar redesign, LMS v2 navbar style (2026-11-21).** Replaces the same-day segmented-pill version.
+  - Brand lockup (logo + "Hablu Support Library" text), text-only links (lg+) with cyan text and a 2px cyan underline on the active one, theme toggle (lg+), and the `UserMenu` avatar-ring Profile menu (identity, role, Sign out) at every width. Classes live in `components/layout/nav-styles.ts` (light + dark pairs of the v2 `navStyles`).
+  - Below lg: `MobileMenu` (`components/layout/mobile-menu.tsx`, replaces `AccountSheet`) is a hamburger that opens a full-width panel under the bar: `<nav aria-label="Mobile">` with 44px rows and an Appearance row. The panel is portalled to `<body>` because the header's `backdrop-filter` makes it the containing block for `fixed` children. Closes on link click, route change, Esc (focus returns) and at lg.
+  - `activeHrefFor` moved to `lib/config/nav.ts` and is shared by both navs.
+  - `MOBILE_MENU_ID = "site-mobile-menu"` is the marker `e2e/landing.spec.ts` uses to find the lazy chunk; `__tests__/topbar-bundle.test.ts` keeps it out of the topbar and `UserMenu`. `components/auth/sign-out-button.tsx` was removed (no users left).
+  - Tests: `nav-active`, `mobile-menu`, `user-menu`, `topbar-bundle` unit tests; `e2e/shell.spec.ts` (underline, hamburger flow, Esc focus, mobile Profile menu).
+  - Also fixed: the tampering case in `access-email-payload-crypto.test.ts` flips a bit instead of overwriting with `AA`, which matched the real ciphertext ~1 run in 4096.
 - **Landing page redesign (2026-11-21).**
   - Motion is CSS-only (`landing-*` in `app/globals.css`): it animates transform/opacity only, respects reduced motion, and the hero `<h1>` is never faded, so the LCP element paints in the first frame.
   - Cards reveal with a `view()` scroll timeline behind `@supports`, which is why `<main>` uses `overflow-clip`.
   - Role copy lives in `lib/landing-copy.ts` (`copyFor`).
-  - Topbar loads `AccountSheet` dynamically inside `<Suspense>`, so guests never download framer-motion.
+  - Topbar loads the framer-motion menu (now `MobileMenu`) dynamically inside `<Suspense>`, so guests never download framer-motion.
   - CTAs and the Search button use dark text for WCAG AA. The logo is decorative and the home link carries its name.
   - Tests: `landing-copy`, `library-search` and `topbar-bundle` unit tests, plus `e2e/landing.spec.ts` (motion, bundle, contrast with a canvas color helper and a vacuous-pass guard, logo).
 - Foundation: Next.js, TypeScript, Tailwind, HeroUI
@@ -170,7 +177,8 @@ cmd /c "npm run test:e2e"
 - Landing redesign (2026-11-21) follow-ups:
   - Mobile LCP is 2.23s (DevTools throttle, median of 5); the target was < 2.0s. A ~600ms CSS → first-text-paint gap remains, and the font is ruled out. Next step: trace Layout (~140ms).
   - On win32, `.next/standalone` ships `@img/sharp-win32-x64` without `libvips-*.dll`, so local standalone runs serve original images. Production (Linux) is fine. The `e2e/landing.spec.ts` logo-bytes test skips on win32 + :12001.
-  - Topbar nav class has a duplicate `focus-visible:outline` + `focus-visible:outline-2` (pre-existing IDE warning).
+  - Topbar nav class has a duplicate `focus-visible:outline` + `focus-visible:outline-2` (pre-existing IDE warning; kept in the 2026-11-21 redesign).
+- Topbar redesign (2026-11-21, v2 style): `next build` and Playwright `shell`/`landing` not run yet; signed-in topbar not checked in a browser (guest checked at 360px).
 - Service-level integration tests with test DB
 - Apply the search strategy change (token array or text index) — see findings above
 - UI polish and mobile navigation improvements
@@ -231,7 +239,7 @@ cmd /c "npm run test:e2e"
 ### Session log — cross-app nav + live support join page
 - Nav model (`lib/config/nav.ts`) gained `external`. New items: `My Courses` (external, students only, built by `lib/links.ts` from `NEXT_PUBLIC_LMS_URL`) and `Live support` (`/dashboard/support`). Items are `NavItem | null` filtered to `NavItem`, so "no LMS configured" removes the item rather than breaking the link.
 - `lib/links.ts` normalizes the origin (trailing slash dropped, sub-path kept) and returns `null` for anything that is not http(s). `lib/env.ts` validates `NEXT_PUBLIC_LMS_URL` and the `LIVE_SUPPORT_*` values in every environment (production additionally requires HTTPS outside loopback) via a shared `configurableUrlSchema`.
-- Topbar renders external items as `<a target="_blank" rel="noopener noreferrer">`, keeps them out of `activeHrefFor`, and hides labels below `lg` with `aria-label` preserving the accessible name (mobile contract: 390 px shows icons only).
+- Topbar renders external items as `<a target="_blank" rel="noopener noreferrer">`, keeps them out of `activeHrefFor`, and hides labels below `lg` with `aria-label` preserving the accessible name (mobile contract: 390 px shows icons only). Superseded 2026-11-21: below lg the links live in the `MobileMenu` hamburger panel.
 - `lib/config/live-support.ts` ports `SUPPORT_SHIFTS`, `toBnDigits`, `supportScheduleBn`, `supportHoursBn` from the frontend and adds `shiftMinutes`/`currentShift` computed in `Asia/Dhaka` with an injectable `Date`. `hourCycle: "h23"` avoids the "24:00" midnight encoding. The Bengali sentence is byte-identical to the frontend's.
 - `lib/live-support.ts` (server-only) resolves the room from `LIVE_SUPPORT_PLATFORM|JOIN_URL|MEETING_ID|PASSCODE`; the page passes it to the client card only after `requireSession()`. (2026-11-01: the room moved to Google Meet and the source default was removed — the join URL is a credential, so production requires it and rotation is an env change.)
 - Card avoids a hydration mismatch by starting at `phase = null` and resolving after mount. The closed state drops the `href` (a `pointer-events-none` link is still activated by Enter) and keeps `role="link"`.

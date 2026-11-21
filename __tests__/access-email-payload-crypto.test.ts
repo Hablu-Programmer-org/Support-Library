@@ -38,7 +38,12 @@ describe("access email payload crypto", () => {
 
   it("rejects tampering and missing active keys", () => {
     const encrypted = encryptAccessEmailPayload("secret", binding, env);
-    encrypted.ciphertext = `${encrypted.ciphertext.slice(0, -2)}AA`;
+    // Flip one bit instead of overwriting characters: the random IV means the
+    // ciphertext occasionally already ended in the overwrite value, so the
+    // "tampered" envelope was unchanged and decrypted fine (~1 run in 4096).
+    const bytes = Buffer.from(encrypted.ciphertext, "base64");
+    bytes[0] ^= 0x01;
+    encrypted.ciphertext = bytes.toString("base64");
     expect(() => decryptAccessEmailPayload(encrypted, binding, env)).toThrow(/authentication failed/i);
     expect(() => validateAccessEmailKeyring({
       ...process.env,

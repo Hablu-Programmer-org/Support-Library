@@ -112,15 +112,15 @@ test.describe("Landing bundle (signed in)", () => {
 
   // Positive control: proves the marker actually detects the library, so the
   // guest test above cannot pass just because the marker never matches.
-  test("signed-in users still get the account sheet's framer-motion chunk", async ({ page }) => {
+  test("signed-in users still get the mobile menu's framer-motion chunk", async ({ page }) => {
     const scripts = await loadedScripts(page);
     expect(scripts.some((body) => body.includes(FRAMER_MARKER))).toBe(true);
   });
 
-  // Regression: the dynamic AccountSheet once had no Suspense boundary, so its
+  // Regression: the dynamic account sheet (now MobileMenu) once had no Suspense boundary, so its
   // pending chunk held back hydration of the whole page and the search fell
   // back to a native submit that never left "/".
-  test("a slow account-sheet chunk does not block the landing search", async ({ page }) => {
+  test("a slow mobile-menu chunk does not block the landing search", async ({ page }) => {
     let delayed = 0;
     let released = false;
     // Match on the path, not a glob: CI builds set DEPLOYMENT_VERSION, so every
@@ -128,7 +128,9 @@ test.describe("Landing bundle (signed in)", () => {
     await page.route((url) => url.pathname.endsWith(".js"), async (route) => {
       const response = await route.fetch();
       const body = await response.text();
-      if (body.includes("Account menu")) {
+      // MOBILE_MENU_ID: only the lazy mobile-menu chunk carries it
+      // (__tests__/topbar-bundle.test.ts keeps it out of the main bundle).
+      if (body.includes("site-mobile-menu")) {
         delayed += 1;
         await new Promise((resolve) => setTimeout(resolve, 3_000));
         released = true;
@@ -148,7 +150,7 @@ test.describe("Landing bundle (signed in)", () => {
         }),
     );
 
-    expect(delayed, "the account-sheet chunk was intercepted").toBeGreaterThan(0);
+    expect(delayed, "the mobile-menu chunk was intercepted").toBeGreaterThan(0);
     expect(released, "search ran while the chunk was still pending").toBe(false);
 
     await form.locator('input[type="search"]').fill("react hooks");

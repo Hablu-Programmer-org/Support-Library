@@ -8,22 +8,33 @@ import { describe, expect, it } from "vitest";
  * statically ships to every visitor, so heavy, signed-in-only pieces must stay
  * behind a dynamic import.
  */
-const topbar = readFileSync(resolve(process.cwd(), "components/layout/topbar.tsx"), "utf8");
+const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
+const topbar = read("components/layout/topbar.tsx");
+const userMenu = read("components/auth/user-menu.tsx");
 
 describe("Topbar bundle", () => {
-  it("never statically imports the account sheet (it carries framer-motion)", () => {
-    expect(topbar).not.toMatch(/^import[^;]*["']@\/components\/layout\/account-sheet["']/m);
-    expect(topbar).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\(["']@\/components\/layout\/account-sheet["']\)/);
+  it("never statically imports the mobile menu (it carries framer-motion)", () => {
+    expect(topbar).not.toMatch(/^import[^;]*["']@\/components\/layout\/mobile-menu["']/m);
+    expect(topbar).toMatch(/dynamic\(\s*\(\)\s*=>\s*import\(["']@\/components\/layout\/mobile-menu["']\)/);
   });
 
-  it("renders the dynamic AccountSheet inside its own Suspense boundary", () => {
+  it("renders the dynamic MobileMenu inside its own Suspense boundary", () => {
     // next/dynamic with ssr + no `loading` adds no boundary; without this one a
     // pending chunk blocks hydration of the whole page.
-    expect(topbar).toMatch(/<Suspense fallback=\{[^}]+\}>\s*<AccountSheet\b/);
-    expect(topbar.match(/<AccountSheet\b/g)).toHaveLength(1);
+    expect(topbar).toMatch(/<Suspense fallback=\{[^}]+\}>\s*<MobileMenu\b/);
+    expect(topbar.match(/<MobileMenu\b/g)).toHaveLength(1);
+  });
+
+  it("keeps the mobile menu's chunk marker out of the main bundle", () => {
+    // e2e/landing.spec.ts finds the lazy chunk by MOBILE_MENU_ID; if the main
+    // bundle carried it too, the chunk-delay test would delay the wrong file.
+    expect(read("components/layout/mobile-menu.tsx")).toContain('"site-mobile-menu"');
+    expect(topbar).not.toContain("site-mobile-menu");
+    expect(userMenu).not.toContain("site-mobile-menu");
   });
 
   it("never imports framer-motion directly", () => {
     expect(topbar).not.toMatch(/from ["']framer-motion["']/);
+    expect(userMenu).not.toMatch(/from ["']framer-motion["']/);
   });
 });

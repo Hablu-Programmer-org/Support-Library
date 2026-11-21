@@ -90,6 +90,25 @@ function withinRole(userRole: UserRole, item: NavItem) {
   return true;
 }
 
+const isActive = (pathname: string, item: NavItem) =>
+  item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+/**
+ * Href of the single nav item to highlight, shared by the topbar and the
+ * mobile menu.
+ *
+ * A prefix match can overlap a more specific sibling (e.g. `/dashboard/issues`
+ * vs `/dashboard/issues/new`), so the longest matching href wins and only one
+ * link ever carries `aria-current`. External items never match.
+ */
+export function activeHrefFor(pathname: string, items: NavItem[]) {
+  return items
+    .filter((item) => !item.external && isActive(pathname, item))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+}
+
 export function navItemsForRole(role?: UserRole): NavItem[] {
   if (!role) return NAV_ITEMS.filter((item) => !item.minRole && !item.maxRole);
   return NAV_ITEMS.filter((item) => withinRole(role, item));

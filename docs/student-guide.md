@@ -234,7 +234,7 @@ When you click a video link:
 
 In production, links are expected to be HTTPS links.
 
-## 12. Account Menu, Theme, And Sign Out
+## 12. Navigation, Profile Menu, Theme, And Sign Out
 
 The topbar is always visible inside the dashboard area.
 
@@ -246,18 +246,17 @@ Students see:
 - `My issues` navigation link, which lists the issues you submitted and opens them.
 - `My Courses` navigation link, which opens your courses in the Hablu Programmer LMS in a new tab. It appears only when the deployment has the LMS address configured.
 - Theme toggle.
-- Account identity.
-- Sign out control.
+- Your avatar, which opens the Profile menu: your name, email, role label and **Sign out**.
 
 Students do not see the staff `Dashboard` navigation link.
 
-On narrow screens the navigation labels are hidden and each link shows its icon only. The link names are still announced to screen readers, so the links work the same way at every screen size.
+The current page's link has cyan text and a cyan underline.
 
-On mobile:
+On screens narrower than 1024px the navigation links move into the menu button (☰) next to your avatar:
 
-- The account menu opens as a side sheet.
-- The sheet shows your name, email, role label, theme toggle, and sign out button.
-- Navigation links remain in the topbar, not inside the mobile account sheet.
+- The menu opens a panel under the topbar with one row per link and the theme toggle under **Appearance**.
+- Choosing a link, pressing `Escape`, or pressing ✕ closes it.
+- Your avatar still opens the Profile menu with sign out.
 
 Theme behavior:
 
@@ -432,8 +431,8 @@ Unexpected error:
 | Sort by newest/oldest/priority | Yes | `/dashboard/issues` |
 | Read issue details | Yes, published only | `/dashboard/issues/[id]` |
 | Open video links | Yes | Issue details and replies |
-| Toggle theme | Yes | Topbar/account menu |
-| Sign out | Yes | Topbar/account menu |
+| Toggle theme | Yes | Topbar (desktop) / menu ☰ → Appearance (mobile) |
+| Sign out | Yes | Profile menu (avatar) |
 | Submit an issue | Yes | `/dashboard/issues/new` |
 | My issues | Yes | `/dashboard/my-issues` |
 | Read one of your requests and the team's updates | Yes, your own only | `/dashboard/issues/[id]` |
