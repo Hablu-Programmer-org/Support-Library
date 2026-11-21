@@ -40,7 +40,7 @@ test.describe("STUDENT issue submission", () => {
 
     const optional = form
       .locator("details")
-      .filter({ hasText: "Add module, lesson, tags or video links" });
+      .filter({ hasText: "Module, lesson, tags or video links" });
     await optional.locator("summary").click();
     // Uploaded image attachments are covered in attachments.spec.ts; videos remain
     // external HTTPS links inside the optional context disclosure.
