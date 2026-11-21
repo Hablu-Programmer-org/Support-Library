@@ -85,14 +85,18 @@ test.describe("STUDENT: a request is the way into the room", () => {
 
     await expect(page.getByRole("heading", { name: "My issues" })).toBeVisible();
     // The request created above is listed with its status and links to itself.
-    // "/dashboard/issues/new" is the header CTA, so the row is the one with a
-    // last-updated line.
+    // The card's link holds only the title, so find the card by its
+    // last-updated line, then check the one link inside it.
     const row = page
-      .locator('a[href^="/dashboard/issues/"]')
+      .getByTestId("my-issue-card")
       .filter({ hasText: "Updated" })
       .first();
     await expect(row).toBeVisible();
     await expect(row).toContainText("Open");
+    await expect(row.getByRole("link")).toHaveAttribute(
+      "href",
+      /^\/dashboard\/issues\/[a-f0-9]{24}$/,
+    );
   });
 
   test("cannot open another owner's unpublished request", async ({ page, browser }) => {

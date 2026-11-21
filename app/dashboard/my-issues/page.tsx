@@ -1,25 +1,42 @@
 import Link from "next/link";
 
+import { MessageSquareIcon } from "@/components/icons";
+import { MyIssueCard } from "@/components/issues/my-issue-card";
+import { MyIssuesFilter, myIssuesViewHref } from "@/components/issues/my-issues-filter";
 import { MyRequestsRefresh } from "@/components/issues/my-requests-refresh";
-import { StatusBadge } from "@/components/issues/status-badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireSession } from "@/lib/auth-guard";
-import { currentShift, SUPPORT_TIME_ZONE } from "@/lib/config/live-support";
-import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
+import { currentShift } from "@/lib/config/live-support";
+import { filterMyIssues, groupMyIssues, parseMyIssuesView } from "@/lib/my-issues-view";
 import { getOwnIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { listOwnIssues } from "@/lib/services/issues";
 
 export const dynamic = "force-dynamic";
 
-const timestamp = (date?: Date | null) =>
-  date
-    ? new Intl.DateTimeFormat("en-GB", {
-        timeZone: SUPPORT_TIME_ZONE,
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(date)
-    : "—";
+const NEW_ISSUE_HREF = "/dashboard/issues/new";
+
+// cyan-700 + white (light) and cyan-400 + cyan-950 (dark) both clear 4.5:1;
+// the old bg-primary + white did not.
+const primaryButtonClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-cyan-700 px-4 text-sm font-semibold text-white transition hover:bg-cyan-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-cyan-400 dark:text-cyan-950 dark:hover:bg-cyan-300 dark:focus-visible:ring-offset-slate-950";
+
+function PlusIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height={16}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth={2.4}
+      viewBox="0 0 24 24"
+      width={16}
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
 
 /**
  * The student's own support issues.
@@ -28,10 +45,19 @@ const timestamp = (date?: Date | null) =>
  * case. It is the way back to an issue (and therefore to live support) after
  * leaving the request page.
  */
-export default async function MyIssuesPage() {
+export default async function MyIssuesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string | string[] }>;
+}) {
   const session = await requireSession();
   const issues = await listOwnIssues(session.user.id);
-  const roomOpen = currentShift(new Date()) !== "off";
+  // Counts and the visible rows come from the same list, so they always agree.
+  const view = parseMyIssuesView((await searchParams)?.view);
+  const counts = groupMyIssues(issues);
+  const visible = filterMyIssues(issues, view);
+  const now = new Date();
+  const roomOpen = currentShift(now) !== "off";
   // Only students have the scoped endpoint; a staff account opening this page
   // still sees the list, just without the auto-refresh probe.
   const activity =
@@ -40,84 +66,74 @@ export default async function MyIssuesPage() {
       : null;
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 py-6">
+    // Full shell width, like the Issues list: the shell's PageContainer already
+    // caps the line length on very wide screens.
+    <div className="w-full space-y-6 py-6">
       <PageHeader
         action={
-          <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {activity && <MyRequestsRefresh initialRevision={activity.revision} />}
-            <Link
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
-              href="/dashboard/issues/new"
-            >
-              Create an issue
+            <Link className={primaryButtonClass} href={NEW_ISSUE_HREF}>
+              <PlusIcon />
+              New issue
             </Link>
           </div>
         }
-        description="Only the issues you submitted, newest first — visible to you and the team. Open one to join live support for it."
+        meta={
+          roomOpen && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success-100 px-2.5 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
+              <span aria-hidden="true" className="relative flex size-1.5">
+                <span className="absolute inline-flex size-full rounded-full bg-success-500 opacity-75 motion-safe:animate-ping" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-success-500" />
+              </span>
+              Live support open
+            </span>
+          )
+        }
         title="My issues"
       />
 
-      <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-        {issues.length === 0 ? (
-          <EmptyState>You have not submitted an issue yet.</EmptyState>
-        ) : (
-          issues.map((issue) => {
-            const eligible = (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(
-              issue.status,
-            );
-            // "Team replied", not "New": the app keeps no read receipt, so an
-            // unread claim would stay on screen after the answer was read. Any
-            // staff reply at all is a fact the row can state honestly.
-            const teamReplied = Boolean(issue.lastStaffReplyAt);
-
-            return (
-              <Link
-                key={issue.id}
-                className={`flex flex-col gap-2 border-l-4 px-4 py-4 transition sm:flex-row sm:items-center sm:justify-between ${
-                  teamReplied
-                    ? "border-cyan-500 bg-cyan-50/60 hover:bg-cyan-50 dark:border-cyan-400 dark:bg-cyan-950/20 dark:hover:bg-cyan-950/30"
-                    : "border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                }`}
-                href={`/dashboard/issues/${issue.id}`}
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="line-clamp-2 wrap-break-word font-semibold text-slate-900 dark:text-white">{issue.title}</h2>
-                    <StatusBadge status={issue.status} />
-                    {teamReplied && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300">
-                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-500" aria-hidden="true" />
-                        Team replied
-                      </span>
-                    )}
-                    {roomOpen && eligible && (
-                      <span className="rounded-full bg-success-100 px-2 py-0.5 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
-                        Live now
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {issue.caseRef ? (
-                      <span className="select-all font-mono font-semibold">{issue.caseRef}</span>
-                    ) : (
-                      <span aria-hidden="true">—</span>
-                    )}{" "}
-                    · {teamReplied ? "Replied" : "Updated"}{" "}
-                    {timestamp(teamReplied ? issue.lastStaffReplyAt : issue.updatedAt)}
-                  </p>
-                </div>
-                <span className="shrink-0 text-sm font-semibold text-primary">
-                  {teamReplied ? "View reply →" : "Open"}
-                </span>
-              </Link>
-            );
-          })
-        )}
-      </section>
-
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        The team replies by email as well, and every update also appears on the request page.
-      </p>
+      {issues.length === 0 ? (
+        <EmptyState
+          action={
+            <Link className={primaryButtonClass} href={NEW_ISSUE_HREF}>
+              <PlusIcon />
+              Create an issue
+            </Link>
+          }
+          description="Stuck on a lesson, assignment or course access? Open an issue and a mentor replies here."
+          icon={<MessageSquareIcon size={18} />}
+        >
+          No issues yet
+        </EmptyState>
+      ) : (
+        <>
+          <MyIssuesFilter counts={counts} view={view} />
+          {visible.length === 0 ? (
+            <EmptyState
+              action={
+                <Link
+                  className="text-sm font-semibold text-cyan-700 hover:underline dark:text-cyan-300"
+                  href={myIssuesViewHref("all")}
+                  scroll={false}
+                >
+                  Show all issues
+                </Link>
+              }
+            >
+              No issues in this view.
+            </EmptyState>
+          ) : (
+            <ul className="space-y-3" aria-label="My issues">
+              {visible.map((issue, index) => (
+                <li key={issue.id}>
+                  <MyIssueCard enterIndex={index} issue={issue} now={now} roomOpen={roomOpen} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
     </div>
   );
 }

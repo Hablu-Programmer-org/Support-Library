@@ -85,4 +85,36 @@ describe("AutoRefresh", () => {
 
     expect(refresh).toHaveBeenCalledTimes(1);
   });
+
+  it("shows the status as a visible caption by default", () => {
+    render(<AutoRefresh endpoint="/api/x/activity" initialRevision="r1" intervalMs={10_000} />);
+    const caption = screen.getByText("Auto-updates");
+    expect(caption.className).not.toContain("sr-only");
+    expect(screen.queryByTestId("auto-refresh-dot")).toBeNull();
+  });
+
+  it("folds the status into the button in dot mode", () => {
+    render(
+      <AutoRefresh endpoint="/api/x/activity" initialRevision="r1" intervalMs={10_000} status="dot" />,
+    );
+    const button = screen.getByRole("button", { name: "Refresh" });
+    expect(button.getAttribute("title")).toBe("Auto-updates");
+    expect(screen.getByTestId("auto-refresh-dot")).toBeTruthy();
+    // Still announced, but no loose caption on screen.
+    const status = screen.getByText("Auto-updates");
+    expect(status.className).toContain("sr-only");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+  });
+
+  it("reports the manual refresh time in dot mode", () => {
+    vi.setSystemTime(new Date("2026-11-22T08:05:00Z"));
+    render(
+      <AutoRefresh endpoint="/api/x/activity" initialRevision="r1" intervalMs={10_000} status="dot" />,
+    );
+    const button = screen.getByRole("button", { name: "Refresh" });
+    fireEvent.click(button);
+    // Dhaka is UTC+6.
+    expect(button.getAttribute("title")).toBe("Updated 14:05");
+    expect(screen.getByText("Updated 14:05").className).toContain("sr-only");
+  });
 });

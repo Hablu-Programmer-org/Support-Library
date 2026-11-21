@@ -16,6 +16,7 @@ export function MyRequestsRefresh({ initialRevision }: { initialRevision: string
       endpoint="/api/my-requests/activity"
       initialRevision={initialRevision}
       intervalMs={10_000}
+      status="dot"
     />
   );
 }

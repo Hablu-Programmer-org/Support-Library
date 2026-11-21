@@ -17,7 +17,7 @@ export function Skeleton({
   return (
     <div
       aria-hidden="true"
-      className={cn("animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700", className)}
+      className={cn("animate-pulse rounded-lg motion-reduce:animate-none bg-slate-200 dark:bg-slate-700", className)}
       style={style}
     />
   );

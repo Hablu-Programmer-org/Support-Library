@@ -35,6 +35,7 @@ export function AutoRefresh({
   pendingLabel = "Refreshing…",
   idleLabel = "Auto-updates",
   enabled = true,
+  status = "text",
 }: {
   endpoint: string;
   initialRevision: string;
@@ -44,6 +45,13 @@ export function AutoRefresh({
   idleLabel?: string;
   /** Disable interval polling while retaining manual and focus-triggered probes. */
   enabled?: boolean;
+  /**
+   * How the "Auto-updates" / "Updated 14:05" status shows. `text` (default) is a
+   * caption beside the button; `dot` folds it into the button as a green dot plus
+   * a tooltip, for headers where a loose caption reads as clutter. Either way the
+   * status stays in a polite live region for screen readers.
+   */
+  status?: "text" | "dot";
 }) {
   const router = useRouter();
   const revision = useRef(initialRevision);
@@ -110,6 +118,47 @@ export function AutoRefresh({
     };
   }, [enabled, intervalMs, probe]);
 
+  const statusText = updatedAt ? `Updated ${timeFormatter.format(updatedAt)}` : idleLabel;
+
+  if (status === "dot") {
+    return (
+      <>
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={refresh}
+          title={statusText}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-offset-slate-950"
+        >
+          <svg
+            aria-hidden="true"
+            className={isPending ? "motion-safe:animate-spin" : undefined}
+            fill="none"
+            height={16}
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+            width={16}
+          >
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <path d="M21 3v6h-6" />
+          </svg>
+          {isPending ? pendingLabel : label}
+          <span
+            aria-hidden="true"
+            className="size-1.5 rounded-full bg-success-500"
+            data-testid="auto-refresh-dot"
+          />
+        </button>
+        <span aria-live="polite" className="sr-only">
+          {statusText}
+        </span>
+      </>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -121,7 +170,7 @@ export function AutoRefresh({
         {isPending ? pendingLabel : label}
       </button>
       <span aria-live="polite" className="hidden text-xs text-slate-500 xl:inline">
-        {updatedAt ? `Updated ${timeFormatter.format(updatedAt)}` : idleLabel}
+        {statusText}
       </span>
     </div>
   );
