@@ -370,6 +370,52 @@ html.dark {
 }
 
 /*
+ * Issue list cards: a short fade-up on render, staggered through
+ * `--issue-card-delay` (capped in `issueCardEnterDelay`). Pure CSS, so a card is
+ * never stuck hidden waiting for JavaScript, and nothing runs for reduced motion.
+ */
+@keyframes issue-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .issue-card-in {
+    /* `backwards`, not `both`: hidden only during the delay, and no end value is
+       left pinned that could fight the hover lift. */
+    animation: issue-card-in 260ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: var(--issue-card-delay, 0ms);
+  }
+}
+
+/* Search bar "working" line: a light segment sweeping under the bar. */
+@keyframes issue-search-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Empty/no-result icon bubble: a slow 4px bob (applied via `motion-safe:` only). */
+@keyframes issue-state-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/*
  * Attachment preview: a quick scale/fade so the overlay reads as a dialog rather
  * than an inline image swap. Motion is dropped when the user asks for less.
  */

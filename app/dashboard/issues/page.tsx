@@ -6,17 +6,19 @@ import { redirect } from "next/navigation";
 import { IssueFilterPanel } from "@/components/issues/issue-filter-panel";
 import { SearchTimeoutNotice } from "@/components/issues/search-timeout-notice";
 import { IssueRefreshControl } from "@/components/issues/issue-refresh-control";
-import { StatusBadge } from "@/components/issues/status-badge";
+import { buildIssueCardStaff, IssueCard } from "@/components/issues/issue-card";
+import { IssuesHero } from "@/components/issues/issues-hero";
+import {
+  IssueListPagination,
+  NoIssuesState,
+  NoResultsState,
+} from "@/components/issues/issue-list-states";
 import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
-import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { AccessHelpCard } from "@/components/tool-access/access-help-card";
 import { requireSession } from "@/lib/auth-guard";
 import { currentShift, dayKeyInDhaka } from "@/lib/config/live-support";
-import {
-  LIVE_SUPPORT_ELIGIBLE_STATUSES,
-  type CaseStatus,
-} from "@/lib/constants";
+import type { CaseStatus } from "@/lib/constants";
 import { generateCsrfToken } from "@/lib/csrf";
 import {
   buildIssueDetailHref,
@@ -163,41 +165,54 @@ export default async function IssuesPage({
       ? listHref
       : undefined;
 
+  // Same buttons in both headers; the role only changes the surrounding layout.
+  const headerActions = canSubmit && (
+    <div className="flex flex-wrap items-end gap-2">
+      {/* The quick-join control owns a status line above its button. Align
+          the action children by their bottom edge so Submit and Join keep
+          one button baseline instead of centring Submit against both rows. */}
+      <Link
+        className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
+        href="/dashboard/issues/new"
+      >
+        {canManage ? "New Issue" : "Create an issue"}
+      </Link>
+      {showQuickJoin && (
+        <QuickLiveSupportButton
+          configured={quickJoinConfigured}
+          csrfToken={csrfToken}
+          shift={quickJoinShift}
+        />
+      )}
+      {canManage && activity && (
+        <IssueRefreshControl initialRevision={activity.revision} />
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        action={
-          canSubmit && (
-            <div className="flex flex-wrap items-end gap-2">
-              {/* The quick-join control owns a status line above its button. Align
-                  the action children by their bottom edge so Submit and Join keep
-                  one button baseline instead of centring Submit against both rows. */}
-              <Link
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 cursor-pointer"
-                href="/dashboard/issues/new"
-              >
-                {canManage ? "New Issue" : "Create an issue"}
-              </Link>
-              {showQuickJoin && (
-                <QuickLiveSupportButton
-                  configured={quickJoinConfigured}
-                  csrfToken={csrfToken}
-                  shift={quickJoinShift}
-                />
-              )}
-              {canManage && activity && (
-                <IssueRefreshControl initialRevision={activity.revision} />
-              )}
-            </div>
-          )
-        }
-        description={
-          canManage
-            ? "Find support issues by problem, tag, status or keyword."
-            : "Search first — issues can be submitted 24/7, live support runs only during a shift."
-        }
-        title={canManage ? "Support Issues" : "Student Support Library"}
-      />
+      {canManage ? (
+        <PageHeader
+          action={headerActions}
+          description="Find support issues by problem, tag, status or keyword."
+          title="Support Issues"
+        />
+      ) : (
+        <IssuesHero
+          actions={headerActions}
+          description="Search first — issues can be submitted 24/7, live support runs only during a shift."
+          tags={tags.map((tag) => ({
+            tag,
+            active: filters.tag === tag,
+            href: buildIssueListHref(
+              { ...filters, tag: filters.tag === tag ? "" : tag, page: 1 },
+              { defaultSort },
+            ),
+          }))}
+          title="Student Support Library"
+        />
+      )}
 
       <IssueFilterPanel
         batchNos={batchNos}
@@ -213,6 +228,7 @@ export default async function IssuesPage({
           to: filters.to,
           sort: filters.sort,
         }}
+        floating={!canManage}
         mentors={mentors}
         showMentor={canManage}
         statuses={CASE_STATUSES}
@@ -238,7 +254,7 @@ export default async function IssuesPage({
         />
       )}
 
-      <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+      <section>
         {issues.items.length === 0 ? (
           searchFailed ? (
             <SearchTimeoutNotice
@@ -248,159 +264,61 @@ export default async function IssuesPage({
               )}
             />
           ) : filters.q ? (
-            <div className="px-4 py-10 text-center">
-              <p className="font-semibold">No results for “{filters.q}”.</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Try fewer words, a different spelling, or browse a tag.
-              </p>
-              <Link
-                className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-100 dark:hover:bg-primary-800"
-                href={buildIssueListHref(
-                  { ...filters, q: "", page: 1 },
-                  { defaultSort },
-                )}
-              >
-                Clear search
-              </Link>
-              {tags.length > 0 && (
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {tags.slice(0, 8).map((tag) => (
-                    <Link
-                      key={tag}
-                      className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                      href={buildIssueListHref(
-                        { ...filters, q: "", tag, page: 1 },
-                        { defaultSort },
-                      )}
-                    >
-                      #{tag}
-                    </Link>
-                  ))}
-                </div>
+            <NoResultsState
+              clearHref={buildIssueListHref(
+                { ...filters, q: "", page: 1 },
+                { defaultSort },
               )}
-            </div>
+              query={filters.q}
+              tags={tags.map((tag) => ({
+                tag,
+                href: buildIssueListHref(
+                  { ...filters, q: "", tag, page: 1 },
+                  { defaultSort },
+                ),
+              }))}
+            />
           ) : (
-            <EmptyState>No issues found.</EmptyState>
+            <NoIssuesState />
           )
         ) : (
-          <div className="divide-y divide-slate-200 dark:divide-slate-800">
-            {issues.items.map((supportIssue) => {
-              // Public rows carry no reply state at all; `in` narrows the union
-              // so the staff badge can never be read from a student projection.
-              const replyState = "awaitingStaff" in supportIssue
-                ? {
-                    awaiting: supportIssue.awaitingStaff === true,
-                    lastStaffReplyAt: supportIssue.lastStaffReplyAt ?? null,
+          <ul className="space-y-3" aria-label="Issues">
+            {issues.items.map((supportIssue, index) => (
+              <li key={supportIssue.id}>
+                <IssueCard
+                  enterIndex={index}
+                  actions={
+                    canDelete && (
+                      <DeleteButton
+                        action={deleteIssueAction.bind(null, supportIssue.id)}
+                        csrfToken={csrfToken}
+                        className="shrink-0"
+                        returnTo={listHref}
+                      />
+                    )
                   }
-                : null;
-              return (
-              <div
-                key={supportIssue.id}
-                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
-              >
-                <Link
+                  batchNo={supportIssue.batchNo}
+                  courseSlug={supportIssue.courseSlug}
                   href={buildIssueDetailHref(supportIssue.id, returnTo)}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between flex-1 min-w-0"
-                >
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="line-clamp-2 wrap-break-word font-semibold">
-                        {supportIssue.title}
-                      </h2>
-                      <StatusBadge status={supportIssue.status} />
-                      {canManage && replyState?.awaiting && (
-                        <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                          {replyState.lastStaffReplyAt
-                            ? "Student replied"
-                            : "No reply yet"}
-                        </span>
-                      )}
-                      {waitingIds.has(supportIssue.id) &&
-                        LIVE_SUPPORT_ELIGIBLE_STATUSES.includes(
-                          supportIssue.status as (typeof LIVE_SUPPORT_ELIGIBLE_STATUSES)[number],
-                        ) && (
-                          <span className="rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
-                            Waiting in live support
-                          </span>
-                        )}
-                    </div>
-                    <p className="line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
-                      {supportIssue.question}
-                    </p>
-                    {canManage && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {"caseRef" in supportIssue && supportIssue.caseRef && (
-                          <>
-                            <span className="font-mono font-semibold">
-                              {supportIssue.caseRef}
-                            </span>
-                            {" · "}
-                          </>
-                        )}
-                        {supportIssue.studentName || "Unknown student"}
-                        {supportIssue.studentEmail
-                          ? ` · ${supportIssue.studentEmail}`
-                          : ""}
-                      </p>
-                    )}
-                  </div>
-                  {supportIssue.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 sm:max-w-xs sm:justify-end">
-                      {supportIssue.tags.map((item) => (
-                        <span
-                          key={item}
-                          className="rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Link>
-                {canDelete && (
-                  <DeleteButton
-                    action={deleteIssueAction.bind(null, supportIssue.id)}
-                    csrfToken={csrfToken}
-                    className="shrink-0"
-                    returnTo={listHref}
-                  />
-                )}
-              </div>
-              );
-            })}
-          </div>
+                  question={supportIssue.question}
+                  staff={buildIssueCardStaff(supportIssue, { canManage, waitingIds })}
+                  status={supportIssue.status}
+                  tags={supportIssue.tags}
+                  title={supportIssue.title}
+                  updatedAt={supportIssue.updatedAt ?? supportIssue.createdAt}
+                />
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
-      <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-        <span>
-          Page {issues.page} of {issues.totalPages} · Total {issues.total}
-        </span>
-        <div className="flex gap-2">
-          {issues.page > 1 && (
-            <Link
-              className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, {
-                page: issues.page - 1,
-                defaultSort,
-              })}
-            >
-              Previous
-            </Link>
-          )}
-          {issues.page < issues.totalPages && (
-            <Link
-              className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              href={buildIssueListHref(filters, {
-                page: issues.page + 1,
-                defaultSort,
-              })}
-            >
-              Next
-            </Link>
-          )}
-        </div>
-      </div>
+      <IssueListPagination
+        hrefFor={(page) => buildIssueListHref(filters, { page, defaultSort })}
+        page={issues.page}
+        total={issues.total}
+        totalPages={issues.totalPages}
+      />
     </div>
   );
 }

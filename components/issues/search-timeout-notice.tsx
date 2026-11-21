@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { WarningTriangleIcon } from "@/components/icons";
+import { ListStatePanel } from "@/components/issues/issue-list-states";
+
 /**
  * The recoverable search-timeout state.
  *
@@ -10,17 +13,18 @@ import Link from "next/link";
  */
 export function SearchTimeoutNotice({ href }: { href: string }) {
   return (
-    <div className="px-4 py-10 text-center">
-      <p className="font-semibold">Search is taking too long.</p>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Try a shorter or more specific query, or clear the search.
-      </p>
+    <ListStatePanel
+      description="Try a shorter or more specific query, or clear the search."
+      icon={<WarningTriangleIcon size={26} />}
+      title="Search is taking too long."
+      tone="warning"
+    >
       <Link
-        className="mt-4 inline-flex items-center justify-center rounded-lg bg-primary-100 px-3 py-1.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-100 dark:hover:bg-primary-800"
+        className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition duration-150 hover:bg-primary-600"
         href={href}
       >
         Clear search
       </Link>
-    </div>
+    </ListStatePanel>
   );
 }

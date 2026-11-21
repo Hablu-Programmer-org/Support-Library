@@ -43,6 +43,17 @@ export const SearchIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
+export const SlidersIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M4 7h9" />
+    <path d="M17 7h3" />
+    <circle cx="15" cy="7" r="2" />
+    <path d="M4 17h3" />
+    <path d="M11 17h9" />
+    <circle cx="9" cy="17" r="2" />
+  </svg>
+);
+
 export const PencilIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
