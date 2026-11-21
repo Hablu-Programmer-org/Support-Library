@@ -1,16 +1,39 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { UserMenu } from "@/components/auth/user-menu";
-import { AccountSheet } from "@/components/layout/account-sheet";
+import { MenuIcon } from "@/components/icons";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import type { ShellUser } from "@/components/layout/shell";
 import { PageContainer } from "@/components/shared/page-container";
 import { navItemsForRole, type NavItem } from "@/lib/config/nav";
+
+// AccountSheet pulls in framer-motion. Splitting it into its own chunk means
+// the chunk only loads when it renders (signed-in users), so guests on the
+// landing page never download the animation library. SSR stays on, so the
+// menu button is in the first HTML and nothing shifts on hydration.
+//
+// It MUST render inside its own <Suspense>: with `ssr: true` and no `loading`,
+// next/dynamic adds no boundary, so a pending chunk would hold back hydration
+// of the whole page (the landing search then fell back to a native submit).
+const AccountSheet = dynamic(() =>
+  import("@/components/layout/account-sheet").then((mod) => mod.AccountSheet),
+);
+
+/** Same box as AccountSheet's trigger; decorative only, so no duplicate button. */
+function AccountSheetFallback() {
+  return (
+    <span aria-hidden className="rounded-full p-2 text-slate-700 lg:hidden dark:text-white">
+      <MenuIcon size={20} />
+    </span>
+  );
+}
 
 type TopbarProps = {
   user?: ShellUser;
@@ -49,17 +72,25 @@ export function Topbar({ user }: TopbarProps) {
 
       <PageContainer className="relative z-10 flex min-w-0 items-center justify-between gap-2">
         <div className="flex shrink-0 items-center gap-2.5">
+          {/* The link carries the name: the wordmark beside the logo is hidden
+              below lg, so the image itself stays decorative (alt="") and the
+              name is never announced twice. */}
           <Link
+            aria-label="Hablu Support Library home"
             className="group flex w-fit items-center gap-2.5 rounded-full focus-visible:outline focus-visible:outline-cyan-500"
             href="/"
           >
             <span className="brand-bg flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 transition group-hover:brightness-110 group-hover:ring-white/50 dark:ring-white/20">
+              {/* logo.png is 490x348. width/height are the rendered size
+                  (28px tall fits the 40px box), so next/image serves a 48/96px
+                  file instead of a 1080px one. Above the fold: load eagerly. */}
               <Image
-                alt="Hablu Support Library"
-                className="h-8 w-auto"
-                height={339}
+                alt=""
+                className="h-7 w-auto object-contain"
+                height={28}
+                loading="eager"
                 src="/logo.png"
-                width={499}
+                width={39}
               />
             </span>
             <span className="hidden text-lg font-semibold lg:block lg:text-xl">
@@ -134,14 +165,17 @@ export function Topbar({ user }: TopbarProps) {
                 <UserMenu user={user} />
                 <SignOutButton />
               </div>
-              <AccountSheet user={user} />
+              <Suspense fallback={<AccountSheetFallback />}>
+                <AccountSheet user={user} />
+              </Suspense>
             </>
           ) : (
             <>
               <ThemeToggle />
               <Link
                 href="/login"
-                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
+                // Dark text: white on cyan-500 fails WCAG AA (2.42:1).
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-primary-600"
               >
                 Sign in
               </Link>

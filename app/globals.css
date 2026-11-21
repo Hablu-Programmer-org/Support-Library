@@ -179,6 +179,197 @@ html.dark {
 }
 
 /*
+ * Landing hero. Performance rules:
+ * - Only transform/opacity animate, so every frame stays on the compositor and
+ *   nothing reflows (CLS 0).
+ * - The glow is a radial-gradient, not a `filter: blur()` layer, which is the
+ *   expensive part on low-end phones.
+ * - The headline (LCP) never starts at opacity 0; it only slides, so it paints
+ *   in the first frame.
+ * - No JS: entrance order comes from a per-element `--landing-delay`.
+ */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-slide {
+  from {
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes landing-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes landing-glow-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, 2%, 0) scale(1.06);
+  }
+}
+
+@keyframes landing-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.landing-rise {
+  animation: landing-rise 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--landing-delay, 0ms);
+}
+
+.landing-slide {
+  animation: landing-slide 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--landing-delay, 0ms);
+}
+
+.landing-underline {
+  transform-origin: left center;
+  animation: landing-underline 900ms cubic-bezier(0.22, 1, 0.36, 1) 380ms both;
+}
+
+.landing-glow {
+  will-change: transform;
+  animation: landing-glow-drift 22s ease-in-out infinite;
+}
+
+.landing-ping {
+  animation: landing-ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Faint dot grid that fades out toward the edges; static, painted once. */
+.landing-grid {
+  background-image: radial-gradient(rgb(15 23 42 / 0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 30%, #000 30%, transparent 75%);
+}
+
+.dark .landing-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise,
+  .landing-slide,
+  .landing-underline,
+  .landing-glow,
+  .landing-ping {
+    animation: none;
+  }
+}
+
+/*
+ * Landing feature cards.
+ * Scroll reveal is pure CSS (scroll-driven animation). Browsers without
+ * `animation-timeline` skip the whole block and show the cards at once, so a
+ * card is never stuck hidden. `--landing-card-i` staggers cards in one row.
+ */
+@keyframes landing-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-card-reveal {
+      animation: landing-card-in linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--landing-card-i, 0) * 8%)
+        entry calc(55% + var(--landing-card-i, 0) * 8%);
+    }
+  }
+}
+
+/* Gradient border + glow live on pseudo-elements and only fade their opacity,
+   so hovering never repaints the card itself. */
+.landing-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.landing-card::before,
+.landing-card::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.landing-card::before {
+  inset: -1px;
+  padding: 1px;
+  background-image: linear-gradient(135deg, rgb(6 182 212 / 0.85), rgb(139 92 246 / 0.85));
+  /* Ring = full box minus content box. Longhands only, no hand-written
+     -webkit- prefixes: the CSS compiler adds them, and mixing both made it
+     drop `exclude`, which filled the whole card with the gradient. */
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: content-box, border-box;
+  mask-composite: exclude;
+}
+
+.landing-card::after {
+  inset: 0;
+  z-index: -1;
+  box-shadow:
+    0 22px 44px -20px rgb(6 182 212 / 0.45),
+    0 10px 28px -18px rgb(139 92 246 / 0.55);
+}
+
+.landing-card:focus-visible::before,
+.landing-card:focus-visible::after {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  a.landing-card:hover::before,
+  a.landing-card:hover::after {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-card::before,
+  .landing-card::after {
+    transition: none;
+  }
+}
+
+/*
  * Attachment preview: a quick scale/fade so the overlay reads as a dialog rather
  * than an inline image swap. Motion is dropped when the user asks for less.
  */

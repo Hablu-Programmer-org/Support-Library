@@ -114,12 +114,13 @@ export function AccountSheet({ user }: AccountSheetProps) {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <span className="brand-bg flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-sm ring-1 ring-white/25 dark:ring-white/20">
+                    {/* logo.png is 490x348; 24px tall fits the 36px box. */}
                     <Image
                       alt=""
-                      className="h-7 w-auto"
-                      height={339}
+                      className="h-6 w-auto object-contain"
+                      height={24}
                       src="/logo.png"
-                      width={499}
+                      width={34}
                     />
                   </span>
                   <span className="text-sm font-semibold text-slate-900 dark:text-white">

@@ -129,6 +129,12 @@ export const ArrowLeftIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
+export const ArrowRightIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
 export const HelpCircleIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <circle cx="12" cy="12" r="10" />
