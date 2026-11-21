@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/shared/skeleton";
 
-export default function MyRequestsLoading() {
+export default function MyIssuesLoading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Loading">
       <div className="flex flex-col gap-2">

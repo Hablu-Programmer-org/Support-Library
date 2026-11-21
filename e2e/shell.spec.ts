@@ -128,10 +128,10 @@ test.describe("Shell: My Courses link (student)", () => {
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
     // Students reach the room from their own request, so the staff room page and
     // the queue are not in their nav; their requests are.
-    await expect(nav.getByRole("link", { name: "My requests" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "My issues" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
-    // Issues, Submit issue, My requests, My Courses.
+    // Issues, Submit issue, My issues, My Courses.
     await expect(nav.getByRole("link")).toHaveCount(4);
   });
 });

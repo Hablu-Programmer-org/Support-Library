@@ -39,7 +39,7 @@ for (const role of roles) {
         await expect(page.getByRole("heading", { name: "New Support Issue" })).toBeVisible();
       } else {
         // A student gets the create-only form instead of the staff form.
-        await expect(page.getByRole("heading", { name: "Submit a support request" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Submit an issue" })).toBeVisible();
         await expect(page.getByRole("heading", { name: "New Support Issue" })).toHaveCount(0);
       }
     });

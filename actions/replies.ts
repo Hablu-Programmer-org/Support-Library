@@ -304,7 +304,7 @@ export async function addStudentReplyAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
-  revalidatePath("/dashboard/my-requests");
+  revalidatePath("/dashboard/my-issues");
   revalidatePath(`/dashboard/issues/${issueId}`);
   redirect(`/dashboard/issues/${issueId}`);
 }

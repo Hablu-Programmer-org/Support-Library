@@ -60,17 +60,17 @@ test.describe("STUDENT: a request is the way into the room", () => {
     const title = `E2E live support request ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    const requestForm = formFor(page, "Submit request");
+    const requestForm = formFor(page, "Submit issue");
     await requestForm.locator('input[name="title"]').fill(title);
     await requestForm
       .locator('textarea[name="question"]')
       .fill("The mentor needs this request reference to investigate the issue during the support room.");
     // Course is required for an account with LMS enrolments.
     await chooseStudentCourse(requestForm);
-    await submitAndWait(page, "Submit request", REQUEST_URL);
+    await submitAndWait(page, "Submit issue", REQUEST_URL);
 
     // The confirmation is the request page itself, not a dead end.
-    await expect(page.getByRole("status")).toContainText("Your request has been submitted.");
+    await expect(page.getByRole("status")).toContainText("Your issue has been submitted.");
     await expect(page.getByRole("heading", { name: title }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Live support" }).first()).toBeVisible();
 
@@ -80,10 +80,10 @@ test.describe("STUDENT: a request is the way into the room", () => {
     expect(await page.content()).not.toContain("Google Meet");
   });
 
-  test("finds the request again in My requests", async ({ page }) => {
-    await page.goto("/dashboard/my-requests");
+  test("finds the issue again in My issues", async ({ page }) => {
+    await page.goto("/dashboard/my-issues");
 
-    await expect(page.getByRole("heading", { name: "My requests" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "My issues" })).toBeVisible();
     // The request created above is listed with its status and links to itself.
     // "/dashboard/issues/new" is the header CTA, so the row is the one with a
     // last-updated line.
@@ -124,14 +124,19 @@ test.describe("STUDENT: a request is the way into the room", () => {
 
   test("is sent from the staff room page to their requests", async ({ page }) => {
     await page.goto("/dashboard/support");
-    await expect(page).toHaveURL(/\/dashboard\/my-requests$/);
+    await expect(page).toHaveURL(/\/dashboard\/my-issues$/);
   });
 
-  test("has no Live support item in the nav, but has My requests", async ({ page }) => {
+  test("an old my-requests link lands on my-issues", async ({ page }) => {
+    await page.goto("/dashboard/my-requests");
+    await expect(page).toHaveURL(/\/dashboard\/my-issues$/);
+  });
+
+  test("has no Live support item in the nav, but has My issues", async ({ page }) => {
     await page.goto("/dashboard/issues");
 
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link", { name: "My requests" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "My issues" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Live support" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
   });

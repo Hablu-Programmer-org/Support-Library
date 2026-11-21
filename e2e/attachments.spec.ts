@@ -22,7 +22,7 @@ test.describe("uploaded attachments", () => {
     const title = `E2E attachment request ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    const form = formFor(page, "Submit request");
+    const form = formFor(page, "Submit issue");
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
@@ -48,7 +48,7 @@ test.describe("uploaded attachments", () => {
       ),
     ).toEqual(["attachment.png"]);
 
-    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Submit issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
     await expect(pageErrors).toEqual([]);
 
     // Staff pick up the case and the selected image is visible as an attachment.
@@ -130,7 +130,7 @@ test.describe("uploaded attachments", () => {
     const title = `E2E bad attachment ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    const form = formFor(page, "Submit request");
+    const form = formFor(page, "Submit issue");
     await form.locator('input[name="title"]').fill(title);
     await form
       .locator('textarea[name="question"]')
@@ -145,7 +145,7 @@ test.describe("uploaded attachments", () => {
         buffer: Buffer.from("this is not an image"),
       });
 
-    await form.getByRole("button", { name: "Submit request", exact: true }).click();
+    await form.getByRole("button", { name: "Submit issue", exact: true }).click();
 
     // The submission must not succeed: the field error is reported in place.
     await expect(form.getByRole("alert")).toContainText(/not a supported image/i);
@@ -154,7 +154,7 @@ test.describe("uploaded attachments", () => {
 
   test("picking images twice adds them instead of replacing the first batch", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
-    const form = formFor(page, "Submit request");
+    const form = formFor(page, "Submit issue");
     await form.locator('input[name="title"]').fill(`E2E multi pick ${Date.now()}`);
     await form
       .locator('textarea[name="question"]')

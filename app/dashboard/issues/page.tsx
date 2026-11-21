@@ -194,7 +194,7 @@ export default async function IssuesPage({
         description={
           canManage
             ? "Find support issues by problem, tag, status or keyword."
-            : "Search first — requests can be submitted 24/7, live support runs only during a shift."
+            : "Search first — issues can be submitted 24/7, live support runs only during a shift."
         }
         title={canManage ? "Support Issues" : "Student Support Library"}
       />

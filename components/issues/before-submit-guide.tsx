@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircleIcon, HelpCircleIcon } from "@/components/icons";
 
 const guidance = [
-  "Submit one issue per request.",
+  "Submit one problem per issue.",
   "Include the exact error and what you already tried.",
   "Add screenshots when they help explain the issue.",
 ];
@@ -30,7 +30,7 @@ function GuideContent() {
         Search published answers first →
       </Link>
       <p className="border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500 dark:border-slate-800 dark:text-slate-400">
-        After submitting, track replies and open Live support from the request
+        After submitting, track replies and open Live support from the issue
         page during support hours.
       </p>
     </div>

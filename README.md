@@ -107,7 +107,7 @@ Help Center (dashboard sidebar)
    and only then returns the room URL. The client opens that URL in a new tab;
    if the browser blocks the popup (or JavaScript is off) an **Open Live support**
    link appears instead — still a new tab.
-8. **My requests** lists the student's own requests so the page is reachable
+8. **My issues** (`/dashboard/my-issues`) lists the student's own issues so the page is reachable
    again; `Solved`/`Archived` requests show the panel closed and offer no join.
 
 > **Request-less shortcut (owner decision, 2026-11-01).** The issues page also
@@ -149,7 +149,8 @@ is submitted, and the chip only stays while the request is still unresolved.
 | Duplicate issue submission | One issue (operation id + unique index) |
 | Soft-deleted request | Queue row stays marked `(removed)`; gone from the student's list |
 | Empty queue during a shift | Nobody has pressed Join yet |
-| Legacy `/dashboard/issues/submitted` | Redirects to `My requests` |
+| Legacy `/dashboard/issues/submitted` | Redirects to `My issues` |
+| Old `/dashboard/my-requests` | Redirects to `/dashboard/my-issues` (renamed 2026-11-21) |
 
 ### Cross-app notes
 
@@ -294,8 +295,8 @@ cmd /c "npm run test:e2e"
 - Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
 - Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
-- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My requests (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
-- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Submit a support request", and students browse published answers directly without the staff dashboard
+- Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Live support/Support queue, students see Issues/Submit issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); on mobile the account menu opens a glass sheet with identity, appearance and sign out (no nav links, keeping the nav link count stable)
+- Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Browse answers" and "My issues", and students browse published answers directly without the staff dashboard
 
 ## Design System
 

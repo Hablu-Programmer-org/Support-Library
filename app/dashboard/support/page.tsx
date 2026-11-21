@@ -22,7 +22,7 @@ export default async function LiveSupportPage() {
   const session = await requireSession();
 
   if (!session.user.role || !canMutate(session.user.role)) {
-    redirect("/dashboard/my-requests");
+    redirect("/dashboard/my-issues");
   }
 
   // Resolved server-side so a wrong device clock cannot widen the window.

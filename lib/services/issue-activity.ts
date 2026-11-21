@@ -17,7 +17,7 @@ export async function getIssueActivitySnapshot() {
 }
 
 /**
- * Student-scoped change signal for "My requests" and an open request.
+ * Student-scoped change signal for "My issues" and an open issue.
  *
  * Same contract as the staff snapshot — a revision token and a count, never
  * content — but the filter is the authenticated student's own ownership scope.

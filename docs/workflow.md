@@ -77,8 +77,8 @@ Help Center (dashboard sidebar)
    returns the room URL. The client opens it **in a new tab** (the request page
    stays open); a blocked popup or JavaScript-off falls back to an
    `Open Live support` link, which is also a new tab.
-8. **Come back.** `My requests` (`/dashboard/my-requests`) lists the student's own
-   requests (newest first) with status and a `Live now` chip during a shift. The
+8. **Come back.** `My issues` (`/dashboard/my-issues`) lists the student's own
+   issues (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Submit issue` and `My Courses` (back to the LMS).
 
 > **Request-less shortcut (owner decision, 2026-11-01).** Students also get a
@@ -160,7 +160,8 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Duplicate issue submission | One issue (operation id + unique index) |
 | Soft-deleted request | Queue row marked `(removed)`; gone from the student's list |
 | Empty queue during a shift | Nobody has pressed Join yet |
-| Legacy `/dashboard/issues/submitted` | Redirects to `My requests` |
+| Legacy `/dashboard/issues/submitted` | Redirects to `My issues` |
+| Old `/dashboard/my-requests` | Redirects to `/dashboard/my-issues` (renamed 2026-11-21) |
 | LMS password account | Must sign in with Google here (this app is Google-only) |
 
 ## 8. Cross-app configuration

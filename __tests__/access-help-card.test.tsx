@@ -111,7 +111,9 @@ describe("AccessHelpCard", () => {
     expect(screen.getByRole("checkbox", { name: /n8n access/i })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: /n8n password reset/i })).not.toBeNull();
     expect(screen.getByRole("checkbox", { name: /OpenAI API access/i })).not.toBeNull();
-    expect(screen.getByRole("button", { name: "Submit request" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Request access" })).not.toBeNull();
+    // "request" on a button belongs to the student's issues, never to tool access.
+    expect(screen.queryByRole("button", { name: /submit request/i })).toBeNull();
   });
 
   it("keeps a short static duration message and no invitation-only warning", () => {

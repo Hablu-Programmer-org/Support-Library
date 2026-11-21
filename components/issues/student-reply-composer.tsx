@@ -59,7 +59,7 @@ export function StudentReplyComposer({
     <section className="border-t border-slate-200 pt-6 dark:border-slate-800">
       <h3 className="text-sm font-semibold text-slate-950 dark:text-white">Reply to the support team</h3>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        Add only the new information. Your message will reopen a solved request.
+        Add only the new information. Your message will reopen a solved issue.
       </p>
       <form ref={formRef} action={formAction} onSubmit={ensureOperationId} className="mt-4 space-y-3">
         <input ref={operationIdRef} type="hidden" name="operationId" />

@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Cheap, student-scoped change signal for "My requests".
+ * Cheap, student-scoped change signal for "My issues".
  *
  * The response contains only a revision token and a count — no titles, replies
  * or counts of other students' cases — because the caller is identified by the

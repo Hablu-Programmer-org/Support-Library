@@ -385,7 +385,7 @@ test.describe("Landing AI access hint", () => {
 
     // Creating a request lives in the navigation only — the hero must not
     // duplicate it as a second primary call to action.
-    await expect(page.getByRole("link", { name: "Submit a support request" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Submit an issue" })).toHaveCount(0);
     await expect(
       page.locator('header nav[aria-label="Primary"]').getByRole("link", { name: "Submit issue" }),
     ).toBeVisible();

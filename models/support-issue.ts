@@ -130,7 +130,7 @@ supportIssueSchema.index(
   { createdBy: 1, deletedAt: 1, status: 1, updatedAt: -1 },
   { name: "student_own_issues" },
 );
-// Backs "My requests": every request the student owns, newest first.
+// Backs "My issues": every issue the student owns, newest first.
 supportIssueSchema.index(
   { createdBy: 1, deletedAt: 1, updatedAt: -1 },
   { name: "student_own_requests" },

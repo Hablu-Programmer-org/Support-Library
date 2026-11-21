@@ -85,11 +85,11 @@ export function LiveSupportPanel({
         </h2>
         <p className="text-sm text-slate-600 dark:text-slate-300">
           {isEligible
-            ? "Take this request into the support room and share your screen with the mentor."
-            : "This request is closed, so it can no longer be taken to the room. Submit a new request if the problem comes back."}
+            ? "Take this issue into the support room and share your screen with the mentor."
+            : "This issue is closed, so it can no longer be taken to the room. Submit a new issue if the problem comes back."}
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Requests can be submitted 24/7; the room is open only during a support shift.
+          Issues can be submitted 24/7; the room is open only during a support shift.
         </p>
       </div>
 
@@ -179,7 +179,7 @@ export function LiveSupportPanel({
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Say the request reference above when you join — the mentor sees the same reference in the
+        Say the issue reference above when you join — the mentor sees the same reference in the
         waiting list. Total daily support time: {supportHoursBn()}.
       </p>
     </section>

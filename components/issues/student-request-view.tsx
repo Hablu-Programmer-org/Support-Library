@@ -51,11 +51,11 @@ export function StudentRequestView({
     <div className="mx-auto w-full max-w-3xl space-y-8 py-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href="/dashboard/my-requests"
+          href="/dashboard/my-issues"
           className="inline-flex items-center gap-2 text-sm font-medium text-primary transition hover:text-primary-600 hover:underline"
         >
           <ArrowLeftIcon size={18} />
-          Back to my requests
+          Back to my issues
         </Link>
         {/* The open request stays current while the student waits: a staff reply
             bumps the student's revision and this refreshes the RSC payload. */}
@@ -67,10 +67,10 @@ export function StudentRequestView({
           role="status"
           className="border-l-2 border-success-500 pl-4 text-sm text-success-700 dark:text-success-300"
         >
-          <p className="font-semibold">Your request has been submitted.</p>
+          <p className="font-semibold">Your issue has been submitted.</p>
           <p className="text-slate-600 dark:text-slate-300">
             The support team has it now and will reply by email. You can join live support for this
-            request while the room is open.
+            issue while the room is open.
           </p>
         </div>
       )}
@@ -79,7 +79,7 @@ export function StudentRequestView({
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           <StatusBadge status={issue.status} />
           {issue.caseRef ? (
-            <CopyValue label="request reference" value={issue.caseRef} variant="chip" />
+            <CopyValue label="issue reference" value={issue.caseRef} variant="chip" />
           ) : (
             <span aria-hidden="true">—</span>
           )}
@@ -106,7 +106,7 @@ export function StudentRequestView({
             <dt className="text-slate-500 dark:text-slate-400">Reference</dt>
             <dd className="font-semibold text-slate-900 dark:text-white">
               {issue.caseRef ? (
-                <CopyValue label="request reference" value={issue.caseRef} />
+                <CopyValue label="issue reference" value={issue.caseRef} />
               ) : (
                 "—"
               )}

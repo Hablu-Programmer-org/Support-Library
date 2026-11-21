@@ -415,7 +415,7 @@ export async function createStudentIssueAction(
     }
 
     revalidatePath("/dashboard/issues");
-    revalidatePath("/dashboard/my-requests");
+    revalidatePath("/dashboard/my-issues");
     revalidatePath("/dashboard");
     // The student lands on their own request, which is where the live support
     // panel for this request lives (and where the team's replies appear).

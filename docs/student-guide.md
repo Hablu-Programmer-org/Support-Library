@@ -1,6 +1,6 @@
 # Student Guide — Hablu Support Library
 
-This guide explains how students use the Hablu Support Library, what they can read, what they can search, how to submit a support request, and what actions are not available to students.
+This guide explains how students use the Hablu Support Library, what they can read, what they can search, how to submit an issue, and what actions are not available to students.
 
 The Support Library has two sides for a student: a library of published support issues and reviewed answers, and a short form to submit a new support request. It is not an in-app chat: you submit a request, the team answers you by email, and you cannot reply inside the app. Twice a day the team also opens a live support room, which you can join from inside this app (section 12a).
 
@@ -243,7 +243,7 @@ Students see:
 - Hablu Support Library brand link.
 - `Issues` navigation link.
 - `Submit an issue` navigation link.
-- `My requests` navigation link, which lists the requests you submitted and opens them.
+- `My issues` navigation link, which lists the issues you submitted and opens them.
 - `My Courses` navigation link, which opens your courses in the Hablu Programmer LMS in a new tab. It appears only when the deployment has the LMS address configured.
 - Theme toggle.
 - Account identity.
@@ -282,7 +282,7 @@ Requests themselves can be submitted at any time — the Support Library is open
 
 The flow:
 
-1. Submit a request (**Submit an issue**), or open one you already submitted from **My requests**.
+1. Submit an issue (**Submit issue**), or open one you already submitted from **My issues**.
 2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images and video links, and any update the team has written.
 3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Live support` button, plus the meeting code in case you want to enter it in the room yourself. You may be asked to sign in before the room lets you in. The button opens the room **in a new tab**, so your request page stays open; if your browser blocks the new tab, an `Open Live support` link appears instead.
 4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
@@ -419,7 +419,7 @@ Unexpected error:
 | My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
 | The live support join button is disabled. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
 | The live support panel offers no join button. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
-| I cannot find my request again. | Open **My requests** in the topbar; each row opens the request and its live support panel. |
+| I cannot find my issue again. | Open **My issues** in the topbar; each row opens the issue and its live support panel. |
 
 ## 18. Quick Reference
 
@@ -434,8 +434,8 @@ Unexpected error:
 | Open video links | Yes | Issue details and replies |
 | Toggle theme | Yes | Topbar/account menu |
 | Sign out | Yes | Topbar/account menu |
-| Submit a support request | Yes | `/dashboard/issues/new` |
-| My requests | Yes | `/dashboard/my-requests` |
+| Submit an issue | Yes | `/dashboard/issues/new` |
+| My issues | Yes | `/dashboard/my-issues` |
 | Read one of your requests and the team's updates | Yes, your own only | `/dashboard/issues/[id]` |
 | Join live support | Yes, from an unresolved request, during a support shift | The request page |
 | Open `My Courses` in the LMS | Yes | Topbar, opens a new tab |

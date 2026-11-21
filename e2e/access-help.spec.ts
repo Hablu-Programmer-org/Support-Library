@@ -24,7 +24,7 @@ test.describe("student access help", () => {
       labels.map((label) => Math.round(label.getBoundingClientRect().top)),
     );
     const buttonTop = await card
-      .getByRole("button", { name: "Submit request" })
+      .getByRole("button", { name: "Request access" })
       .evaluate((button) => Math.round(button.getBoundingClientRect().top));
     expect(new Set([...optionTops, buttonTop]).size).toBe(1);
 
@@ -59,7 +59,7 @@ test.describe("student access help gating", () => {
       await page.goto("/dashboard/issues");
       await expect(page.getByRole("region", { name: "Help & access" })).toHaveCount(0);
       await expect(page.getByRole("checkbox", { name: /n8n access/i })).toHaveCount(0);
-      await expect(page.getByRole("button", { name: "Submit request" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Request access" })).toHaveCount(0);
     } finally {
       await db.collection("EnrolledCourse").updateOne(
         { userId: lmsUser._id, courseSlug: "agent" },

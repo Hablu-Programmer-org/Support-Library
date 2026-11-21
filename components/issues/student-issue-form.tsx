@@ -165,7 +165,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
           <div className="flex flex-col gap-1.5">
             <AttachmentField
               label="Attachments"
-              description="Images only: PNG, JPEG, GIF or WebP, up to 5 images of 5 MB each. Private until the team publishes this request to the Student Library."
+              description="Images only: PNG, JPEG, GIF or WebP, up to 5 images of 5 MB each. Private until the team publishes this issue to the Student Library."
             />
             {state.fieldErrors?.uploads?.[0] && (
               <p
@@ -239,7 +239,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
         ) : (
           <p className="rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200">
             We could not find a course on your LMS account. You can still submit
-            this request — the team will ask for the course if it matters.
+            this issue — the team will ask for the course if it matters.
           </p>
         )}
       </section>
@@ -367,12 +367,12 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 motion-reduce:transition-none dark:focus:ring-offset-slate-950 sm:w-auto sm:min-w-52"
         >
           <CheckCircleIcon size={18} />
-          {pending ? "Submitting..." : "Submit request"}
+          {pending ? "Submitting..." : "Submit issue"}
         </button>
       </div>
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-        After submitting, track replies and open Live support from the request page.
+        After submitting, track replies and open Live support from the issue page.
       </p>
     </form>
   );

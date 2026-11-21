@@ -72,7 +72,7 @@ describe("LiveSupportPanel", () => {
     render(<LiveSupportPanel {...baseProps} shift="morning" status="SOLVED" />);
 
     expect(
-      screen.getByText(/This request is closed, so it can no longer be taken to the room/),
+      screen.getByText(/This issue is closed, so it can no longer be taken to the room/),
     ).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Join Live support" })).toBeNull();
     // A closed request also gets no dial-in details: the room is not for it.

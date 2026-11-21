@@ -22,13 +22,13 @@ const timestamp = (date?: Date | null) =>
     : "—";
 
 /**
- * The student's own support requests.
+ * The student's own support issues.
  *
  * Scoped by `createdBy` from the session, so it can never list another student's
- * case. It is the way back to a request (and therefore to live support) after
+ * case. It is the way back to an issue (and therefore to live support) after
  * leaving the request page.
  */
-export default async function MyRequestsPage() {
+export default async function MyIssuesPage() {
   const session = await requireSession();
   const issues = await listOwnIssues(session.user.id);
   const roomOpen = currentShift(new Date()) !== "off";
@@ -49,17 +49,17 @@ export default async function MyRequestsPage() {
               className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600"
               href="/dashboard/issues/new"
             >
-              Submit a request
+              Submit an issue
             </Link>
           </div>
         }
-        description="Every request you have submitted, newest first. Open one to join live support for it."
-        title="My requests"
+        description="Only the issues you submitted, newest first — visible to you and the team. Open one to join live support for it."
+        title="My issues"
       />
 
       <section className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
         {issues.length === 0 ? (
-          <EmptyState>You have not submitted a request yet.</EmptyState>
+          <EmptyState>You have not submitted an issue yet.</EmptyState>
         ) : (
           issues.map((issue) => {
             const eligible = (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(

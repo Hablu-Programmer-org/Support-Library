@@ -89,7 +89,7 @@
   images and video links, and the team's replies). A per-request panel posts to
   `joinLiveSupportAction`, which re-checks ownership, the shift, the rate limit and
   idempotency before it redirects to the room. `/dashboard/support` is staff-only
-  (students are redirected to `/dashboard/my-requests`); the mentor side is the
+  (students are redirected to `/dashboard/my-issues`); the mentor side is the
   queue at `/dashboard/live-support`. `/dashboard/issues/submitted` is a legacy
   redirect. `lib/live-support-policy.ts` and `lib/issue-ownership.ts` are the two
   pure filters that pin ownership; `scripts/check-live-support-sync.ts`
@@ -183,7 +183,7 @@ cmd /c "npm run test:e2e"
 - ~~A student cannot see the issue they submitted (no list/detail access by design),
   only the confirmation page.~~ **Resolved 2026-10-21:** a student now reads their
   own request at `/dashboard/issues/[id]` (owner-scoped by `createdBy`) and lists
-  them at `/dashboard/my-requests`. Other students' unpublished requests stay 404.
+  them at `/dashboard/my-requests` (renamed **My issues**, `/dashboard/my-issues`, 2026-11-21). Other students' unpublished requests stay 404.
 - `studentName` remains in the denormalized `searchText` after publishing, so the
   public library search can match a name to a published issue. Email is already
   excluded. Addressing this changes publish/search semantics and is deferred.

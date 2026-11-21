@@ -3,7 +3,7 @@
 import { AutoRefresh } from "@/components/shared/auto-refresh";
 
 /**
- * Keeps "My requests" and an open request current while the student waits.
+ * Keeps "My issues" and an open issue current while the student waits.
  *
  * Staff replies already bump the issue's `updatedAt` (and its position in the
  * list), so a 10s probe of the student-scoped revision is enough to pull the

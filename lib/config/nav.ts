@@ -54,10 +54,10 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
     icon: SparklesIcon,
   },
   // Students reach live support from their own request, so the way back is the
-  // list of requests rather than a separate room page.
+  // list of their issues rather than a separate room page.
   {
-    label: "My requests",
-    href: "/dashboard/my-requests",
+    label: "My issues",
+    href: "/dashboard/my-issues",
     maxRole: "STUDENT",
     icon: FileTextIcon,
   },

@@ -241,8 +241,18 @@ describe("parseIssueListReturnTo", () => {
       `${ISSUES_PATH}?status=OPEN&page=3`,
     );
     expect(parseIssueListReturnTo("/dashboard", staff)).toBe("/dashboard");
+    expect(parseIssueListReturnTo("/dashboard/my-issues", staff)).toBe(
+      "/dashboard/my-issues",
+    );
+    // The pre-rename address still resolves (the page redirects to my-issues).
     expect(parseIssueListReturnTo("/dashboard/my-requests", staff)).toBe(
       "/dashboard/my-requests",
+    );
+  });
+
+  it("drops query strings on the my-issues list", () => {
+    expect(parseIssueListReturnTo("/dashboard/my-issues?next=https%3A%2F%2Fevil.test", staff)).toBe(
+      "/dashboard/my-issues",
     );
   });
 

@@ -20,9 +20,9 @@ test.describe("STUDENT issue submission", () => {
     const title = `E2E student request ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
-    await expect(page.getByRole("heading", { name: "Submit a support request" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Submit an issue" })).toBeVisible();
 
-    const form = formFor(page, "Submit request");
+    const form = formFor(page, "Submit issue");
     // The student picks no identity — it is derived from the session.
     await expect(form.locator('input[name="studentEmail"]')).toHaveCount(0);
     await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
@@ -49,8 +49,8 @@ test.describe("STUDENT issue submission", () => {
       .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
     await optional.locator('input[name="tags"]').fill("buffering, video");
 
-    await submitAndWait(page, "Submit request", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
-    await expect(page.getByRole("status")).toContainText("Your request has been submitted.");
+    await submitAndWait(page, "Submit issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await expect(page.getByRole("status")).toContainText("Your issue has been submitted.");
     await expect(pageErrors).toEqual([]);
 
     // The submitted case is internal, so it must not appear in the library list.
@@ -83,16 +83,16 @@ test.describe("STUDENT issue submission", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dashboard/issues/new");
 
-    const form = formFor(page, "Submit request");
+    const form = formFor(page, "Submit issue");
     const details = form.locator('textarea[name="question"]');
     await form.locator('input[name="title"]').fill("Assignment page does not load");
     await details.fill("Page broken");
 
     expect(await details.evaluate((field) => (field as HTMLTextAreaElement).validity.tooShort)).toBe(true);
-    await form.getByRole("button", { name: "Submit request" }).click();
+    await form.getByRole("button", { name: "Submit issue" }).click();
     await expect(page).toHaveURL("/dashboard/issues/new");
     await expect(form.getByText("Add at least 40 characters.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Submit request" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Submit issue" })).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,

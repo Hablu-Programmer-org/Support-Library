@@ -24,13 +24,13 @@ describe("copyFor (landing copy per audience)", () => {
     expect(copyFor(null)).toEqual(copyFor(undefined));
   });
 
-  it("student gets answers + my requests, never staff-only routes", () => {
+  it("student gets answers + my issues, never staff-only routes", () => {
     const view = copyFor("STUDENT");
     expect(view.student).toBe(true);
     expect(view.staff).toBe(false);
     expect(view.copy.ctas.map((cta) => [cta.label, cta.href])).toEqual([
       ["Browse answers", "/dashboard/issues"],
-      ["My requests", "/dashboard/my-requests"],
+      ["My issues", "/dashboard/my-issues"],
     ]);
     const studentHrefs = hrefs("STUDENT");
     expect(studentHrefs).not.toContain("/dashboard");

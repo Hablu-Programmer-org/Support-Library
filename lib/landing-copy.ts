@@ -99,10 +99,10 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
         highlight: "help",
         rest: "you need.",
         description:
-          "Search published solutions, track your requests, or access support for your course.",
+          "Search published solutions, track your issues, or access support for your course.",
         ctas: [
           { label: "Browse answers", href: "/dashboard/issues", variant: "primary" },
-          { label: "My requests", href: "/dashboard/my-requests", variant: "secondary" },
+          { label: "My issues", href: "/dashboard/my-issues", variant: "secondary" },
         ],
         cards: [
           {
@@ -114,17 +114,17 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
           },
           {
             icon: MessageSquareIcon,
-            title: "My requests",
+            title: "My issues",
             body: "Follow the team's reply and any update on what you submitted.",
-            href: "/dashboard/my-requests",
-            cta: "View my requests",
+            href: "/dashboard/my-issues",
+            cta: "View my issues",
           },
           {
             icon: VideoIcon,
             title: "Live support",
-            body: "See availability and join from your own support request.",
-            href: "/dashboard/my-requests",
-            cta: "Open my requests",
+            body: "See availability and join from your own issue.",
+            href: "/dashboard/my-issues",
+            cta: "Open my issues",
           },
         ],
       },
@@ -140,7 +140,7 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
       highlight: "Hablu Programmer",
       rest: "Support.",
       description:
-        "Browse published solutions from the support library, or sign in to manage your own requests.",
+        "Browse published solutions from the support library, or sign in to manage your own issues.",
       ctas: [{ label: "Staff Sign In", href: "/login", variant: "primary" }],
       cards: [
         {

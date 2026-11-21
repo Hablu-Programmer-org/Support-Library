@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
  * old link or bookmark still resolves instead of 404-ing.
  */
 export default function IssueSubmittedPage() {
-  redirect("/dashboard/my-requests");
+  redirect("/dashboard/my-issues");
 }

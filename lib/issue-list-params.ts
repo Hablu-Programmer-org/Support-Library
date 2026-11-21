@@ -90,6 +90,9 @@ const MAX_RETURN_TO_LENGTH = 512;
 const RETURNABLE_PATHS = new Set<string>([
   ISSUES_PATH,
   "/dashboard",
+  "/dashboard/my-issues",
+  // Old address of my-issues; it redirects, so a `returnTo` minted before the
+  // rename still lands the student on their list.
   "/dashboard/my-requests",
 ]);
 
@@ -260,7 +263,7 @@ export function parseIssueListReturnTo(
   if (!RETURNABLE_PATHS.has(url.pathname)) return null;
 
   if (url.pathname !== ISSUES_PATH) {
-    // Dashboard-home and my-requests lists carry no filters worth preserving.
+    // Dashboard-home and my-issues lists carry no filters worth preserving.
     return url.pathname;
   }
 
