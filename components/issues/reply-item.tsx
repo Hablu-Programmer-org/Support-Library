@@ -142,7 +142,7 @@ export function ReplyItem({
               aria-expanded={editing}
               title="Edit reply"
               onClick={() => setEditing((value) => !value)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="inline-flex size-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               <PencilIcon size={16} />
             </button>
@@ -161,7 +161,7 @@ export function ReplyItem({
                 type="submit"
                 aria-label="Delete"
                 title="Delete reply"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-danger-50 hover:text-danger-600 focus-visible:bg-danger-50 focus-visible:text-danger-600 dark:text-slate-500 dark:hover:bg-danger-950/40 dark:hover:text-danger-300 dark:focus-visible:bg-danger-950/40 dark:focus-visible:text-danger-300"
+                className="inline-flex size-10 items-center justify-center rounded-lg text-slate-400 transition hover:bg-danger-50 hover:text-danger-600 focus-visible:bg-danger-50 focus-visible:text-danger-600 dark:text-slate-500 dark:hover:bg-danger-950/40 dark:hover:text-danger-300 dark:focus-visible:bg-danger-950/40 dark:focus-visible:text-danger-300"
               >
                 <TrashIcon size={16} />
               </button>
@@ -226,16 +226,16 @@ export function ReplyItem({
                 Tick an image to remove it when you save. Removing a picture puts the case back
                 into review before it can appear in the Student Library again.
               </p>
-              <ul className="grid gap-3 sm:grid-cols-2">
+              <ul className="flex flex-wrap gap-3">
                 {reply.uploads.map((upload) => {
                   const src = `/api/attachments/${upload.id}`;
                   return (
-                    <li key={upload.id} className="space-y-1">
+                    <li key={upload.id} className="w-36 space-y-1">
                       <a
                         href={src}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
+                        className="block size-36 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
                         aria-label={`Open ${upload.originalName}`}
                       >
                         {/* A direct image request carries the staff session cookie;
@@ -246,7 +246,7 @@ export function ReplyItem({
                           alt={upload.originalName}
                           loading="lazy"
                           decoding="async"
-                          className="h-32 w-full object-contain"
+                          className="size-full object-cover"
                         />
                       </a>
                       <div className="flex items-center justify-between gap-3">

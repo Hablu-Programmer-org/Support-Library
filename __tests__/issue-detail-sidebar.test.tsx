@@ -128,3 +128,32 @@ describe("IssueDetailSidebar content", () => {
     expect(screen.queryByText("Created")).toBeNull();
   });
 });
+
+describe("IssueDetailSidebar parts (phone order on the case page)", () => {
+  it("part=manage renders only the Manage card, in its own landmark", () => {
+    renderSidebar({ canEdit: true, canPublish: true, staff, part: "manage" });
+    const manage = screen.getByRole("complementary", { name: "Manage issue" });
+    expect(manage.textContent).toContain("Manage issue");
+    expect(screen.getByTestId("status-form")).toBeTruthy();
+    expect(screen.queryByText("Issue context")).toBeNull();
+    expect(screen.queryByText("Danger zone")).toBeNull();
+  });
+
+  it("part=manage renders nothing for a non-staff viewer", () => {
+    const { container } = renderSidebar({ part: "manage" });
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("part=context leaves Manage out, so the forms exist once on the page", () => {
+    renderSidebar({ canEdit: true, canPublish: true, staff, part: "context" });
+    expect(screen.queryByTestId("status-form")).toBeNull();
+    expect(screen.queryByTestId("publish-form")).toBeNull();
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual(["Issue context", "Student snapshot", "Archive this issue"]);
+  });
+
+  it("passes layout classes through", () => {
+    renderSidebar({ canEdit: true, staff, part: "manage", className: "lg:col-start-2" });
+    expect(screen.getByRole("complementary", { name: "Manage issue" }).className).toContain("lg:col-start-2");
+  });
+});

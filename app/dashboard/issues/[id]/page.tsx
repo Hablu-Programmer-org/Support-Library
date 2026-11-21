@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { ComponentProps } from "react";
 
 import {
   deleteIssueAction,
@@ -126,6 +127,27 @@ export default async function IssueDetailPage({
         })
       : null;
 
+  const sidebarProps = {
+    issueId: supportIssue.id,
+    status: supportIssue.status,
+    isPublished: supportIssue.visibility === "PUBLISHED",
+    updatedAtIso: supportIssue.updatedAt?.toISOString() ?? "",
+    caseRef: supportIssue.caseRef,
+    courseSlug: supportIssue.courseSlug,
+    batchNo: supportIssue.batchNo,
+    publishedAt: supportIssue.publishedAt,
+    csrfToken,
+    returnTo: returnTo ?? undefined,
+    canEdit,
+    canPublish,
+    staff: staffIssue,
+    statusOptions: CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => ({
+      value: status,
+      label: statusLabels[status],
+    })),
+    archiveAction: deleteIssueAction.bind(null, supportIssue.id),
+  } satisfies ComponentProps<typeof IssueDetailSidebar>;
+
   return (
     // Same width as the issue list: `PageContainer` already caps it at
     // max-w-screen-2xl, so the page adds no narrower max-width of its own.
@@ -144,8 +166,16 @@ export default async function IssueDetailPage({
         aiPrompt={aiPrompt}
       />
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
-        <main className="min-w-0 space-y-10">
+      {/* DOM order is the phone order: Manage, the case, then its context. On
+          desktop the grid moves Manage and the context into the right column. */}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
+        <IssueDetailSidebar
+          part="manage"
+          className="lg:col-start-2 lg:row-start-1"
+          {...sidebarProps}
+        />
+
+        <main className="min-w-0 space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
           <IssueProblemSection
             question={supportIssue.question}
             videoLinks={supportIssue.videoLinks ?? []}
@@ -175,24 +205,11 @@ export default async function IssueDetailPage({
         </main>
 
         <IssueDetailSidebar
-          issueId={supportIssue.id}
-          status={supportIssue.status}
-          isPublished={supportIssue.visibility === "PUBLISHED"}
-          updatedAtIso={supportIssue.updatedAt?.toISOString() ?? ""}
-          caseRef={supportIssue.caseRef}
-          courseSlug={supportIssue.courseSlug}
-          batchNo={supportIssue.batchNo}
-          publishedAt={supportIssue.publishedAt}
-          csrfToken={csrfToken}
-          returnTo={returnTo ?? undefined}
-          canEdit={canEdit}
-          canPublish={canPublish}
-          staff={staffIssue}
-          statusOptions={CASE_STATUSES.filter((status) => status !== "ARCHIVED").map(
-            (status) => ({ value: status, label: statusLabels[status] }),
-          )}
-          archiveAction={deleteIssueAction.bind(null, supportIssue.id)}
+          part="context"
+          className={canEdit ? "lg:col-start-2 lg:row-start-2 lg:self-start" : "lg:col-start-2 lg:row-start-1 lg:self-start"}
+          {...sidebarProps}
         />
+
       </div>
     </div>
   );
