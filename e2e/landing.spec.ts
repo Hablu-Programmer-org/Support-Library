@@ -203,12 +203,6 @@ test.describe("Topbar logo", () => {
       page,
     }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      const logoBytes: number[] = [];
-      page.on("response", async (response) => {
-        if (response.url().includes("logo.png")) {
-          logoBytes.push((await response.body().catch(() => Buffer.alloc(0))).length);
-        }
-      });
       await page.goto("/");
 
       const home = page.locator("header").getByRole("link", { name: "Hablu Support Library home" });
@@ -227,11 +221,59 @@ test.describe("Topbar logo", () => {
       // itself must also be within 2% of it.
       expect(shape.fit).toBe("contain");
       expect(Math.abs(shape.rendered - shape.natural) / shape.natural).toBeLessThan(0.02);
-
-      expect(logoBytes.length).toBeGreaterThan(0);
-      expect(Math.max(...logoBytes)).toBeLessThan(15 * 1024);
     });
   }
+
+  test("logo is served resized, not the 63 KiB original", async ({ page, baseURL }) => {
+    // Local Windows standalone builds (playwright.12001 on win32) ship sharp's
+    // .node file without the libvips DLLs, so the optimizer silently falls back
+    // to the original image. Production (Linux) resizes correctly: w=48 is a
+    // ~1 KiB webp. The size check runs everywhere else.
+    test.skip(
+      process.platform === "win32" && Boolean(baseURL?.includes(":12001")),
+      "local win32 standalone has no libvips DLLs; image optimizer falls back to the original",
+    );
+    const logoBytes: number[] = [];
+    page.on("response", async (response) => {
+      if (response.url().includes("logo.png")) {
+        logoBytes.push((await response.body().catch(() => Buffer.alloc(0))).length);
+      }
+    });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    expect(logoBytes.length).toBeGreaterThan(0);
+    expect(Math.max(...logoBytes)).toBeLessThan(15 * 1024);
+  });
+});
+
+test.describe("Landing search button contrast", () => {
+  test.use({ storageState: "e2e/.auth/student.json" });
+
+  test("Search button text meets WCAG AA across the whole gradient, at rest and on hover", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const button = page.getByRole("search").getByRole("button", { name: "Search" });
+    const style = await button.evaluate((el) => {
+      const computed = getComputedStyle(el);
+      return { color: computed.color, image: computed.backgroundImage };
+    });
+
+    // brand-bg is a two-stop linear gradient; sample both ends and the middle.
+    const stops = (style.image.match(/rgba?\([^)]*\)/g) ?? []).map((value) =>
+      (value.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number),
+    );
+    expect(stops, style.image).toHaveLength(2);
+    const [from, to] = stops;
+    const samples = [0, 0.5, 1].map((t) => from.map((channel, i) => channel + (to[i] - channel) * t));
+    // hover:brightness-110 multiplies each channel by 1.1 (clamped).
+    const hovered = samples.map((rgb) => rgb.map((channel) => Math.min(255, channel * 1.1)));
+
+    for (const rgb of [...samples, ...hovered]) {
+      const background = `rgb(${rgb.map(Math.round).join(", ")})`;
+      expect(contrastRatio(style.color, background), background).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });
 
 test.describe("Landing motion", () => {

@@ -14,8 +14,11 @@ const barClass =
 const inputClass =
   "h-12 w-full rounded-xl bg-transparent pl-11 pr-3 text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-sm dark:text-white dark:placeholder:text-slate-500 [&::-webkit-search-cancel-button]:cursor-pointer";
 
+// Dark text on the brand gradient: white failed AA at both ends (2.43:1 on
+// cyan, 4.23:1 on violet); slate-950 is ~8.6:1 on cyan and ~4.8:1 on violet.
+// brand-bg itself stays shared (logo/icon backgrounds), only this text changes.
 const buttonClass =
-  "brand-bg h-12 shrink-0 rounded-xl px-6 text-sm font-semibold text-white shadow-sm transition-transform duration-150 hover:brightness-110 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500";
+  "brand-bg h-12 shrink-0 rounded-xl px-6 text-sm font-semibold text-slate-950 shadow-sm transition-transform duration-150 hover:brightness-110 active:scale-[0.98] motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500";
 
 export function LibrarySearch() {
   const router = useRouter();
