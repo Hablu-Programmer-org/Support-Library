@@ -1,20 +1,43 @@
 import { Skeleton } from "@/components/shared/skeleton";
 
+const card =
+  "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70";
+
+/** Shaped like the create page: header, four form cards, the guide card. */
 export default function NewIssueLoading() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading">
-      <div className="flex items-start gap-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </div>
+    <div className="w-full py-6" aria-busy="true" aria-label="Loading">
+      <div className="mb-8 space-y-5">
+        <Skeleton className="h-5 w-44" />
+        <Skeleton className="h-9 w-60" />
       </div>
-      <Skeleton className="h-12" />
-      <div className="space-y-4">
-        <Skeleton className="h-32" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+        <div className="order-2 min-w-0 space-y-6 lg:order-1">
+          <div className={`${card} space-y-5`}>
+            <Skeleton className="h-5 w-44" />
+            <Skeleton className="h-11" />
+            <Skeleton className="h-60" />
+          </div>
+          <div className={`${card} space-y-4`}>
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+          <div className={`${card} space-y-4`}>
+            <Skeleton className="h-5 w-36" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Skeleton className="h-11" />
+              <Skeleton className="h-11" />
+            </div>
+          </div>
+          <Skeleton className="h-14 rounded-2xl" />
+        </div>
+        <div className={`order-1 lg:order-2 ${card} space-y-3`}>
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </div>
       </div>
     </div>
   );

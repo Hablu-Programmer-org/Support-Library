@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+
+import { CloseIcon, ImageIcon } from "@/components/icons";
 
 import { formatByteSize } from "@/components/shared/attachment-list";
 import { nativeLabelClass } from "@/lib/config/fields";
@@ -186,6 +188,8 @@ export function AttachmentField({
   const containerRef = useRef<HTMLDivElement>(null);
   const urlsRef = useRef(new Map<string, string>());
   const filesRef = useRef<File[]>([]);
+  const inputId = useId();
+  const descriptionId = `${inputId}-description`;
 
   // Saved attachments count against the same per-item cap the server applies.
   const budget = Math.max(0, maxFiles - Math.max(0, existingCount));
@@ -292,42 +296,77 @@ export function AttachmentField({
     setNote(null);
   };
 
-  return (
-    <div
-      ref={containerRef}
-      data-attachment-drop=""
-      className={`relative space-y-3 rounded-xl border-2 border-dashed p-2 transition ${
-        dragActive
-          ? "border-cyan-500 bg-cyan-50/70 dark:border-cyan-400 dark:bg-cyan-950/30"
-          : "border-transparent"
-      }`}
-    >
-      {dragActive && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/85 px-4 text-center text-sm font-semibold text-cyan-700 dark:bg-slate-950/85 dark:text-cyan-300">
-          {full ? "Attachment limit reached" : "Drop images to attach"}
-        </div>
-      )}
+  const openPicker = () => {
+    if (!full) inputRef.current?.click();
+  };
 
-      <label className={nativeLabelClass}>
-        <span>{label}</span>
-        <input
-          ref={inputRef}
-          type="file"
-          name={name}
-          multiple
-          accept={accept}
-          disabled={full}
-          onChange={handlePick}
-          className="w-full cursor-pointer rounded-lg border border-transparent bg-slate-100 px-3 py-2 text-sm text-slate-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-cyan-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:file:bg-cyan-500 dark:hover:border-slate-700"
-        />
+  return (
+    <div ref={containerRef} data-attachment-drop="" className="space-y-3">
+      <label htmlFor={inputId} className={nativeLabelClass}>
+        {label}
+      </label>
+      {/* The real input stays in the form (name, multiple, accept) but is visually
+          hidden; the zone below is its large, keyboard-reachable face. */}
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        name={name}
+        multiple
+        accept={accept}
+        disabled={full}
+        onChange={handlePick}
+        aria-describedby={description ? descriptionId : undefined}
+        className="sr-only"
+        tabIndex={-1}
+      />
+      <div
+        role="button"
+        tabIndex={full ? -1 : 0}
+        aria-disabled={full || undefined}
+        aria-label={full ? "Attachment limit reached" : `Add ${label.toLowerCase()}`}
+        aria-describedby={description ? descriptionId : undefined}
+        onClick={openPicker}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openPicker();
+          }
+        }}
+        className={`flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 motion-reduce:transition-none ${
+          full
+            ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-800 dark:bg-slate-900/40"
+            : dragActive
+              ? "cursor-copy border-cyan-500 bg-cyan-50 dark:border-cyan-400 dark:bg-cyan-500/10"
+              : "cursor-pointer border-slate-300 bg-slate-50/60 hover:border-cyan-400 hover:bg-cyan-50/50 dark:border-slate-700 dark:bg-slate-950/30 dark:hover:border-cyan-500/60 dark:hover:bg-cyan-500/5"
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-10 items-center justify-center rounded-full bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300"
+        >
+          <ImageIcon size={20} />
+        </span>
+        <span className="text-sm text-slate-700 dark:text-slate-200">
+          {full ? (
+            "Attachment limit reached"
+          ) : dragActive ? (
+            <span className="font-semibold text-cyan-700 dark:text-cyan-300">Drop images to attach</span>
+          ) : (
+            <>
+              Drop screenshots here or{" "}
+              <span className="font-semibold text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-300">
+                browse
+              </span>
+            </>
+          )}
+        </span>
         {description && (
-          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-            {full
-              ? `This item already has ${maxFiles} images. Remove one to add another.`
-              : description}
+          <span id={descriptionId} className="max-w-md text-xs text-slate-500 dark:text-slate-400">
+            {full ? `This item already has ${maxFiles} images. Remove one to add another.` : description}
           </span>
         )}
-      </label>
+      </div>
 
       {note && (
         <p
@@ -340,44 +379,42 @@ export function AttachmentField({
 
       {previews.length > 0 && (
         <div className="space-y-2" aria-live="polite">
-          <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            Selected attachments
-            {` — ${previews.length} of ${budget}`}
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Selected attachments — {previews.length} of {budget}
             {existingCount > 0 && ` · ${existingCount} already attached`}
-          </span>
-          <ul className="grid gap-3 sm:grid-cols-2">
+          </p>
+          <ul className="flex flex-wrap gap-3">
             {previews.map(({ file, url }) => {
               const key = fileKey(file);
               return (
-                <li key={key} className="space-y-1">
-                  {/* Local blob previews never leave the browser. */}
-                  {url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={url}
-                      alt={`Preview of ${file.name}`}
-                      className="h-40 w-full rounded-md border border-slate-200 bg-slate-50 object-contain dark:border-slate-700 dark:bg-slate-950"
-                    />
-                  )}
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span
-                      className="truncate text-slate-600 dark:text-slate-300"
-                      title={file.name}
-                    >
-                      {file.name}
-                    </span>
-                    <span className="shrink-0 text-slate-400 dark:text-slate-500">
-                      {formatByteSize(file.size)}
-                    </span>
+                <li key={key} className="w-24">
+                  <div className="relative size-24 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-950">
+                    {/* Local blob previews never leave the browser. */}
+                    {url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={url}
+                        alt={`Preview of ${file.name}`}
+                        className="size-full object-cover"
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => removeFile(file)}
                       aria-label={`Remove ${file.name}`}
-                      className="shrink-0 font-medium text-danger-600 transition hover:underline dark:text-danger-300"
+                      title={`Remove ${file.name}`}
+                      // 44px hit area around a small visible chip.
+                      className="group/remove absolute -right-1 -top-1 flex size-11 items-start justify-end p-1.5 focus-visible:outline-none"
                     >
-                      Remove
+                      <span className="flex size-6 items-center justify-center rounded-full bg-slate-950/75 text-white shadow transition group-hover/remove:bg-danger-600 group-focus-visible/remove:ring-2 group-focus-visible/remove:ring-cyan-400 motion-reduce:transition-none">
+                        <CloseIcon size={13} />
+                      </span>
                     </button>
                   </div>
+                  <p className="mt-1 truncate text-[11px] text-slate-600 dark:text-slate-300" title={file.name}>
+                    {file.name}
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">{formatByteSize(file.size)}</p>
                 </li>
               );
             })}

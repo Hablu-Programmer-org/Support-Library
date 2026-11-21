@@ -1,6 +1,11 @@
 import type { ComponentProps, ReactNode } from "react";
 
-import { ChevronDownIcon, SettingsIcon, UserIcon, WarningTriangleIcon } from "@/components/icons";
+import {
+  ChevronDownIcon,
+  SettingsIcon,
+  UserIcon,
+  WarningTriangleIcon,
+} from "@/components/icons";
 import { ArchiveIssueButton } from "@/components/issues/archive-issue-button";
 import { IssueStatusForm } from "@/components/issues/issue-status-form";
 import { PublishIssueForm } from "@/components/issues/publish-issue-form";
@@ -40,15 +45,31 @@ type IssueDetailSidebarProps = {
   archiveAction?: ComponentProps<typeof ArchiveIssueButton>["action"];
   /** Extra cards after the context (the owner's live support panel). */
   children?: ReactNode;
+  /**
+   * `all` (default): every card in one sticky aside.
+   * `manage` / `context`: the case page renders Manage on its own, before the
+   * main column in the DOM, so on a phone staff reach it right under the title;
+   * on desktop the grid puts both parts in the right column.
+   */
+  part?: "all" | "manage" | "context";
+  className?: string;
 };
 
-function CardTitle({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+function CardTitle({
+  icon,
+  children,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="flex items-center gap-2">
       <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
         {icon}
       </span>
-      <h2 className="text-sm font-semibold text-slate-950 dark:text-white">{children}</h2>
+      <h2 className="text-sm font-semibold text-slate-950 dark:text-white">
+        {children}
+      </h2>
     </div>
   );
 }
@@ -94,39 +115,54 @@ export function IssueDetailSidebar({
   statusOptions,
   archiveAction,
   children,
+  part = "all",
+  className = "",
 }: IssueDetailSidebarProps) {
   const staffView = canEdit ? (staff ?? null) : null;
+  const showManage = canEdit && Boolean(statusOptions) && part !== "context";
+
+  const manageCard = () =>
+    statusOptions ? (
+      <section className={card}>
+        <CardTitle icon={<SettingsIcon size={16} />}>Manage issue</CardTitle>
+        <IssueStatusForm
+          autoPublish={canPublish}
+          csrfToken={csrfToken}
+          expectedUpdatedAt={updatedAtIso}
+          issueId={issueId}
+          isPublished={isPublished}
+          options={statusOptions}
+          status={status}
+        />
+        {canPublish ? (
+          <PublishIssueForm
+            issueId={issueId}
+            reviewedAt={updatedAtIso}
+            isPublished={isPublished}
+            csrfToken={csrfToken}
+            returnTo={returnTo}
+          />
+        ) : null}
+      </section>
+    ) : null;
+
+  if (part === "manage") {
+    if (!showManage) return null;
+    return (
+      <aside aria-label="Manage issue" className={className}>
+        {manageCard()}
+      </aside>
+    );
+  }
 
   return (
     // Sticky on desktop; a tall staff sidebar scrolls inside itself instead of
     // hiding its lower cards below the fold. p-1/-m-1 keeps focus rings unclipped.
     <aside
       aria-label="Issue sidebar"
-      className="space-y-4 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1"
+      className={`space-y-4 lg:sticky lg:top-20 lg:-m-1 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1 ${className}`}
     >
-      {canEdit && statusOptions ? (
-        <section className={card}>
-          <CardTitle icon={<SettingsIcon size={16} />}>Manage issue</CardTitle>
-          <IssueStatusForm
-            autoPublish={canPublish}
-            csrfToken={csrfToken}
-            expectedUpdatedAt={updatedAtIso}
-            issueId={issueId}
-            isPublished={isPublished}
-            options={statusOptions}
-            status={status}
-          />
-          {canPublish ? (
-            <PublishIssueForm
-              issueId={issueId}
-              reviewedAt={updatedAtIso}
-              isPublished={isPublished}
-              csrfToken={csrfToken}
-              returnTo={returnTo}
-            />
-          ) : null}
-        </section>
-      ) : null}
+      {showManage ? manageCard() : null}
 
       <section className={card}>
         <CardTitle icon={<SettingsIcon size={16} />}>Issue context</CardTitle>
@@ -134,15 +170,29 @@ export function IssueDetailSidebar({
           <Info
             label="Reference"
             wide
-            valueNode={caseRef ? <CopyValue label="reference" value={caseRef} variant="chip" /> : undefined}
+            valueNode={
+              caseRef ? (
+                <CopyValue label="reference" value={caseRef} variant="chip" />
+              ) : undefined
+            }
           />
           <Info label="Course" value={courseSlug} />
           <Info label="Batch" value={batchNo?.toString()} />
-          <Info label="Published" value={publishedAt ? formatSupportDate(publishedAt) : "Not published"} wide />
+          <Info
+            label="Published"
+            value={
+              publishedAt ? formatSupportDate(publishedAt) : "Not published"
+            }
+            wide
+          />
           {staffView ? (
             <Info
               label="Live support"
-              value={staffView.lastLiveSupportAt ? formatSupportDate(staffView.lastLiveSupportAt) : null}
+              value={
+                staffView.lastLiveSupportAt
+                  ? formatSupportDate(staffView.lastLiveSupportAt)
+                  : null
+              }
               wide
             />
           ) : null}
@@ -192,10 +242,14 @@ export function IssueDetailSidebar({
             </summary>
             <div className="px-4 pb-4">
               <p className="text-sm leading-6 text-danger-900/80 dark:text-slate-300">
-                Remove this issue from active staff lists and the student library. Archive it only
-                when no further action is needed.
+                Remove this issue from active staff lists and the student
+                library. Archive it only when no further action is needed.
               </p>
-              <ArchiveIssueButton action={archiveAction} csrfToken={csrfToken} returnTo={returnTo} />
+              <ArchiveIssueButton
+                action={archiveAction}
+                csrfToken={csrfToken}
+                returnTo={returnTo}
+              />
             </div>
           </details>
         </section>
