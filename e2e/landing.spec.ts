@@ -123,7 +123,9 @@ test.describe("Landing bundle (signed in)", () => {
   test("a slow account-sheet chunk does not block the landing search", async ({ page }) => {
     let delayed = 0;
     let released = false;
-    await page.route("**/*.js", async (route) => {
+    // Match on the path, not a glob: CI builds set DEPLOYMENT_VERSION, so every
+    // chunk URL ends in `?dpl=<sha>` and a `**/*.js` glob matches nothing.
+    await page.route((url) => url.pathname.endsWith(".js"), async (route) => {
       const response = await route.fetch();
       const body = await response.text();
       if (body.includes("Account menu")) {

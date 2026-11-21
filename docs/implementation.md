@@ -2,6 +2,13 @@
 
 ## Completed
 
+- **Landing page redesign (2026-11-21).**
+  - Motion is CSS-only (`landing-*` in `app/globals.css`): it animates transform/opacity only, respects reduced motion, and the hero `<h1>` is never faded, so the LCP element paints in the first frame.
+  - Cards reveal with a `view()` scroll timeline behind `@supports`, which is why `<main>` uses `overflow-clip`.
+  - Role copy lives in `lib/landing-copy.ts` (`copyFor`).
+  - Topbar loads `AccountSheet` dynamically inside `<Suspense>`, so guests never download framer-motion.
+  - CTAs and the Search button use dark text for WCAG AA. The logo is decorative and the home link carries its name.
+  - Tests: `landing-copy`, `library-search` and `topbar-bundle` unit tests, plus `e2e/landing.spec.ts` (motion, bundle, contrast with a canvas color helper and a vacuous-pass guard, logo).
 - Foundation: Next.js, TypeScript, Tailwind, HeroUI
 - Auth.js Google OAuth, staff allowlist, initial admin promotion
 - MongoDB/Mongoose connection and product models
@@ -160,6 +167,10 @@ cmd /c "npm run test:e2e"
 
 ## Remaining
 
+- Landing redesign (2026-11-21) follow-ups:
+  - Mobile LCP is 2.23s (DevTools throttle, median of 5); the target was < 2.0s. A ~600ms CSS → first-text-paint gap remains, and the font is ruled out. Next step: trace Layout (~140ms).
+  - On win32, `.next/standalone` ships `@img/sharp-win32-x64` without `libvips-*.dll`, so local standalone runs serve original images. Production (Linux) is fine. The `e2e/landing.spec.ts` logo-bytes test skips on win32 + :12001.
+  - Topbar nav class has a duplicate `focus-visible:outline` + `focus-visible:outline-2` (pre-existing IDE warning).
 - Service-level integration tests with test DB
 - Apply the search strategy change (token array or text index) — see findings above
 - UI polish and mobile navigation improvements
