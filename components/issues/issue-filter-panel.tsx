@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { IssueSearchField } from "@/components/issues/issue-search-field";
-import { ISSUE_STATUS_LABELS, IssueStatusChips } from "@/components/issues/issue-status-chips";
+import {
+  ISSUE_STATUS_LABELS,
+  IssueStatusChips,
+} from "@/components/issues/issue-status-chips";
 import { CloseIcon, SlidersIcon } from "@/components/icons";
 import { cn } from "@/lib/cn";
 import { nativeFieldClass } from "@/lib/config/fields";
@@ -100,10 +103,12 @@ const stickyBarClass = (floating: boolean, stuck = false) =>
   floating
     ? cn(
         "sticky top-16 z-30 -mt-[160px] px-3 py-2 transition-colors duration-150 motion-reduce:transition-none sm:px-6",
+        // Full-bleed translucent glass behind the stuck strip: the page
+        // aurora shows through, scrolling cards stay blurred, no side seam.
         stuck &&
-          "border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95",
+          "before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-[50vw] before:-z-10 before:bg-white/60 before:backdrop-blur-xl before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_75%,transparent)] dark:before:bg-slate-950/40",
       )
-    : "sticky top-16 z-30 bg-white/90 py-2 backdrop-blur-md dark:bg-slate-950/90";
+    : "sticky top-16 z-30 py-2 before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-[50vw] before:-z-10 before:bg-white/60 before:backdrop-blur-xl before:content-[''] before:[mask-image:linear-gradient(to_bottom,#000_75%,transparent)] dark:before:bg-slate-950/40";
 
 /** The sticky `top-16` offset in px; at or above it the bar is stuck. */
 const STICKY_TOP_PX = 64;
@@ -112,28 +117,28 @@ const cardClass = (floating: boolean, stuck = false) =>
   cn(
     "rounded-[22px] border border-slate-200 p-2 dark:border-slate-800",
     floating && !stuck
-      ? "bg-white/85 shadow-xl shadow-slate-900/10 backdrop-blur-xl dark:bg-slate-950/70 dark:shadow-black/40"
+      ? "bg-white/85 shadow-xl shadow-slate-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 dark:shadow-black/40"
       : "bg-white shadow-sm dark:bg-slate-900",
   );
 
 function PanelSkeleton({ floating }: { floating: boolean }) {
   return (
     <>
-    <div className={stickyBarClass(floating)}>
-      <div className={cardClass(floating)}>
-        <div className="h-[54px] animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
-        <div className="mt-2 flex h-8 items-center gap-1.5 px-1">
-          {[40, 52, 60, 64, 76].map((width) => (
-            <div
-              key={width}
-              className="h-7 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800"
-              style={{ width }}
-            />
-          ))}
+      <div className={stickyBarClass(floating)}>
+        <div className={cardClass(floating)}>
+          <div className="h-13.5 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
+          <div className="mt-2 flex h-8 items-center gap-1.5 px-1">
+            {[40, 52, 60, 64, 76].map((width) => (
+              <div
+                key={width}
+                className="h-7 animate-pulse rounded-full bg-slate-100 dark:bg-slate-800"
+                style={{ width }}
+              />
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-    <div className={cn(!floating && "-mt-4", "h-5")} />
+      <div className={cn(!floating && "-mt-4", "h-5")} />
     </>
   );
 }
@@ -152,7 +157,9 @@ export function IssueFilterPanel({
   // Line two is closed on load — a keyword or an existing filter is answered by
   // the chips below the card, not by an expanded form the user did not ask for.
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<AdvancedDraft>(() => advancedDraftFrom(defaults));
+  const [draft, setDraft] = useState<AdvancedDraft>(() =>
+    advancedDraftFrom(defaults),
+  );
 
   const advancedCount = [
     defaults.tag,
@@ -163,7 +170,10 @@ export function IssueFilterPanel({
     defaults.from,
     defaults.to,
   ].filter(Boolean).length;
-  const defaultSort = resolveDefaultIssueSort({ canManage: Boolean(showMentor), q: defaults.q });
+  const defaultSort = resolveDefaultIssueSort({
+    canManage: Boolean(showMentor),
+    q: defaults.q,
+  });
 
   // A client-side navigation (chip, tag suggestion, Reset, back/forward) changes
   // the advanced defaults. Adopt them so the controls match the URL instead of
@@ -193,7 +203,9 @@ export function IssueFilterPanel({
   // relevance, and the select must show that without touching field drafts.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- external-navigation sync
-    setDraft((prev) => (prev.sort === defaults.sort ? prev : { ...prev, sort: defaults.sort }));
+    setDraft((prev) =>
+      prev.sort === defaults.sort ? prev : { ...prev, sort: defaults.sort },
+    );
   }, [defaults.sort]);
 
   const patchDraft = (patch: Partial<AdvancedDraft>) =>
@@ -216,7 +228,8 @@ export function IssueFilterPanel({
     const measure = () => {
       frame = 0;
       const form = formRef.current;
-      if (form) setStuck(form.getBoundingClientRect().top <= STICKY_TOP_PX + 0.5);
+      if (form)
+        setStuck(form.getBoundingClientRect().top <= STICKY_TOP_PX + 0.5);
     };
     const onScroll = () => {
       if (frame) return;
@@ -232,7 +245,9 @@ export function IssueFilterPanel({
     };
   }, [floating, mounted]);
 
-  const mentorName = mentors.find((mentor) => mentor.id === defaults.mentorId)?.name;
+  const mentorName = mentors.find(
+    (mentor) => mentor.id === defaults.mentorId,
+  )?.name;
   const chips: { key: ChipKey; label: string }[] = [];
   if (defaults.q) chips.push({ key: "q", label: `“${defaults.q}”` });
   if (defaults.status) {
@@ -245,11 +260,16 @@ export function IssueFilterPanel({
   if (defaults.courseSlug) {
     chips.push({ key: "courseSlug", label: `Course: ${defaults.courseSlug}` });
   }
-  if (defaults.batchNo) chips.push({ key: "batchNo", label: `Batch: ${defaults.batchNo}` });
+  if (defaults.batchNo)
+    chips.push({ key: "batchNo", label: `Batch: ${defaults.batchNo}` });
   if (defaults.mentorId) {
-    chips.push({ key: "mentorId", label: `Mentor: ${mentorName ?? "selected"}` });
+    chips.push({
+      key: "mentorId",
+      label: `Mentor: ${mentorName ?? "selected"}`,
+    });
   }
-  if (defaults.from) chips.push({ key: "from", label: `From: ${defaults.from}` });
+  if (defaults.from)
+    chips.push({ key: "from", label: `From: ${defaults.from}` });
   if (defaults.to) chips.push({ key: "to", label: `To: ${defaults.to}` });
 
   const chipHref = (key: ChipKey) => {
@@ -312,183 +332,212 @@ export function IssueFilterPanel({
 
   return (
     <>
-    <form
-      ref={formRef}
-      action={ISSUES_PATH}
-      className={stickyBarClass(floating, stuck)}
-      data-stuck={floating && stuck ? "true" : undefined}
-      method="get"
-    >
-      <div className={cardClass(floating, stuck)}>
-        <IssueSearchField defaults={defaults} defaultSort={defaultSort} trailing={filtersButton} />
-        <IssueStatusChips defaultSort={defaultSort} defaults={defaults} staff={Boolean(showMentor)} />
+      <form
+        ref={formRef}
+        action={ISSUES_PATH}
+        className={stickyBarClass(floating, stuck)}
+        data-stuck={floating && stuck ? "true" : undefined}
+        method="get"
+      >
+        <div className={cardClass(floating, stuck)}>
+          <IssueSearchField
+            defaults={defaults}
+            defaultSort={defaultSort}
+            trailing={filtersButton}
+          />
+          <IssueStatusChips
+            defaultSort={defaultSort}
+            defaults={defaults}
+            staff={Boolean(showMentor)}
+          />
 
-        {/*
+          {/*
           The drawer. Collapsed, it is 0 rows tall, `invisible` and `inert`: out
           of the tab order and the accessibility tree, yet every field is still a
           form control, so Enter in the search box or a later Filter keeps every
           filter. `visibility` flips at the end of the closing transition, so the
           fields fade out first. Each control exists once (no duplicate `name`).
         */}
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows,opacity,visibility] duration-200 ease-out motion-reduce:transition-none",
-            open ? "visible grid-rows-[1fr] opacity-100" : "invisible grid-rows-[0fr] opacity-0",
-          )}
-          data-state={open ? "open" : "closed"}
-          id="issue-advanced-filters"
-          inert={!open}
-        >
-          <div className="min-h-0 overflow-hidden">
-            <div className="mx-1 mt-2 border-t border-slate-200 pb-1 pt-4 dark:border-slate-800">
-              <div
-                className={cn(
-                  "grid gap-3 sm:grid-cols-2",
-                  showMentor ? "lg:grid-cols-5" : "lg:grid-cols-4",
-                )}
-              >
-                <label className={drawerLabelClass} htmlFor="issue-status">
-                  Status
-                  <select
-                    className={drawerSelectClass}
-                    id="issue-status"
-                    name="status"
-                    onChange={(event) => patchDraft({ status: event.target.value })}
-                    value={draft.status}
-                  >
-                    <option value="">All statuses</option>
-                    {statuses.map((item) => (
-                      <option key={item} value={item}>
-                        {statusLabels[item] ?? item}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className={drawerLabelClass} htmlFor="issue-sort">
-                  Sort by
-                  <select
-                    className={drawerSelectClass}
-                    id="issue-sort"
-                    name="sort"
-                    onChange={(event) => patchDraft({ sort: event.target.value as IssueSort })}
-                    value={draft.sort}
-                  >
-                    {(showMentor ? ISSUE_SORTS : ISSUE_SORTS.filter((item) => item !== "answer")).map(
-                      (item) => (
-                        <option key={item} value={item}>
-                          {sortLabels[item]}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </label>
-
-                <label className={drawerLabelClass}>
-                  Course
-                  <select
-                    className={drawerSelectClass}
-                    name="courseSlug"
-                    onChange={(event) => patchDraft({ courseSlug: event.target.value })}
-                    value={draft.courseSlug}
-                  >
-                    <option value="">All courses</option>
-                    {courseSlugs.map((slug) => (
-                      <option key={slug} value={slug}>
-                        {slug}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className={drawerLabelClass}>
-                  Batch
-                  <select
-                    className={drawerSelectClass}
-                    name="batchNo"
-                    onChange={(event) => patchDraft({ batchNo: event.target.value })}
-                    value={draft.batchNo}
-                  >
-                    <option value="">All batches</option>
-                    {batchNos.map((batch) => (
-                      <option key={batch} value={String(batch)}>
-                        {batch}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {showMentor && (
-                  <label className={drawerLabelClass}>
-                    Mentor
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity,visibility] duration-200 ease-out motion-reduce:transition-none",
+              open
+                ? "visible grid-rows-[1fr] opacity-100"
+                : "invisible grid-rows-[0fr] opacity-0",
+            )}
+            data-state={open ? "open" : "closed"}
+            id="issue-advanced-filters"
+            inert={!open}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="mx-1 mt-2 border-t border-slate-200 pb-1 pt-4 dark:border-slate-800">
+                <div
+                  className={cn(
+                    "grid gap-3 sm:grid-cols-2",
+                    showMentor ? "lg:grid-cols-5" : "lg:grid-cols-4",
+                  )}
+                >
+                  <label className={drawerLabelClass} htmlFor="issue-status">
+                    Status
                     <select
                       className={drawerSelectClass}
-                      name="mentorId"
-                      onChange={(event) => patchDraft({ mentorId: event.target.value })}
-                      value={draft.mentorId}
+                      id="issue-status"
+                      name="status"
+                      onChange={(event) =>
+                        patchDraft({ status: event.target.value })
+                      }
+                      value={draft.status}
                     >
-                      <option value="">All mentors</option>
-                      {mentors.map((mentor) => (
-                        <option key={mentor.id} value={mentor.id}>
-                          {mentor.name}
+                      <option value="">All statuses</option>
+                      {statuses.map((item) => (
+                        <option key={item} value={item}>
+                          {statusLabels[item] ?? item}
                         </option>
                       ))}
                     </select>
                   </label>
-                )}
-              </div>
 
-              <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <fieldset className="min-w-0 lg:max-w-xl lg:flex-1">
-                  <legend className={cn(drawerLabelClass, "mb-1.5")}>Date range</legend>
-                  <div className="flex items-center gap-2">
-                    <input
-                      aria-label="From date"
-                      className={cn(drawerFieldClass, "min-w-0 flex-1")}
-                      max={draft.to || undefined}
-                      name="from"
-                      onChange={(event) => patchDraft({ from: event.target.value })}
-                      type="date"
-                      value={draft.from}
-                    />
-                    <span aria-hidden="true" className="shrink-0 text-slate-400">
-                      →
-                    </span>
-                    <input
-                      aria-label="To date"
-                      className={cn(drawerFieldClass, "min-w-0 flex-1")}
-                      min={draft.from || undefined}
-                      name="to"
-                      onChange={(event) => patchDraft({ to: event.target.value })}
-                      type="date"
-                      value={draft.to}
-                    />
-                  </div>
-                </fieldset>
-
-                <div className="flex items-center justify-end gap-3">
-                  {advancedCount > 0 && (
-                    <Link
-                      className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-                      href={clearFiltersHref}
+                  <label className={drawerLabelClass} htmlFor="issue-sort">
+                    Sort by
+                    <select
+                      className={drawerSelectClass}
+                      id="issue-sort"
+                      name="sort"
+                      onChange={(event) =>
+                        patchDraft({ sort: event.target.value as IssueSort })
+                      }
+                      value={draft.sort}
                     >
-                      Reset
-                    </Link>
+                      {(showMentor
+                        ? ISSUE_SORTS
+                        : ISSUE_SORTS.filter((item) => item !== "answer")
+                      ).map((item) => (
+                        <option key={item} value={item}>
+                          {sortLabels[item]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={drawerLabelClass}>
+                    Course
+                    <select
+                      className={drawerSelectClass}
+                      name="courseSlug"
+                      onChange={(event) =>
+                        patchDraft({ courseSlug: event.target.value })
+                      }
+                      value={draft.courseSlug}
+                    >
+                      <option value="">All courses</option>
+                      {courseSlugs.map((slug) => (
+                        <option key={slug} value={slug}>
+                          {slug}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={drawerLabelClass}>
+                    Batch
+                    <select
+                      className={drawerSelectClass}
+                      name="batchNo"
+                      onChange={(event) =>
+                        patchDraft({ batchNo: event.target.value })
+                      }
+                      value={draft.batchNo}
+                    >
+                      <option value="">All batches</option>
+                      {batchNos.map((batch) => (
+                        <option key={batch} value={String(batch)}>
+                          {batch}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {showMentor && (
+                    <label className={drawerLabelClass}>
+                      Mentor
+                      <select
+                        className={drawerSelectClass}
+                        name="mentorId"
+                        onChange={(event) =>
+                          patchDraft({ mentorId: event.target.value })
+                        }
+                        value={draft.mentorId}
+                      >
+                        <option value="">All mentors</option>
+                        {mentors.map((mentor) => (
+                          <option key={mentor.id} value={mentor.id}>
+                            {mentor.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   )}
-                  <button
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition duration-150 hover:bg-primary-600 active:bg-primary-700 motion-safe:active:scale-[0.98]"
-                    type="submit"
-                  >
-                    Filter
-                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <fieldset className="min-w-0 lg:max-w-xl lg:flex-1">
+                    <legend className={cn(drawerLabelClass, "mb-1.5")}>
+                      Date range
+                    </legend>
+                    <div className="flex items-center gap-2">
+                      <input
+                        aria-label="From date"
+                        className={cn(drawerFieldClass, "min-w-0 flex-1")}
+                        max={draft.to || undefined}
+                        name="from"
+                        onChange={(event) =>
+                          patchDraft({ from: event.target.value })
+                        }
+                        type="date"
+                        value={draft.from}
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-slate-400"
+                      >
+                        →
+                      </span>
+                      <input
+                        aria-label="To date"
+                        className={cn(drawerFieldClass, "min-w-0 flex-1")}
+                        min={draft.from || undefined}
+                        name="to"
+                        onChange={(event) =>
+                          patchDraft({ to: event.target.value })
+                        }
+                        type="date"
+                        value={draft.to}
+                      />
+                    </div>
+                  </fieldset>
+
+                  <div className="flex items-center justify-end gap-3">
+                    {advancedCount > 0 && (
+                      <Link
+                        className="rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+                        href={clearFiltersHref}
+                      >
+                        Reset
+                      </Link>
+                    )}
+                    <button
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition duration-150 hover:bg-primary-600 active:bg-primary-700 motion-safe:active:scale-[0.98]"
+                      type="submit"
+                    >
+                      Filter
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-    </form>
+      </form>
 
       {/*
         The result count and the active filters sit after the form, outside the
@@ -496,11 +545,17 @@ export function IssueFilterPanel({
         cards, and a closed drawer never hides *why* the list is filtered.
       */}
       <div
-        className={cn("flex flex-wrap items-center gap-2 px-1", !floating && "-mt-4")}
+        className={cn(
+          "flex flex-wrap items-center gap-2 px-1",
+          !floating && "-mt-4",
+        )}
         data-testid="issue-list-summary"
       >
         {summary && (
-          <p aria-live="polite" className="text-sm text-slate-500 dark:text-slate-400">
+          <p
+            aria-live="polite"
+            className="text-sm text-slate-500 dark:text-slate-400"
+          >
             {summary}
           </p>
         )}

@@ -72,26 +72,26 @@ describe("stuck strip", () => {
     mockTop(form, 400);
     await scroll();
     expect(form.dataset.stuck).toBeUndefined();
-    expect(form.className).not.toContain("bg-white/95");
+    expect(form.className).not.toContain("before:bg-white/60");
 
     mockTop(form, 64);
     await scroll();
     expect(form.dataset.stuck).toBe("true");
-    expect(form.className).toContain("bg-white/95");
-    expect(form.className).toContain("dark:bg-slate-950/95");
+    expect(form.className).toContain("before:bg-white/60");
+    expect(form.className).toContain("dark:before:bg-slate-950/40");
 
     mockTop(form, 300);
     await scroll();
     expect(form.dataset.stuck).toBeUndefined();
   });
 
-  it("leaves the staff bar alone (it is always solid)", async () => {
+  it("leaves the staff bar alone (it is always glass)", async () => {
     const { container } = renderPanel({}, false);
     const form = container.querySelector("form")!;
     mockTop(form, 64);
     await scroll();
     expect(form.dataset.stuck).toBeUndefined();
-    expect(form.className).toContain("bg-white/90");
+    expect(form.className).toContain("before:bg-white/60");
   });
 
   it("stops listening when the panel unmounts", () => {
