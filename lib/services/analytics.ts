@@ -1,7 +1,8 @@
 import "server-only";
 
 import { dbConnect } from "@/lib/db";
-import { SupportIssueModel, UserModel, type CaseStatus } from "@/models";
+import { toUnresolvedBreakdown, UNRESOLVED_STATUSES, type StatusCount } from "@/lib/status-breakdown";
+import { SupportIssueModel, UserModel } from "@/models";
 
 export type DashboardStats = {
   totalIssues: number;
@@ -20,7 +21,7 @@ export async function getDashboardStats(publicOnly = false): Promise<DashboardSt
 
   const [totalIssues, unresolvedIssues, staffCount, weeklyIssues] = await Promise.all([
     SupportIssueModel.countDocuments(baseFilter),
-    SupportIssueModel.countDocuments({ ...baseFilter, status: { $in: ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP"] } }),
+    SupportIssueModel.countDocuments({ ...baseFilter, status: { $in: [...UNRESOLVED_STATUSES] } }),
     UserModel.countDocuments({}),
     SupportIssueModel.countDocuments({ ...baseFilter, createdAt: { $gte: weekStart } }),
   ]);
@@ -46,23 +47,12 @@ export async function getTopTags(limit = 12, publicOnly = false): Promise<TagCou
   return rows.map((row) => ({ tag: row._id, count: row.count }));
 }
 
-export async function getRecentUnresolvedIssues(limit = 8, publicOnly = false) {
+/** Unresolved issues per status, every status present (zero-filled), in a fixed order. */
+export async function getUnresolvedStatusBreakdown(): Promise<StatusCount[]> {
   await dbConnect();
-  const issues = await SupportIssueModel.find({
-    deletedAt: null,
-    ...(publicOnly ? { visibility: "PUBLISHED" } : {}),
-    status: { $in: ["OPEN", "PENDING", "AWAITING_STUDENT", "FOLLOW_UP"] },
-  })
-    .sort({ updatedAt: -1 })
-    .limit(limit)
-    .select("title status updatedAt caseRef")
-    .lean();
-
-  return issues.map((item) => ({
-    id: String(item._id),
-    caseRef: (item.caseRef as string | null | undefined) ?? null,
-    title: item.title,
-    status: item.status as CaseStatus,
-    updatedAt: item.updatedAt,
-  }));
+  const rows = await SupportIssueModel.aggregate<{ _id: unknown; count: number }>([
+    { $match: { deletedAt: null, status: { $in: [...UNRESOLVED_STATUSES] } } },
+    { $group: { _id: "$status", count: { $sum: 1 } } },
+  ]);
+  return toUnresolvedBreakdown(rows);
 }

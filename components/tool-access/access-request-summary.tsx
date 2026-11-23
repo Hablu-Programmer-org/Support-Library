@@ -11,9 +11,12 @@ import { surfaceClass, surfaceHeaderClass } from "@/lib/ui";
 export function AccessRequestSummary({
   openAiPending,
   n8nPending,
+  layout = "row",
 }: {
   openAiPending: number;
   n8nPending: number;
+  /** `stacked` puts the two counts under each other, for a narrow side rail. */
+  layout?: "row" | "stacked";
 }) {
   const rows = [
     {
@@ -52,7 +55,13 @@ export function AccessRequestSummary({
         </Link>
       </div>
 
-      <div className="grid divide-y divide-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 dark:divide-slate-800">
+      <div
+        className={
+          layout === "stacked"
+            ? "grid divide-y divide-slate-200 dark:divide-slate-800"
+            : "grid divide-y divide-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0 dark:divide-slate-800"
+        }
+      >
         {rows.map((row) => (
           <Link
             key={row.key}

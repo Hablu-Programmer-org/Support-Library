@@ -124,7 +124,7 @@ Help Center (dashboard sidebar)
 
 | Where | What |
 | --- | --- |
-| `/dashboard` | `Waiting Now` (today's joins), `Waiting today` (who is in the room and which request they brought), `Student requests awaiting a mentor` (student submissions with no mentor, oldest first), recent unresolved issues, popular tags |
+| `/dashboard` | `Waiting now`, `Needs a mentor`, `Unresolved` (of total) and `New this week` cards; `Needs a mentor` list (student submissions with no mentor, oldest first, reference + age); `Unresolved by status` (each count opens the filtered issue list); side rail with `Waiting today` (newest 5, link to Live support), access-request counts (n8n admins only) and `Top tags` (tags on 2+ issues) |
 | `/dashboard/issues` | Staff list with filters; an **unresolved** issue joined today carries a `Waiting in live support` chip |
 | `/dashboard/issues/{id}` | Full case: replies, status, archive, publish/unpublish (admin only), `Reference`, and `Live support` (last join) |
 | `/dashboard/live-support` | Staff live support: room card (staff need no request and never appear in the queue) beside today's queue, newest first, with a 30-second auto-refresh and a manual `Refresh` button |
@@ -294,7 +294,7 @@ cmd /c "npm run test:e2e"
 - STUDENT submissions land as OPEN/INTERNAL with no mentor, and the student is sent to their own request page (status, team replies, live support panel) instead of the internal case view; publish requires the admin to confirm no PII in the title, description, links, images, or replies — publishing makes every attachment on the case readable by all students
 - Live support is joined from the student's own request page; the queue records who joined, for which request, per shift (`/dashboard/live-support`)
 - Issues list filters by course, batch, mentor and date range (staff only)
-- Dashboard shows real DB counts plus `Waiting Now`, `Waiting today` and `Student requests awaiting a mentor` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
+- Dashboard shows real DB counts plus `Waiting now`, `Waiting today`, `Needs a mentor` and `Unresolved by status` (student submissions have no mentor) for staff; STUDENT/students hitting `/dashboard` are redirected to the published library
 - Chrome is a single fixed topbar with inline navigation: staff see Dashboard/Issues/Access requests (admin)/Live support, students see Issues/Create issue/My issues (Dashboard is staff-only in the nav, and only the most specific nav match is highlighted); styled like the LMS v2 navbar (text links, cyan underline on the active one, avatar Profile menu with identity and sign out); below 1024px the links move into a hamburger panel (`MobileMenu`, portalled to `<body>`) with an Appearance row
 - Public landing `/` shows a guest navbar (theme toggle + Sign in); guests see only the sign-in path (no nav links, search, or student CTA), while signed-in users get a library search box deep-linking to `/dashboard/issues?q=…` with role-aware CTAs; staff get "Open dashboard", students get "Browse answers" and "My issues", and students browse published answers directly without the staff dashboard
 

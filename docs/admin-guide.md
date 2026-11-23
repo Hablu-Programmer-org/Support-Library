@@ -83,7 +83,7 @@ Common admin routes:
 
 | Route | Purpose |
 | --- | --- |
-| `/dashboard` | Staff overview: totals, `Waiting Now` (today's live-support joins), `Waiting today` (who is in the room and for which request), `Student requests awaiting a mentor` (student-submitted cases with no mentor, oldest first), recent unresolved issues and popular tags. Students are redirected to `/dashboard/issues`. |
+| `/dashboard` | Staff overview: `Waiting now`, `Needs a mentor`, `Unresolved` (of total) and `New this week` cards; `Needs a mentor` list (student submissions with no mentor, oldest first, reference + age); `Unresolved by status` (each count opens the filtered issue list); side rail with `Waiting today` (newest 5, link to Live support), access-request counts (n8n admins only) and `Top tags` (tags on 2+ issues). Students are redirected to `/dashboard/issues`. |
 | `/dashboard/issues` | Active issue list and filters. Students see the published library instead of the staff list. |
 | `/dashboard/issues/new` | Create a support issue (staff form). A student sees the simplified self-service form and lands on their own request page (`/dashboard/issues/[id]?created=1`). |
 | `/dashboard/issues/submitted` | Legacy confirmation route; redirects to `/dashboard/my-issues`. |

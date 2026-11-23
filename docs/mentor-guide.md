@@ -82,17 +82,18 @@ Dashboard cards:
 
 | Card | Meaning |
 | --- | --- |
-| `Support Issues` | Total active support issues. |
-| `Unresolved` | Issues with `OPEN`, `PENDING`, or `FOLLOW_UP` status. |
-| `Issues This Week` | Issues created in the last 7 days. |
-| `Waiting Now` | Students who joined the live support room today. |
+| `Waiting now` | Students in the live support room today whose request is still unresolved. |
+| `Needs a mentor` | Student-submitted requests with no mentor assigned. |
+| `Unresolved` | Issues with `OPEN`, `PENDING`, `AWAITING_STUDENT` or `FOLLOW_UP` status, with the all-time total beside it. |
+| `New this week` | Issues created in the last 7 days. |
 
 Dashboard sections:
 
-- `Waiting today`: who is in the room today, with the request each student brought. This is the same data as the Live support page queue.
-- `Student requests awaiting a mentor`: student-submitted requests that no mentor has been assigned to yet, oldest first. A student submission is deliberately created without a mentor, so anything in this list came from a student and still needs an owner.
-- `Recent Unresolved Issues`: up to 8 recently updated unresolved issues.
-- `Popular Tags`: top tags linked to the issue list with tag filter applied.
+- `Needs a mentor`: student-submitted requests that no mentor has been assigned to yet, oldest first, with the request reference and how long ago it came in. A student submission is deliberately created without a mentor, so anything in this list came from a student and still needs an owner.
+- `Unresolved by status`: one count per unresolved status; each opens the Issues list filtered to that status.
+- `Waiting today` (side rail): the newest 5 students who joined the room today, with the request they brought. `Live support` opens the full queue.
+- `Access requests` (side rail, n8n admins only): pending OpenAI and n8n access/reset counts.
+- `Top tags` (side rail): tags used on 2 or more issues, linked to the issue list with that tag filter.
 
 Use the dashboard for quick monitoring. Use the Issues page for detailed searching and work, and `Open live support` for the full waiting list and the room.
 

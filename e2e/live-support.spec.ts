@@ -260,17 +260,15 @@ test.describe("LIVE support: staff queue", () => {
   test("shows the waiting student on the staff dashboard", async ({ page }) => {
     await page.goto("/dashboard");
 
-    await expect(page.getByText("Waiting Now")).toBeVisible();
-    await expect(page.getByText("Waiting today")).toBeVisible();
+    await expect(page.getByText("Waiting now", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
 
     // The same request shows up in both staff views: the room queue and the
     // "no mentor yet" list.
     const queue = page.getByRole("region", { name: "Waiting today" });
     await expect(queue.getByText("E2E live support queue request").first()).toBeVisible();
 
-    const awaiting = page.getByRole("region", {
-      name: "Student requests awaiting a mentor",
-    });
+    const awaiting = page.getByRole("region", { name: "Needs a mentor" });
     await expect(awaiting.getByText("E2E live support queue request").first()).toBeVisible();
   });
 

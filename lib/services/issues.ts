@@ -1398,14 +1398,22 @@ export async function listOwnIssues(
  * opened a case and nobody has picked it up". Oldest first, because the longest
  * wait is the one that needs attention.
  */
+const awaitingStaffFilter = () => ({
+  deletedAt: null,
+  mentorId: null,
+  status: { $in: [...LIVE_SUPPORT_ELIGIBLE_STATUSES] },
+});
+
+/** Size of the `listStudentRequestsAwaitingStaff` queue (same filter, no limit). */
+export async function countStudentRequestsAwaitingStaff() {
+  await dbConnect();
+  return SupportIssueModel.countDocuments(awaitingStaffFilter());
+}
+
 export async function listStudentRequestsAwaitingStaff(limit = 8) {
   await dbConnect();
 
-  const docs = await SupportIssueModel.find({
-    deletedAt: null,
-    mentorId: null,
-    status: { $in: [...LIVE_SUPPORT_ELIGIBLE_STATUSES] },
-  })
+  const docs = await SupportIssueModel.find(awaitingStaffFilter())
     .sort({ createdAt: 1 })
     .limit(Math.min(Math.max(limit, 1), 50))
     .select("title status createdAt caseRef")

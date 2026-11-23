@@ -7,13 +7,15 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { formatSupportTime } from "@/lib/format-date";
 import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import type { LiveSupportQueueEntry } from "@/lib/services/live-support-joins";
-import { chipClass, rowHoverClass, surfaceClass, surfaceHeaderClass } from "@/lib/ui";
+import { chipClass, focusRingClass, mutedTextClass, rowHoverClass, surfaceClass, surfaceHeaderClass } from "@/lib/ui";
 
 const SHIFT_LABELS: Record<string, string> = {
   morning: "Morning shift",
   night: "Night shift",
 };
 
+/** Rows the dashboard rail shows before pointing at the full queue. */
+export const COMPACT_QUEUE_ROWS = 5;
 
 /**
  * Who is waiting in the room today, newest first.
@@ -25,10 +27,15 @@ const SHIFT_LABELS: Record<string, string> = {
 export function LiveSupportJoinQueue({
   entries,
   dayKey,
+  variant = "full",
 }: {
   entries: LiveSupportQueueEntry[];
   dayKey: string;
+  /** `compact` is the dashboard rail: newest few rows, one-line empty, link to the full queue. */
+  variant?: "full" | "compact";
 }) {
+  if (variant === "compact") return <CompactQueue entries={entries} />;
+
   return (
     <section aria-labelledby="live-support-queue-heading" className={surfaceClass}>
       <div className={surfaceHeaderClass}>
@@ -109,6 +116,84 @@ export function LiveSupportJoinQueue({
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function CompactQueue({ entries }: { entries: LiveSupportQueueEntry[] }) {
+  const shown = entries.slice(0, COMPACT_QUEUE_ROWS);
+  const hidden = entries.length - shown.length;
+
+  return (
+    <section aria-labelledby="live-support-queue-heading" className={surfaceClass}>
+      <div className={surfaceHeaderClass}>
+        <h2
+          className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white"
+          id="live-support-queue-heading"
+        >
+          <VideoIcon aria-hidden className="text-violet-600 dark:text-violet-300" size={16} />
+          Waiting today
+        </h2>
+        <Link
+          className={`rounded text-xs font-semibold text-cyan-700 hover:underline dark:text-cyan-300 ${focusRingClass}`}
+          href="/dashboard/live-support"
+        >
+          Live support →
+        </Link>
+      </div>
+
+      {shown.length === 0 ? (
+        <p className={`px-4 py-3 text-sm ${mutedTextClass}`}>No one has joined the room today.</p>
+      ) : (
+        <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+          {shown.map((entry) => (
+            <li key={entry.id} className={`space-y-1 px-4 py-3 ${rowHoverClass}`}>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                  {entry.studentName}
+                </p>
+                <time
+                  className={`shrink-0 text-xs tabular-nums ${mutedTextClass}`}
+                  dateTime={entry.joinedAt.toISOString()}
+                >
+                  {formatSupportTime(entry.joinedAt)}
+                </time>
+              </div>
+              <div className="flex min-w-0 items-center gap-2 text-sm">
+                {entry.caseRef && (
+                  <span className="shrink-0 font-mono text-xs font-semibold text-primary-700 dark:text-primary-300">
+                    #{entry.caseRef}
+                  </span>
+                )}
+                {entry.issueDeleted ? (
+                  <span className={`truncate ${mutedTextClass}`}>{entry.issueTitle} (removed)</span>
+                ) : (
+                  <Link
+                    className="truncate text-slate-700 hover:underline dark:text-slate-300"
+                    href={buildIssueDetailHref({ id: entry.issueId, caseRef: entry.caseRef })}
+                  >
+                    {entry.issueTitle}
+                  </Link>
+                )}
+                {entry.issueStatus && (
+                  <span className="ml-auto shrink-0">
+                    <StatusBadge status={entry.issueStatus} />
+                  </span>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {hidden > 0 && (
+        <Link
+          className={`block border-t border-slate-200 px-4 py-2.5 text-xs font-semibold text-cyan-700 hover:underline dark:border-slate-800 dark:text-cyan-300 ${focusRingClass}`}
+          href="/dashboard/live-support"
+        >
+          {hidden} more today →
+        </Link>
       )}
     </section>
   );
