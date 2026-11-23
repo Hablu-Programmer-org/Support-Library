@@ -6,6 +6,7 @@ import { issueCardEnterDelay } from "@/components/issues/issue-card";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { formatSupportDate, formatSupportRelative } from "@/lib/format-date";
+import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import { type MyIssuesGroup, statusGroup } from "@/lib/my-issues-view";
 import type { SupportIssueListItem } from "@/lib/services/issues";
 import type { CaseStatus } from "@/models";
@@ -133,7 +134,7 @@ export function MyIssueCard({ issue, roomOpen, now, enterIndex = 0 }: MyIssueCar
       <div className="min-w-0 flex-[999_1_15rem] space-y-2">
         <h2 className="text-base font-semibold leading-snug text-slate-900 wrap-break-word line-clamp-2 dark:text-slate-50">
           <Link
-            href={`/dashboard/issues/${issue.id}`}
+            href={buildIssueDetailHref(issue)}
             className="outline-none after:absolute after:inset-0 after:content-[''] group-hover:text-cyan-700 dark:group-hover:text-cyan-300"
           >
             {issue.title}

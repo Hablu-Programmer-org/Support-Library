@@ -11,6 +11,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { IssueEditor, type IssueEditorApi } from "@/components/issues/issue-editor";
 import { staffIssueDetailsProblem } from "@/lib/issue-content-rules";
+import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
@@ -62,6 +63,7 @@ const priorityLabels = {
 type IssueFormProps = {
   supportIssue?: {
     id: string;
+    caseRef?: string | null;
     title: string;
     question: string;
     status: string;
@@ -573,7 +575,7 @@ export function IssueForm({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div className="min-w-0 flex-1">
               <Link
-                href={backHref ?? `/dashboard/issues/${supportIssue.id}`}
+                href={backHref ?? buildIssueDetailHref(supportIssue)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
                   focusRingClass,
@@ -588,7 +590,7 @@ export function IssueForm({
             </div>
             <div className="flex w-full items-center gap-2 sm:w-auto">
               <Link
-                href={backHref ?? `/dashboard/issues/${supportIssue.id}`}
+                href={backHref ?? buildIssueDetailHref(supportIssue)}
                 className={cn(secondaryButtonClass, "min-h-11 flex-1 sm:min-h-10 sm:flex-none")}
               >
                 Cancel

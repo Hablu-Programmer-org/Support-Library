@@ -9,7 +9,9 @@ import mongoose from "mongoose";
 import { assertRole } from "@/lib/auth-guard";
 import { findLmsUserByEmail, listStudentCourses } from "@/lib/lms";
 import { normalizeEmail } from "@/lib/email";
+import { type IssueUrlRef } from "@/lib/issue-ref";
 import {
+  ISSUE_DETAIL_ROUTE,
   buildIssueDetailHref,
   parseIssueListReturnTo,
   sanitizeIssueListReturnTo,
@@ -58,12 +60,12 @@ export type FormState = {
  * keeps the previous behaviour: stay on the case page.
  */
 const issueDetailHrefAfterMutation = (
-  issueId: string,
+  issue: IssueUrlRef,
   formData: FormData,
   role: UserRole | undefined,
 ) =>
   buildIssueDetailHref(
-    issueId,
+    issue,
     parseIssueListReturnTo(formData.get("returnTo"), {
       canManage: canMutate(role ?? "STUDENT"),
     }),
@@ -221,7 +223,7 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
 
     revalidatePath("/dashboard/issues");
     revalidatePath("/dashboard");
-    redirect(`/dashboard/issues/${supportIssue.id}`);
+    redirect(buildIssueDetailHref(supportIssue));
   });
 }
 
@@ -394,7 +396,7 @@ export async function createStudentIssueAction(
     revalidatePath("/dashboard");
     // The student lands on their own request, which is where the live support
     // panel for this request lives (and where the team's replies appear).
-    redirect(`/dashboard/issues/${createdIssue.id}?created=1`);
+    redirect(`${buildIssueDetailHref(createdIssue)}?created=1`);
   });
 }
 
@@ -463,8 +465,14 @@ export async function updateIssueAction(id: string, _prevState: FormState, formD
     }
 
     revalidatePath("/dashboard/issues");
-    revalidatePath(`/dashboard/issues/${id}`);
-    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
+    revalidatePath(ISSUE_DETAIL_ROUTE, "page");
+    redirect(
+      issueDetailHrefAfterMutation(
+        { id, caseRef: supportIssue.caseRef },
+        formData,
+        guard.session.user.role,
+      ),
+    );
   });
 }
 
@@ -489,7 +497,7 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
     }
     if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
     revalidatePath("/dashboard/issues");
-    revalidatePath(`/dashboard/issues/${id}`);
+    revalidatePath(ISSUE_DETAIL_ROUTE, "page");
     return { message: "Status updated" };
   });
 }
@@ -563,8 +571,14 @@ export async function publishIssueAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
-    revalidatePath(`/dashboard/issues/${id}`);
-    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
+    revalidatePath(ISSUE_DETAIL_ROUTE, "page");
+    redirect(
+      issueDetailHrefAfterMutation(
+        { id, caseRef: supportIssue.caseRef },
+        formData,
+        guard.session.user.role,
+      ),
+    );
   });
 }
 
@@ -599,7 +613,13 @@ export async function unpublishIssueAction(
     }
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/issues");
-    revalidatePath(`/dashboard/issues/${id}`);
-    redirect(issueDetailHrefAfterMutation(id, formData, guard.session.user.role));
+    revalidatePath(ISSUE_DETAIL_ROUTE, "page");
+    redirect(
+      issueDetailHrefAfterMutation(
+        { id, caseRef: supportIssue.caseRef },
+        formData,
+        guard.session.user.role,
+      ),
+    );
   });
 }

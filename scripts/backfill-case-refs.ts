@@ -17,8 +17,15 @@ dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
  * since the last run already sit at the end of the sequence.
  *
  * Dry-run by default; `--apply` needs the exact database name.
+ *
+ * ⚠️ References are now part of issue URLs (`/dashboard/issues/000123`) and are
+ * read out by students in the live room. Renumbering changes them and breaks
+ * every bookmark and shared link, so `--apply` also needs
+ * `--renumber-breaks-urls`. To only check references, use
+ * `npm run db:check-case-refs` (read-only).
  */
 const apply = process.argv.includes("--apply");
+const renumberAcknowledged = process.argv.includes("--renumber-breaks-urls");
 const confirmation = process.argv
   .find((argument) => argument.startsWith("--confirm="))
   ?.slice("--confirm=".length);
@@ -30,6 +37,11 @@ async function main() {
 
   const databaseName = process.env.MONGODB_DB?.trim();
   if (!databaseName) throw new Error("MONGODB_DB is required");
+  if (apply && !renumberAcknowledged) {
+    throw new Error(
+      "Refusing apply: renumbering changes references used in issue URLs; pass --renumber-breaks-urls if that is intended",
+    );
+  }
   if (apply && confirmation !== databaseName) {
     throw new Error(`Refusing apply: pass --confirm=${databaseName} to confirm the target database`);
   }

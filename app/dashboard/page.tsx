@@ -139,7 +139,7 @@ export default async function DashboardPage() {
               <li key={issue.id}>
                 <Link
                   className={`flex flex-col gap-1.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${rowHoverClass}`}
-                  href={buildIssueDetailHref(issue.id, "/dashboard")}
+                  href={buildIssueDetailHref(issue, "/dashboard")}
                 >
                   <span className="flex min-w-0 flex-wrap items-center gap-2">
                     <span className="truncate font-medium text-slate-900 dark:text-white">
@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                 <li key={item.id}>
                   <Link
                     className={`flex items-center justify-between gap-3 px-4 py-3 ${rowHoverClass}`}
-                    href={buildIssueDetailHref(item.id, "/dashboard")}
+                    href={buildIssueDetailHref(item, "/dashboard")}
                   >
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900 dark:text-white">
                       {item.title}

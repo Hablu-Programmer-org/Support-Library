@@ -6,7 +6,12 @@ import { z } from "zod";
 
 import type { FormState } from "@/actions/issues";
 import { assertRole } from "@/lib/auth-guard";
-import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
+import {
+  ISSUE_DETAIL_ROUTE,
+  buildIssueDetailHref,
+  parseIssueListReturnTo,
+} from "@/lib/issue-list-params";
+import { getIssueUrlRef } from "@/lib/services/issues";
 import { MutationConflictError, operationIdSchema } from "@/lib/mutation-security";
 import { canMutate } from "@/lib/roles";
 import { csrfTokenIsValid } from "@/lib/safe-action";
@@ -189,12 +194,12 @@ export async function addReplyAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
+  revalidatePath(ISSUE_DETAIL_ROUTE, "page");
   // Keep the list context the case was opened from: the reply must not silently
   // reset the viewer's filters and page.
   redirect(
     buildIssueDetailHref(
-      issueId,
+      await getIssueUrlRef(issueId),
       parseIssueListReturnTo(formData.get("returnTo"), {
         canManage: canMutate(guard.session.user.role ?? "STUDENT"),
       }),
@@ -294,8 +299,8 @@ export async function addStudentReplyAction(
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
   revalidatePath("/dashboard/my-issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
-  redirect(`/dashboard/issues/${issueId}`);
+  revalidatePath(ISSUE_DETAIL_ROUTE, "page");
+  redirect(buildIssueDetailHref(await getIssueUrlRef(issueId)));
 }
 
 export async function editReplyAction(
@@ -371,7 +376,7 @@ export async function editReplyAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
+  revalidatePath(ISSUE_DETAIL_ROUTE, "page");
   return { message: "Response updated." };
 }
 
@@ -418,6 +423,6 @@ export async function deleteReplyAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/issues");
-  revalidatePath(`/dashboard/issues/${issueId}`);
+  revalidatePath(ISSUE_DETAIL_ROUTE, "page");
   return { message: "Response deleted." };
 }

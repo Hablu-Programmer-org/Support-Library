@@ -1,9 +1,14 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { IssueForm } from "@/components/issues/issue-form";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
-import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
-import { getIssueDetail } from "@/lib/services/issues";
+import {
+  buildIssueDetailHref,
+  buildIssueEditHref,
+  parseIssueListReturnTo,
+} from "@/lib/issue-list-params";
+import { issueUrlKey } from "@/lib/issue-ref";
+import { getIssueDetail, resolveIssueIdFromParam } from "@/lib/services/issues";
 import { generateCsrfToken } from "@/lib/csrf";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +20,17 @@ export default async function EditIssuePage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ returnTo?: string }>;
 }) {
-  const { id } = await params;
+  const { id: param } = await params;
   const { returnTo: rawReturnTo } = (await searchParams) ?? {};
   const session = await requireMentorOrAdmin();
-  const supportIssue = await getIssueDetail(id);
+  const id = await resolveIssueIdFromParam(param);
+  const supportIssue = id ? await getIssueDetail(id) : null;
   if (!supportIssue) notFound();
   // Only staff reach this page, so the mentor filter is legitimate here.
   const returnTo = parseIssueListReturnTo(rawReturnTo, { canManage: true });
+  // Staff-only page, so the role check above is the access check: an old `_id`
+  // URL can move to the reference URL now (307, never cached).
+  if (issueUrlKey(supportIssue) !== param) redirect(buildIssueEditHref(supportIssue, returnTo));
   const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
@@ -29,6 +38,7 @@ export default async function EditIssuePage({
       <IssueForm
         supportIssue={{
           id: supportIssue.id,
+          caseRef: supportIssue.caseRef,
           title: supportIssue.title,
           question: supportIssue.question,
           status: supportIssue.status,
@@ -53,7 +63,7 @@ export default async function EditIssuePage({
         }}
         csrfToken={csrfToken}
         returnTo={returnTo ?? undefined}
-        backHref={buildIssueDetailHref(supportIssue.id, returnTo)}
+        backHref={buildIssueDetailHref(supportIssue, returnTo)}
         isPublished={supportIssue.visibility === "PUBLISHED"}
       />
     </div>

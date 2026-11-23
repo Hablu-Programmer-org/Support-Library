@@ -98,9 +98,9 @@ const supportIssueSchema = new mongoose.Schema(
      */
     lastLiveSupportAt: { type: Date, default: null },
     /**
-     * Six-digit, digits-only reference the student reads out in the live room.
-     * Derived from the id at creation so staff can search for it; rows created
-     * before this field existed are filled by `npm run db:backfill-case-refs`.
+     * Six-digit, digits-only reference the student reads out in the live room,
+     * allocated sequentially at creation (`nextCaseRef`). Also the issue's URL
+     * key, so it must never change once issued (`npm run db:check-case-refs`).
      */
     caseRef: { type: String, default: null, match: /^\d{6}$/ },
     lastStaffReplyAt: { type: Date, default: null },
@@ -126,8 +126,19 @@ supportIssueSchema.index(
   { awaitingStaff: -1, createdAt: 1, _id: 1 },
   { name: "issues-answer-needed-first" },
 );
-// Backs the staff "find my request by reference" search.
-supportIssueSchema.index({ caseRef: 1 }, { name: "case_ref" });
+// Backs the staff "find my request by reference" search and the issue URL
+// (`/dashboard/issues/000123`). Unique: one reference must open one issue. Partial
+// so rows without a reference (test fixtures) never collide on `null`.
+// Replaces the old non-unique `case_ref` index — drop that one by hand after
+// this is created (`db:indexes` never drops).
+supportIssueSchema.index(
+  { caseRef: 1 },
+  {
+    name: "case_ref_unique",
+    unique: true,
+    partialFilterExpression: { caseRef: { $type: "string" } },
+  },
+);
 // Backs the live-support gate: "my open requests", newest first.
 supportIssueSchema.index(
   { createdBy: 1, deletedAt: 1, status: 1, updatedAt: -1 },

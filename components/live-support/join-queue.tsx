@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/issues/status-badge";
 import { CopyValue } from "@/components/shared/copy-value";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatSupportTime } from "@/lib/format-date";
+import { buildIssueDetailHref } from "@/lib/issue-list-params";
 import type { LiveSupportQueueEntry } from "@/lib/services/live-support-joins";
 import { chipClass, rowHoverClass, surfaceClass, surfaceHeaderClass } from "@/lib/ui";
 
@@ -90,7 +91,7 @@ export function LiveSupportJoinQueue({
                   ) : (
                     <Link
                       className="text-primary hover:underline dark:text-primary-300"
-                      href={`/dashboard/issues/${entry.issueId}`}
+                      href={buildIssueDetailHref({ id: entry.issueId, caseRef: entry.caseRef })}
                     >
                       {entry.issueTitle}
                     </Link>

@@ -319,7 +319,7 @@ export default async function IssuesPage({
                   courseSlug={supportIssue.courseSlug}
                   datePrefix={canManage ? undefined : "Answered"}
                   quietSolved={!canManage}
-                  href={buildIssueDetailHref(supportIssue.id, returnTo)}
+                  href={buildIssueDetailHref(supportIssue, returnTo)}
                   question={supportIssue.question}
                   staff={buildIssueCardStaff(supportIssue, { canManage, waitingIds })}
                   status={supportIssue.status}

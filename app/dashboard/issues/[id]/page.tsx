@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { ComponentProps } from "react";
 
 import {
@@ -19,12 +19,19 @@ import { listCourseNames } from "@/lib/lms";
 import { liveSupportNow } from "@/lib/live-support-status";
 import {
   ISSUES_PATH,
+  buildIssueDetailHref,
   buildIssueEditHref,
   parseIssueListReturnTo,
 } from "@/lib/issue-list-params";
+import { issueUrlKey, type IssueUrlRef } from "@/lib/issue-ref";
 import { canCreateIssue, canMutate, isAdmin } from "@/lib/roles";
 import { getOwnIssueActivitySnapshot } from "@/lib/services/issue-activity";
-import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
+import {
+  getIssueDetail,
+  getOwnIssueDetail,
+  getPublishedIssueDetail,
+  resolveIssueIdFromParam,
+} from "@/lib/services/issues";
 import { getIssueStudentAccount } from "@/lib/services/issue-student-account";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
@@ -49,9 +56,13 @@ export default async function IssueDetailPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ created?: string; returnTo?: string }>;
 }) {
-  const { id } = await params;
+  const { id: param } = await params;
   const { created, returnTo: rawReturnTo } = (await searchParams) ?? {};
   const session = await requireSession();
+  // The URL carries the six-digit reference; an old `_id` link still resolves.
+  // An unknown or malformed key is the same 404 as an issue the viewer may not see.
+  const id = await resolveIssueIdFromParam(param);
+  if (!id) notFound();
   const canEdit = Boolean(session.user.role && canMutate(session.user.role));
   const canPublish = isAdmin(session.user.role ?? "STUDENT");
   // The list URL the viewer arrived from (filters + page), validated and rebuilt
@@ -66,6 +77,14 @@ export default async function IssueDetailPage({
         ? "Back to results"
         : "Back to Issues";
   const staffIssue = canEdit ? await getIssueDetail(id) : null;
+  // Only after access has been granted: an old `_id` URL moves to the reference
+  // URL. Doing this before the check would reveal the reference of an issue the
+  // viewer may not open. Temporary (307), so a browser never caches the mapping.
+  const redirectToCanonical = (issue: IssueUrlRef) => {
+    if (issueUrlKey(issue) === param) return;
+    const href = buildIssueDetailHref(issue, returnTo);
+    redirect(created === "1" ? `${href}${href.includes("?") ? "&" : "?"}created=1` : href);
+  };
 
   if (!staffIssue) {
     // A student may read their own request whatever its visibility. Anyone else
@@ -73,6 +92,7 @@ export default async function IssueDetailPage({
     // case never opens up. Ownership comes from `createdBy`, not the URL.
     const ownedIssue = await getOwnIssueDetail(id, session.user.id);
     if (ownedIssue) {
+      redirectToCanonical(ownedIssue);
       const [replies, csrfToken, activity] = await Promise.all([
         listReplies(ownedIssue.id, { viewerId: session.user.id ?? undefined, viewer: "owner" }),
         generateCsrfToken(session.user.id),
@@ -94,6 +114,7 @@ export default async function IssueDetailPage({
 
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
+  redirectToCanonical(supportIssue);
 
   const [replies, csrfToken, courseNames, studentAccount] = await Promise.all([
     listReplies(supportIssue.id, { viewer: canEdit ? "staff" : "public" }),
@@ -198,7 +219,7 @@ export default async function IssueDetailPage({
         // only needs the status (see the sidebar's `reader`).
         showPriority={canEdit}
         showLibraryChip={canEdit}
-        editHref={canEdit ? buildIssueEditHref(supportIssue.id, returnTo) : undefined}
+        editHref={canEdit ? buildIssueEditHref(supportIssue, returnTo) : undefined}
         aiPrompt={aiPrompt}
         lastAnswerAt={canEdit ? undefined : lastStaffReplyDate(replies)}
         courseLabel={readerCourseLabel}

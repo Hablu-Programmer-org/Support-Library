@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { buildOwnIssueFilter } from "@/lib/issue-ownership";
+import { isCaseRef, isObjectIdKey } from "@/lib/issue-ref";
 import { BROWSE_TAG_LIMIT, popularTags } from "@/lib/issue-tags";
 import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import {
@@ -57,14 +58,18 @@ type LeanDoc = Record<string, unknown>;
  * Explicit staff-only/internal allowlist for published (student-facing) reads.
  * Reply-state fields are deliberately absent: they describe staff workload and
  * must never reach a public or student projection.
+ *
+ * `caseRef` is here because it is the issue's URL key (`/dashboard/issues/000123`):
+ * a library card links by it. It was already public on the published detail, so
+ * the list adds no new data. Published search still does not match on it.
  */
 export const PUBLIC_ISSUE_FIELDS =
-  "title question status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+  "title question status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt caseRef";
 
 /**
- * The published **detail** projection adds the evidence images and the case
- * reference (a public handle such as "HSL-1042", no personal data), so a reader
- * can quote the article to support.
+ * The published **detail** projection adds the evidence images. The case
+ * reference (a six-digit public handle such as "000123", no personal data)
+ * comes from the list allowlist, so a reader can quote the article to support.
  *
  * Kept separate from the list allowlist so a queue page never selects upload
  * subdocuments it does not render. Upload ids are the only handle that leaves the
@@ -72,7 +77,7 @@ export const PUBLIC_ISSUE_FIELDS =
  * `toPublicAttachmentViews`). Unpublishing the case removes the whole projection
  * immediately, so a stale id stops resolving.
  */
-export const PUBLIC_ISSUE_DETAIL_FIELDS = `${PUBLIC_ISSUE_FIELDS} uploads caseRef`;
+export const PUBLIC_ISSUE_DETAIL_FIELDS = `${PUBLIC_ISSUE_FIELDS} uploads`;
 
 /**
  * Staff queue ordering, computed before pagination:
@@ -1283,6 +1288,38 @@ export async function listIssueFilterOptions(publicOnly = false) {
   };
 }
 
+/**
+ * Turn the `[id]` URL segment into an issue `_id`.
+ *
+ * - six digits → the live issue with that reference (`case_ref_unique` index);
+ * - a 24-hex `_id` → returned as-is (old links, rows without a reference);
+ * - anything else → `null`, which the page answers with `notFound()`.
+ *
+ * This only maps the key. It grants nothing: the caller still loads the issue
+ * through the staff / owner / published readers, so a reference that exists but
+ * is not the viewer's gets the same 404 as one that does not exist.
+ */
+export async function resolveIssueIdFromParam(param: string): Promise<string | null> {
+  if (isObjectIdKey(param)) return param;
+  if (!isCaseRef(param)) return null;
+
+  await dbConnect();
+  const found = await SupportIssueModel.findOne({ caseRef: param, deletedAt: null }, "_id").lean();
+  return found ? String(found._id) : null;
+}
+
+/**
+ * `{ id, caseRef }` for building an issue URL after a mutation whose service
+ * returns something other than the issue (replies). `_id` lookup, one field.
+ * Callers have already passed their own access check; this grants nothing.
+ */
+export async function getIssueUrlRef(id: string): Promise<{ id: string; caseRef: string | null }> {
+  if (!isObjectIdKey(id)) return { id, caseRef: null };
+  await dbConnect();
+  const found = await SupportIssueModel.findOne({ _id: id }, "caseRef").lean();
+  return { id, caseRef: (found?.caseRef as string | null | undefined) ?? null };
+}
+
 export async function getIssueDetail(id: string) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
@@ -1371,11 +1408,12 @@ export async function listStudentRequestsAwaitingStaff(limit = 8) {
   })
     .sort({ createdAt: 1 })
     .limit(Math.min(Math.max(limit, 1), 50))
-    .select("title status createdAt")
+    .select("title status createdAt caseRef")
     .lean();
 
   return docs.map((doc) => ({
     id: String(doc._id),
+    caseRef: (doc.caseRef as string | null | undefined) ?? null,
     title: doc.title,
     status: doc.status as CaseStatus,
     createdAt: doc.createdAt as Date | undefined,

@@ -1,4 +1,5 @@
 import { CASE_STATUSES } from "@/lib/constants";
+import { issueUrlKey, type IssueUrlRef } from "@/lib/issue-ref";
 import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search";
 
 /**
@@ -19,6 +20,14 @@ import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search";
  */
 
 export const ISSUES_PATH = "/dashboard/issues";
+
+/**
+ * The detail route pattern, for `revalidatePath(ISSUE_DETAIL_ROUTE, "page")`.
+ * The concrete URL is keyed by the reference (or the `_id` fallback), so a
+ * mutation revalidates the route as a whole instead of guessing which key the
+ * viewer used.
+ */
+export const ISSUE_DETAIL_ROUTE = "/dashboard/issues/[id]";
 
 export const ISSUE_SORTS = ["answer", "newest", "oldest", "priority", "relevance"] as const;
 export type IssueSort = (typeof ISSUE_SORTS)[number];
@@ -215,14 +224,18 @@ export function buildIssueListHref(
   return query ? `${ISSUES_PATH}?${query}` : ISSUES_PATH;
 }
 
-/** `/dashboard/issues/<id>` plus the list context it was opened from, if any. */
-export function buildIssueDetailHref(issueId: string, returnTo?: string | null): string {
-  return withReturnToHref(`${ISSUES_PATH}/${encodeURIComponent(issueId)}`, returnTo);
+/**
+ * `/dashboard/issues/<key>` plus the list context it was opened from, if any.
+ * Pass the issue (`{ id, caseRef }`) so the URL uses the reference; a bare
+ * string is used as-is (see `issueUrlKey`).
+ */
+export function buildIssueDetailHref(issue: IssueUrlRef | string, returnTo?: string | null): string {
+  return withReturnToHref(`${ISSUES_PATH}/${encodeURIComponent(issueUrlKey(issue))}`, returnTo);
 }
 
-export function buildIssueEditHref(issueId: string, returnTo?: string | null): string {
+export function buildIssueEditHref(issue: IssueUrlRef | string, returnTo?: string | null): string {
   return withReturnToHref(
-    `${ISSUES_PATH}/${encodeURIComponent(issueId)}/edit`,
+    `${ISSUES_PATH}/${encodeURIComponent(issueUrlKey(issue))}/edit`,
     returnTo,
   );
 }

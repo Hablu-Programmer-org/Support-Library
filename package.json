@@ -38,6 +38,8 @@
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
     "verify:full": "npm run verify && npm run test:e2e",
     "db:backfill-case-refs": "tsx scripts/backfill-case-refs.ts",
+    "db:check-case-refs": "tsx scripts/check-case-refs.ts",
+    "db:drop-legacy-case-ref-index": "tsx scripts/drop-legacy-case-ref-index.ts",
     "db:backfill-reply-state": "tsx scripts/backfill-reply-state.ts",
     "db:bulk-access-requests": "tsx scripts/bulk-create-access-requests.ts",
     "db:backfill-tool-access-entitlements": "tsx scripts/backfill-tool-access-entitlements.ts",

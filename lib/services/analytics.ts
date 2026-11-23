@@ -55,11 +55,12 @@ export async function getRecentUnresolvedIssues(limit = 8, publicOnly = false) {
   })
     .sort({ updatedAt: -1 })
     .limit(limit)
-    .select("title status updatedAt")
+    .select("title status updatedAt caseRef")
     .lean();
 
   return issues.map((item) => ({
     id: String(item._id),
+    caseRef: (item.caseRef as string | null | undefined) ?? null,
     title: item.title,
     status: item.status as CaseStatus,
     updatedAt: item.updatedAt,
