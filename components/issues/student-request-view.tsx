@@ -107,7 +107,8 @@ export function StudentRequestView({
             <p className={note}>This request is archived, so follow-up replies are closed.</p>
           ) : teamReplied ? (
             <div className={card}>
-              <StudentReplyComposer issueId={issue.id} csrfToken={csrfToken} />
+              {/* A new reply remounts it, so the sent message leaves the editor. */}
+              <StudentReplyComposer key={replies.length} issueId={issue.id} csrfToken={csrfToken} />
               <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                 Follow-ups are sent to the support team and may reopen a solved request.
               </p>

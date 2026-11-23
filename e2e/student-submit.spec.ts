@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
 
-import { chooseStudentCourse, fillIssueDetails, formFor, issueDetailsEditor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, fillIssueDetails, fillMarkdownEditor, formFor, issueDetailsEditor, markdownValue, submitAndWait } from "./form-helpers";
 
 /**
  * Student self-service: a STUDENT may submit an issue and nothing else.
@@ -80,6 +80,46 @@ test.describe("STUDENT issue submission", () => {
     await expect(adminPage.getByText("jfwd")).toBeVisible();
 
     await adminContext.close();
+  });
+
+  test("staff answer in the editor, and the student follows up in one too", async ({ page, browser }) => {
+    const baseURL = test.info().project.use.baseURL as string;
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create issue");
+    await form.locator('input[name="title"]').fill(`E2E follow-up ${Date.now()}`);
+    await fillIssueDetails(form, "The quiz page shows a spinner forever after I press submit.");
+    await chooseStudentCourse(form);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    const issuePath = new URL(page.url()).pathname;
+
+    // Staff write the first response with the editor; it is sent as Markdown.
+    const adminContext = await browser.newContext({ storageState: "e2e/.auth/admin.json", baseURL });
+    const adminPage = await adminContext.newPage();
+    await adminPage.goto(issuePath);
+    const composer = formFor(adminPage, "Add response");
+    const response = composer.getByRole("textbox", { name: "Response", exact: true });
+    await response.click();
+    await adminPage.keyboard.type("Clear the cache and run ");
+    await adminPage.keyboard.type("`npm run dev`");
+    await expect(markdownValue(composer, "body")).toHaveValue("Clear the cache and run `npm run dev`");
+    await composer.getByRole("button", { name: "Add response" }).click();
+    const staffReply = adminPage.locator('[data-testid^="reply-"]').filter({ hasText: "Clear the cache" });
+    await expect(staffReply.locator("code")).toHaveText("npm run dev");
+    // The sent response left the editor.
+    await expect(markdownValue(formFor(adminPage, "Add response"), "body")).toHaveValue("");
+    await adminContext.close();
+
+    // The student replies in the same kind of editor.
+    await page.goto(issuePath);
+    const followUp = formFor(page, "Send reply");
+    const sendReply = followUp.getByRole("button", { name: "Send reply" });
+    await sendReply.click();
+    await expect(followUp.getByRole("alert")).toContainText("Write your message before sending.");
+    await fillMarkdownEditor(followUp, "Message", "body", "Still stuck after clearing the cache.");
+    await expect(followUp.getByRole("alert")).toHaveCount(0);
+    await sendReply.click();
+    await expect(page.getByText("Still stuck after clearing the cache.")).toBeVisible();
+    await expect(markdownValue(formFor(page, "Send reply"), "body")).toHaveValue("");
   });
 
   test("requires useful details and stays responsive", async ({ page }) => {
