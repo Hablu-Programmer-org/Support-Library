@@ -273,10 +273,17 @@ test.describe("Issue details editor (student)", () => {
     await form.locator('input[name="title"]').fill("Draft survives reload");
     await issueDetailsEditor(form).click();
     await page.keyboard.type("Module 5-এর video load হচ্ছে না।");
-    // Autosave runs shortly after typing stops.
+    // Autosave runs shortly after typing stops. Wait for the saved draft to hold the typed
+    // text, not just to exist: the title alone already creates the key, and reloading on
+    // that earlier save would restore a draft without the details.
     await expect
-      .poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.includes("issue-draft")).length))
-      .toBe(1);
+      .poll(() =>
+        page.evaluate(() => {
+          const key = Object.keys(localStorage).find((name) => name.includes("issue-draft"));
+          return key ? (localStorage.getItem(key) ?? "").includes("Module 5") : false;
+        }),
+      )
+      .toBe(true);
 
     await page.reload();
     const restored = formFor(page, "Create issue");
