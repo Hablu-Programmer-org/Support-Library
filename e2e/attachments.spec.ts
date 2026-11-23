@@ -102,7 +102,7 @@ test.describe("uploaded attachments", () => {
       .locator('[data-testid^="reply-"]')
       .filter({ hasText: "Look at this screenshot for the fix." });
     await answerReply.getByRole("button", { name: "Edit", exact: true }).click();
-    await expect(answerReply.getByText("Existing attachments")).toBeVisible();
+    await expect(answerReply.getByRole("heading", { name: "Images" })).toBeVisible();
     await answerReply.locator('input[name="removeUploadIds"]').check();
     await answerReply.getByRole("button", { name: "Save" }).click();
     await expect(answerReply.locator('img[alt="answer.png"]')).toHaveCount(0);

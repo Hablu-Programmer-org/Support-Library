@@ -32,10 +32,9 @@ test.describe("edit-mode attachments", () => {
 
     const existingPreview = editForm.locator('img[alt="old.png"]');
     await expect(existingPreview).toBeVisible();
-    await expect(existingPreview.locator("xpath=parent::a")).toHaveAttribute(
-      "href",
-      /\/api\/attachments\/[a-f0-9]{24}$/,
-    );
+    // The thumbnail is a preview button around a plain <img> served by the authenticated route.
+    await expect(existingPreview).toHaveAttribute("src", /\/api\/attachments\/[a-f0-9]{24}$/);
+    await expect(editForm.getByRole("button", { name: "Preview old.png" })).toBeVisible();
     await editForm.locator('input[name="removeUploadIds"][value]').first().check();
     await editForm.locator('input[name="uploads"]').setInputFiles(tinyPngFile("new.png"));
 

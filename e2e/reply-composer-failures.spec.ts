@@ -102,8 +102,13 @@ test.describe("Reply composer failure reporting", () => {
     await fillMarkdownEditor(composer, "Response", "body", "Response to edit");
     await composer.getByRole("button", { name: "Add response" }).click();
 
-    const reply = page.locator('[data-testid^="reply-"]').filter({ hasText: "Response to edit" });
-    await expect(reply).toBeVisible();
+    const created = page.locator('[data-testid^="reply-"]').filter({ hasText: "Response to edit" });
+    await expect(created).toBeVisible();
+    // Pin the row by its test id: while editing, its text is the editor content, so a
+    // `hasText: "Response to edit"` locator stops matching as soon as the text is replaced.
+    const replyTestId = await created.getAttribute("data-testid");
+    expect(replyTestId).toBeTruthy();
+    const reply = page.getByTestId(replyTestId!);
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
     await fillMarkdownEditor(reply, "Edit reply", "body", "Edited body that must survive");

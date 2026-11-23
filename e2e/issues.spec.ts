@@ -99,9 +99,14 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.goto(`/dashboard/issues/${legacyId}/edit`);
     await expect(page).toHaveURL(new RegExp(`/dashboard/issues/${reference}/edit$`));
 
-    // An unknown reference and a malformed key are both plain 404s.
-    expect((await page.goto("/dashboard/issues/999999"))?.status()).toBe(404);
-    expect((await page.goto("/dashboard/issues/not-a-key"))?.status()).toBe(404);
+    // An unknown reference and a malformed key both land on the not-found page. The case
+    // page streams behind loading.tsx, so Next cannot send a 404 status mid-stream; it marks
+    // the page noindex instead (docs: Streaming → The HTTP contract).
+    for (const key of ["999999", "not-a-key"]) {
+      await page.goto(`/dashboard/issues/${key}`);
+      await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
+      await expect(page.locator('meta[name="robots"][content="noindex"]')).toHaveCount(1);
+    }
   });
 
   test("searches while typing, without pressing Enter", async ({ page }) => {
@@ -153,11 +158,14 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(page.locator("span").filter({ hasText: /^Solved$/ }).first()).toBeVisible();
 
     // Edit controls are author-scoped: this mentor owns the reply added above.
-    const reply = page.locator("article").filter({ hasText: "Use public folder with /image.png" });
+    const created = page.locator("article").filter({ hasText: "Use public folder with /image.png" });
+    // While editing, the body paragraph is replaced by the editor, so a `hasText`
+    // locator would stop matching once the text changes: pin the article by its test id.
+    const replyTestId = await created.getAttribute("data-testid");
+    expect(replyTestId).toBeTruthy();
+    const reply = page.getByTestId(replyTestId!);
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
 
-    // While editing, the body paragraph is replaced by the editor, so anchor the
-    // editor on the reply article itself rather than on the old body text.
     const editor = reply;
     await fillMarkdownEditor(editor, "Edit reply", "body", "Edited: use /public/image.png");
     await editor.getByRole("button", { name: "Save" }).click();

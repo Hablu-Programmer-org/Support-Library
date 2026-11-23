@@ -130,7 +130,8 @@ test.describe("Shell: mobile navbar", () => {
     await page.getByRole("button", { name: "Open menu" }).click();
     const menu = page.getByRole("navigation", { name: "Mobile" });
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole("link")).toHaveCount(5);
+    // Same four links as the desktop nav for an admin (Dashboard, Issues, Access requests, Live support).
+    await expect(menu.getByRole("link")).toHaveCount(4);
     await expect(menu.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByText("Appearance")).toBeVisible();
 
