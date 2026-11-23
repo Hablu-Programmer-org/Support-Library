@@ -771,7 +771,6 @@ export async function changeIssueStatus(
   status: CaseStatus,
   actorId: string,
   expectedUpdatedAt: Date,
-  options: { publish?: boolean } = {},
 ) {
   if (!mongoose.Types.ObjectId.isValid(id)) return null;
   await dbConnect();
@@ -782,7 +781,7 @@ export async function changeIssueStatus(
       deletedAt: null,
       updatedAt: expectedUpdatedAt,
     })
-      .select("visibility")
+      .select("_id")
       .session(session)
       .lean();
 
@@ -798,40 +797,11 @@ export async function changeIssueStatus(
       return null;
     }
 
-    // Publication rides along with SOLVED only: the action layer has already
-    // checked the actor is an admin and ticked the PII confirmation, and an
-    // issue that is already published keeps its original publication record.
-    const publish =
-      options.publish === true && status === "SOLVED" && existing.visibility !== "PUBLISHED";
-    const now = new Date();
-    const actorObjectId = new mongoose.Types.ObjectId(actorId);
-
+    // Status only: publishing is its own admin action (publishIssue) with the
+    // PII review on the publish form.
     const updated = await SupportIssueModel.findOneAndUpdate(
       { _id: id, deletedAt: null, updatedAt: expectedUpdatedAt },
-      {
-        $set: {
-          status,
-          updatedBy: actorObjectId,
-          ...(publish
-            ? {
-                visibility: "PUBLISHED",
-                publishedAt: now,
-                publishedBy: actorObjectId,
-              }
-            : {}),
-        },
-        ...(publish
-          ? {
-              $push: {
-                publicationHistory: {
-                  action: "PUBLISHED",
-                  actorId: actorObjectId,
-                  at: now,
-                },
-              },
-            }
-          : {}),
-      },
+      { $set: { status, updatedBy: new mongoose.Types.ObjectId(actorId) } },
       { new: true, runValidators: true, session },
     ).lean();
     const context = await getRequestContext();
@@ -842,15 +812,6 @@ export async function changeIssueStatus(
       resourceId: id,
       result: updated ? "SUCCEEDED" : "DENIED",
     }, context, session);
-    if (publish) {
-      await recordAuditEvent({
-        actorId,
-        action: "ISSUE_PUBLISH",
-        resourceType: "SupportIssue",
-        resourceId: id,
-        result: updated ? "SUCCEEDED" : "DENIED",
-      }, context, session);
-    }
     return updated;
   });
 

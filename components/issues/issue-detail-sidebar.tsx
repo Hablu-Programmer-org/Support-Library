@@ -139,11 +139,9 @@ export function IssueDetailSidebar({
       <section className={card}>
         <CardTitle icon={<SettingsIcon size={16} />}>Manage issue</CardTitle>
         <IssueStatusForm
-          autoPublish={canPublish}
           csrfToken={csrfToken}
           expectedUpdatedAt={updatedAtIso}
           issueId={issueId}
-          isPublished={isPublished}
           options={statusOptions}
           status={status}
         />

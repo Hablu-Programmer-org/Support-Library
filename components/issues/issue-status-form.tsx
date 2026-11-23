@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { changeIssueStatusAction, type FormState } from "@/actions/issues";
-import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import type { CaseStatus } from "@/lib/constants";
 import { nativeSelectClass } from "@/lib/config/fields";
 
@@ -31,10 +30,8 @@ function PendingHint() {
  * the optimistic-revision check, the rate limit and the audit row all still
  * apply. The submit button stays in the DOM for a browser without JavaScript.
  *
- * `SOLVED` is the one value that also publishes (admin only). Because
- * publication still needs the same PII review as the publish form, choosing it
- * swaps the auto-submit for a short confirmation plus an explicit
- * `Save and publish` button.
+ * Every value, `SOLVED` included, only changes the status. Publishing lives on
+ * the separate publish form (admin only, with its PII review).
  *
  * A rejected save (rate limit, a stale revision) reports its reason under the
  * picker instead of replacing the page with the error boundary.
@@ -45,25 +42,17 @@ export function IssueStatusForm({
   expectedUpdatedAt,
   csrfToken,
   options,
-  autoPublish = false,
-  isPublished = false,
 }: {
   issueId: string;
   status: CaseStatus;
   expectedUpdatedAt: string;
   csrfToken: string;
   options: Array<{ value: CaseStatus; label: string }>;
-  /** The viewer may publish, so solving can publish without a second trip. */
-  autoPublish?: boolean;
-  /** Already in the library: solving only changes the status. */
-  isPublished?: boolean;
 }) {
-  const [confirmingSolve, setConfirmingSolve] = useState(false);
   const [state, formAction] = useActionState(
     changeIssueStatusAction.bind(null, issueId),
     INITIAL_STATE,
   );
-  const needsConfirmation = autoPublish && !isPublished;
   const statusError = state.fieldErrors?._form?.[0] ?? state.fieldErrors?.status?.[0];
 
   return (
@@ -89,14 +78,7 @@ export function IssueStatusForm({
         name="status"
         defaultValue={status}
         className={nativeSelectClass}
-        onChange={(event) => {
-          if (needsConfirmation && event.currentTarget.value === "SOLVED") {
-            setConfirmingSolve(true);
-            return;
-          }
-          setConfirmingSolve(false);
-          event.currentTarget.form?.requestSubmit();
-        }}
+        onChange={(event) => event.currentTarget.form?.requestSubmit()}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -111,33 +93,11 @@ export function IssueStatusForm({
         </p>
       )}
 
-      {confirmingSolve && needsConfirmation && (
-        <div className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-          <label className="flex items-start gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
-            <input
-              type="checkbox"
-              name="publishConfirmed"
-              value="true"
-              required
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary-500"
-            />
-            <span>No student personal information in this issue, including its images and video links.</span>
-          </label>
-          <PendingSubmitButton
-            label="Save and publish"
-            pendingLabel="Saving…"
-            variant="secondary"
-          />
-        </div>
-      )}
-
       <PendingHint />
 
-      {!confirmingSolve && (
-        <button type="submit" className="sr-only">
-          Update status
-        </button>
-      )}
+      <button type="submit" className="sr-only">
+        Update status
+      </button>
     </form>
   );
 }

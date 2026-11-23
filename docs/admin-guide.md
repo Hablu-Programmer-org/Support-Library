@@ -318,24 +318,6 @@ The confirmation text is:
 No student personal information in this issue, including its images and video links.
 ```
 
-## 11a. Publish While Solving
-
-Marking an issue `SOLVED` can publish it in the same step, so a finished answer
-does not need a second visit to the publish form.
-
-1. Open `/dashboard/issues/[id]`.
-2. Review the public content (title, problem, images, video links, replies) against the
-   PII checklist.
-3. Choose `SOLVED` in the status dropdown.
-4. Check `No student personal information in this issue, including its images and video links.`
-5. Click `Save and publish`.
-
-The write sets the status and the publication fields together. This path is
-**admin-only**: a mentor choosing `SOLVED` changes the status but leaves the
-issue internal for an admin to publish. If the issue is already published,
-choosing `SOLVED` only updates the status and keeps its original publication
-record.
-
 Publishing sets:
 
 - `visibility` to `PUBLISHED`.
@@ -404,8 +386,7 @@ An issue leaves the Student Library when public-facing content changes.
 | Delete reply | Becomes `INTERNAL` | Public answer set changed. |
 | Archive issue | Soft-deleted and internal | No longer active or student-visible. |
 | Admin removes from library | Becomes `INTERNAL` | Manual unpublish. |
-| Change status (not `SOLVED`) | Stays as-is | Status update does not force unpublish. |
-| Admin marks `SOLVED` with the PII confirmation | Becomes `PUBLISHED` | Solving can publish in the same step. |
+| Change status (any value, `SOLVED` included) | Stays as-is | Status never publishes or unpublishes. |
 
 Even a small typo fix in issue details or replies removes the issue from the Student Library until admin review and publish.
 
@@ -430,9 +411,8 @@ Status dropdown behavior:
 - To archive, use the archive action.
 - Status-only changes do not clear `publishedAt` or `publishedBy`.
 - Status-only changes do not add a publication history event.
-- Choosing `SOLVED` on an unpublished issue (admin only) reveals the short PII
-  confirmation and a `Save and publish` button; submitting publishes the issue
-  in the same write. Mentors solving an issue do not publish it.
+- Choosing `SOLVED` only changes the status. Publishing is always the separate
+  `Publish to library` form (admin only, PII review).
 
 ## 16. Admin Reply Override
 

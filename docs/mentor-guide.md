@@ -627,8 +627,7 @@ No student personal information in this issue, including its images and video li
 Publishing also makes every attachment on the case public: the student's evidence images and the images on each reply. Remove a sensitive screenshot first — use the checkbox on the issue edit form, or the checkbox on a reply's edit form (reply attachments can be removed there). Any edit or new reply automatically puts the case back into review, so the next publish needs the same confirmation again.
 
 Mentors can mark an issue `SOLVED`, but that only changes the status; it never
-publishes. An admin publishes, either from the publish form or by confirming the
-same short text while solving.
+publishes. An admin publishes from the publish form.
 
 If issue content changes after admin review, publish can fail until the admin refreshes and reviews again.
 

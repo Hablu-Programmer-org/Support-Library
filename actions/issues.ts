@@ -16,7 +16,6 @@ import {
 } from "@/lib/issue-list-params";
 import { operationIdSchema } from "@/lib/mutation-security";
 import { parseVideoLinks } from "@/lib/parse-links";
-import { shouldPublishOnSolve } from "@/lib/issue-publication";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 import {
   changeIssueStatus,
@@ -500,39 +499,19 @@ export async function changeIssueStatusAction(id: string, _prevState: FormState 
       return { fieldErrors: { status: ["Use the Archive issue action instead"] } };
     }
 
-    // Solving can publish straight away, but only through the same PII review
-    // gate as the explicit publish form: admin role + the short confirmation.
-    const publishOnSolve = shouldPublishOnSolve({
-      status,
-      role: guard.session.user.role ?? "STUDENT",
-      confirmed: formData.get("publishConfirmed") === "true",
-    });
-
+    // Status only. Publishing stays on the publish form (admin + PII review).
     let supportIssue;
     try {
       await consumeRateLimit("issue.status", guard.session.user.id);
-      if (publishOnSolve) {
-        await consumeRateLimit("issue.publish", guard.session.user.id, {
-          action: "ISSUE_PUBLISH",
-          resourceType: "SupportIssue",
-          resourceId: id,
-        });
-      }
       const expectedUpdatedAt = revisionSchema.parse(formData.get("expectedUpdatedAt"));
-      supportIssue = await changeIssueStatus(id, status, guard.session.user.id, new Date(expectedUpdatedAt), {
-        publish: publishOnSolve,
-      });
+      supportIssue = await changeIssueStatus(id, status, guard.session.user.id, new Date(expectedUpdatedAt));
     } catch {
       return { fieldErrors: { _form: ["Unable to update the status. Please try again later."] } };
     }
     if (!supportIssue) return { fieldErrors: { _form: ["Issue changed since you opened it. Refresh and try again."] } };
     revalidatePath("/dashboard/issues");
     revalidatePath(`/dashboard/issues/${id}`);
-    return {
-      message: publishOnSolve
-        ? "Marked as solved and published to the library"
-        : "Status updated",
-    };
+    return { message: "Status updated" };
   });
 }
 

@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // The forms have their own tests; here only "is it rendered, with which props".
 vi.mock("@/components/issues/issue-status-form", () => ({
-  IssueStatusForm: (props: { autoPublish?: boolean }) => (
-    <div data-testid="status-form" data-auto-publish={String(Boolean(props.autoPublish))} />
-  ),
+  IssueStatusForm: () => <div data-testid="status-form" />,
 }));
 vi.mock("@/components/issues/publish-issue-form", () => ({
   PublishIssueForm: () => <div data-testid="publish-form" />,
@@ -49,15 +47,15 @@ describe("IssueDetailSidebar roles", () => {
     renderSidebar({ canEdit: true, canPublish: true, staff });
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual(["Manage issue", "Issue context", "Student snapshot", "Archive this issue"]);
-    expect(screen.getByTestId("status-form").getAttribute("data-auto-publish")).toBe("true");
-    expect(screen.getByTestId("publish-form")).toBeTruthy();
+    expect(screen.getByTestId("status-form")).toBeTruthy();
+    expect(screen.getAllByTestId("publish-form")).toHaveLength(1);
     expect(screen.getByText("karim@example.com")).toBeTruthy();
     expect(screen.getByText("Live support")).toBeTruthy();
   });
 
   it("mentor gets Manage without Publish", () => {
     renderSidebar({ canEdit: true, canPublish: false, staff });
-    expect(screen.getByTestId("status-form").getAttribute("data-auto-publish")).toBe("false");
+    expect(screen.getByTestId("status-form")).toBeTruthy();
     expect(screen.queryByTestId("publish-form")).toBeNull();
   });
 

@@ -13,45 +13,24 @@ const options = [
 ];
 
 describe("IssueStatusForm", () => {
-  it("shows the short PII confirmation before solving publishes", () => {
+  it("saves Solved straight away, with no publish step of its own", () => {
+    const submit = vi.spyOn(HTMLFormElement.prototype, "requestSubmit").mockImplementation(() => {});
     render(
       <IssueStatusForm
-        autoPublish
         csrfToken="csrf-token"
         expectedUpdatedAt="2026-10-22T12:00:00.000Z"
         issueId="issue-1"
-        isPublished={false}
         options={options}
         status="OPEN"
       />,
     );
-
-    expect(screen.queryByRole("checkbox")).toBeNull();
 
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "SOLVED" } });
 
-    const checkbox = screen.getByRole("checkbox", {
-      name: /no student personal information in this issue/i,
-    }) as HTMLInputElement;
-    expect(checkbox.required).toBe(true);
-    expect(checkbox.checked).toBe(false);
-    expect(screen.getByRole("button", { name: /save and publish/i })).not.toBeNull();
-  });
-
-  it("does not ask for confirmation when the issue is already published", () => {
-    render(
-      <IssueStatusForm
-        autoPublish
-        csrfToken="csrf-token"
-        expectedUpdatedAt="2026-10-22T12:00:00.000Z"
-        issueId="issue-1"
-        isPublished
-        options={options}
-        status="OPEN"
-      />,
-    );
-
+    expect(submit).toHaveBeenCalledTimes(1);
+    // Publishing lives only on the separate publish form.
     expect(screen.queryByRole("checkbox")).toBeNull();
-    expect(screen.queryByRole("button", { name: /save and publish/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /publish/i })).toBeNull();
+    submit.mockRestore();
   });
 });

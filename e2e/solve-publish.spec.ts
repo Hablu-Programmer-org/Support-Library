@@ -8,8 +8,8 @@ const ISSUE_URL = /\/dashboard\/issues\/[a-f0-9]{24}$/;
 
 const submitCreate = (page: Page) => submitAndWait(page, "Create Issue", ISSUE_URL);
 
-test.describe("Admin solving publishes", () => {
-  test("marking SOLVED with the short PII confirmation publishes and can be removed", async ({ page }) => {
+test.describe("Admin solving and publishing", () => {
+  test("marking SOLVED only changes status; publishing is the single publish form", async ({ page }) => {
     const title = `E2E solve publishes ${Date.now()}`;
 
     await page.goto("/dashboard/issues/new");
@@ -27,20 +27,16 @@ test.describe("Admin solving publishes", () => {
     const statusForm = page.locator("form").filter({ has: page.locator("#issue-status") }).first();
     await statusForm.locator('select[name="status"]').selectOption("SOLVED");
 
-    // Publication still needs the short PII review, so solving does not submit
-    // until the admin ticks it.
-    const confirmation = statusForm.getByRole("checkbox", {
-      name: /no student personal information in this issue/i,
-    });
-    await expect(confirmation).toBeVisible();
-    await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
-    await confirmation.check();
-    await statusForm.getByRole("button", { name: "Save and publish" }).click();
-
-    await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
+    // Solving saves the status and never publishes, and the PII review appears once.
     await expect(page.locator("span").filter({ hasText: /^Solved$/ }).first()).toBeVisible();
+    await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("checkbox", { name: /no student personal information in this issue/i })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Save and publish" })).toHaveCount(0);
 
-    // Removing it again stays one click, exactly like a manually published issue.
+    await page.getByRole("checkbox", { name: /no student personal information in this issue/i }).check();
+    await page.getByRole("button", { name: "Publish to library" }).click();
+    await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
+
     await page.getByRole("button", { name: "Remove from library" }).click();
     await expect.poll(() => page.getByText("Student Library", { exact: true }).count()).toBe(0);
     await expect(page.locator("span").filter({ hasText: /^Solved$/ }).first()).toBeVisible();
