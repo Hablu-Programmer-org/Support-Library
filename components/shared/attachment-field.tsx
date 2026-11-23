@@ -174,6 +174,73 @@ export function attachFilesNear(
   return { ...target.add(files), container: target.container(), label: target.label() };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Page-wide paste                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The element the person last clicked or tapped. Clicking plain text or a
+ * card does not move focus (it stays on `<body>`), but it still says which
+ * form they are working in.
+ */
+let lastPointerTarget: Element | null = null;
+
+function handlePointerDown(event: PointerEvent) {
+  lastPointerTarget = event.target instanceof Element ? event.target : null;
+}
+
+function isTextEntry(element: Element | null): boolean {
+  if (!element) return false;
+  if (element instanceof HTMLElement && element.isContentEditable) return true;
+  if (element instanceof HTMLTextAreaElement) return true;
+  if (!(element instanceof HTMLInputElement)) return false;
+  return !["button", "checkbox", "color", "file", "hidden", "image", "radio", "range", "reset", "submit"].includes(
+    element.type,
+  );
+}
+
+/** Files on the clipboard: `files`, or `items` where a browser only fills those. */
+export function clipboardFiles(data: DataTransfer | null): File[] {
+  if (!data) return [];
+  const files = Array.from(data.files ?? []);
+  if (files.length) return files;
+  return Array.from(data.items ?? [])
+    .filter((item) => item.kind === "file")
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null);
+}
+
+/**
+ * Ctrl+V / Cmd+V with an image on the clipboard attaches it, wherever focus is
+ * — the same way a drop on the page does. The issue editor handles its own
+ * pastes first (and marks them handled), so this only sees the rest.
+ *
+ * A paste into a text field that also carries text is left alone: Word, Excel
+ * and Sheets put a PNG of the selection next to the text the person meant to
+ * paste. Screenshot tools and "Copy image" put only the image there.
+ */
+function handlePaste(event: ClipboardEvent) {
+  if (event.defaultPrevented) return;
+  const files = clipboardFiles(event.clipboardData);
+  if (!files.length) return;
+
+  const focused = document.activeElement;
+  const hasText = Boolean(event.clipboardData?.getData("text/plain").trim());
+  if (hasText && isTextEntry(focused)) return;
+
+  // Focus says where the person is typing; when it is on `<body>`, the last
+  // click says which form they are in.
+  const source = focused && focused !== document.body ? focused : lastPointerTarget;
+  const target = source?.closest("form")
+    ? nearestDropTarget(source)
+    : Array.from(dropTargets).find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ?? null;
+  if (!target) return;
+
+  event.preventDefault();
+  target.add(files);
+  target.container()?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+}
+
 function installDropListeners() {
   if (listenersInstalled || typeof window === "undefined") return;
   listenersInstalled = true;
@@ -182,6 +249,8 @@ function installDropListeners() {
   window.addEventListener("dragleave", handleDragLeave);
   window.addEventListener("drop", handleDrop);
   window.addEventListener("dragend", stopTracking);
+  window.addEventListener("paste", handlePaste);
+  window.addEventListener("pointerdown", handlePointerDown, true);
 }
 
 function removeDropListeners() {
@@ -192,6 +261,9 @@ function removeDropListeners() {
   window.removeEventListener("dragleave", handleDragLeave);
   window.removeEventListener("drop", handleDrop);
   window.removeEventListener("dragend", stopTracking);
+  window.removeEventListener("paste", handlePaste);
+  window.removeEventListener("pointerdown", handlePointerDown, true);
+  lastPointerTarget = null;
   stopTracking();
 }
 
@@ -431,7 +503,7 @@ export function AttachmentField({
             <span className="font-semibold text-cyan-700 dark:text-cyan-300">Drop images to attach</span>
           ) : (
             <>
-              Drop screenshots here or{" "}
+              Drop or paste screenshots here, or{" "}
               <span className="font-semibold text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-300">
                 browse
               </span>

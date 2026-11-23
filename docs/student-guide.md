@@ -318,7 +318,7 @@ The form asks for two things:
 
 You can also add optional evidence:
 
-- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. They stay private until the team publishes the request to the Student Library; after that, every student can open them. On your request page, click an attached image to preview it in a dialog without leaving the page.
+- **Attachments** — images only. Select PNG, JPEG, GIF or WebP files (or drag them onto the page, or press `Ctrl+V` / `Cmd+V` to paste a copied screenshot), review their local previews, and remove any unwanted selection before submitting. They stay private until the team publishes the request to the Student Library; after that, every student can open them. On your request page, click an attached image to preview it in a dialog without leaving the page.
 To share a video, upload it to an HTTPS video service first, then put its link in the problem details: use the editor's **Link** button, or paste the `https://` address. PDF, ZIP and Office attachments are not supported.
 
 **Additional Details** is open by default and lets you point the team at the exact place the problem happens:

@@ -258,6 +258,8 @@ Optional metadata:
 
 Issue-level attachments belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` attachments, which belong to the initial staff answer. Attachments currently accept images only.
 
+Add images with the picker, by dragging them onto the page, or by pasting a copied screenshot (`Ctrl+V` / `Cmd+V`) anywhere in the form. A paste goes to the attachment field of the form you are working in; a paste into a text field that also carries text (Word, Sheets) pastes the text only.
+
 Selected attachments show local previews before submission. Use a preview card's `Remove` button to exclude that image from the submitted file list. These previews stay in the browser; the remaining files are uploaded only when the form is submitted.
 
 Allowed tag characters:
