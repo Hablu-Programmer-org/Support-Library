@@ -237,6 +237,8 @@ test.describe("Issue details editor (student)", () => {
     const editor = issueDetailsEditor(form);
     await expect(editor).toBeVisible();
     await form.locator('input[name="title"]').fill(title);
+    // Course first, so only the details rule can stop the submit.
+    await chooseStudentCourse(form);
 
     const useTemplate = form.getByRole("button", { name: /Use template/ });
     await useTemplate.click();
@@ -256,7 +258,6 @@ test.describe("Issue details editor (student)", () => {
       "## কী করতে চাচ্ছিলাম\n\nModule 5-এর assignment submit করলে link থেকে 404 আসছে।",
     );
 
-    await chooseStudentCourse(form);
     await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
     const body = page.locator("main");
     await expect(body.getByRole("heading", { name: "কী করতে চাচ্ছিলাম" })).toBeVisible();
@@ -288,10 +289,27 @@ test.describe("Issue details editor (student)", () => {
     await expect(formFor(page, "Create issue").locator('input[name="title"]')).toHaveValue("");
   });
 
+  test("shows the details problem together with a native one (no course chosen)", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create issue");
+    const course = form.locator('select[name="courseSlug"]');
+    test.skip((await course.count()) === 0, "this account has no LMS enrolment, so no required course");
+    await form.locator('input[name="title"]').fill("Two problems at once");
+    await fillIssueDetails(form, "Too short");
+
+    await form.getByRole("button", { name: "Create issue", exact: true }).click();
+    // The browser stops on the course and keeps focus there…
+    await expect(course).toBeFocused();
+    // …and the details problem is already reported in the same attempt.
+    await expect(form.getByRole("alert")).toContainText("Add at least 40 characters");
+    await expect(page).toHaveURL("/dashboard/issues/new");
+  });
+
   test("restores the typed text after a server-side rejection is fixed", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");
     await form.locator('input[name="title"]').fill("Editor value survives");
+    await chooseStudentCourse(form);
     await fillIssueDetails(form, "Too short");
 
     await form.getByRole("button", { name: "Create issue", exact: true }).click();

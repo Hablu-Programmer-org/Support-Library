@@ -202,6 +202,14 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
     ensureOperationId();
   };
 
+  // A native rule (title, course) blocks the submit before `onSubmit` runs.
+  // Report the details problem in the same attempt instead of a second round;
+  // the browser keeps focus on its first invalid field.
+  const onNativeInvalid = () => {
+    const problem = issueDetailsProblem(question);
+    if (problem) setDetailsError(problem);
+  };
+
   const onQuestionChange = (value: string) => {
     setQuestion(value);
     if (detailsError && !issueDetailsProblem(value)) setDetailsError(null);
@@ -236,6 +244,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
           action={formAction}
           className="space-y-6"
           onSubmit={onSubmit}
+          onInvalidCapture={onNativeInvalid}
           aria-describedby={formError ? "student-issue-error" : undefined}
         >
           <input ref={operationIdRef} type="hidden" name="operationId" />

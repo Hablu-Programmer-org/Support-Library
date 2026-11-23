@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { fillIssueDetails, formFor, issueDetailsEditor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, fillIssueDetails, formFor, issueDetailsEditor, submitAndWait } from "./form-helpers";
 
 /**
  * Student self-service: a STUDENT may submit an issue and nothing else.
@@ -86,6 +86,8 @@ test.describe("STUDENT issue submission", () => {
     const form = formFor(page, "Create issue");
     const details = issueDetailsEditor(form);
     await form.locator('input[name="title"]').fill("Assignment page does not load");
+    // Course first, so only the details rule can stop the submit.
+    await chooseStudentCourse(form);
     await fillIssueDetails(form, "Page broken");
     await form.getByRole("button", { name: "Create issue" }).click();
     await expect(page).toHaveURL("/dashboard/issues/new");

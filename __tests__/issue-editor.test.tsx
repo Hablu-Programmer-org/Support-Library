@@ -244,3 +244,26 @@ describe("StudentIssueForm template (piece 5)", () => {
     );
   });
 });
+
+describe("StudentIssueForm with a required course (CI regression)", () => {
+  it("reports the details problem when a native rule blocks the submit first", async () => {
+    createStudentIssueAction.mockClear();
+    const { container } = render(
+      <StudentIssueForm courses={[{ slug: "web", name: "Web Dev", batchNo: 3 }]} csrfToken="csrf-1" />,
+    );
+    const box = await textbox();
+    act(() => {
+      editorOf(box).commands.insertContent("Too short");
+    });
+
+    // The browser fires `invalid` on the empty required course and never
+    // dispatches `submit`, so `onSubmit` cannot be what reports the details.
+    const course = container.querySelector('select[name="courseSlug"]') as HTMLSelectElement;
+    expect(course.checkValidity()).toBe(false);
+    fireEvent.invalid(course);
+
+    expect(await screen.findByText(/Add at least 40 characters so the support team/)).toBeInTheDocument();
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expect(createStudentIssueAction).not.toHaveBeenCalled();
+  });
+});
