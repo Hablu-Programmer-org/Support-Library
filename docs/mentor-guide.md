@@ -89,12 +89,12 @@ Dashboard cards:
 
 Dashboard sections:
 
-- `Waiting today`: who is in the room today, with the request each student brought. This is the same data as the live support queue.
+- `Waiting today`: who is in the room today, with the request each student brought. This is the same data as the Live support page queue.
 - `Student requests awaiting a mentor`: student-submitted requests that no mentor has been assigned to yet, oldest first. A student submission is deliberately created without a mentor, so anything in this list came from a student and still needs an owner.
 - `Recent Unresolved Issues`: up to 8 recently updated unresolved issues.
 - `Popular Tags`: top tags linked to the issue list with tag filter applied.
 
-Use the dashboard for quick monitoring. Use the Issues page for detailed searching and work, and `Open live support queue` for the full waiting list.
+Use the dashboard for quick monitoring. Use the Issues page for detailed searching and work, and `Open live support` for the full waiting list and the room.
 
 ## 5. Support Issues List
 
@@ -413,9 +413,13 @@ Do not copy student name, email, phone, ID, payment details, or sensitive image 
 - Public replies.
 - Link titles/notes/summaries.
 
-## 17a. Live Support Queue
+## 17a. Live Support
 
-Route: `/dashboard/live-support` (mentors and admins only)
+Route: `/dashboard/live-support` (mentors and admins only). The old
+`/dashboard/support` address redirects here.
+
+The page shows the **Support room** card (status, shift, `Join Live support`,
+room details while open) next to today's queue; on a phone the card is on top.
 
 Students join the room from **their own request page**
 (`/dashboard/issues/[id]`), and only with a request they submitted that is still
@@ -443,8 +447,8 @@ What to know:
   room — keep the meeting link out of public channels and rotate it with
   `hablu-env set support LIVE_SUPPORT_JOIN_URL` if it leaks.
 - Students cannot open this page and never see the nav item for it. Your own
-  **Join Live support** on `/dashboard/support` also opens in a new tab, so keep
-  this queue in the other tab.
+  **Join Live support** on this page also opens in a new tab, so this queue stays
+  open in the other tab.
 - If a joined request was deleted afterwards, the row stays visible and is marked
   `(removed)` so the day's history is not rewritten.
 - No passcode, IP address or access token is shown here.

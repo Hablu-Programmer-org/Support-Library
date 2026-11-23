@@ -41,13 +41,14 @@ test.describe("Shell: dashboard chrome", () => {
       .poll(async () => slate950Alpha80.includes(await header.evaluate((el) => getComputedStyle(el).backgroundColor)))
       .toBe(true);
 
-    // Inline nav: the admin links (Dashboard, Issues, Live support, Support
-    // queue, Access requests), the active one highlighted and marked. "My Courses" is
+    // Inline nav: the admin links (Dashboard, Issues, Access requests, Live
+    // support), the active one highlighted and marked. "My Courses" is
     // student-only and its LMS origin is not set for e2e, so it never appears
     // here.
     const nav = page.locator('header nav[aria-label="Primary"]');
-    await expect(nav.getByRole("link")).toHaveCount(5);
-    await expect(nav.getByRole("link", { name: "Support queue" })).toBeVisible();
+    await expect(nav.getByRole("link")).toHaveCount(4);
+    await expect(nav.getByRole("link", { name: "Live support" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "Support queue" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Access requests" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "n8n help" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");

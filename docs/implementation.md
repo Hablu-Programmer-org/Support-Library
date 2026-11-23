@@ -114,9 +114,9 @@
   `/dashboard/issues/[id]`, their own read-only view (status, their problem, their
   images and video links, and the team's replies). A per-request panel posts to
   `joinLiveSupportAction`, which re-checks ownership, the shift, the rate limit and
-  idempotency before it redirects to the room. `/dashboard/support` is staff-only
-  (students are redirected to `/dashboard/my-issues`); the mentor side is the
-  queue at `/dashboard/live-support`. `/dashboard/issues/submitted` is a legacy
+  idempotency before it redirects to the room. Staff use one page,
+  `/dashboard/live-support` (room card + today's queue, merged 2026-11-24); the
+  old `/dashboard/support` redirects there (students to `/dashboard/my-issues`). `/dashboard/issues/submitted` is a legacy
   redirect. `lib/live-support-policy.ts` and `lib/issue-ownership.ts` are the two
   pure filters that pin ownership; `scripts/check-live-support-sync.ts`
   (`npm run check:live-support`) guards the schedule, the Bengali schedule wording,

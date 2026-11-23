@@ -101,8 +101,8 @@ Help Center (dashboard sidebar)
 | `/dashboard` | `Waiting Now` (today's joins), `Waiting today` (student, reference, request link, status, shift, time), `Student requests awaiting a mentor` (student submissions with no mentor, oldest first), recent unresolved issues, popular tags |
 | `/dashboard/issues` | Staff list with filters; the search box updates the list as you type; an **unresolved** issue joined today carries a `Waiting in live support` chip (a solved case keeps its join row but is no longer "waiting"); staff can search by the six-digit reference; `New Issue` creates a case on a student's behalf |
 | `/dashboard/issues/{id}` | Full case: problem, attachments, replies (compose/edit/delete), status, archive, publish/unpublish (admin only, PII review required; changing status never publishes), `Reference` and `Live support` (last join time) |
-| `/dashboard/support` | Staff join for the room; no request required, staff never appear in the queue |
-| `/dashboard/live-support` | Today's queue, newest first, with a 30-second auto-refresh while the tab is visible and a manual `Refresh` button |
+| `/dashboard/live-support` | Staff live support: room card (join needs no request; staff never appear in the queue) beside today's queue, newest first, with a 30-second auto-refresh while the tab is visible and a manual `Refresh` button |
+| `/dashboard/support` | Old address; redirects staff to `/dashboard/live-support`, students to `/dashboard/my-issues` |
 
 **How a waiting student becomes visible:** a queue row is created when the student
 presses **Join**, not when the request is submitted. It then appears on the
@@ -181,8 +181,8 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Concern | File |
 | --- | --- |
 | Student join panel | `components/live-support/live-support-panel.tsx` |
-| Staff join page | `app/dashboard/support/page.tsx` + `components/live-support/live-support-card.tsx` |
-| Queue page / refresh | `app/dashboard/live-support/page.tsx`, `components/live-support/{join-queue,queue-refresh}.tsx` |
+| Staff live support page (room + queue) | `app/dashboard/live-support/page.tsx`, `components/live-support/{live-support-card,join-queue,queue-refresh}.tsx` |
+| Old room address (redirect) | `app/dashboard/support/page.tsx` |
 | Own request view | `components/issues/student-request-view.tsx` + owner branch in `app/dashboard/issues/[id]/page.tsx` |
 | Eligibility / ownership filters | `lib/live-support-policy.ts`, `lib/issue-ownership.ts` |
 | Join write path | `actions/live-support.ts`, `lib/services/live-support-joins.ts` |

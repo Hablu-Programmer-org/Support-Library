@@ -61,7 +61,7 @@ export default async function DashboardPage() {
       <PageHeader
         action={
           <Link className={secondaryButtonClass} href="/dashboard/live-support">
-            Open live support queue
+            Open live support
           </Link>
         }
         description="What came in, who is waiting in the room, and how much admin work is left."

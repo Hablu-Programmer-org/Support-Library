@@ -35,6 +35,7 @@ describe("copyFor (landing copy per audience)", () => {
     const studentHrefs = hrefs("STUDENT");
     expect(studentHrefs).not.toContain("/dashboard");
     expect(studentHrefs).not.toContain("/dashboard/support");
+    expect(studentHrefs).not.toContain("/dashboard/live-support");
   });
 
   it.each(["MENTOR", "ADMIN"] as const)("%s gets the staff view", (role) => {

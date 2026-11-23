@@ -59,7 +59,7 @@ test.describe("Landing staff cards", () => {
     await expect(links).toHaveCount(3);
     expect(await links.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).toEqual([
       "/dashboard/issues",
-      "/dashboard/support",
+      "/dashboard/live-support",
       "/dashboard",
     ]);
   });

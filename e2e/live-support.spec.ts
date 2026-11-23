@@ -18,7 +18,7 @@ import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
  * A student submits a request, lands on its own page, and joins the room from
  * there — the request is fixed by the page, so there is no picker and no room on
  * any page without an owned request. Staff run the session from
- * `/dashboard/support` and see who is waiting in the queue.
+ * `/dashboard/live-support`: the room card and today's queue on one page.
  *
  * The shift matrix (open/closed) is decided on the server and covered by
  * `__tests__/live-support.test.ts` and `__tests__/live-support-panel.test.tsx`,
@@ -169,11 +169,11 @@ test.describe("STAFF: they run the room", () => {
   });
 
   test("joins without a request and sees no student panel", async ({ page }) => {
-    await page.goto("/dashboard/support");
+    await page.goto("/dashboard/live-support");
 
-    await expect(page.getByRole("heading", { name: "Live support" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live support", exact: true })).toBeVisible();
     await expect(page.getByText(/You join as staff/).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Waiting students" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Join Live support" }),
     ).toHaveCount(1);
@@ -244,7 +244,7 @@ test.describe("LIVE support: staff queue", () => {
   test("lists who is waiting and which request they brought", async ({ page }) => {
     await page.goto("/dashboard/live-support");
 
-    await expect(page.getByRole("heading", { name: "Live support queue" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Live support", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
     // `.first()` because the streamed page can briefly hold the row twice while
     // the loading boundary swaps out (the settled DOM has it once).
@@ -292,10 +292,11 @@ test.describe("LIVE support: staff queue", () => {
     await expect(row.getByText("Waiting in live support")).toHaveCount(0);
   });
 
-  test("is reached from the staff room page", async ({ page }) => {
+  test("an old staff room link lands on the merged page", async ({ page }) => {
     await page.goto("/dashboard/support");
-    await page.getByRole("link", { name: "Waiting students" }).click();
 
-    await expect(page.getByRole("heading", { name: "Live support queue" })).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/live-support$/);
+    await expect(page.getByRole("button", { name: "Join Live support" })).toHaveCount(1);
+    await expect(page.getByRole("heading", { name: "Waiting today" })).toBeVisible();
   });
 });

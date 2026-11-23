@@ -72,7 +72,7 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
             icon: VideoIcon,
             title: "Live support",
             body: "See who is waiting in the room and join during the support schedule.",
-            href: "/dashboard/support",
+            href: "/dashboard/live-support",
             cta: "Open live support",
           },
           {

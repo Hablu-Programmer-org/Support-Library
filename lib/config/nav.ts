@@ -7,7 +7,6 @@ import {
   DashboardIcon,
   FileTextIcon,
   SparklesIcon,
-  UserIcon,
   VideoIcon,
   HelpCircleIcon,
 } from "@/components/icons";
@@ -63,20 +62,13 @@ const ROLE_NAV_ITEMS: Array<NavItem | null> = [
   },
   myCoursesItem(),
   { label: "Access requests", href: "/dashboard/access-requests", minRole: "ADMIN", icon: HelpCircleIcon },
-  // Staff only: students join from a specific request.
+  // Staff only: the room to join plus today's waiting students (students join
+  // from a specific request, and the page double-guards it).
   {
     label: "Live support",
-    href: "/dashboard/support",
-    minRole: "MENTOR",
-    icon: VideoIcon,
-  },
-  // Staff-only: the students waiting in the room, with the request each one
-  // brought. Students never see this item (and the page double-guards it).
-  {
-    label: "Support queue",
     href: "/dashboard/live-support",
     minRole: "MENTOR",
-    icon: UserIcon,
+    icon: VideoIcon,
   },
 ];
 

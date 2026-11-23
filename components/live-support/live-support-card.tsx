@@ -108,7 +108,7 @@ export function LiveSupportCard({
 
       {configured ? (
         <ul className="mt-4 space-y-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
-          <li>Ask each student for their issue reference and match it in Waiting students.</li>
+          <li>Ask each student for their issue reference and match it in Waiting today.</li>
           {isOpen ? <li>The room may ask you to sign in before letting you in.</li> : null}
         </ul>
       ) : null}

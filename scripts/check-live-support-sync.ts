@@ -9,7 +9,7 @@
  * The room itself is configured **once**, here, through the `LIVE_SUPPORT_*`
  * environment variables — and it has no source default, because on Google Meet
  * the join URL is the key to the room. The LMS only links to
- * `/dashboard/support`, because a student must have an open request before the
+ * `/dashboard/live-support`, because a student must have an open request before the
  * room opens; its public bundle must never carry the join URL, meeting code or
  * passcode again. That inversion is asserted below, together with the join CTA
  * wording ("Join Live support"), so the two apps cannot drift. Whether the URL

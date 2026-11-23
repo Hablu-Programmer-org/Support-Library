@@ -191,7 +191,7 @@ export async function joinLiveSupportAction(
  *
  * It is still narrow, and every check is repeated here rather than trusted from
  * the page:
- *  - CSRF, session and role (students only — staff join from `/dashboard/support`);
+ *  - CSRF, session and role (students only — staff join from `/dashboard/live-support`);
  *  - the shift, resolved on the server in Asia/Dhaka (the browser clock is
  *    display only);
  *  - the shared `live-support.join` budget (so a request-less join cannot be

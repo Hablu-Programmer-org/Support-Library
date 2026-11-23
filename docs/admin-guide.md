@@ -77,8 +77,7 @@ Admins see these primary navigation links:
 - `Dashboard` -> `/dashboard`
 - `Issues` -> `/dashboard/issues`
 - `Create issue` -> `/dashboard/issues/new`
-- `Live support` -> `/dashboard/support`
-- `Support queue` -> `/dashboard/live-support`
+- `Live support` -> `/dashboard/live-support`
 
 Common admin routes:
 
@@ -90,10 +89,10 @@ Common admin routes:
 | `/dashboard/issues/submitted` | Legacy confirmation route; redirects to `/dashboard/my-issues`. |
 | `/dashboard/issues/[id]` | Review, reply, publish, unpublish, status update, archive. Students never reach unpublished issues. |
 | `/dashboard/issues/[id]/edit` | Edit issue details. Staff only. |
-| `/dashboard/support` | Staff live support room. Students are redirected to `/dashboard/my-issues` — they join from their own issue page instead. |
+| `/dashboard/support` | Old address of the staff room page; staff are redirected to `/dashboard/live-support`, students to `/dashboard/my-issues` (they join from their own issue page). |
 | `/dashboard/my-issues` | **My issues**: a student's own issues, newest first; each row opens the issue page (status, updates, live support panel). |
 | `/dashboard/my-requests` | Old address of My issues (renamed 2026-11-21); redirects to `/dashboard/my-issues`. |
-| `/dashboard/live-support` | Live support queue: today's student joins with the request each one brought. Staff only. |
+| `/dashboard/live-support` | Live support: the room card (status, shift, Join, room details) beside today's queue of student joins with the request each one brought. Staff only. |
 
 Route access is enforced in server pages/actions. The proxy checks sign-in and active account status, while role permissions are enforced by page guards and server actions.
 
