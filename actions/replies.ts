@@ -8,8 +8,6 @@ import type { FormState } from "@/actions/issues";
 import { assertRole } from "@/lib/auth-guard";
 import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
 import { MutationConflictError, operationIdSchema } from "@/lib/mutation-security";
-import { parseVideoLinks, parseStudentVideoLinksResult } from "@/lib/parse-links";
-import { linkLimit } from "@/lib/validation/common";
 import { canMutate } from "@/lib/roles";
 import { csrfTokenIsValid } from "@/lib/safe-action";
 import { getRequestContext } from "@/lib/request-context";
@@ -47,7 +45,7 @@ import { studentReplyInputSchema } from "@/lib/validation/reply";
  */
 export type ReplyFormState = FormState & {
   /** Echoed back on failure: React resets the form after a form action runs. */
-  values?: { body?: string; videoLinks?: string };
+  values?: { body?: string };
 };
 
 const SESSION_EXPIRED = "Your session expired. Reload the page and sign in again.";
@@ -55,7 +53,6 @@ const RATE_LIMITED = "Too many changes in a short time. Please wait a minute and
 const GENERIC = "Unable to save the response. Please try again.";
 const CONFLICT =
   "This form was already submitted with different text. Reload the page and try again.";
-const VIDEO_LINKS = "Video links could not be read. Use one per line: title|https://url";
 const EDIT_CONFLICT =
   "Someone else changed this reply while you were editing. Copy your text, reload, and apply it again.";
 
@@ -130,7 +127,6 @@ export async function addReplyAction(
 ): Promise<ReplyFormState> {
   const values = {
     body: formValue(formData, "body") ?? "",
-    videoLinks: formValue(formData, "videoLinks") ?? "",
   };
 
   if (!(await csrfTokenIsValid(formData))) {
@@ -147,7 +143,6 @@ export async function addReplyAction(
     const parsed = supportReplyInputSchema.parse({
       issueId,
       body: formValue(formData, "body"),
-      videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
     });
     const operationId = readOperationId(formData);
 
@@ -214,7 +209,6 @@ export async function addStudentReplyAction(
 ): Promise<ReplyFormState> {
   const values = {
     body: formValue(formData, "body") ?? "",
-    videoLinks: formValue(formData, "videoLinks") ?? "",
   };
 
   if (!(await csrfTokenIsValid(formData))) {
@@ -229,17 +223,6 @@ export async function addStudentReplyAction(
 
   let reply: Awaited<ReturnType<typeof addStudentReply>>;
   try {
-    const rawVideoLinks = formValue(formData, "videoLinks");
-    // Bound the raw payload before any parsing work happens.
-    if (rawVideoLinks && (rawVideoLinks.length > 20_000 || rawVideoLinks.split("\n").length > 100)) {
-      return {
-        fieldErrors: {
-          videoLinks: ["Too many video links. Add at most 100 lines."],
-        },
-        values,
-      };
-    }
-
     // A valid operation id is mandatory for student follow-ups: it is the only
     // thing that makes a double submit idempotent.
     const rawOperationId = formData.get("operationId");
@@ -271,22 +254,9 @@ export async function addStudentReplyAction(
       return { fieldErrors: { _form: [GENERIC] }, values };
     }
 
-    const parsedVideoLinks = parseStudentVideoLinksResult(rawVideoLinks);
-    if (rawVideoLinks && parsedVideoLinks.submittedLines > 0 && (parsedVideoLinks.invalidLines.length > 0 || parsedVideoLinks.overflow)) {
-      const message = parsedVideoLinks.overflow
-        ? `Add at most ${linkLimit()} video links.`
-        : "Some video links are invalid. Use title|https://url|timestamp|summary.";
-      return {
-        fieldErrors: {
-          videoLinks: [message],
-        },
-        values,
-      };
-    }
     const parsed = studentReplyInputSchema.parse({
       issueId,
       body: formValue(formData, "body"),
-      videoLinks: parsedVideoLinks.links,
     });
 
     let uploads: IngestedUpload[] = [];
@@ -336,7 +306,6 @@ export async function editReplyAction(
 ): Promise<ReplyFormState> {
   const values = {
     body: formValue(formData, "body") ?? "",
-    videoLinks: formValue(formData, "videoLinks") ?? "",
   };
 
   if (!(await csrfTokenIsValid(formData))) {
@@ -348,14 +317,6 @@ export async function editReplyAction(
 
   try {
     const body = z.string().trim().min(1).max(20_000).parse(formValue(formData, "body"));
-    // Same parser as the composer: a non-empty textarea that yields no usable
-    // link is a mistake worth reporting, not a silent clear.
-    const rawVideoLinks = formValue(formData, "videoLinks");
-    const videoLinks = parseVideoLinks(rawVideoLinks);
-    if (rawVideoLinks && videoLinks.length === 0) {
-      return { fieldErrors: { videoLinks: [VIDEO_LINKS] }, values };
-    }
-
     // Admins remove a sensitive screenshot from a reply the same way they do on
     // the issue form: a checkbox per existing image. The service only removes
     // ids that actually belong to this reply, so an injected id is inert.
@@ -398,7 +359,6 @@ export async function editReplyAction(
       body,
       guard.session.user.id,
       guard.session.user.role,
-      videoLinks,
       removeUploadIds,
       { newUploads, expectedUpdatedAt: readExpectedUpdatedAt(formData) },
     );

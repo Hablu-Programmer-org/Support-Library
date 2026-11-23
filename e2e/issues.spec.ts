@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
+import { tinyPngFile } from "./image-fixture";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
@@ -23,17 +24,24 @@ test.describe("Issue CRUD (mentor)", () => {
       await fillMarkdownEditor(form, "Issue details", "question", "How do I fix the broken image path after deploying the React application?");
       await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
       await expect(form.locator('textarea[name="solutionFileLinks"]')).toHaveCount(0);
-      await fillMarkdownEditor(form, "Answer", "solutionBody", scenario.body);
-      await form
-        .locator('textarea[name="solutionVideoLinks"]')
-        .fill("Walkthrough|https://example.com/fix.mp4|01:20");
+      await expect(form.locator('[name="solutionVideoLinks"]')).toHaveCount(0);
+      // Links go in the answer text; an answer with no text is images only.
+      if (scenario.body) {
+        await fillMarkdownEditor(form, "Answer", "solutionBody", `${scenario.body} https://example.com/fix.mp4`);
+      } else {
+        await form.locator('input[name="solutionUploads"]').setInputFiles(tinyPngFile("answer.png"));
+      }
       await expect(form.locator('input[name="solveIssue"]')).toBeChecked();
       if (!scenario.solved) await form.locator('input[name="solveIssue"]').uncheck();
       await submitCreate(page);
       const reply = page.locator('[data-testid^="reply-"]');
       await expect(reply).toHaveCount(1);
-      if (scenario.body) await expect(reply).toContainText(scenario.body);
-      await expect(reply.locator('a[href="https://example.com/fix.mp4"]')).toBeVisible();
+      if (scenario.body) {
+        await expect(reply).toContainText(scenario.body);
+        await expect(reply.locator('a[href="https://example.com/fix.mp4"]')).toBeVisible();
+      } else {
+        await expect(reply).toContainText("See the attached images for the answer.");
+      }
       await expect(page.locator("span").filter({ hasText: scenario.solved ? /^Solved$/ : /^Open$/ }).first()).toBeVisible();
     });
   }

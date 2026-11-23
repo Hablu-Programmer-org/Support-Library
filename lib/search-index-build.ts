@@ -4,7 +4,6 @@ import {
   type IssueSearchTextSource,
   type ReplySearchTextSource,
   type SearchableAttachment,
-  type SearchableVideoLink,
 } from "@/lib/search";
 
 /**
@@ -29,7 +28,6 @@ export type SearchIndexIssueSource = {
   moduleSlug?: unknown;
   contentSlug?: unknown;
   tags?: unknown;
-  videoLinks?: unknown;
   uploads?: unknown;
 };
 
@@ -37,7 +35,6 @@ export type SearchIndexReplySource = {
   body?: unknown;
   isStaffReply?: unknown;
   authorId?: unknown;
-  videoLinks?: unknown;
   uploads?: unknown;
 };
 
@@ -52,7 +49,6 @@ const toIssueSource = (issue: SearchIndexIssueSource): IssueSearchTextSource => 
   moduleSlug: (issue.moduleSlug as string | null | undefined) ?? null,
   contentSlug: (issue.contentSlug as string | null | undefined) ?? null,
   tags: asArray<string>(issue.tags),
-  videoLinks: asArray<SearchableVideoLink>(issue.videoLinks),
   uploads: asArray<SearchableAttachment>(issue.uploads),
 });
 
@@ -79,7 +75,6 @@ export function buildSearchFieldUpdate(
     body: String(reply.body ?? ""),
     isStaffReply: typeof reply.isStaffReply === "boolean" ? reply.isStaffReply : null,
     authorRole: roleById.get(String(reply.authorId)) ?? null,
-    videoLinks: asArray<SearchableVideoLink>(reply.videoLinks),
     uploads: asArray<SearchableAttachment>(reply.uploads),
   }));
   const source = toIssueSource(issue);
@@ -94,6 +89,6 @@ export function buildSearchFieldUpdate(
 /** Field lists shared with the scripts, so a change is visible in one place. */
 export const SEARCH_INDEX_SOURCE_FIELDS = {
   issue:
-    "title question studentName batchNo courseSlug moduleSlug contentSlug tags videoLinks uploads",
-  reply: "body isStaffReply authorId videoLinks uploads",
+    "title question studentName batchNo courseSlug moduleSlug contentSlug tags uploads",
+  reply: "body isStaffReply authorId uploads",
 } as const;

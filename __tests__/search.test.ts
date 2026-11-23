@@ -134,21 +134,15 @@ describe("query normalization", () => {
 describe("scoped search text", () => {
   const source = {
     title: "React image not rendering",
-    question: "Image not displaying after upload",
+    // Links live in the Markdown text since the separate video-link field was retired.
+    question:
+      "Image not displaying after upload\n\n- [Lecture walkthrough](https://youtu.be/HydrationDemo42) — 01:20",
     studentName: "Rahim Uddin",
     batchNo: 12,
     courseSlug: "react-beginner",
     moduleSlug: "assets",
     contentSlug: "images-lecture",
     tags: ["react", "image"],
-    videoLinks: [
-      {
-        title: "Lecture walkthrough",
-        summary: "Uploads in detail",
-        url: "https://youtu.be/HydrationDemo42",
-        timestamp: "01:20",
-      },
-    ],
     uploads: [{ originalName: "rahim-passport.png" }],
   };
 
@@ -165,7 +159,7 @@ describe("scoped search text", () => {
     expect(text).toContain("images-lecture");
     expect(text).toContain("batch 12");
     expect(text).toContain("lecture walkthrough");
-    // The link itself is searchable: a YouTube ID from the URL finds it.
+    // A link in the text is searchable: a YouTube ID from the URL finds it.
     expect(text).toContain("youtu.be/hydrationdemo42");
     expect(text).toContain("01:20");
     expect(text).toContain("move the file into the public folder");

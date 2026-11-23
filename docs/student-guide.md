@@ -14,11 +14,11 @@ You can use it to:
 - Search for a known problem or keyword.
 - Filter by status, tag, course, batch, and date.
 - Read the problem statement and the support team's answer.
-- Open attached video walkthrough links.
+- Open links (for example video walkthroughs) inside the problem and answers.
 - Join the daily live support session while the support room is open.
 - Open `My Courses` to jump back to your courses in the Hablu Programmer LMS.
 - Attach up to a few image attachments (PNG, JPEG, GIF or WebP) to a new request. They stay private until the team publishes the request to the Student Library; after that, every student can open them.
-- Submit a new support request with a title, a description, and optional attachments/video links.
+- Submit a new support request with a title, a description (links included), and optional attachments.
 
 You cannot use it to reply, edit, archive, or publish anything. The support team answers new requests by email at the address on your LMS account.
 
@@ -185,7 +185,6 @@ The issue detail page can show:
 - Issue title, written as the problem itself.
 - Last updated time.
 - Full problem description.
-- Video links, if the reporter added any.
 - Tags.
 - The solution (or answer) and any later responses.
 - Course.
@@ -208,31 +207,21 @@ Each reply can show:
 - Staff author name, or `Staff` if the name is unavailable.
 - Reply creation time, in Dhaka time.
 - `edited` marker if the reply was edited.
-- Reply text.
-- Video links.
+- Reply text, including any links.
 
 If no reply exists, the page shows `Responses` and `No answer yet. The team replies by email too.`
 
 Students cannot add replies or edit replies.
 
-## 11. Video Links
+## 11. Links
 
-Issues and answers can include external video links. A support request can carry its own video links, which appear under the problem description.
+Links (for example a video walkthrough) are part of the problem and reply text. Links that were saved before the editor had a Link button appear under a **Video links** heading in the text.
 
-Video links can show:
-
-- Title.
-- Timestamp, if provided.
-- Link host.
-- Summary, if provided.
-
-When you click a video link:
+When you click a link:
 
 - It opens in a new browser tab.
 - It opens as an external link.
-- You should check the displayed host before trusting the link.
-
-In production, links are expected to be HTTPS links.
+- You should check the link's address before trusting it.
 
 ## 12. Navigation, Profile Menu, Theme, And Sign Out
 
@@ -282,7 +271,7 @@ Requests themselves can be submitted at any time — the Support Library is open
 The flow:
 
 1. Create an issue (**Create issue**), or open one you already submitted from **My issues**.
-2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images and video links, and any update the team has written.
+2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images, and any update the team has written.
 3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Live support` button, plus the meeting code in case you want to enter it in the room yourself. You may be asked to sign in before the room lets you in. The button opens the room **in a new tab**, so your request page stays open. After that it turns into `Open Live support`: press it to get back into the room if you closed the tab or your browser blocked it.
 
 The `Join Live support` button at the top of the **Issues** page explains these same steps in a small window, with **Create an issue** and **My issues** buttons. It also has a direct join, but joining from your own issue is better: the mentor then knows your reference.
@@ -330,9 +319,7 @@ The form asks for two things:
 You can also add optional evidence:
 
 - **Attachments** — images only. Select PNG, JPEG, GIF or WebP files, review their local previews, and remove any unwanted selection before submitting. They stay private until the team publishes the request to the Student Library; after that, every student can open them. On your request page, click an attached image to preview it in a dialog without leaving the page.
-- **Video links** — one per line, in the form `Title|https://link` (optionally `Title|https://link|01:30` and a summary).
-
-Upload a video to an HTTPS video service first, then paste its link. If you type something that is not a usable link, the form asks you to fix it instead of silently dropping it. PDF, ZIP and Office attachments are not supported.
+To share a video, upload it to an HTTPS video service first, then put its link in the problem details: use the editor's **Link** button, or paste the `https://` address. PDF, ZIP and Office attachments are not supported.
 
 **Additional Details** is open by default and lets you point the team at the exact place the problem happens:
 
@@ -346,7 +333,7 @@ Fill the lesson fields in only if you know them; leaving them empty is fine. If 
 
 Your request is filed under the email address on your Hablu Programmer LMS account, so you do not need to enter your name or email. Your identity is taken from your signed-in account automatically.
 
-After you submit, you land on **your request page**. It shows the status (`Open`), the request reference, everything you wrote, your images and video links, and a **Live support** panel you can use while the room is open. Updates the team writes appear on the same page, along with any images the team attached to their answer; they also answer by email. You cannot add replies there, and other students cannot read your request unless the team publishes it to the Student Library. Once it is published, its images and video links are visible to every student.
+After you submit, you land on **your request page**. It shows the status (`Open`), the request reference, everything you wrote, your images, and a **Live support** panel you can use while the room is open. Updates the team writes appear on the same page, along with any images the team attached to their answer; they also answer by email. You cannot add replies there, and other students cannot read your request unless the team publishes it to the Student Library. Once it is published, its images and links are visible to every student.
 
 If you submit the same request twice, only one request is created.
 
@@ -362,9 +349,9 @@ Students do not see:
 - Internal staff-only controls.
 - Internal/unpublished issues.
 
-Public issue data includes only the reviewed fields needed for the library, such as title, problem, video links, images, status, priority, course, batch, tags, visibility, and dates. Once an issue is published, its review images (the student's evidence and the team's answer images) are visible to every signed-in student; before publishing, staff must remove any image that contains personal information. Unpublished issues keep their images private.
+Public issue data includes only the reviewed fields needed for the library, such as title, problem, images, status, priority, course, batch, tags, visibility, and dates. Once an issue is published, its review images (the student's evidence and the team's answer images) are visible to every signed-in student; before publishing, staff must remove any image that contains personal information. Unpublished issues keep their images private.
 
-Staff must review an issue before publishing it to the student library. The review is a single short confirmation that no student personal information is present in the title, problem, video links, images, or replies.
+Staff must review an issue before publishing it to the student library. The review is a single short confirmation that no student personal information is present in the title, problem, links, images, or replies.
 
 ## 15. Why A Link May Show 404
 
@@ -415,9 +402,9 @@ Unexpected error:
 | `/dashboard` sends me to the issue library. | This is normal for students. Staff users see the dashboard. |
 | I cannot see a known issue. | It may be unpublished, archived, edited, or not yet reviewed for the student library. |
 | Search does not find an answer. | Search does not search answer/reply body text; try words from the title, problem, tag, or course slug. |
-| A link opens a new tab. | Video links are external resources and are opened separately. |
+| A link opens a new tab. | Links are external resources and are opened separately. |
 | I need to submit a new problem. | Use **Create an issue** to send a request; the team replies by email. |
-| My video link is rejected. | Links must be HTTPS URLs. Upload the video to a supported service first, then paste the link. |
+| My video link does not work. | Links must be `http`/`https` URLs. Upload the video to a supported service first, then paste its link into the problem details. |
 | The live support join button is disabled. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or all of your requests are solved/archived — submit a new request. |
 | The live support panel offers no join button. | Either support is closed (come back 9:00 AM-1:00 PM or 6:30 PM-10:00 PM, Bangladesh time) or the request is `Solved`/`Archived` — submit a new request. |
 | I cannot find my issue again. | Open **My issues** in the topbar; each row opens the issue and its live support panel. |
@@ -432,7 +419,7 @@ Unexpected error:
 | Filter by tag/status/course/batch/date | Yes | `/dashboard/issues` |
 | Sort by newest/oldest/priority | Yes | `/dashboard/issues` |
 | Read issue details | Yes, published only | `/dashboard/issues/[id]` |
-| Open video links | Yes | Issue details and replies |
+| Open links | Yes | Issue details and replies |
 | Toggle theme | Yes | Topbar (desktop) / menu ☰ → Appearance (mobile) |
 | Sign out | Yes | Profile menu (avatar) |
 | Create an issue | Yes | `/dashboard/issues/new` |

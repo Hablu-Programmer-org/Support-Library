@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, TextareaHTMLAttributes } from "react";
+import type { FormEvent } from "react";
 import { useActionState, useRef, useState } from "react";
 
 import { addReplyAction, type ReplyFormState } from "@/actions/replies";
@@ -8,7 +8,6 @@ import type { IssueEditorApi } from "@/components/issues/issue-editor";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
 import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { AttachmentField } from "@/components/shared/attachment-field";
-import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 
 const INITIAL_STATE: ReplyFormState = {};
 
@@ -29,8 +28,7 @@ const newOperationId = () => {
 const firstError = (state: ReplyFormState) =>
   state.fieldErrors?._form?.[0] ??
   state.fieldErrors?.uploads?.[0] ??
-  state.fieldErrors?.body?.[0] ??
-  state.fieldErrors?.videoLinks?.[0];
+  state.fieldErrors?.body?.[0];
 
 export function ReplyComposer({
   issueId,
@@ -63,11 +61,8 @@ export function ReplyComposer({
     if (!input) return;
 
     const form = formRef.current;
-    const payload = form
-      ? `${(form.elements.namedItem("body") as HTMLTextAreaElement | null)?.value ?? ""}|${
-          (form.elements.namedItem("videoLinks") as HTMLTextAreaElement | null)?.value ?? ""
-        }`
-      : "";
+    const payload =
+      (form?.elements.namedItem("body") as HTMLTextAreaElement | null)?.value ?? "";
 
     if (!input.value || submittedPayloadRef.current !== payload) {
       input.value = newOperationId();
@@ -126,18 +121,9 @@ export function ReplyComposer({
           onToggle={(event) => setExtrasOpen(event.currentTarget.open)}
           className="border-t border-slate-200 pt-3 dark:border-slate-800"
         >
-          <summary className="cursor-pointer text-sm font-semibold">Add attachments or video links</summary>
+          <summary className="cursor-pointer text-sm font-semibold">Add attachments</summary>
           <div className="mt-3 grid gap-3">
             <AttachmentField onCountChange={(count) => count > 0 && setExtrasOpen(true)} />
-            {/* `defaultValue` from the returned state: React resets the form
-                after a form action runs, which would otherwise wipe it. */}
-            <TextAreaField
-              name="videoLinks"
-              label="Video links"
-              rows={2}
-              description="One per line: title|https://url|timestamp|summary"
-              defaultValue={state.values?.videoLinks ?? ""}
-            />
           </div>
         </details>
         <div className="ml-auto w-full sm:w-44">
@@ -150,17 +136,5 @@ export function ReplyComposer({
         )}
       </form>
     </section>
-  );
-}
-
-function TextAreaField({ label, description, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; description?: string }) {
-  return (
-    <label className={nativeLabelClass}>
-      <span>
-        {label} {props.required && <span className="text-danger">*</span>}
-      </span>
-      <textarea {...props} className={nativeTextareaClass} />
-      {description && <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{description}</span>}
-    </label>
   );
 }

@@ -36,7 +36,6 @@ const issue: OwnIssueDetail = {
   id: "issue-1",
   title: "Supabase 403 on insert",
   question: "## Error\n\npermission denied",
-  videoLinks: [],
   uploads: [],
   status: "SOLVED",
   courseSlug: "agent",
@@ -57,7 +56,6 @@ const staffAnswer: SupportReplyListItem = {
   authorName: "Rahim",
   isStaffReply: true,
   body: "Use the service_role key",
-  videoLinks: [],
   uploads: [],
   createdAt: new Date("2026-11-21T06:03:00Z"),
 };

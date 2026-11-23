@@ -87,7 +87,6 @@ export function StudentRequestView({
         <main className="min-w-0 space-y-10">
           <IssueProblemSection
             question={issue.question}
-            videoLinks={issue.videoLinks ?? []}
             uploads={issue.uploads ?? []}
             tags={issue.tags ?? []}
           />

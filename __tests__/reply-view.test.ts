@@ -19,7 +19,6 @@ const reply = (
   authorName: "Someone",
   isStaffReply: false,
   body: "text",
-  videoLinks: [],
   uploads: [upload],
   ...overrides,
 });

@@ -139,7 +139,6 @@ export default async function IssueDetailPage({
             tags: staffIssue.tags,
             createdAt: staffIssue.createdAt,
             updatedAt: staffIssue.updatedAt,
-            videoLinks: staffIssue.videoLinks,
             attachments: staffIssue.uploads.map((upload) => ({
               mimeType: upload.mimeType,
             })),
@@ -148,7 +147,6 @@ export default async function IssueDetailPage({
             isStaffReply: reply.isStaffReply,
             body: reply.body,
             createdAt: reply.createdAt,
-            videoLinks: reply.videoLinks,
             attachments: reply.uploads.map((upload) => ({ mimeType: upload.mimeType })),
           })),
         })
@@ -221,7 +219,6 @@ export default async function IssueDetailPage({
             <main className="min-w-0 space-y-8 lg:space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
               <IssueProblemSection
                 question={supportIssue.question}
-                videoLinks={supportIssue.videoLinks ?? []}
                 uploads={supportIssue.uploads ?? []}
                 tags={supportIssue.tags ?? []}
               />
@@ -262,7 +259,6 @@ export default async function IssueDetailPage({
           <main className="min-w-0 space-y-8 lg:space-y-10">
             <IssueProblemSection
               question={supportIssue.question}
-              videoLinks={supportIssue.videoLinks ?? []}
               uploads={supportIssue.uploads ?? []}
               tags={supportIssue.tags ?? []}
             />

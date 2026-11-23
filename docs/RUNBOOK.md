@@ -101,7 +101,7 @@ encryption key versions through the backup retention window.
 ### Retired file-link cleanup
 
 The generic external `fileLinks` feature has been removed; private image uploads
-and HTTPS video links remain. Run the cleanup before deploying the schema removal:
+remain. Run the cleanup before deploying the schema removal:
 
 1. Take and verify an encrypted `mongodump` of the support database.
 2. Run `npm run db:remove-file-links` and retain its dry-run counts.
@@ -113,6 +113,31 @@ The command removes only top-level `fileLinks` fields from `support-issues` and
 `support-replies`. It is idempotent and redacts URI credentials. Its only rollback
 is restoration of the pre-apply encrypted dump; retain the command output with the
 release evidence.
+
+### Retired video-link field
+
+The separate `videoLinks` field on issues and replies has been removed. Links now
+live in the Markdown text (the editor's Link tool). Existing links are kept: the
+migration appends them to the issue `question` / reply `body` under a
+`**Video links**` list and unsets the field in the same update. Deploy the code
+first (it no longer reads or writes the field), then run straight away:
+
+1. Take and verify an encrypted `mongodump` of `support-issues` and `support-replies`.
+2. Run `npm run db:remove-video-links` (dry run; add `--json` for machine output)
+   and keep the counts. Any `too-long` id (text would pass 20,000 characters) is
+   listed and is not written; fix those by hand.
+3. Apply with
+   `npm run db:remove-video-links -- --apply --confirm=<database> --backup-acknowledged`.
+   Each write re-checks that the document did not change since it was read; a
+   `conflict` is skipped, so re-run to pick it up.
+4. Rebuild search text: `npm run search:backfill -- --apply --confirm=<database>`,
+   then `npm run search:verify`.
+5. Re-run the dry run: expect `matched=0`.
+
+`updatedAt` is not bumped (it drives queue order and the edit revision). The
+command is idempotent. Rollback is restoring the pre-apply dump. The env keys
+`ALLOWED_LINK_HOSTS` and `MAX_LINKS_PER_ITEM` are no longer read; remove them
+from the deployment env.
 
 ## R2 key rotation
 

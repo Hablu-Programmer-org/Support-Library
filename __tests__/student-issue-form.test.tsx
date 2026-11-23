@@ -29,7 +29,6 @@ describe("StudentIssueForm layout", () => {
         "moduleSlug",
         "contentSlug",
         "tags",
-        "videoLinks",
       ]),
     );
     expect((container.querySelector('input[name="csrfToken"]') as HTMLInputElement).value).toBe("csrf-1");

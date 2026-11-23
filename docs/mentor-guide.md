@@ -187,7 +187,7 @@ Click `New Issue` from the issue list.
 
 The create page has these main sections, in order:
 
-- Issue Details (title, problem description, image attachments, and optional video links).
+- Issue Details (title, problem description and image attachments).
 - Answer (Optional).
 - Student Identity (optional).
 - Additional Details.
@@ -255,9 +255,8 @@ Optional metadata:
 | Content/Lesson slug | Lowercase slug, hyphen format, max 120. |
 | Tags | Max 10 tags, lowercase, unique, max 32 each. |
 | Priority | Low, Normal, High, Urgent. |
-| Video Links | Max 10 HTTPS links, one per line: `title\|url\|timestamp\|summary`. |
 
-Issue-level attachments and `Video Links` belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` attachments and video links, which belong to the initial staff answer. Attachments currently accept images only.
+Issue-level attachments belong to the problem itself (the reporter's evidence). They are separate from the `Answer (Optional)` attachments, which belong to the initial staff answer. Attachments currently accept images only.
 
 Selected attachments show local previews before submission. Use a preview card's `Remove` button to exclude that image from the submitted file list. These previews stay in the browser; the remaining files are uploaded only when the form is submitted.
 
@@ -301,7 +300,6 @@ You can add:
 
 - Answer body.
 - Image attachments.
-- Video links.
 - Solve checkbox.
 
 Behavior:
@@ -309,7 +307,7 @@ Behavior:
 - If you add an answer and keep `Mark as solved when an answer is provided` checked, the issue is created as `SOLVED`.
 - If you add an answer but uncheck the solve checkbox, the issue is created as `OPEN`.
 - If you do not add an answer, the issue is created as `OPEN`.
-- If you add only attachments/video links and no answer body, the app saves this fallback answer: `See the attached images or video links for the answer.`
+- If you add only image attachments and no answer body, the app saves this fallback answer: `See the attached images for the answer.`
 
 Use the solve checkbox only when the answer is final enough that no follow-up is expected.
 
@@ -319,46 +317,24 @@ Initial answer during creation and later public responses are not exactly the sa
 
 | Behavior | Initial Answer | Later Public Response |
 | --- | --- | --- |
-| Body required | No, if links exist | Yes |
+| Body required | No, if images exist | Yes |
 | Attachment-only answer | Allowed | Not allowed |
-| Attachments/video links | Allowed | Allowed |
+| Image attachments | Allowed | Allowed |
 | Can set issue solved immediately | Yes, with solve checkbox | No, update status separately |
 | Creates a reply | Yes | Yes |
 
-If you need to add a later response, write a body first, then optionally add links.
+If you need to add a later response, write a body first, then optionally add images.
 
-## 14. Video Link Format
+## 14. Links
 
-The same format applies everywhere video links appear: issue evidence, the `Answer (Optional)`, and public replies.
+There is no separate video-link field. Put a video or any other reference link in the text itself, in the problem description, the answer or a reply:
 
-Video links format:
+- Select text and use the editor's **Link** button (`Ctrl+K` / `Cmd+K`), or
+- Paste a bare `https://` URL; it becomes clickable automatically.
 
-```text
-title|https://url|timestamp|summary
-```
+Only `http`/`https` links are kept. Add the timestamp and a short note next to the link, for example `[Lecture 5](https://youtu.be/abc) — 12:30, shows the fix`.
 
-Examples:
-
-```text
-Walkthrough|https://example.com/fix.mp4|01:20|Fix demonstration
-```
-
-Bare URLs are also accepted:
-
-```text
-https://example.com/fix.mp4
-```
-
-Link behavior and limits:
-
-- One link per line.
-- Missing protocol becomes `https://...`.
-- Invalid/non-URL lines are ignored.
-- Maximum 10 video links per issue or reply.
-- Production expects HTTPS links.
-- Video title max 120 characters.
-- Video timestamp max 12 characters and only digits/colon.
-- Video summary max 500 characters.
+Links that were saved in the old video-link field were moved into the text under a **Video links** heading.
 
 Students open these links in a new browser tab.
 
@@ -397,7 +373,6 @@ The issue detail page shows:
 - Issue title.
 - Updated time.
 - Full problem description.
-- Attached video links (the problem's evidence), if any.
 - Tags.
 - The first reply as `Solution` (solved) or `Answer`, then later replies as `Responses`.
 - Issue context (course, batch, publication, creation time, and — for staff — the `Reference` and `Live support` fields).
@@ -499,9 +474,8 @@ Required:
 Optional:
 
 - Private image attachments.
-- Video links.
 
-Click `Add attachments or video links` to open the optional fields.
+Click `Add attachments` to open the optional field.
 
 Important:
 
@@ -523,15 +497,12 @@ UI behavior:
 
 - Edit/delete buttons show only when you can mutate that reply.
 - Delete asks for confirmation: `Delete this reply? This cannot be undone.`
-- Edit supports the reply body **and** its video links. The textarea is pre-filled with the stored links, one per line in the same `title|https://url|timestamp|summary` format; clearing it removes every link, and saving replaces the list in one go.
-- If the textarea contains text that is not a usable HTTPS link, the save is rejected instead of silently dropping it.
+- Edit changes the reply body (links included) and its images: tick `Remove` on an image or add new ones.
 - A save that fails (rate limit, a stale page) reports the reason inside the editor and keeps your text; the editor closes only after the save succeeds.
 
 Important limitation:
 
-- Uploaded images on a reply still cannot be edited through the reply edit UI;
-  video links can.
-- If an attached image is wrong, add a corrected follow-up reply or delete the reply and create a new one.
+- An image cannot be replaced in place: remove the wrong one and add the corrected image.
 
 Side effects:
 
@@ -552,7 +523,6 @@ Mentors can edit:
 - Issue title.
 - Problem description.
 - Private image attachments.
-- Video links.
 - Status.
 - Priority.
 - Course slug.
@@ -571,7 +541,7 @@ Important side effects:
 
 Even a small typo fix can temporarily remove a published issue from the Student Library.
 
-The issue edit form shows current video links as editable lines and authorized thumbnail previews for image attachments. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another image attachment. Attachments are private while the case is internal, and become part of the Student Library once the case is published — so remove any sensitive screenshot before publishing. A reply's edit form has the same Remove checkbox for its attachments.
+The issue edit form shows authorized thumbnail previews for image attachments. Select a preview to open the original; use its checkbox to remove it, or use the picker to add another image attachment. Attachments are private while the case is internal, and become part of the Student Library once the case is published — so remove any sensitive screenshot before publishing. A reply's edit form has the same Remove checkbox for its attachments.
 
 ## 22. Archive Issue
 
@@ -621,7 +591,7 @@ Mentors cannot:
 Admins must confirm:
 
 ```text
-No student personal information in this issue, including its images and video links.
+No student personal information in this issue, including its images and links.
 ```
 
 Publishing also makes every attachment on the case public: the student's evidence images and the images on each reply. Remove a sensitive screenshot first — use the checkbox on the issue edit form, or the checkbox on a reply's edit form (reply attachments can be removed there). Any edit or new reply automatically puts the case back into review, so the next publish needs the same confirmation again.
@@ -640,11 +610,9 @@ Check these fields:
 - Issue title.
 - Problem description.
 - Issue image attachments (all of them become public on publish).
-- Issue video link title/summary.
 - Reply body.
 - Reply image attachments.
-- Reply video link title.
-- Reply video link summary.
+- Link text in the problem and replies.
 
 Remove or generalize:
 
@@ -754,7 +722,7 @@ Mobile behavior:
 | View dashboard | Yes | `/dashboard` |
 | View all active issues | Yes | `/dashboard/issues` |
 | Create issue | Yes | `/dashboard/issues/new` |
-| Add issue attachments/video links | Yes | Issue form |
+| Add issue attachments | Yes | Issue form |
 | Use LMS email lookup | Yes | Issue form |
 | Add first answer during create | Yes | Issue form |
 | Add public response | Yes | Issue detail |
@@ -792,11 +760,11 @@ Before creating or updating an issue:
 - [ ] Use the student's LMS email when available.
 - [ ] Keep title general and searchable.
 - [ ] Remove student PII from public-facing text.
-- [ ] Check issue-level video links for student PII before publishing.
+- [ ] Check link text in the problem for student PII before publishing.
 - [ ] Add course/batch/tags if useful for filtering.
 - [ ] Add an answer if the fix is known.
 - [ ] Mark solved only when the answer is final.
-- [ ] Use valid HTTPS video links.
+- [ ] Use valid HTTPS links.
 - [ ] Ask admin to publish only after public content is safe.
 
 Before archiving:

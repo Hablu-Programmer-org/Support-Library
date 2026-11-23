@@ -1,13 +1,11 @@
 import type { ComponentProps } from "react";
 
 import { AttachmentList } from "@/components/shared/attachment-list";
-import { LinkList } from "@/components/shared/link-list";
 import { SectionLabel } from "@/components/shared/section-label";
 import { RichText } from "@/lib/rich-text";
 
 type IssueProblemSectionProps = {
   question: string;
-  videoLinks: ComponentProps<typeof LinkList>["videoLinks"];
   uploads: ComponentProps<typeof AttachmentList>["uploads"];
   tags: string[];
 };
@@ -19,7 +17,6 @@ type IssueProblemSectionProps = {
  */
 export function IssueProblemSection({
   question,
-  videoLinks,
   uploads,
   tags,
 }: IssueProblemSectionProps) {
@@ -35,9 +32,8 @@ export function IssueProblemSection({
         className="mt-4 text-base leading-8 text-slate-800 dark:text-slate-100"
       />
 
-      {videoLinks.length > 0 || uploads.length > 0 ? (
+      {uploads.length > 0 ? (
         <div className="mt-6 space-y-4">
-          <LinkList videoLinks={videoLinks} />
           {/* Published cases are reviewed before they reach the library, so
               their evidence images are part of the student-facing answer. */}
           <AttachmentList uploads={uploads} />

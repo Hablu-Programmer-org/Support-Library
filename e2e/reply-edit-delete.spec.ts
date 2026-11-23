@@ -52,27 +52,15 @@ test.describe("Reply edit and delete interactions", () => {
     await expect(reply).toContainText("edited");
   });
 
-  test("editing a reply can add and clear video links", async ({ page }) => {
+  test("editing a reply adds a link through the body, with no separate video-link field", async ({ page }) => {
     const reply = await createIssueWithReply(page, "Reply with a walkthrough", Date.now().toString());
-    const line = "Walkthrough|https://youtu.be/e2e-demo|01:30|Shows the fix";
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
-    // Collapsed like the composer while the reply has no links.
-    await reply.getByText("Add images or video links").click();
-    await reply.locator('textarea[name="videoLinks"]').fill(line);
+    await expect(reply.locator('[name="videoLinks"]')).toHaveCount(0);
+    await fillMarkdownEditor(reply, "Edit reply", "body", "Walkthrough: https://youtu.be/e2e-demo");
     await reply.getByRole("button", { name: "Save" }).click();
 
-    const link = reply.getByRole("link", { name: "Walkthrough" });
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute("href", "https://youtu.be/e2e-demo");
-
-    // The editor is pre-filled with the stored links, and clearing them removes
-    // the list from the reply.
-    await reply.getByRole("button", { name: "Edit", exact: true }).click();
-    await expect(reply.locator('textarea[name="videoLinks"]')).toHaveValue(line);
-    await reply.locator('textarea[name="videoLinks"]').fill("");
-    await reply.getByRole("button", { name: "Save" }).click();
-    await expect(reply.getByRole("link", { name: "Walkthrough" })).toHaveCount(0);
+    await expect(reply.locator('a[href="https://youtu.be/e2e-demo"]')).toBeVisible();
   });
 
   test("delete only removes the reply after confirming", async ({ page }) => {
@@ -88,23 +76,23 @@ test.describe("Reply edit and delete interactions", () => {
     await expect(reply).toHaveCount(0);
   });
 
-  test("adds a video link without an error page", async ({ page }) => {
+  test("adds a link in a response without an error page", async ({ page }) => {
     test.setTimeout(120000);
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");
     await form.locator('input[name="studentName"]').fill("E2E Link Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.links.${Date.now().toString()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E reply links");
-    await fillMarkdownEditor(form, "Issue details", "question", "Adding a valid video link should save normally and must not crash the reply form.");
+    await fillMarkdownEditor(form, "Issue details", "question", "Adding a valid link should save normally and must not crash the reply form.");
     await form.locator('input[name="solveIssue"]').uncheck();
 
     await submitAndWait(page, "Create Issue", ISSUE_URL);
 
     const replyForm = formFor(page, "Add response");
-    await fillMarkdownEditor(replyForm, "Response", "body", "See the attached references.");
-    await replyForm.getByText("Add attachments or video links").click();
+    await fillMarkdownEditor(replyForm, "Response", "body", "See the attached references. https://example.com/fix.mp4");
+    await replyForm.getByText("Add attachments").click();
     await expect(replyForm.locator('textarea[name="fileLinks"]')).toHaveCount(0);
-    await replyForm.locator('textarea[name="videoLinks"]').fill("Walkthrough|https://example.com/fix.mp4|01:20");
+    await expect(replyForm.locator('[name="videoLinks"]')).toHaveCount(0);
     await replyForm.getByRole("button", { name: "Add response" }).click();
 
     await expect(page.getByRole("heading", { name: "Something Went Wrong" })).toHaveCount(0);

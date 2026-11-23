@@ -41,20 +41,6 @@ export const buildSearchRegex = (query?: string | null) => {
   return { $regex: escapeRegex(normalized), $options: "i" };
 };
 
-export type SearchableVideoLink = {
-  title?: string | null;
-  summary?: string | null;
-  /**
-   * The link itself (and its in-video timestamp) is searchable too, so a
-   * YouTube ID from the URL finds the link. URLs are already in the public
-   * projection (`videoLinks` is a `PUBLIC_ISSUE_FIELDS` member), so indexing
-   * them in the public text exposes nothing new; only attachment *filenames*
-   * stay staff-only.
-   */
-  url?: string | null;
-  timestamp?: string | null;
-};
-
 export type SearchableAttachment = {
   originalName?: string | null;
 };
@@ -77,7 +63,6 @@ export type IssueSearchTextSource = {
   moduleSlug?: string | null;
   contentSlug?: string | null;
   tags?: readonly string[] | null;
-  videoLinks?: readonly SearchableVideoLink[] | null;
   uploads?: readonly SearchableAttachment[] | null;
 };
 
@@ -89,12 +74,8 @@ export type ReplySearchTextSource = {
    */
   isStaffReply?: boolean | null;
   authorRole?: string | null;
-  videoLinks?: readonly SearchableVideoLink[] | null;
   uploads?: readonly SearchableAttachment[] | null;
 };
-
-const linkText = (links?: readonly SearchableVideoLink[] | null) =>
-  (links ?? []).flatMap((link) => [link.title, link.summary, link.url, link.timestamp]);
 
 const attachmentText = (uploads?: readonly SearchableAttachment[] | null) =>
   (uploads ?? []).map((upload) => upload.originalName);
@@ -163,10 +144,7 @@ export const buildIssuePublicSearchText = (
     input.contentSlug,
     batchText(input.batchNo),
     ...(input.tags ?? []),
-    ...linkText(input.videoLinks),
-    ...replies
-      .filter(isSearchableStaffReply)
-      .flatMap((reply) => [reply.body, ...linkText(reply.videoLinks)]),
+    ...replies.filter(isSearchableStaffReply).map((reply) => reply.body),
   ]).slice(0, SEARCH_TEXT_MAX);
 
 /**
@@ -191,11 +169,6 @@ export const buildIssueStaffSearchText = (
     input.contentSlug,
     batchText(input.batchNo),
     ...(input.tags ?? []),
-    ...linkText(input.videoLinks),
     ...attachmentText(input.uploads),
-    ...replies.flatMap((reply) => [
-      reply.body,
-      ...linkText(reply.videoLinks),
-      ...attachmentText(reply.uploads),
-    ]),
+    ...replies.flatMap((reply) => [reply.body, ...attachmentText(reply.uploads)]),
   ]).slice(0, SEARCH_TEXT_MAX);

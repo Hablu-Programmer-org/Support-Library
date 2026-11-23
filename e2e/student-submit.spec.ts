@@ -41,13 +41,11 @@ test.describe("STUDENT issue submission", () => {
 
     const optional = form
       .locator("details")
-      .filter({ hasText: "Module, lesson, tags or video links" });
+      .filter({ hasText: "Module, lesson or tags" });
     await optional.locator("summary").click();
-    // Uploaded image attachments are covered in attachments.spec.ts; videos remain
-    // external HTTPS links inside the optional context disclosure.
-    await optional
-      .locator('textarea[name="videoLinks"]')
-      .fill("Walkthrough|https://youtu.be/demo123|01:30|Shows the buffering");
+    // Uploaded image attachments are covered in attachments.spec.ts; links now
+    // go in the issue details editor, so there is no separate field.
+    await expect(form.locator('[name="videoLinks"]')).toHaveCount(0);
     await optional.locator('input[name="tags"]').fill("buffering, video");
 
     await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
@@ -72,11 +70,9 @@ test.describe("STUDENT issue submission", () => {
     await expect(issueHeading).toBeVisible();
     await expect(issueCard).toContainText("student@hablu-programmer.com");
 
-    // The student's video link and optional course context are preserved.
+    // The optional course context is preserved.
     await issueHeading.click();
     await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}(\?returnTo=|$)/);
-    await expect(adminPage.getByRole("heading", { name: "Video Links" })).toBeVisible();
-    await expect(adminPage.getByRole("link", { name: /Walkthrough/ })).toBeVisible();
     await expect(adminPage.getByText("jfwd")).toBeVisible();
 
     await adminContext.close();

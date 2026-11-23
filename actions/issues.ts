@@ -15,7 +15,6 @@ import {
   sanitizeIssueListReturnTo,
 } from "@/lib/issue-list-params";
 import { operationIdSchema } from "@/lib/mutation-security";
-import { parseVideoLinks } from "@/lib/parse-links";
 import { consumeRateLimit } from "@/lib/services/rate-limit";
 import {
   changeIssueStatus,
@@ -80,9 +79,6 @@ const parseTags = parseTagList;
 const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
 const revisionSchema = z.string().datetime();
 
-/** Shown when the student typed something that yielded no parseable link. */
-const VIDEO_LINKS_HINT =
-  "Use one link per line: Title|https://youtu.be/videoId (optionally add |01:30 and a summary)";
 
 const zodFieldErrors = (
   error: z.ZodError,
@@ -120,7 +116,6 @@ const parseIssueForm = (formData: FormData, mode: "create" | "update") => {
     moduleSlug: formValue(formData, "moduleSlug"),
     contentSlug: formValue(formData, "contentSlug"),
     tags: parseTags(formValue(formData, "tags")),
-    videoLinks: parseVideoLinks(formValue(formData, "videoLinks")),
   });
 };
 
@@ -156,7 +151,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     }
 
     const solutionBody = formValue(formData, "solutionBody");
-    const solutionVideoLinks = parseVideoLinks(formValue(formData, "solutionVideoLinks"));
     const solveIssue = formData.get("solveIssue") === "on";
 
     // Read the file inputs up front: they decide whether the answer section was
@@ -164,17 +158,12 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
     const issueFiles = formFiles(formData, "uploads");
     const solutionFiles = formFiles(formData, "solutionUploads");
 
-    const hasSolution = Boolean(
-      solutionBody ||
-        solutionVideoLinks.length ||
-        solutionFiles.length,
-    );
+    const hasSolution = Boolean(solutionBody || solutionFiles.length);
     let solution: z.infer<typeof initialReplySchema> | null;
     try {
       solution = hasSolution
         ? initialReplySchema.parse({
-            body: solutionBody ?? "See the attached images or video links for the answer.",
-            videoLinks: solutionVideoLinks,
+            body: solutionBody ?? "See the attached images for the answer.",
           })
         : null;
     } catch (err) {
@@ -182,7 +171,6 @@ export async function createIssueAction(_prevState: FormState, formData: FormDat
         return {
           fieldErrors: zodFieldErrors(err, {
             body: "solutionBody",
-            videoLinks: "solutionVideoLinks",
           }),
         };
       }
@@ -292,12 +280,6 @@ export async function createStudentIssueAction(
       const profileName = profile.name.trim();
       const studentName = (profileName.length >= 2 ? profileName : email).slice(0, 120);
 
-      const rawVideoLinks = formValue(formData, "videoLinks");
-      const videoLinks = parseVideoLinks(rawVideoLinks);
-      if (rawVideoLinks && videoLinks.length === 0) {
-        return { fieldErrors: { videoLinks: [VIDEO_LINKS_HINT] } };
-      }
-
       const lmsUser = await findLmsUserByEmail(email);
       // The course (and therefore the batch) comes from the student's LMS
       // enrolments, never from the form: a crafted POST cannot claim another
@@ -330,7 +312,6 @@ export async function createStudentIssueAction(
         batchNo,
         moduleSlug: formValue(formData, "moduleSlug"),
         contentSlug: formValue(formData, "contentSlug"),
-        videoLinks,
         status: "OPEN",
         priority: "NORMAL",
         tags: parseTags(formValue(formData, "tags")),
@@ -341,7 +322,6 @@ export async function createStudentIssueAction(
         if (
           fieldErrors.title ||
           fieldErrors.question ||
-          fieldErrors.videoLinks ||
           fieldErrors.courseSlug ||
           fieldErrors.batchNo ||
           fieldErrors.moduleSlug ||
@@ -352,7 +332,6 @@ export async function createStudentIssueAction(
             fieldErrors: {
               title: fieldErrors.title,
               question: fieldErrors.question,
-              videoLinks: fieldErrors.videoLinks,
               courseSlug: fieldErrors.courseSlug,
               batchNo: fieldErrors.batchNo,
               moduleSlug: fieldErrors.moduleSlug,

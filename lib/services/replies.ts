@@ -26,7 +26,6 @@ export type SupportReplyListItem = {
   authorName?: string;
   isStaffReply: boolean;
   body: string;
-  videoLinks: Array<{ title: string; url: string; timestamp?: string | null; summary?: string | null }>;
   uploads: Array<Omit<AttachmentView, "uploadedBy">>;
   createdAt?: Date;
   updatedAt?: Date;
@@ -53,7 +52,6 @@ const toReplyListItem = (reply: LeanDoc, authors: Map<string, LeanDoc> = new Map
     authorName: author?.name as string | undefined,
     isStaffReply: isEffectiveStaffReply(reply, (author as { role?: string | null } | undefined)?.role),
     body: String(reply.body),
-    videoLinks: Array.isArray(reply.videoLinks) ? reply.videoLinks as SupportReplyListItem["videoLinks"] : [],
     uploads,
     createdAt: reply.createdAt as Date | undefined,
     updatedAt: reply.updatedAt as Date | undefined,
@@ -448,7 +446,6 @@ export async function editReply(
   body: string,
   actorId: string,
   actorRole?: UserRole | null,
-  videoLinks?: SupportReplyInput["videoLinks"],
   removeUploadIds: readonly string[] = [],
   options: {
     /** Images uploaded with the edit; discarded here if the edit does not commit. */
@@ -524,12 +521,8 @@ export async function editReply(
       );
     }
 
-    // Video links are replace-only: the edit form always posts the full list, so
-    // omitting the field leaves the stored links untouched and an empty string
-    // clears them. Uploads follow the same rule — an empty `removeUploadIds`
-    // leaves the existing images alone.
+    // An empty `removeUploadIds` leaves the existing images alone.
     const update: Record<string, unknown> = { body: body.trim(), editedAt: new Date() };
-    if (videoLinks !== undefined) update.videoLinks = videoLinks;
     if (removed.length || newUploads.length) update.uploads = [...kept, ...newUploads];
 
     const reply = await SupportReplyModel.findOneAndUpdate(

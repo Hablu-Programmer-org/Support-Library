@@ -59,7 +59,7 @@ type LeanDoc = Record<string, unknown>;
  * must never reach a public or student projection.
  */
 export const PUBLIC_ISSUE_FIELDS =
-  "title question videoLinks status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
+  "title question status priority courseSlug batchNo tags visibility publishedAt createdAt updatedAt";
 
 /**
  * The published **detail** projection adds the evidence images and the case
@@ -176,13 +176,6 @@ const CASE_PRIORITY_RANK: Record<string, number> = Object.fromEntries(
   CASE_PRIORITIES.map((priority, index) => [priority, index + 1]),
 );
 
-export type IssueVideoLink = {
-  title: string;
-  url: string;
-  timestamp?: string | null;
-  summary?: string | null;
-};
-
 export type SupportIssueListItem = {
   id: string;
   studentName: string;
@@ -190,7 +183,6 @@ export type SupportIssueListItem = {
   lmsUserId?: string | null;
   title: string;
   question: string;
-  videoLinks: IssueVideoLink[];
   uploads: AttachmentView[];
   status: CaseStatus;
   priority?: string | null;
@@ -225,7 +217,6 @@ export type OwnIssueDetail = Pick<
   | "id"
   | "title"
   | "question"
-  | "videoLinks"
   | "status"
   | "courseSlug"
   | "batchNo"
@@ -244,7 +235,6 @@ export type PublicIssueDetail = Pick<
   | "id"
   | "title"
   | "question"
-  | "videoLinks"
   | "status"
   | "priority"
   | "courseSlug"
@@ -296,7 +286,6 @@ const toIssueListItem = (item: LeanDoc, includeStudentEmail = true): SupportIssu
   lmsUserId: (item.lmsUserId as string | null) ?? null,
   title: String(item.title),
   question: String(item.question),
-  videoLinks: Array.isArray(item.videoLinks) ? item.videoLinks as IssueVideoLink[] : [],
   uploads: toAttachmentViews(item.uploads),
   status: item.status as CaseStatus,
   priority: item.priority as string | null | undefined,
@@ -322,7 +311,6 @@ const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
-    videoLinks: mapped.videoLinks,
     status: mapped.status,
     priority: mapped.priority,
     courseSlug: mapped.courseSlug,
@@ -377,7 +365,7 @@ export function buildIssueFilter(params: IssueListParams = {}, publicOnly = fals
       // `publicSearchText` is the normalized superset (content + staff answers).
       // The legacy per-field branches stay in place so documents written before
       // the backfill — and the pre-backfill deploy window — remain searchable
-      // for issue/video-link fields. Reply bodies only enter the public text
+      // for issue fields. Reply bodies only enter the public text
       // once the backfill has run; there is no cross-collection branch here.
       filter.$or = [
         { publicSearchText: searchRegex },
@@ -387,10 +375,6 @@ export function buildIssueFilter(params: IssueListParams = {}, publicOnly = fals
         { courseSlug: searchRegex },
         { moduleSlug: searchRegex },
         { contentSlug: searchRegex },
-        { "videoLinks.title": searchRegex },
-        { "videoLinks.summary": searchRegex },
-        { "videoLinks.url": searchRegex },
-        { "videoLinks.timestamp": searchRegex },
         ...(batchNumberQuery !== null ? [{ batchNo: batchNumberQuery }] : []),
       ];
     } else {
@@ -1339,7 +1323,6 @@ export async function getOwnIssueDetail(id: string, studentUserId: string) {
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
-    videoLinks: mapped.videoLinks,
     status: mapped.status,
     courseSlug: mapped.courseSlug,
     batchNo: mapped.batchNo,
@@ -1417,7 +1400,6 @@ export async function getPublishedIssueDetail(id: string): Promise<PublicIssueDe
     id: mapped.id,
     title: mapped.title,
     question: mapped.question,
-    videoLinks: mapped.videoLinks,
     uploads: toPublicAttachmentViews((supportIssue as LeanDoc).uploads),
     status: mapped.status,
     priority: mapped.priority,

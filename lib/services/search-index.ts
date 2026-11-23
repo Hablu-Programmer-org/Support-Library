@@ -58,10 +58,10 @@ export async function rebuildIssueSearchFields(
   if (!mongoose.Types.ObjectId.isValid(issueId)) return null;
 
   const issueQuery = SupportIssueModel.findById(issueId).select(
-    "title question studentName batchNo courseSlug moduleSlug contentSlug tags videoLinks uploads",
+    "title question studentName batchNo courseSlug moduleSlug contentSlug tags uploads",
   );
   const repliesQuery = SupportReplyModel.find({ issueId, deletedAt: null }).select(
-    "body isStaffReply authorId videoLinks uploads",
+    "body isStaffReply authorId uploads",
   );
   if (session) {
     issueQuery.session(session);

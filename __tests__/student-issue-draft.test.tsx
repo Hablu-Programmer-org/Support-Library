@@ -43,7 +43,6 @@ describe("StudentIssueForm draft", () => {
       moduleSlug: "module-5",
       contentSlug: "",
       tags: "react",
-      videoLinks: "",
     });
     const { container } = renderForm();
     const box = await findIssueTextbox();
@@ -61,7 +60,7 @@ describe("StudentIssueForm draft", () => {
   });
 
   it("drops a saved course the student is no longer enrolled in", async () => {
-    writeIssueDraft(key, { title: "Old course draft", question: "", courseSlug: "gone", moduleSlug: "", contentSlug: "", tags: "", videoLinks: "" });
+    writeIssueDraft(key, { title: "Old course draft", question: "", courseSlug: "gone", moduleSlug: "", contentSlug: "", tags: "" });
     const { container } = renderForm();
     await findIssueTextbox();
     await waitFor(() => expect(input(container, "title").value).toBe("Old course draft"), slow);
@@ -69,7 +68,7 @@ describe("StudentIssueForm draft", () => {
   });
 
   it("autosaves shortly after typing, and never before the saved draft was checked", async () => {
-    writeIssueDraft(key, { title: "Earlier draft", question: "", courseSlug: "", moduleSlug: "", contentSlug: "", tags: "", videoLinks: "" });
+    writeIssueDraft(key, { title: "Earlier draft", question: "", courseSlug: "", moduleSlug: "", contentSlug: "", tags: "" });
     const { container } = renderForm();
     const box = await findIssueTextbox();
     await waitFor(() => expect(input(container, "title").value).toBe("Earlier draft"), slow);
@@ -83,7 +82,7 @@ describe("StudentIssueForm draft", () => {
   });
 
   it("Discard draft clears storage and every field", async () => {
-    writeIssueDraft(key, { title: "To discard", question: "Some details", courseSlug: "web", moduleSlug: "m", contentSlug: "", tags: "", videoLinks: "" });
+    writeIssueDraft(key, { title: "To discard", question: "Some details", courseSlug: "web", moduleSlug: "m", contentSlug: "", tags: "" });
     const { container } = renderForm();
     await findIssueTextbox();
     fireEvent.click(await screen.findByRole("button", { name: "Discard draft" }, slow));

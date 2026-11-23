@@ -11,7 +11,6 @@ const issue = {
   moduleSlug: "assets",
   contentSlug: "images-lecture",
   tags: ["react", "image"],
-  videoLinks: [{ title: "Lecture walkthrough", summary: "Uploads in detail" }],
   uploads: [{ originalName: "rahim-passport.png" }],
 };
 

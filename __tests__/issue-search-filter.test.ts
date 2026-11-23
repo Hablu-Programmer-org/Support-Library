@@ -44,10 +44,7 @@ describe("buildIssueFilter", () => {
     expect(fields).toContain("title");
     expect(fields).toContain("question");
     expect(fields).toContain("tags");
-    expect(fields).toContain("videoLinks.title");
-    expect(fields).toContain("videoLinks.summary");
-    expect(fields).toContain("videoLinks.url");
-    expect(fields).toContain("videoLinks.timestamp");
+    expect(fields.some((field) => field.startsWith("videoLinks"))).toBe(false);
     // No staff-only field may appear in a public filter.
     expect(fields).not.toContain("searchText");
     expect(fields).not.toContain("studentName");

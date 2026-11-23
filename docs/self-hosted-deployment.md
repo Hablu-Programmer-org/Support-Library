@@ -64,11 +64,6 @@ AUTH_TRUST_HOST=true
 NEXT_PUBLIC_APP_URL=https://support.your-domain.com
 NODE_ENV=production
 
-# External links (HTTPS is always required)
-ALLOWED_LINK_HOSTS=your-domain.com,cdn.your-domain.com
-# Video links per issue/reply: 1-50; invalid/missing falls back to 10
-MAX_LINKS_PER_ITEM=10
-
 # Optional: cross-app nav link to the main LMS frontend (HTTPS required).
 # Unset = the "My Courses" item is not rendered. Baked in at build time by
 # Next.js, so set it before `next build`.

@@ -60,7 +60,6 @@ describe.skipIf(!RUN)("search write-path integration", () => {
       {
         title: `Write-path probe ${marker}`,
         question: "Does adding a reply make its body searchable?",
-        videoLinks: [],
         tags: [],
         status: "OPEN",
         priority: "NORMAL",
@@ -77,7 +76,7 @@ describe.skipIf(!RUN)("search write-path integration", () => {
     expect(before.items.some((item) => item.id === issueId)).toBe(false);
 
     const reply = await addReply(
-      { issueId, body: `Try clearing the cache with ${token}.`, videoLinks: [] },
+      { issueId, body: `Try clearing the cache with ${token}.` },
       staffId,
       crypto.randomUUID(),
       [],

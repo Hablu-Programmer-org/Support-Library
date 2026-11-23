@@ -19,7 +19,6 @@ import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import {
   nativeFieldClass,
   nativeSelectClass,
-  nativeTextareaCompactClass,
 } from "@/lib/config/fields";
 import {
   ISSUE_DETAILS_CREATE_MIN,
@@ -113,7 +112,6 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   );
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
-  const [videoLinks, setVideoLinks] = useState("");
   const [courseSlug, setCourseSlug] = useState("");
   const [moduleSlug, setModuleSlug] = useState("");
   const [contentSlug, setContentSlug] = useState("");
@@ -133,7 +131,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   const submittedQuestion = withoutEmptyTemplateSections(question);
   const selectedCourse = courses.find((course) => course.slug === courseSlug) ?? null;
 
-  const draftFields: IssueDraftFields = { title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks };
+  const draftFields: IssueDraftFields = { title, question, courseSlug, moduleSlug, contentSlug, tags };
 
   // Restored once the editor exists (it receives the Markdown). Reading
   // storage during render would differ between server and client.
@@ -149,9 +147,8 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
     setModuleSlug(draft.moduleSlug);
     setContentSlug(draft.contentSlug);
     setTags(draft.tags);
-    setVideoLinks(draft.videoLinks);
     editorApi.current?.setMarkdown(draft.question);
-    setRestoredOptional(Boolean(`${draft.moduleSlug}${draft.contentSlug}${draft.tags}${draft.videoLinks}`.trim()));
+    setRestoredOptional(Boolean(`${draft.moduleSlug}${draft.contentSlug}${draft.tags}`.trim()));
     setRestoredAt(draft.savedAt);
   };
 
@@ -162,7 +159,6 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
     setModuleSlug("");
     setContentSlug("");
     setTags("");
-    setVideoLinks("");
     setDetailsError(null);
     setRestoredOptional(false);
     setRestoredAt(null);
@@ -176,11 +172,11 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   useEffect(() => {
     if (!draftKey || !draftCheckedRef.current || pending) return;
     const timer = window.setTimeout(
-      () => writeIssueDraft(draftKey, { title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks }),
+      () => writeIssueDraft(draftKey, { title, question, courseSlug, moduleSlug, contentSlug, tags }),
       500,
     );
     return () => window.clearTimeout(timer);
-  }, [draftKey, pending, title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks]);
+  }, [draftKey, pending, title, question, courseSlug, moduleSlug, contentSlug, tags]);
 
   const ensureOperationId = () => {
     if (operationIdRef.current && !operationIdRef.current.value) {
@@ -224,8 +220,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   ];
   const formError = state.fieldErrors?._form?.[0];
   const optionalDetailsHaveError = Boolean(
-    state.fieldErrors?.videoLinks?.[0] ||
-      state.fieldErrors?.moduleSlug?.[0] ||
+    state.fieldErrors?.moduleSlug?.[0] ||
       state.fieldErrors?.contentSlug?.[0] ||
       state.fieldErrors?.tags?.[0],
   );
@@ -417,7 +412,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
                 <SettingsIcon size={18} />
               </span>
               <span className="flex-1 text-sm font-semibold text-slate-950 dark:text-white">
-                Module, lesson, tags or video links
+                Module, lesson or tags
                 <span className="ml-2 font-normal text-slate-500 dark:text-slate-400">Optional</span>
               </span>
               <ChevronDownIcon
@@ -471,24 +466,6 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
                 {errorText(state.fieldErrors?.tags?.[0]) ?? (
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Separate with commas, lowercase letters and numbers only.
-                  </p>
-                )}
-              </label>
-
-              <label className="flex flex-col gap-1.5">
-                <FieldLabel>Video links</FieldLabel>
-                <textarea
-                  className={nativeTextareaCompactClass}
-                  name="videoLinks"
-                  value={videoLinks}
-                  onChange={(event) => setVideoLinks(event.target.value)}
-                  rows={2}
-                  aria-invalid={state.fieldErrors?.videoLinks?.[0] ? "true" : "false"}
-                  placeholder="Walkthrough|https://youtu.be/videoId|01:30|Shows the bug"
-                />
-                {errorText(state.fieldErrors?.videoLinks?.[0]) ?? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    One per line: <span className="font-medium">Title|https://link</span>
                   </p>
                 )}
               </label>

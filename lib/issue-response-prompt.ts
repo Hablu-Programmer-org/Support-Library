@@ -18,12 +18,6 @@ export type PromptAttachment = {
   mimeType: string;
 };
 
-export type PromptVideoLink = {
-  title: string;
-  summary?: string | null;
-  timestamp?: string | null;
-};
-
 export type PromptIssueInput = {
   title: string;
   question: string;
@@ -36,7 +30,6 @@ export type PromptIssueInput = {
   tags?: string[];
   createdAt?: Date | string | null;
   updatedAt?: Date | string | null;
-  videoLinks?: PromptVideoLink[];
   attachments?: PromptAttachment[];
 };
 
@@ -44,7 +37,6 @@ export type PromptReplyInput = {
   isStaffReply: boolean;
   body: string;
   createdAt?: Date | string | null;
-  videoLinks?: PromptVideoLink[];
   attachments?: PromptAttachment[];
 };
 
@@ -133,15 +125,6 @@ function truncateBody(body: string): { body: string; truncated: boolean } {
   };
 }
 
-function videoLines(links: PromptVideoLink[] | undefined): string[] {
-  if (!links?.length) return [];
-  return links.map((link) => {
-    const meta = [link.timestamp, link.summary].filter(Boolean).join(" — ");
-    const title = prepare(link.title || "Walkthrough");
-    return meta ? `- ${title} (${prepare(meta)})` : `- ${title}`;
-  });
-}
-
 function attachmentLines(
   issueAttachments: PromptAttachment[] | undefined,
   replies: PromptReplyInput[],
@@ -166,8 +149,7 @@ function replyBlocks(replies: PromptReplyInput[]): string[] {
     const author = reply.isStaffReply ? "Support" : "Student";
     const at = reply.createdAt ? formatSupportDate(reply.createdAt) : null;
     const header = at ? `${author} (${at}):` : `${author}:`;
-    const extra = videoLines(reply.videoLinks);
-    return [header, body, ...extra].join("\n");
+    return [header, body].join("\n");
   });
 }
 
@@ -248,7 +230,6 @@ export function buildIssueResponsePrompt({
 }: IssueResponsePromptInput): string {
   const budget = Math.max(1_000, maxReplyCharacters);
   const attachments = attachmentLines(issue.attachments, replies);
-  const issueVideos = videoLines(issue.videoLinks);
 
   const attachmentSection =
     attachments.length === 0
@@ -268,7 +249,6 @@ export function buildIssueResponsePrompt({
     "## Student's Problem",
     "",
     prepare(issue.question),
-    ...(issueVideos.length ? ["", "## Referenced walkthroughs", "", ...issueVideos] : []),
     "",
     "## Conversation History",
     "",

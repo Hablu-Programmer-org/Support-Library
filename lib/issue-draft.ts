@@ -19,7 +19,6 @@ export type IssueDraftFields = {
   moduleSlug: string;
   contentSlug: string;
   tags: string;
-  videoLinks: string;
 };
 
 export type IssueDraft = IssueDraftFields & { savedAt: number };
@@ -38,7 +37,6 @@ const LIMITS: Record<keyof IssueDraftFields, number> = {
   moduleSlug: 200,
   contentSlug: 200,
   tags: 1_000,
-  videoLinks: 5_000,
 };
 
 const FIELDS = Object.keys(LIMITS) as Array<keyof IssueDraftFields>;

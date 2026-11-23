@@ -17,7 +17,6 @@ const reply = (id: string, extra: Partial<SupportReplyListItem> = {}): SupportRe
   authorName: "Rahim",
   isStaffReply: true,
   body: `body ${id}`,
-  videoLinks: [],
   uploads: [],
   createdAt: new Date("2026-11-21T06:03:00Z"),
   ...extra,

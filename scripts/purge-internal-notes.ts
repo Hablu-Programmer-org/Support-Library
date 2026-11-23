@@ -86,7 +86,7 @@ async function main() {
 
     const replies = await collection
       .find({ issueId, deletedAt: null })
-      .project({ body: 1, isStaffReply: 1, authorId: 1, videoLinks: 1, uploads: 1 })
+      .project({ body: 1, isStaffReply: 1, authorId: 1, uploads: 1 })
       .toArray();
 
     const authorIds = [...new Set(replies.map((reply) => String(reply.authorId ?? "")).filter(Boolean))];

@@ -16,11 +16,8 @@ import type { IssueEditorApi } from "@/components/issues/issue-editor";
 import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { AttachmentList } from "@/components/shared/attachment-list";
-import { LinkList } from "@/components/shared/link-list";
 import { cn } from "@/lib/cn";
-import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 import { formatSupportDate } from "@/lib/format-date";
-import { formatVideoLinks } from "@/lib/format-links";
 import { RichText } from "@/lib/rich-text";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 import { replyAnchorId } from "@/lib/issue-solution";
@@ -95,13 +92,11 @@ export function ReplyItem({
   authorLabel?: string;
 }) {
   const apple = useSyncExternalStore(noopSubscribe, isApplePlatform, () => false);
-  const savedLinks = formatVideoLinks(reply.videoLinks);
 
   const [editing, setEditing] = useState(false);
   // The editor's Markdown. Filled from the saved reply each time the editor
   // opens; a rejected save keeps what was typed.
   const [editBody, setEditBody] = useState(reply.body);
-  const [editLinks, setEditLinks] = useState(savedLinks);
   const [editBodyError, setEditBodyError] = useState<string | null>(null);
   const [removeCount, setRemoveCount] = useState(0);
   const [newImageCount, setNewImageCount] = useState(0);
@@ -114,12 +109,10 @@ export function ReplyItem({
   // Which header button gets focus back once the editor / delete row closes.
   const restoreFocus = useRef<"edit" | "delete" | null>(null);
 
-  const dirty =
-    editBody !== reply.body || editLinks !== savedLinks || removeCount > 0 || newImageCount > 0;
+  const dirty = editBody !== reply.body || removeCount > 0 || newImageCount > 0;
 
   const openEditor = () => {
     setEditBody(reply.body);
-    setEditLinks(savedLinks);
     setEditBodyError(null);
     setRemoveCount(0);
     setNewImageCount(0);
@@ -221,7 +214,6 @@ export function ReplyItem({
 
   const editError =
     editState.fieldErrors?._form?.[0] ??
-    editState.fieldErrors?.videoLinks?.[0] ??
     editState.fieldErrors?.uploads?.[0];
   const deleteError = deleteState.fieldErrors?._form?.[0];
 
@@ -356,7 +348,6 @@ export function ReplyItem({
                 : "text-sm leading-7 text-slate-700 dark:text-slate-300"
             }
           />
-          <LinkList videoLinks={reply.videoLinks} />
           <AttachmentList uploads={reply.uploads} />
         </>
       )}
@@ -416,37 +407,12 @@ export function ReplyItem({
             </div>
           )}
 
-          {/* Same disclosure as the composer; open when the reply already has links. */}
-          <details
-            open={savedLinks.length > 0 || undefined}
-            className="border-t border-slate-200 pt-3 dark:border-slate-800"
-          >
-            <summary className="cursor-pointer text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Add images or video links
-            </summary>
-            <div className="mt-3 grid gap-3">
-              <AttachmentField
-                label="Add images"
-                existingCount={keptImages}
-                onCountChange={setNewImageCount}
-                description="PNG, JPEG, GIF or WebP · 5 MB each"
-              />
-              <label className={nativeLabelClass}>
-                Video links
-                <textarea
-                  name="videoLinks"
-                  value={editLinks}
-                  onChange={(event) => setEditLinks(event.target.value)}
-                  rows={2}
-                  placeholder="Walkthrough|https://youtu.be/abc123|01:30|What it shows"
-                  className={nativeTextareaClass}
-                />
-                <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                  One per line: title|https://url|timestamp|summary
-                </span>
-              </label>
-            </div>
-          </details>
+          <AttachmentField
+            label="Add images"
+            existingCount={keptImages}
+            onCountChange={setNewImageCount}
+            description="PNG, JPEG, GIF or WebP · 5 MB each"
+          />
 
           {editError && (
             <p role="alert" className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-600">

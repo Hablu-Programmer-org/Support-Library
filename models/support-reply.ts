@@ -1,6 +1,6 @@
 import mongoose, { type InferSchemaType, type Model } from "mongoose";
 
-import { uploadAttachmentSchema, videoLinkSchema } from "./shared";
+import { uploadAttachmentSchema } from "./shared";
 
 const supportReplySchema = new mongoose.Schema(
   {
@@ -13,7 +13,6 @@ const supportReplySchema = new mongoose.Schema(
     authorId: { type: mongoose.Schema.Types.ObjectId, ref: "user", required: true, index: true },
     isStaffReply: { type: Boolean, required: true, default: true },
     body: { type: String, required: true, trim: true, minlength: 1, maxlength: 20_000 },
-    videoLinks: { type: [videoLinkSchema], default: [] },
     uploads: { type: [uploadAttachmentSchema], default: [] },
     editedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null, index: true },

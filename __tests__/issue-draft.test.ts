@@ -28,7 +28,6 @@ const empty: IssueDraftFields = {
   moduleSlug: "",
   contentSlug: "",
   tags: "",
-  videoLinks: "",
 };
 const fields: IssueDraftFields = { ...empty, title: "Blank page", question: "**Bold** detail", courseSlug: "web" };
 const key = issueDraftKey("user-1");

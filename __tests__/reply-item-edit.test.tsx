@@ -29,7 +29,6 @@ const reply: SupportReplyListItem = {
   authorName: "Mentor",
   isStaffReply: true,
   body: "Run `npm ci` first.\n\n- then restart",
-  videoLinks: [],
   uploads: [],
 };
 

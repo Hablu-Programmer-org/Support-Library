@@ -179,7 +179,7 @@ Admins can see:
 - Every reply under `Responses`; on a solved case the team's **last** staff reply carries the `Solution` mark, and the header links to it (**Jump to solution**).
 - Reply author names.
 - Reply creation and edited markers.
-- Video links and image attachments (private until the case is published).
+- Image attachments (private until the case is published).
 - Course.
 - Batch.
 - Published date.
@@ -203,7 +203,6 @@ Student-visible issue fields:
 
 - Issue title.
 - Problem description.
-- Issue-level video links (title, timestamp, hostname, summary).
 - Status.
 - Priority.
 - Course slug.
@@ -218,11 +217,7 @@ Student-visible reply fields:
 - Staff author display name.
 - Reply creation time.
 - `edited` marker.
-- Reply body.
-- Video link title.
-- Video link timestamp.
-- Video link hostname.
-- Video link summary.
+- Reply body, including any links in it.
 
 Do not publish until these fields are safe for all students who can access the Student Library.
 
@@ -248,11 +243,8 @@ Check these public-facing areas:
 
 - Issue title.
 - Problem description.
-- Issue video links.
 - Reply body.
-- Video link title.
-- Video link summary.
-- External link URL.
+- Link text and URLs inside the problem and replies.
 
 Good public wording:
 
@@ -264,37 +256,19 @@ Bad public wording:
 - `Rahim from batch 7 cannot pay with 01XXXXXXXXX.`
 - `rahim@example.com sent this private image with payment ID...`
 
-## 10. Video Link Review
+## 10. Link Review
 
-The app stores video links and privately uploads image attachments. It does not accept PDF, ZIP, Office, or other generic file attachments.
+There is no separate video-link field. Links live inside the problem description and reply text, added with the editor's **Link** button or pasted as a bare `https://` URL. Only `http`/`https` links are kept, and they open in a new browser tab.
 
-Video link format:
+The app privately uploads image attachments. It does not accept PDF, ZIP, Office, or other generic file attachments.
 
-```text
-title|https://url|timestamp|summary
-```
-
-Important link behavior:
-
-- A bare URL line is accepted and uses the hostname as the title.
-- A missing URL scheme is prefixed with `https://`.
-- Invalid link lines can be ignored and not saved.
-- Up to 10 video links can be saved per issue or reply.
-- Production requires HTTPS links by default.
-- Optional environment configuration can restrict allowed link hosts.
-- Links open in a new browser tab.
-
-Video links can appear in two places, and both are reviewed:
-
-- Issue-level `Video Links` — the reporter's evidence, shown under the problem description.
-- Reply-level video links — part of a staff answer.
+Links that were saved in the old video-link field were moved into the text under a **Video links** heading.
 
 Admin review steps:
 
-1. Confirm every expected link appears after saving.
-2. Open important links to verify they work.
-3. Review link titles, timestamps, summaries, and URLs for PII.
-4. Remember that privately uploaded image attachments are staff-only and excluded from the public projection.
+1. Open important links to verify they work.
+2. Review link text and URLs for PII.
+3. Remember that privately uploaded image attachments are staff-only until the case is published.
 
 ## 11. Publish To Student Library
 
@@ -305,7 +279,7 @@ Publish workflow:
 1. Open `/dashboard/issues/[id]`.
 2. Review the issue title and problem description.
 3. Review every image attachment on the issue and on each reply, and remove any sensitive one with its edit form before publishing.
-4. Review the issue-level video links and all replies and their link metadata.
+4. Review all replies and the links inside the problem and replies.
 5. Confirm no student personal information is present in public content.
 6. In the publish form, check the confirmation checkbox.
 7. Click `Publish to library`.
@@ -315,7 +289,7 @@ Publish workflow:
 The confirmation text is:
 
 ```text
-No student personal information in this issue, including its images and video links.
+No student personal information in this issue, including its images and links.
 ```
 
 Publishing sets:
@@ -427,9 +401,7 @@ Admin reply permissions:
 
 Reply edit limitation:
 
-- The current edit form changes only the reply body.
-- Video links and attachments cannot be edited through the reply edit form.
-- To change a video link on an existing reply, delete the reply and add a corrected reply, or add a follow-up reply.
+- The edit form changes the reply body (links included) and its images: tick `Remove` on an image or add new ones.
 
 Any successful reply add, edit, or delete makes the issue `INTERNAL` until admin review.
 
@@ -554,10 +526,8 @@ Student issue detail can show:
 - Issue title.
 - Last updated time.
 - Full problem description.
-- Issue-level video links.
 - Tags.
 - Every reply under `Responses`; on a solved case the last staff reply is marked `Solution`.
-- Reply video links.
 - Course.
 - Batch.
 - Published date.
@@ -712,9 +682,8 @@ Before publishing:
 - [ ] Open the issue detail page.
 - [ ] Confirm the issue title is general and safe.
 - [ ] Confirm the problem description contains no PII.
-- [ ] Review the issue-level video links (title, timestamp, summary, hostname, URL).
 - [ ] Review every reply body.
-- [ ] Review every video link title, timestamp, summary, hostname, and URL.
+- [ ] Review every link's text and URL in the problem and replies.
 - [ ] Confirm expected links actually saved and open correctly.
 - [ ] Confirm no passwords, tokens, OTPs, payment IDs, phone numbers, names, emails, or sensitive images are visible. Every attachment on the case becomes public when you publish, so remove anything identifying.
 - [ ] Confirm status is appropriate for students.

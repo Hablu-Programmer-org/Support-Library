@@ -23,6 +23,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:hash-student-emails": "tsx scripts/hash-student-emails.ts",
     "db:remove-file-links": "tsx scripts/remove-file-links.ts",
+    "db:remove-video-links": "tsx scripts/remove-video-links.ts",
     "db:normalize-issue-tags": "tsx scripts/normalize-issue-tags.ts",
     "clean:e2e-artifacts": "tsx scripts/clean-e2e-artifacts.ts",
     "bench:search": "tsx scripts/bench-search.ts",

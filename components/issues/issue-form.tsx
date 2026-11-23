@@ -15,7 +15,6 @@ import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import { AttachmentList } from "@/components/shared/attachment-list";
-import { formatVideoLinks } from "@/lib/format-links";
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -35,7 +34,6 @@ import {
 import {
   nativeFieldClass,
   nativeSelectClass,
-  nativeTextareaClass,
 } from "@/lib/config/fields";
 import {
   CASE_PRIORITIES,
@@ -76,12 +74,6 @@ type IssueFormProps = {
     studentName?: string;
     studentEmail?: string | null;
     lmsUserId?: string | null;
-    videoLinks?: {
-      title: string;
-      url: string;
-      timestamp?: string | null;
-      summary?: string | null;
-    }[];
     uploads?: {
       id: string;
       originalName: string;
@@ -111,7 +103,6 @@ type FormData = {
   lmsUserId: string;
   title: string;
   question: string;
-  videoLinks: string;
   status: string;
   priority: string;
   courseSlug: string;
@@ -120,7 +111,6 @@ type FormData = {
   contentSlug: string;
   tags: string;
   solutionBody: string;
-  solutionVideoLinks: string;
   solveIssue: boolean;
 };
 
@@ -208,35 +198,6 @@ function ControlledInput({
   );
 }
 
-function ControlledTextarea({
-  name,
-  value,
-  onChange,
-  error,
-  className,
-  ...props
-}: {
-  name: string;
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  className?: string;
-} & Omit<
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-  "onChange" | "value" | "name"
->) {
-  return (
-    <textarea
-      name={name}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(className || nativeTextareaClass)}
-      aria-invalid={error ? "true" : "false"}
-      {...props}
-    />
-  );
-}
-
 function ControlledSelect({
   name,
   value,
@@ -272,7 +233,6 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
     lmsUserId: supportIssue?.lmsUserId ?? "",
     title: supportIssue?.title ?? "",
     question: supportIssue?.question ?? "",
-    videoLinks: formatVideoLinks(supportIssue?.videoLinks),
     status: supportIssue?.status ?? "OPEN",
     priority: supportIssue?.priority ?? "NORMAL",
     courseSlug: supportIssue?.courseSlug ?? "",
@@ -281,7 +241,6 @@ function initFormData(supportIssue?: IssueFormProps["supportIssue"]): FormData {
     contentSlug: supportIssue?.contentSlug ?? "",
     tags: supportIssue?.tags.join(", ") ?? "",
     solutionBody: "",
-    solutionVideoLinks: "",
     solveIssue: true,
   };
 }
@@ -513,23 +472,6 @@ export function IssueForm({
     </FieldWrapper>
   );
 
-  const videoLinksField = (
-    <FieldWrapper
-      label="Video links"
-      description="One per line: title|https://url|timestamp|summary"
-      error={state.fieldErrors?.videoLinks?.[0]}
-    >
-      <ControlledTextarea
-        name="videoLinks"
-        value={formData.videoLinks}
-        onChange={handleChange("videoLinks")}
-        rows={2}
-        error={state.fieldErrors?.videoLinks?.[0]}
-        placeholder="Walkthrough|https://youtu.be/abc123|01:30|Reproduces the bug"
-      />
-    </FieldWrapper>
-  );
-
   const studentFields = (
     <StudentFields
       name={formData.studentName}
@@ -736,8 +678,6 @@ export function IssueForm({
                 />
                 <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
               </div>
-
-              {videoLinksField}
             </section>
           </main>
 
@@ -785,7 +725,6 @@ export function IssueForm({
           {titleField}
           {detailsEditor}
           {!minimal && statusField}
-          {videoLinksField}
           <div className="flex flex-col gap-1.5">
             <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published." />
             <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
@@ -826,21 +765,6 @@ export function IssueForm({
               />
               <ErrorMessage error={state.fieldErrors?.solutionUploads?.[0]} />
             </div>
-
-            <FieldWrapper
-              label="Video Links"
-              description="One per line: title|https://url|timestamp|summary"
-              error={state.fieldErrors?.solutionVideoLinks?.[0]}
-            >
-              <ControlledTextarea
-                name="solutionVideoLinks"
-                value={formData.solutionVideoLinks}
-                onChange={handleChange("solutionVideoLinks")}
-                rows={2}
-                error={state.fieldErrors?.solutionVideoLinks?.[0]}
-                placeholder="Walkthrough|https://youtu.be/abc123|01:30|Fix demonstration"
-              />
-            </FieldWrapper>
           </div>
           <div className="flex items-center gap-2 pt-2">
             <label className="flex items-center gap-2 text-sm cursor-pointer">

@@ -47,7 +47,7 @@ test.describe("Reply composer failure reporting", () => {
     // magic-byte check — that is the rejection this test is about.
     const replyForm = formFor(page, "Add response");
     await fillMarkdownEditor(replyForm, "Response", "body", "Reply with a bad attachment");
-    await replyForm.getByText("Add attachments or video links").click();
+    await replyForm.getByText("Add attachments").click();
     await replyForm.locator('input[type="file"]').setInputFiles({
       name: "reply-not-an-image.png",
       mimeType: "image/png",
@@ -107,13 +107,15 @@ test.describe("Reply composer failure reporting", () => {
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
     await fillMarkdownEditor(reply, "Edit reply", "body", "Edited body that must survive");
-    await reply.locator('textarea[name="videoLinks"]').fill("not a usable link");
+    // A stale session token is rejected server-side without throwing.
+    await reply.locator('input[name="csrfToken"]').evaluate((input: HTMLInputElement) => {
+      input.value = "stale-token";
+    });
     await reply.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByRole("alert").filter({ hasText: /Video links could not be read/ })).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: /Your session expired/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Something Went Wrong" })).toHaveCount(0);
     // The editor stays open, with the edit still in it.
     await expect(markdownValue(reply, "body")).toHaveValue("Edited body that must survive");
-    await expect(reply.locator('textarea[name="videoLinks"]')).toHaveValue("not a usable link");
   });
 });

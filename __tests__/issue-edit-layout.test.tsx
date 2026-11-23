@@ -22,7 +22,6 @@ const issue = {
   courseSlug: "agent",
   batchNo: 9,
   tags: ["auth"],
-  videoLinks: [],
   uploads: [{ id: "665f1f77bcf86cd799439099", originalName: "shot.png", byteSize: 2048 }],
   updatedAt: "2026-11-01T00:00:00.000Z",
 };
@@ -61,7 +60,7 @@ describe("IssueForm edit layout", () => {
 
   it("keeps the fields the update action reads", () => {
     const { container } = renderEdit();
-    const names = ["title", "question", "status", "priority", "videoLinks", "courseSlug", "batchNo",
+    const names = ["title", "question", "status", "priority", "courseSlug", "batchNo",
       "moduleSlug", "contentSlug", "tags", "studentName", "studentEmail", "expectedUpdatedAt",
       "csrfToken", "removeUploadIds"];
     for (const name of names) {

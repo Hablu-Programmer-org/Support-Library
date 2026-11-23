@@ -10,8 +10,8 @@ not a title-only filter.
 
 | Scope | Field | Contents |
 | --- | --- | --- |
-| Staff (`ADMIN`/`MENTOR`) | `searchText` | title, question, course/module/content slugs, batch (`Batch 12`), tags, issue video-link titles/summaries/URLs/timestamps, issue attachment filenames, every non-deleted reply body, reply video links and reply attachment filenames, student name |
-| Student (published only) | `publicSearchText` | title, question, slugs, batch (`Batch 12` — `batchNo` is already in the public projection), tags, issue video links (title/summary/URL/timestamp — URLs are in the public projection already), **staff reply bodies only**, staff reply video links |
+| Staff (`ADMIN`/`MENTOR`) | `searchText` | title, question, course/module/content slugs, batch (`Batch 12`), tags, issue attachment filenames, every non-deleted reply body, reply attachment filenames, student name (links are part of the question/reply text) |
+| Student (published only) | `publicSearchText` | title, question, slugs, batch (`Batch 12` — `batchNo` is already in the public projection), tags, **staff reply bodies only** (links are part of the question/reply text) |
 
 `caseRef` and the student e-mail are **not** in either free-text field. They are
 exact-match lookups (`caseRef` equality, `studentEmailLookup` HMAC), so a
@@ -95,13 +95,12 @@ app environment.
 
 The regex path works before any index or backfill exists for issue-level
 fields: the public filter keeps legacy per-field branches (title, question,
-tags, slugs, video-link title/summary/URL/timestamp, numeric `batchNo`), so
-pre-backfill documents remain searchable for those. Staff reply *bodies* (and
-reply video links) only enter the public text when the backfill runs — there is
+tags, slugs, numeric `batchNo`), so
+pre-backfill documents remain searchable for those. Staff reply *bodies* only enter the public text when the backfill runs — there is
 no cross-collection branch, so run step 2 in the same deploy window. The staff
 filter has no legacy branches (it always matched `searchText`); pre-backfill
 staff rows are searchable for whatever their old `searchText` contained, and
-the newer fields (batch, video URLs, reply links) become searchable only
+the newer fields (batch, reply bodies) become searchable only
 after the backfill rebuilds that text.
 
 ### 2. Backfill the denormalized fields
@@ -163,7 +162,7 @@ report zero drift before relying on Atlas relevance.
 | Unit | `__tests__/search-atlas.test.ts` | index/field isolation, wildcard escaping and bounds, engine resolution |
 | Unit | `__tests__/search-index-build.test.ts` | shared builder determinism, rebuild-not-append, batch |
 | Unit | `__tests__/search-relevance-sort.test.ts` | regex-engine relevance weights and scope isolation |
-| Unit | `__tests__/issue-search-filter.test.ts` | scope isolation, legacy public branches, batch/video-link branches, tag lowercase, phrase pin |
+| Unit | `__tests__/issue-search-filter.test.ts` | scope isolation, legacy public branches, batch branch, no video-link branches, tag lowercase, phrase pin |
 | Unit | `__tests__/issue-list-params.test.ts` | relevance default, one-character query drop, explicit sort precedence, `returnTo` round-trip |
 | Component | `__tests__/issue-search-field.test.tsx` | debounce vs instant delete/clear, echo safety, external adoption, IME guard, Enter flush |
 | Component | `__tests__/issue-filter-panel.test.tsx` | advanced fields adopt URL on client navigation, panel auto-opens on added filter, keyword alone keeps it closed, edits survive q-only changes |

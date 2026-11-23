@@ -2,12 +2,11 @@ import { z } from "zod";
 
 import { REPLY_BODY_MAX } from "@/lib/constants";
 
-import { objectIdSchema, videoLinksSchema } from "./common";
+import { objectIdSchema } from "./common";
 
 export const supportReplyInputSchema = z.strictObject({
   issueId: objectIdSchema,
   body: z.string().trim().min(1).max(REPLY_BODY_MAX),
-  videoLinks: videoLinksSchema,
 });
 
 // Existing schema is intentionally reused for students: same content limits,

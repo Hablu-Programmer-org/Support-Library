@@ -11,7 +11,6 @@ const renderSection = (
   render(
     <IssueProblemSection
       question={question}
-      videoLinks={[]}
       uploads={[]}
       tags={[]}
       {...extra}

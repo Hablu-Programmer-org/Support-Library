@@ -5,7 +5,6 @@ import {
   CASE_STATUSES,
   ISSUE_VISIBILITIES,
   uploadAttachmentSchema,
-  videoLinkSchema,
 } from "./shared";
 
 const encryptedStudentEmailSchema = new mongoose.Schema(
@@ -50,10 +49,9 @@ const supportIssueSchema = new mongoose.Schema(
     lmsUserId: { type: String, default: null },
     title: { type: String, required: true, trim: true, minlength: 5, maxlength: 200 },
     question: { type: String, required: true, trim: true, minlength: 5, maxlength: 20_000 },
-    // Evidence the reporter attached to the problem itself (before any reply):
-    // external video links plus images uploaded to the private object store.
-    // Uploads are served only through the authorized attachment proxy.
-    videoLinks: { type: [videoLinkSchema], default: [] },
+    // Images the reporter attached to the problem itself (before any reply),
+    // uploaded to the private object store and served only through the
+    // authorized attachment proxy.
     uploads: { type: [uploadAttachmentSchema], default: [] },
     courseSlug: { type: String, trim: true, default: null, index: true },
     batchNo: { type: Number, default: null, index: true },

@@ -55,7 +55,7 @@ async function run(applyWrites: boolean) {
     const query: Record<string, unknown> = cursor ? { _id: { $gt: cursor } } : {};
     const issues = await SupportIssueModel.find(query)
       .select(
-        "_id title question studentName batchNo courseSlug moduleSlug contentSlug tags videoLinks uploads searchText publicSearchText",
+        "_id title question studentName batchNo courseSlug moduleSlug contentSlug tags uploads searchText publicSearchText",
       )
       .sort({ _id: 1 })
       .limit(BATCH)
@@ -67,7 +67,7 @@ async function run(applyWrites: boolean) {
       issueId: { $in: issueIds },
       deletedAt: null,
     })
-      .select("issueId body isStaffReply authorId videoLinks uploads")
+      .select("issueId body isStaffReply authorId uploads")
       .lean();
 
     const authorIds = [
@@ -139,7 +139,7 @@ async function verifyAll() {
     const query: Record<string, unknown> = cursor ? { _id: { $gt: cursor } } : {};
     const issues = await SupportIssueModel.find(query)
       .select(
-        "_id title question studentName batchNo courseSlug moduleSlug contentSlug tags videoLinks uploads searchText publicSearchText",
+        "_id title question studentName batchNo courseSlug moduleSlug contentSlug tags uploads searchText publicSearchText",
       )
       .sort({ _id: 1 })
       .limit(BATCH)
@@ -151,7 +151,7 @@ async function verifyAll() {
       issueId: { $in: issueIds },
       deletedAt: null,
     })
-      .select("issueId body isStaffReply authorId videoLinks uploads")
+      .select("issueId body isStaffReply authorId uploads")
       .lean();
     const authorIds = [
       ...new Set(replies.map((reply) => String((reply as { authorId?: unknown }).authorId ?? ""))),

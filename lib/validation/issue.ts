@@ -11,7 +11,6 @@ import {
   objectIdSchema,
   optionalSlugSchema,
   tagsSchema,
-  videoLinksSchema,
 } from "./common";
 
 export const supportIssueInputSchema = z.strictObject({
@@ -20,7 +19,6 @@ export const supportIssueInputSchema = z.strictObject({
   lmsUserId: z.string().trim().max(64).optional(),
   title: z.string().trim().min(5).max(200),
   question: z.string().trim().min(5).max(20_000),
-  videoLinks: videoLinksSchema,
   courseSlug: optionalSlugSchema,
   batchNo: z.coerce.number().int().min(1).max(9999).optional(),
   moduleSlug: optionalSlugSchema,

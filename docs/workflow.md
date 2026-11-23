@@ -28,7 +28,7 @@ Help Center (dashboard sidebar)
                                               │  new   → Create issue
                                               ▼
                                      /dashboard/issues/new
-                                       title · problem · images · video links
+                                       title · problem (links) · images
                                               ▼  submit
                                      /dashboard/issues/{id}?created=1
                                        status · reference · own files · team replies
@@ -55,14 +55,14 @@ Help Center (dashboard sidebar)
    - **required course** picked from the student's LMS enrolments, with the batch
      filled from the same enrolment (the server re-derives both);
    - optional evidence: up to 5 images (PNG/JPEG/GIF/WebP, 5 MB each, private
-     until the case is published) and external HTTPS video links;
+     until the case is published); links go in the problem text;
    - optional module/content/tags;
    - identity comes from the session, never the form;
    - rate limit 5 / 10 min, duplicate submit creates one issue.
 5. **Own request page.** Submission redirects to
    `/dashboard/issues/{id}?created=1` with a success banner. The page shows the
    status, the six-digit reference (for example `000123`), what the student wrote,
-   their images and video links, and the team's replies read-only. It never shows
+   their images, and the team's replies read-only. It never shows
    staff fields, mentor, audit or publication
    history.
 6. **Live support panel.** `Join Live support` appears only when the request is
@@ -154,7 +154,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | No open request | The issues-page dialog explains the issue-first steps; its direct join still works (not queued, no reference); the request page shows no join panel until one is submitted |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
-| Another student's published issue | Read-only library view — text, videos, and every attachment (issue and replies) |
+| Another student's published issue | Read-only library view — text (with its links) and every attachment (issue and replies) |
 | Attachment of an internal case, viewer is neither staff, uploader nor case owner | `404` |
 | Attachment of a published case | Any signed-in student may read it; unpublishing revokes it immediately |
 | Image with personal information before publishing | Admin removes it via the issue/reply edit form; the edit also re-opens review |
