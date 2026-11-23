@@ -27,6 +27,7 @@ import {
   updateIssue,
 } from "@/lib/services/issues";
 import { getStaffUserById } from "@/lib/services/staff";
+import { parseTagList } from "@/lib/issue-tags";
 import {
   createSupportIssueInputSchema,
   supportIssueInputSchema,
@@ -75,11 +76,7 @@ const formValue = (formData: FormData, key: string) => {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
 
-const parseTags = (value?: string) =>
-  value
-    ?.split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean) ?? [];
+const parseTags = parseTagList;
 
 const initialReplySchema = supportReplyInputSchema.omit({ issueId: true });
 const revisionSchema = z.string().datetime();

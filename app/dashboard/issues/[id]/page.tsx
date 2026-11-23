@@ -10,13 +10,17 @@ import { StudentRequestView } from "@/components/issues/student-request-view";
 import { IssueProblemSection } from "@/components/issues/issue-problem-section";
 import { IssueThread } from "@/components/issues/issue-thread";
 import { ReplyComposer } from "@/components/issues/reply-composer";
+import { IssueNextStep } from "@/components/issues/issue-next-step";
 import { requireSession } from "@/lib/auth-guard";
+import { currentShift } from "@/lib/config/live-support";
+import { isLiveSupportConfigured } from "@/lib/live-support";
+import { liveSupportNow } from "@/lib/live-support-status";
 import {
   ISSUES_PATH,
   buildIssueEditHref,
   parseIssueListReturnTo,
 } from "@/lib/issue-list-params";
-import { canMutate, isAdmin } from "@/lib/roles";
+import { canCreateIssue, canMutate, isAdmin } from "@/lib/roles";
 import { getOwnIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
 import { listReplies } from "@/lib/services/replies";
@@ -92,6 +96,10 @@ export default async function IssueDetailPage({
     viewer: canEdit ? "staff" : "public",
   });
   const csrfToken = await generateCsrfToken(session.user.id);
+  // A student reading someone else's published answer gets a way forward at
+  // the end; staff already have the composer there. Shift resolved server-side.
+  const showNextStep = !canEdit && canCreateIssue(session.user.role);
+  const now = new Date();
 
   // Admin-only: the prompt carries the full thread, which mentors can read but
   // only admins may hand to an external assistant. It is built from an explicit
@@ -140,6 +148,7 @@ export default async function IssueDetailPage({
     returnTo: returnTo ?? undefined,
     canEdit,
     canPublish,
+    reader: !canEdit,
     staff: staffIssue,
     statusOptions: CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => ({
       value: status,
@@ -162,6 +171,10 @@ export default async function IssueDetailPage({
         backHref={backHref}
         backLabel={backLabel}
         canEdit={canEdit}
+        // Priority and the library chip are triage data; a library reader
+        // only needs the status (see the sidebar's `reader`).
+        showPriority={canEdit}
+        showLibraryChip={canEdit}
         editHref={canEdit ? buildIssueEditHref(supportIssue.id, returnTo) : undefined}
         aiPrompt={aiPrompt}
       />
@@ -201,6 +214,15 @@ export default async function IssueDetailPage({
                 returnTo={returnTo ?? undefined}
               />
             </div>
+          )}
+
+          {showNextStep && (
+            <IssueNextStep
+              csrfToken={csrfToken}
+              liveSupportConfigured={isLiveSupportConfigured()}
+              liveSupportLabel={liveSupportNow(now).label}
+              shift={currentShift(now)}
+            />
           )}
         </main>
 

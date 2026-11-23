@@ -76,7 +76,7 @@ export function NoResultsState({
           {tags.slice(0, 8).map(({ tag, href }) => (
             <li key={tag}>
               <Link
-                className="inline-flex max-w-48 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-500/60 dark:hover:text-cyan-300"
+                className="relative inline-flex max-w-48 items-center rounded-full after:absolute after:-inset-1 after:content-[''] pointer-coarse:min-h-9 border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-cyan-500/60 dark:hover:text-cyan-300"
                 href={href}
               >
                 <span className="truncate">#{tag}</span>

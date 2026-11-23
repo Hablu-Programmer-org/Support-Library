@@ -46,7 +46,9 @@ export function IssueStatusChips({
 
   return (
     <nav aria-label="Filter by status" className="mt-2 px-1">
-      <ul className="flex h-8 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Touch screens get a 44px row and chips (tap target); the hero padding
+          and the form offset grow by the same 12px — see `stickyBarClass`. */}
+      <ul className="flex h-8 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] pointer-coarse:h-11 [&::-webkit-scrollbar]:hidden">
         {chips.map(({ value, label }) => {
           const isActive = value === active;
           return (
@@ -54,7 +56,7 @@ export function IssueStatusChips({
               <Link
                 aria-current={isActive ? "true" : undefined}
                 className={cn(
-                  "inline-flex h-7 items-center rounded-full px-3 text-xs font-semibold whitespace-nowrap transition duration-150 motion-safe:hover:-translate-y-px",
+                  "inline-flex h-7 items-center rounded-full pointer-coarse:h-11 px-3 text-xs font-semibold whitespace-nowrap transition duration-150 motion-safe:hover:-translate-y-px",
                   isActive
                     ? "bg-cyan-500/15 text-cyan-700 ring-1 ring-inset ring-cyan-500/30 dark:text-cyan-300"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white",

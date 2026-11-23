@@ -29,6 +29,7 @@ import {
   toIssueDateRange,
 } from "@/lib/issue-list-params";
 import { isLiveSupportConfigured } from "@/lib/live-support";
+import { liveSupportNow } from "@/lib/live-support-status";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { agentEnrollmentAllows } from "@/lib/agent-enrollment-rules";
 import { getIssueActivitySnapshot } from "@/lib/services/issue-activity";
@@ -109,7 +110,7 @@ export default async function IssuesPage({
     );
   }
 
-  const [{ courseSlugs, batchNos, tags }, mentors, waitingIssueIds] =
+  const [{ courseSlugs, batchNos, popularTags }, mentors, waitingIssueIds] =
     await Promise.all([
       listIssueFilterOptions(publicOnly),
       canManage ? listAssignableMentors() : Promise.resolve([]),
@@ -201,9 +202,15 @@ export default async function IssuesPage({
       ) : (
         <IssuesHero
           actions={headerActions}
-          description="Search first — issues can be submitted 24/7, live support runs only during a shift."
-          tags={tags.map((tag) => ({
-            tag,
+          // The join button sits beside this line and is disabled off-shift;
+          // the reason lives here, not under the button (owner, 2026-11-03).
+          description={`Search first — issues can be submitted 24/7. ${
+            quickJoinConfigured
+              ? `${liveSupportNow(new Date()).label}.`
+              : "Live support is unavailable right now."
+          }`}
+          tags={popularTags.map(({ tag, label }) => ({
+            tag: label,
             active: filters.tag === tag,
             href: buildIssueListHref(
               { ...filters, tag: filters.tag === tag ? "" : tag, page: 1 },
@@ -241,19 +248,6 @@ export default async function IssuesPage({
         }
       />
 
-      {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
-        <AccessHelpCard
-          csrfToken={csrfToken}
-          entitlements={accessEntitlements}
-          requests={accessRequests.map((request) => ({
-            id: request._id.toString(),
-            requestType: request.requestType,
-            status: request.status,
-            sentAt: request.sentAt?.toISOString() ?? null,
-          }))}
-        />
-      )}
-
       <section>
         {issues.items.length === 0 ? (
           searchFailed ? (
@@ -270,8 +264,8 @@ export default async function IssuesPage({
                 { defaultSort },
               )}
               query={filters.q}
-              tags={tags.map((tag) => ({
-                tag,
+              tags={popularTags.map(({ tag, label }) => ({
+                tag: label,
                 href: buildIssueListHref(
                   { ...filters, q: "", tag, page: 1 },
                   { defaultSort },
@@ -319,6 +313,21 @@ export default async function IssuesPage({
         total={issues.total}
         totalPages={issues.totalPages}
       />
+
+      {/* After the list, not between the result count and the first row:
+          the search results read as one block. */}
+      {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
+        <AccessHelpCard
+          csrfToken={csrfToken}
+          entitlements={accessEntitlements}
+          requests={accessRequests.map((request) => ({
+            id: request._id.toString(),
+            requestType: request.requestType,
+            status: request.status,
+            sentAt: request.sentAt?.toISOString() ?? null,
+          }))}
+        />
+      )}
     </div>
   );
 }

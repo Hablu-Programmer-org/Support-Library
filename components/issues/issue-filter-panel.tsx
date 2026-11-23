@@ -93,7 +93,9 @@ const drawerSelectClass = `${drawerFieldClass} select-chevron`;
  * 16px margin under the card, so the form is pulled up by the 24px page gap +
  * 136px = 160px. The summary row is a page sibling after the form (not sticky),
  * so the page's 24px gap drops it 16px below the hero edge.
- * Change these numbers together.
+ * Change these numbers together. On a touch screen (`pointer-coarse`) the
+ * status chip row is 44px instead of 32px, so the hero padding becomes 164px
+ * and the pull-up 172px.
  *
  * Stuck (scrolled under the header) the floating strip turns solid: an
  * unstuck transparent strip keeps the hero edge visible, but a stuck one must
@@ -102,7 +104,7 @@ const drawerSelectClass = `${drawerFieldClass} select-chevron`;
 const stickyBarClass = (floating: boolean, stuck = false) =>
   floating
     ? cn(
-        "sticky top-16 z-30 -mt-[160px] px-3 py-2 transition-colors duration-150 motion-reduce:transition-none sm:px-6",
+        "sticky top-16 z-30 -mt-[160px] pointer-coarse:-mt-[172px] px-3 py-2 transition-colors duration-150 motion-reduce:transition-none sm:px-6",
         // Full-bleed translucent glass behind the stuck strip: the page
         // aurora shows through, scrolling cards stay blurred, no side seam.
         stuck &&
@@ -127,7 +129,7 @@ function PanelSkeleton({ floating }: { floating: boolean }) {
       <div className={stickyBarClass(floating)}>
         <div className={cardClass(floating)}>
           <div className="h-13.5 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />
-          <div className="mt-2 flex h-8 items-center gap-1.5 px-1">
+          <div className="mt-2 flex h-8 items-center gap-1.5 px-1 pointer-coarse:h-11">
             {[40, 52, 60, 64, 76].map((width) => (
               <div
                 key={width}

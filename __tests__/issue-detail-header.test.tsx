@@ -89,6 +89,13 @@ describe("IssueDetailHeader content", () => {
     expect(screen.queryByText("Normal priority")).toBeNull();
   });
 
+  it("hides the library chip for a library reader", () => {
+    renderHeader({ showPriority: false, showLibraryChip: false });
+    expect(screen.queryByText("Student Library")).toBeNull();
+    expect(screen.queryByText("High priority")).toBeNull();
+    expect(screen.getByText("Open")).toBeTruthy();
+  });
+
   it("renders an extra control beside the back link", () => {
     renderHeader({ backAside: <button type="button">Refresh</button> });
     expect(screen.getByRole("button", { name: "Refresh" })).toBeTruthy();

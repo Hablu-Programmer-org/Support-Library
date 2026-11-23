@@ -103,6 +103,18 @@ export type IssueCardProps = {
  * The title link is stretched over the whole card (`after:inset-0`), which keeps
  * the actions real buttons instead of buttons nested inside a link.
  */
+/** Case, spacing and edge punctuation (incl. the Bengali dari) ignored. */
+const comparable = (text: string) =>
+  text
+    .normalize("NFC")
+    .toLowerCase()
+    .replace(/\s+/gu, " ")
+    .replace(/^[\s\p{P}]+|[\s\p{P}]+$/gu, "");
+
+/** A question that only repeats the title adds a second copy, not a preview. */
+export const repeatsTitle = (title: string, question: string) =>
+  comparable(title) === comparable(question);
+
 export function IssueCard({
   href,
   title,
@@ -172,9 +184,11 @@ export function IssueCard({
         </div>
       </div>
 
-      <p className="mt-1.5 text-sm leading-relaxed text-slate-600 wrap-break-word line-clamp-2 dark:text-slate-400">
-        {question}
-      </p>
+      {!repeatsTitle(title, question) && (
+        <p className="mt-1.5 text-sm leading-relaxed text-slate-600 wrap-break-word line-clamp-2 dark:text-slate-400">
+          {question}
+        </p>
+      )}
 
       {staff && (
         <p className="mt-2 text-xs text-slate-500 wrap-break-word dark:text-slate-400">

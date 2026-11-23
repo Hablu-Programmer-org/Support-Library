@@ -38,6 +38,8 @@ type IssueDetailHeaderProps = {
   canEdit: boolean;
   /** The student's own view hides triage priority. */
   showPriority?: boolean;
+  /** Library readers are already in the library; the chip is for staff and owners. */
+  showLibraryChip?: boolean;
   /** Extra control beside the back link (the owner's refresh probe). */
   backAside?: ReactNode;
   /** Edit page link. Ignored unless `canEdit`. */
@@ -69,6 +71,7 @@ export function IssueDetailHeader({
   backLabel,
   canEdit,
   showPriority = true,
+  showLibraryChip = true,
   backAside,
   editHref,
   aiPrompt,
@@ -99,7 +102,7 @@ export function IssueDetailHeader({
                 {priorityLabels[priorityKey] ?? priorityKey}
               </span>
             ) : null}
-            {isPublished ? (
+            {isPublished && showLibraryChip ? (
               <span className={`${chip} bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200`}>
                 Student Library
               </span>

@@ -32,7 +32,7 @@ function HeroSkeleton() {
       {/* The search card: 54px bar + chips row, inset like the real one. */}
       <div className="mt-6 rounded-[22px] border border-slate-200 p-2 sm:-mx-2 dark:border-slate-800">
         <Skeleton className="h-[54px] rounded-2xl" />
-        <div className="mt-2 flex h-8 items-center gap-1.5 px-1">
+        <div className="mt-2 flex h-8 items-center gap-1.5 px-1 pointer-coarse:h-11">
           {[40, 52, 60, 64, 76].map((width) => (
             <Skeleton key={width} className="h-7 rounded-full" style={{ width }} />
           ))}

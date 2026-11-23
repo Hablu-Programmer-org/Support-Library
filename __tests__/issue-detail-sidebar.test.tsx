@@ -110,6 +110,13 @@ describe("IssueDetailSidebar content", () => {
     }
   });
 
+  it("shows a library reader only course and batch", () => {
+    renderSidebar({ reader: true });
+    const terms = screen.getAllByRole("term").map((t) => t.textContent);
+    expect(terms).toEqual(["Course", "Batch"]);
+    expect(screen.queryByRole("button", { name: "Copy reference" })).toBeNull();
+  });
+
   it("renders extra cards (live support) after the context and no Manage without options", () => {
     renderSidebar({ canEdit: true, statusOptions: undefined, children: <section><h2>Live support</h2></section> });
     expect(screen.queryByTestId("status-form")).toBeNull();

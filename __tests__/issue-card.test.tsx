@@ -91,6 +91,22 @@ describe("IssueCard", () => {
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("React image not rendering");
   });
 
+  it("drops the preview when the question only repeats the title", () => {
+    render(
+      <IssueCard
+        {...card}
+        title="ai agent কানেকশন দিতে সমস্যা হচ্ছে"
+        question="  AI agent কানেকশন দিতে সমস্যা হচ্ছে । "
+      />,
+    );
+    expect(screen.getAllByText(/কানেকশন দিতে সমস্যা/)).toHaveLength(1);
+  });
+
+  it("keeps the preview when the question adds detail", () => {
+    render(<IssueCard {...card} />);
+    expect(screen.getByText("Image show hocche na in React component")).toBeTruthy();
+  });
+
   it("shows no staff data for a student card", () => {
     render(<IssueCard {...card} />);
     expect(screen.queryByText("No reply yet")).toBeNull();

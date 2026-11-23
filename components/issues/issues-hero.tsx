@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { BROWSE_TAG_LIMIT } from "@/lib/issue-tags";
+
 /** Tag chips shown under the hero; more than this turns into noise. */
-export const ISSUES_HERO_MAX_TAGS = 8;
+export const ISSUES_HERO_MAX_TAGS = BROWSE_TAG_LIMIT;
 
 export type IssuesHeroTag = { tag: string; href: string; active: boolean };
 
@@ -33,7 +35,7 @@ export function IssuesHero({
   return (
     <section
       aria-labelledby="issues-hero-title"
-      className="relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-white px-5 pb-[152px] pt-7 sm:px-8 sm:pt-9 dark:border-slate-800 dark:bg-slate-900/60"
+      className="relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-white px-5 pb-[152px] pointer-coarse:pb-[164px] pt-7 sm:px-8 sm:pt-9 dark:border-slate-800 dark:bg-slate-900/60"
     >
       {/* Decorative brand light; static so it costs nothing on scroll. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -67,7 +69,9 @@ export function IssuesHero({
                 <Link
                   aria-current={active ? "true" : undefined}
                   className={cn(
-                    "inline-flex max-w-48 items-center rounded-full border px-3 py-1 text-xs font-semibold transition duration-150 motion-safe:hover:-translate-y-px",
+                    // Touch: 36px chip + 4px invisible hit area each side = 44px,
+                    // exactly filling the 8px gap between rows without overlap.
+                    "relative inline-flex max-w-48 items-center rounded-full border px-3 py-1 text-xs font-semibold transition after:absolute after:-inset-1 after:content-[''] pointer-coarse:min-h-9 duration-150 motion-safe:hover:-translate-y-px",
                     active
                       ? "border-cyan-500 bg-cyan-500 text-white shadow-sm shadow-cyan-500/30"
                       : "border-slate-200 bg-white/70 text-slate-700 hover:border-cyan-400 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-cyan-500/60 dark:hover:text-cyan-300",

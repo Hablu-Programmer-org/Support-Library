@@ -52,6 +52,12 @@ type IssueDetailSidebarProps = {
    * on desktop the grid puts both parts in the right column.
    */
   part?: "all" | "manage" | "context";
+  /**
+   * A student reading someone else's published answer: Reference and
+   * Published are case-handling data, so only Course and Batch remain. The
+   * owner's own request (and staff) keep the reference to quote in support.
+   */
+  reader?: boolean;
   className?: string;
 };
 
@@ -116,6 +122,7 @@ export function IssueDetailSidebar({
   archiveAction,
   children,
   part = "all",
+  reader = false,
   className = "",
 }: IssueDetailSidebarProps) {
   const staffView = canEdit ? (staff ?? null) : null;
@@ -167,24 +174,28 @@ export function IssueDetailSidebar({
       <section className={card}>
         <CardTitle icon={<SettingsIcon size={16} />}>Issue context</CardTitle>
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
-          <Info
-            label="Reference"
-            wide
-            valueNode={
-              caseRef ? (
-                <CopyValue label="reference" value={caseRef} variant="chip" />
-              ) : undefined
-            }
-          />
+          {reader ? null : (
+            <Info
+              label="Reference"
+              wide
+              valueNode={
+                caseRef ? (
+                  <CopyValue label="reference" value={caseRef} variant="chip" />
+                ) : undefined
+              }
+            />
+          )}
           <Info label="Course" value={courseSlug} />
           <Info label="Batch" value={batchNo?.toString()} />
-          <Info
-            label="Published"
-            value={
-              publishedAt ? formatSupportDate(publishedAt) : "Not published"
-            }
-            wide
-          />
+          {reader ? null : (
+            <Info
+              label="Published"
+              value={
+                publishedAt ? formatSupportDate(publishedAt) : "Not published"
+              }
+              wide
+            />
+          )}
           {staffView ? (
             <Info
               label="Live support"

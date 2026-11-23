@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES } from "@/lib/constants";
 import { buildOwnIssueFilter } from "@/lib/issue-ownership";
+import { BROWSE_TAG_LIMIT, popularTags } from "@/lib/issue-tags";
 import { mutationRequestHash, operationIdSchema } from "@/lib/mutation-security";
 import {
   buildIssuePublicSearchText,
@@ -1282,20 +1283,26 @@ export async function listIssueFilterOptions(publicOnly = false) {
       ...visibilityFilter,
       batchNo: { $nin: [null] },
     }) as Promise<unknown[]>,
-    SupportIssueModel.distinct("tags", {
-      deletedAt: null,
-      ...visibilityFilter,
-      tags: { $nin: [null, ""] },
-    }) as Promise<unknown[]>,
+    // Counts, not just distinct values: the browse chips show the most-used tags.
+    SupportIssueModel.aggregate<{ _id: unknown; count: number }>([
+      { $match: { deletedAt: null, ...visibilityFilter, tags: { $nin: [null, ""] } } },
+      { $unwind: "$tags" },
+      { $group: { _id: "$tags", count: { $sum: 1 } } },
+    ]),
   ]);
+
+  const tagCounts = tags.flatMap((row) =>
+    typeof row._id === "string" && row._id ? [{ tag: row._id, count: row.count }] : [],
+  );
 
   return {
     courseSlugs: courseSlugs.filter((value): value is string => typeof value === "string").sort(),
     batchNos: batchNos.filter((value): value is number => typeof value === "number").sort((a, b) => a - b),
-    tags: tags
-      .filter((value): value is string => typeof value === "string")
+    tags: tagCounts
+      .map((row) => row.tag)
       .sort()
       .slice(0, 30),
+    popularTags: popularTags(tagCounts, BROWSE_TAG_LIMIT),
   };
 }
 
