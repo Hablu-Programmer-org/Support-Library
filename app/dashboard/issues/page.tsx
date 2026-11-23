@@ -29,6 +29,7 @@ import {
   toIssueDateRange,
 } from "@/lib/issue-list-params";
 import { isLiveSupportConfigured } from "@/lib/live-support";
+import { listCourseNames } from "@/lib/lms";
 import { liveSupportNow } from "@/lib/live-support-status";
 import { canCreateIssue, canMutate } from "@/lib/roles";
 import { agentEnrollmentAllows } from "@/lib/agent-enrollment-rules";
@@ -110,13 +111,14 @@ export default async function IssuesPage({
     );
   }
 
-  const [{ courseSlugs, batchNos, popularTags }, mentors, waitingIssueIds] =
+  const [{ courseSlugs, batchNos, popularTags }, mentors, waitingIssueIds, courseNames] =
     await Promise.all([
       listIssueFilterOptions(publicOnly),
       canManage ? listAssignableMentors() : Promise.resolve([]),
       canManage
         ? listJoinIssueIdsForDay(dayKeyInDhaka(new Date()))
         : Promise.resolve([] as string[]),
+      listCourseNames(),
     ]);
   const waitingIds = new Set(waitingIssueIds);
 
@@ -311,14 +313,24 @@ export default async function IssuesPage({
                     )
                   }
                   batchNo={supportIssue.batchNo}
+                  courseName={
+                    supportIssue.courseSlug ? courseNames.get(supportIssue.courseSlug) : null
+                  }
                   courseSlug={supportIssue.courseSlug}
+                  datePrefix={canManage ? undefined : "Answered"}
+                  quietSolved={!canManage}
                   href={buildIssueDetailHref(supportIssue.id, returnTo)}
                   question={supportIssue.question}
                   staff={buildIssueCardStaff(supportIssue, { canManage, waitingIds })}
                   status={supportIssue.status}
                   tags={supportIssue.tags}
                   title={supportIssue.title}
-                  updatedAt={supportIssue.updatedAt ?? supportIssue.createdAt}
+                  updatedAt={
+                    canManage
+                      ? (supportIssue.updatedAt ?? supportIssue.createdAt)
+                      : ("answeredAt" in supportIssue && supportIssue.answeredAt) ||
+                        supportIssue.createdAt
+                  }
                 />
               </li>
             ))}

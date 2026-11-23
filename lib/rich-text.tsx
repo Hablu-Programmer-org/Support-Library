@@ -12,7 +12,7 @@ const linkClass =
   "text-primary underline underline-offset-2 wrap-break-word hover:text-primary-600";
 
 const INLINE =
-  /!\[([^\]]*)\]\(([^)\s]*)\)|\[([^\]]*)\]\(([^)\s]*)\)|`([^`\n]+)`|\*\*\*([^*\n]+)\*\*\*|\*\*([\s\S]+?)\*\*|~~([^~\n]+)~~|(?<!\w)\*([^*\n]+)\*(?!\w)|(?<!\w)_([^_\n]+)_(?!\w)|(https?:\/\/[^\s<>"'*\[\]]+)/g;
+  /!\[([^\]]*)\]\(([^)\s]*)\)|\[([^\]]*)\]\(([^)\s]*)\)|`([^`\n]+)`|\*\*\*([^*\n]+)\*\*\*|\*\*([\s\S]+?)\*\*|~~([^~\n]+)~~|(?<!\w)\*([^*\n]+)\*(?!\w)|(?<!\w)_([^_\n]+)_(?!\w)|(https?:\/\/[^\s<>"'*\[\]]+)|\\([\\`*_{}\[\]()#+\-.!|~>])/g;
 
 /** `null` for anything that is not an absolute HTTP(S) URL. */
 const safeHref = (value: string) => {
@@ -56,7 +56,7 @@ export function parseRichText(
 
   for (const match of text.matchAll(INLINE)) {
     const index = match.index ?? 0;
-    const [raw, imageAlt, imageTarget, label, target, code, boldItalic, bold, strike, starItalic, underscoreItalic, bareUrl] = match;
+    const [raw, imageAlt, imageTarget, label, target, code, boldItalic, bold, strike, starItalic, underscoreItalic, bareUrl, escaped] = match;
     let node: ReactNode | null = null;
     let consumed = raw.length;
 
@@ -98,6 +98,10 @@ export function parseRichText(
       if (!href) continue;
       consumed = url.length;
       node = <a key={`url-${index}`} href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>{url}</a>;
+    } else if (escaped !== undefined) {
+      // CommonMark backslash escape (`1\.`, `\*`): pasted answers often carry
+      // them; show the character itself, never the backslash.
+      node = escaped;
     }
 
     if (node === null) continue;

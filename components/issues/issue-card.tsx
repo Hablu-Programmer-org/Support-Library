@@ -85,8 +85,18 @@ export type IssueCardProps = {
   status: CaseStatus;
   tags: string[];
   courseSlug?: string | null;
+  /** LMS display name for `courseSlug`; the slug shows when it is missing. */
+  courseName?: string | null;
   batchNo?: number | null;
+  /** The date shown on the card (staff: last update; readers: last answer). */
   updatedAt?: Date | string | null;
+  /** Word before the date, e.g. "Answered". */
+  datePrefix?: string;
+  /**
+   * Library readers: SOLVED is the normal state there, so a solved card drops
+   * its badge and accent strip and only the exceptions (Open, Pending…) stand out.
+   */
+  quietSolved?: boolean;
   /** Present only for staff; build it with `buildIssueCardStaff`. */
   staff?: IssueCardStaff;
   /** Row actions (delete/archive). Rendered above the card's stretched link. */
@@ -122,8 +132,11 @@ export function IssueCard({
   status,
   tags,
   courseSlug,
+  courseName,
   batchNo,
   updatedAt,
+  datePrefix,
+  quietSolved = false,
   staff,
   actions,
   enterIndex = 0,
@@ -135,7 +148,8 @@ export function IssueCard({
   const hiddenTagCount = tags.length - visibleTags.length;
   const dateLabel = formatSupportShortDate(updatedAt);
   const dateIso = dateLabel && updatedAt ? new Date(updatedAt).toISOString() : undefined;
-  const courseLabel = [courseSlug, batchNo ? `Batch ${batchNo}` : null]
+  const showStatus = !(quietSolved && status === "SOLVED");
+  const courseLabel = [courseName || courseSlug, batchNo ? `Batch ${batchNo}` : null]
     .filter(Boolean)
     .join(" · ");
 
@@ -150,10 +164,12 @@ export function IssueCard({
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 bg-cyan-500/4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none"
       />
-      <span
-        aria-hidden="true"
-        className={`absolute inset-y-0 left-0 w-1 bg-linear-to-b ${accentClass[status]}`}
-      />
+      {showStatus && (
+        <span
+          aria-hidden="true"
+          className={`absolute inset-y-0 left-0 w-1 bg-linear-to-b ${accentClass[status]}`}
+        />
+      )}
 
       {/* Title row: the h2 holds the title only, its badges are siblings. */}
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
@@ -166,7 +182,7 @@ export function IssueCard({
           </Link>
         </h2>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-          <StatusBadge status={status} />
+          {showStatus && <StatusBadge status={status} />}
           {staff?.replyLabel && (
             <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
               {staff.replyLabel}
@@ -224,7 +240,12 @@ export function IssueCard({
         {courseLabel && <span className="truncate">{courseLabel}</span>}
 
         <div className="ml-auto flex items-center gap-3">
-          {dateLabel && <time dateTime={dateIso}>{dateLabel}</time>}
+          {dateLabel && (
+            <span>
+              {datePrefix && `${datePrefix} `}
+              <time dateTime={dateIso}>{dateLabel}</time>
+            </span>
+          )}
           {actions && <div className="relative z-10">{actions}</div>}
           <ArrowRightIcon
             size={16}

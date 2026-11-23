@@ -11,13 +11,14 @@ import { formatSupportDate } from "@/lib/format-date";
 import { formatVideoLinks } from "@/lib/format-links";
 import { RichText } from "@/lib/rich-text";
 import type { SupportReplyListItem } from "@/lib/services/replies";
+import { replyAnchorId } from "@/lib/issue-solution";
 
 const secondaryButtonClass =
   "inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800";
 
 const INITIAL_STATE: ReplyFormState = {};
 
-const cardBase = "rounded-2xl border p-5 shadow-sm sm:p-6";
+const cardBase = "scroll-mt-24 rounded-2xl border p-5 shadow-sm sm:p-6";
 
 /** Solution: the answer the team stands behind, set apart with an emerald edge. */
 export const articleClass = (variant: "solution" | "response", isStaffReply: boolean) =>
@@ -90,6 +91,7 @@ export function ReplyItem({
 
   return (
     <article
+      id={replyAnchorId(reply.id)}
       data-testid={`reply-${reply.id}`}
       data-variant={variant}
       className={articleClass(variant, reply.isStaffReply)}

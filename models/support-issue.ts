@@ -117,6 +117,11 @@ const supportIssueSchema = new mongoose.Schema(
 
 supportIssueSchema.index({ courseSlug: 1, batchNo: 1, status: 1 });
 supportIssueSchema.index({ visibility: 1, updatedAt: -1 });
+// Backs the student library order: newest staff answer first (`publicAnsweredSort`).
+supportIssueSchema.index(
+  { visibility: 1, lastStaffReplyAt: -1, createdAt: -1, _id: 1 },
+  { name: "public_answered_order" },
+);
 supportIssueSchema.index({ createdAt: -1 });
 supportIssueSchema.index({ updatedAt: -1 }, { name: "issues-activity-revision" });
 supportIssueSchema.index(

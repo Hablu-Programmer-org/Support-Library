@@ -140,6 +140,12 @@ export const ArrowLeftIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   </svg>
 );
 
+export const ArrowDownIcon: FC<IconSvgProps> = ({ size, ...props }) => (
+  <svg {...base(size)} {...props}>
+    <path d="M12 5v14M5 12l7 7 7-7" />
+  </svg>
+);
+
 export const ArrowRightIcon: FC<IconSvgProps> = ({ size, ...props }) => (
   <svg {...base(size)} {...props}>
     <path d="M5 12h14M12 5l7 7-7 7" />

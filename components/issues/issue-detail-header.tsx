@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ArrowLeftIcon, PencilIcon } from "@/components/icons";
+import { ArrowDownIcon, ArrowLeftIcon, PencilIcon } from "@/components/icons";
 import { CopyForAiButton } from "@/components/issues/copy-for-ai-button";
 import { StatusBadge } from "@/components/issues/status-badge";
 import { formatSupportDate } from "@/lib/format-date";
@@ -46,6 +46,15 @@ type IssueDetailHeaderProps = {
   editHref?: string;
   /** Admin-only prompt, built server-side. Ignored unless `canEdit`. */
   aiPrompt?: string | null;
+  /**
+   * Library readers: the last staff answer replaces "Updated" (publishing or
+   * retagging bumps `updatedAt`, which is not news to a reader).
+   */
+  lastAnswerAt?: Date | null;
+  /** Readers: "Course name · Batch 10" in the meta line instead of a sidebar card. */
+  courseLabel?: string | null;
+  /** In-page link to the Solution reply, when the case has one. */
+  solutionHref?: string;
 };
 
 function MetaTime({ label, value }: { label: string; value?: Date | null }) {
@@ -75,7 +84,13 @@ export function IssueDetailHeader({
   backAside,
   editHref,
   aiPrompt,
+  lastAnswerAt,
+  courseLabel,
+  solutionHref,
 }: IssueDetailHeaderProps) {
+  const secondTime = lastAnswerAt
+    ? { label: "Last answer", value: lastAnswerAt }
+    : { label: "Updated", value: updatedAt };
   const priorityKey = priority ?? "NORMAL";
   const showAi = canEdit && Boolean(aiPrompt);
   const showEdit = canEdit && Boolean(editHref);
@@ -115,9 +130,25 @@ export function IssueDetailHeader({
 
           <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
             <MetaTime label="Created" value={createdAt} />
-            {createdAt && updatedAt ? <span aria-hidden="true">·</span> : null}
-            <MetaTime label="Updated" value={updatedAt} />
+            {createdAt && secondTime.value ? <span aria-hidden="true">·</span> : null}
+            <MetaTime label={secondTime.label} value={secondTime.value} />
+            {courseLabel ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-medium text-slate-700 dark:text-slate-300">{courseLabel}</span>
+              </>
+            ) : null}
           </p>
+
+          {solutionHref ? (
+            <a
+              href={solutionHref}
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 motion-reduce:transition-none dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200 dark:hover:bg-emerald-500/20"
+            >
+              <ArrowDownIcon size={16} />
+              Jump to solution
+            </a>
+          ) : null}
         </div>
 
         {showAi || showEdit ? (

@@ -111,6 +111,42 @@ export const listStudentCourses = async (email?: string | null) => {
 
   return pickStudentCourses(rows as LmsEnrollmentRow[], nameBySlug);
 };
+/** Course display names change rarely; one LMS read per process per window. */
+const COURSE_NAME_TTL_MS = 10 * 60 * 1000;
+let courseNameCache: { at: number; names: Map<string, string> } | null = null;
+
+/**
+ * Read-only `slug -> name` map of LMS courses, for labels only.
+ *
+ * Fail-soft: if the LMS is unreachable the map comes back empty (or stale) and
+ * callers show the slug, so a label lookup can never break the issues page.
+ */
+export const listCourseNames = async (): Promise<ReadonlyMap<string, string>> => {
+  if (courseNameCache && Date.now() - courseNameCache.at < COURSE_NAME_TTL_MS) {
+    return courseNameCache.names;
+  }
+  try {
+    const client = await getLmsMongoClient();
+    const docs = await client
+      .db(getLmsDbName())
+      .collection("Course")
+      .find({}, { projection: { _id: 0, slug: 1, name: 1 }, maxTimeMS: 3_000 })
+      .limit(500)
+      .toArray();
+    const names = new Map<string, string>();
+    for (const doc of docs) {
+      const slug = typeof doc.slug === "string" ? doc.slug : "";
+      const name = typeof doc.name === "string" ? doc.name.trim() : "";
+      if (slug && name) names.set(slug, name);
+    }
+    courseNameCache = { at: Date.now(), names };
+    return names;
+  } catch (error) {
+    console.warn("[lms] course names unavailable", error instanceof Error ? error.message : "unknown error");
+    return courseNameCache?.names ?? new Map();
+  }
+};
+
 /**
  * Email autocomplete lookup for the issue form. hp-v2 only: a matched email
  * lets the form prefill the student's name.

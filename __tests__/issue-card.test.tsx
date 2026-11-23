@@ -178,4 +178,25 @@ describe("IssueCard", () => {
     render(<IssueCard {...card} courseSlug="web-dev" batchNo={4} />);
     expect(screen.getByText("web-dev · Batch 4")).toBeTruthy();
   });
+
+  it("prefers the course name over the slug", () => {
+    render(<IssueCard {...card} courseSlug="web-dev" courseName="Web Development" batchNo={4} />);
+    expect(screen.getByText("Web Development · Batch 4")).toBeTruthy();
+  });
+
+  it("drops the badge on a solved card for library readers only", () => {
+    const { rerender } = render(<IssueCard {...card} status="SOLVED" quietSolved />);
+    expect(screen.queryByText("Solved")).toBeNull();
+
+    rerender(<IssueCard {...card} status="OPEN" quietSolved />);
+    expect(screen.getByText("Open")).toBeTruthy();
+
+    rerender(<IssueCard {...card} status="SOLVED" />);
+    expect(screen.getByText("Solved")).toBeTruthy();
+  });
+
+  it("labels the date with its prefix", () => {
+    render(<IssueCard {...card} datePrefix="Answered" />);
+    expect(screen.getByText(/^Answered/).querySelector("time")).toBeTruthy();
+  });
 });

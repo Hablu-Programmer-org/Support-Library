@@ -57,11 +57,13 @@ describe("IssueThread", () => {
     expect(within(list).getAllByRole("article")).toHaveLength(3);
   });
 
-  it("marks the first reply as the Solution on a solved case", () => {
+  it("marks the team's last answer as the Solution on a solved case", () => {
     renderThread();
-    const [first, second] = screen.getAllByRole("article");
-    expect(first.getAttribute("data-variant")).toBe("solution");
-    expect(within(first).getByText("Solution")).toBeTruthy();
+    const [first, second, third] = screen.getAllByRole("article");
+    expect(third.getAttribute("data-variant")).toBe("solution");
+    expect(third.id).toBe("reply-r3");
+    expect(within(third).getByText("Solution")).toBeTruthy();
+    expect(first.getAttribute("data-variant")).toBe("response");
     expect(first.querySelector("code")?.textContent).toBe("service_role");
     expect(second.getAttribute("data-variant")).toBe("response");
     expect(within(second).queryByText("Solution")).toBeNull();

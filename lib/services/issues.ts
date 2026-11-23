@@ -261,6 +261,8 @@ export type PublicIssueDetail = Pick<
 };
 
 type PublicIssueListItem = Omit<PublicIssueDetail, "uploads"> & {
+  /** Last staff answer, else creation; computed in the projection. */
+  answeredAt?: Date;
   studentName?: never;
   studentEmail?: never;
   lmsUserId?: never;
@@ -330,6 +332,7 @@ const toPublicIssueListItem = (item: LeanDoc): PublicIssueListItem => {
     publishedAt: mapped.publishedAt,
     createdAt: mapped.createdAt,
     updatedAt: mapped.updatedAt,
+    answeredAt: (item.answeredAt as Date | undefined) ?? mapped.createdAt,
   };
 };
 
@@ -913,11 +916,31 @@ export const isSearchTimeoutError = (error: unknown) =>
   "code" in error &&
   (error as { code?: number }).code === 50;
 
-const PUBLIC_ISSUE_PROJECTION: Record<string, 1> = Object.fromEntries(
-  PUBLIC_ISSUE_FIELDS.split(/\s+/)
-    .filter(Boolean)
-    .map((field) => [field, 1 as const]),
-);
+/**
+ * Public list projection: the allowlist plus one computed `answeredAt` (last
+ * staff answer, else creation). The raw reply-state fields never leave the
+ * database; only the date a reader already sees on the thread does.
+ */
+const PUBLIC_ISSUE_PROJECTION: Record<string, unknown> = {
+  ...Object.fromEntries(
+    PUBLIC_ISSUE_FIELDS.split(/\s+/)
+      .filter(Boolean)
+      .map((field) => [field, 1 as const]),
+  ),
+  answeredAt: { $ifNull: ["$lastStaffReplyAt", "$createdAt"] },
+};
+
+/**
+ * Library order for readers: newest answer first. Republishing or retagging
+ * bumps `updatedAt`, which made old answers look new (2026-11-23). Rows with
+ * no staff answer yet sort after answered ones, by creation.
+ * Index: `public_answered_order`.
+ */
+const publicAnsweredSort = (direction: 1 | -1) => ({
+  lastStaffReplyAt: direction,
+  createdAt: direction,
+  _id: 1 as const,
+});
 
 /** Computed URGENT-high rank; a plain field sort cannot express it. */
 const priorityRankStage = (): mongoose.PipelineStage => ({
@@ -987,6 +1010,7 @@ const buildSortStages = (
     // `relevance` sort without one.
     return [{ $sort: { searchScore: -1, updatedAt: -1, _id: 1 } }];
   }
+  if (publicOnly) return [{ $sort: publicAnsweredSort(sort === "oldest" ? 1 : -1) }];
   return [
     { $sort: sort === "oldest" ? { updatedAt: 1, _id: 1 } : { updatedAt: -1, _id: 1 } },
   ];
@@ -1124,6 +1148,14 @@ async function runMongoIssueSearch(
           { $skip: skip },
           { $limit: limit },
           ...(publicOnly ? [{ $project: PUBLIC_ISSUE_PROJECTION }] : []),
+        ], { maxTimeMS: SEARCH_MAX_TIME_MS })
+      : publicOnly
+      ? SupportIssueModel.aggregate([
+          { $match: filter },
+          ...buildSortStages(params.sort, true),
+          { $skip: skip },
+          { $limit: limit },
+          { $project: PUBLIC_ISSUE_PROJECTION },
         ], { maxTimeMS: SEARCH_MAX_TIME_MS })
       : SupportIssueModel.find(filter, null, queryOptions)
           .select(publicOnly ? PUBLIC_ISSUE_FIELDS : "")

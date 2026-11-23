@@ -1,5 +1,6 @@
 import { IssueTimeline } from "@/components/issues/issue-timeline";
 import { SectionLabel } from "@/components/shared/section-label";
+import { pickSolutionReplyId } from "@/lib/issue-solution";
 import type { UserRole } from "@/lib/roles";
 import type { SupportReplyListItem } from "@/lib/services/replies";
 import type { CaseStatus } from "@/models";
@@ -18,8 +19,8 @@ type IssueThreadProps = {
 };
 
 /**
- * Every reply in one "Responses" list, oldest first. On a solved case the first
- * reply is the answer the team stands behind, so it carries the Solution mark.
+ * Every reply in one "Responses" list, oldest first. On a solved case the
+ * team's last answer carries the Solution mark (`pickSolutionReplyId`).
  * Edit and delete rights are still decided per reply inside `IssueTimeline`.
  */
 export function IssueThread({
@@ -32,7 +33,7 @@ export function IssueThread({
   canEdit,
   ownerView = false,
 }: IssueThreadProps) {
-  const solutionReplyId = status === "SOLVED" ? replies[0]?.id : undefined;
+  const solutionReplyId = pickSolutionReplyId(status, replies);
 
   return (
     <section aria-labelledby="responses-heading" className="space-y-3">

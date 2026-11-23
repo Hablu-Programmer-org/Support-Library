@@ -12,14 +12,21 @@ import { LiveSupportGuideButton } from "@/components/live-support/live-support-g
 export function IssueNextStep({
   liveSupportStatus,
   join,
+  stacked = false,
+  className = "",
 }: {
   liveSupportStatus: string;
   join: ComponentProps<typeof LiveSupportGuideButton>["join"];
+  /** Narrow column (the reader's sidebar): text above, buttons below. */
+  stacked?: boolean;
+  className?: string;
 }) {
   return (
     <section
       aria-labelledby="issue-next-step-title"
-      className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:border-slate-800 dark:bg-slate-900/70"
+      className={`flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70 ${
+        stacked ? "" : "sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      } ${className}`}
     >
       <div className="min-w-0">
         <h2

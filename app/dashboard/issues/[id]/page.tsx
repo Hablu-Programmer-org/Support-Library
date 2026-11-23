@@ -13,7 +13,9 @@ import { ReplyComposer } from "@/components/issues/reply-composer";
 import { IssueNextStep } from "@/components/issues/issue-next-step";
 import { requireSession } from "@/lib/auth-guard";
 import { currentShift } from "@/lib/config/live-support";
+import { lastStaffReplyDate, pickSolutionReplyId, replyAnchorId } from "@/lib/issue-solution";
 import { isLiveSupportConfigured } from "@/lib/live-support";
+import { listCourseNames } from "@/lib/lms";
 import { liveSupportNow } from "@/lib/live-support-status";
 import {
   ISSUES_PATH,
@@ -92,10 +94,24 @@ export default async function IssueDetailPage({
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  const replies = await listReplies(supportIssue.id, {
-    viewer: canEdit ? "staff" : "public",
-  });
-  const csrfToken = await generateCsrfToken(session.user.id);
+  const [replies, csrfToken, courseNames] = await Promise.all([
+    listReplies(supportIssue.id, { viewer: canEdit ? "staff" : "public" }),
+    generateCsrfToken(session.user.id),
+    canEdit ? Promise.resolve(null) : listCourseNames(),
+  ]);
+  const solutionReplyId = pickSolutionReplyId(supportIssue.status, replies);
+  // Readers get the course in the header meta line (no context card) and the
+  // last answer date instead of "Updated" (see `IssueDetailHeader`).
+  const readerCourseLabel = canEdit
+    ? null
+    : [
+        supportIssue.courseSlug
+          ? (courseNames?.get(supportIssue.courseSlug) ?? supportIssue.courseSlug)
+          : null,
+        supportIssue.batchNo ? `Batch ${supportIssue.batchNo}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
   // A student reading someone else's published answer gets a way forward at
   // the end; staff already have the composer there.
   const showNextStep = !canEdit && canCreateIssue(session.user.role);
@@ -176,47 +192,80 @@ export default async function IssueDetailPage({
         showLibraryChip={canEdit}
         editHref={canEdit ? buildIssueEditHref(supportIssue.id, returnTo) : undefined}
         aiPrompt={aiPrompt}
+        lastAnswerAt={canEdit ? undefined : lastStaffReplyDate(replies)}
+        courseLabel={readerCourseLabel}
+        solutionHref={solutionReplyId ? `#${replyAnchorId(solutionReplyId)}` : undefined}
       />
 
-      {/* DOM order is the phone order: Manage, the case, then its context. On
-          desktop the grid moves Manage and the context into the right column. */}
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
-        <IssueDetailSidebar
-          part="manage"
-          className="lg:col-start-2 lg:row-start-1"
-          {...sidebarProps}
-        />
+      {canEdit ? (
+          // DOM order is the phone order: Manage, the case, then its context. On
+          // desktop the grid moves Manage and the context into the right column.
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
+            <IssueDetailSidebar
+              part="manage"
+              className="lg:col-start-2 lg:row-start-1"
+              {...sidebarProps}
+            />
 
-        <main className="min-w-0 space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
-          <IssueProblemSection
-            question={supportIssue.question}
-            videoLinks={supportIssue.videoLinks ?? []}
-            uploads={supportIssue.uploads ?? []}
-            tags={supportIssue.tags ?? []}
-          />
-
-          <IssueThread
-            issueId={supportIssue.id}
-            status={supportIssue.status}
-            replies={replies}
-            viewerId={session.user.id}
-            viewerRole={session.user.role}
-            csrfToken={csrfToken}
-            canEdit={canEdit}
-          />
-
-          {canEdit && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70">
-              <ReplyComposer
-                issueId={supportIssue.id}
-                csrfToken={csrfToken}
-                returnTo={returnTo ?? undefined}
+            <main className="min-w-0 space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+              <IssueProblemSection
+                question={supportIssue.question}
+                videoLinks={supportIssue.videoLinks ?? []}
+                uploads={supportIssue.uploads ?? []}
+                tags={supportIssue.tags ?? []}
               />
-            </div>
-          )}
 
+              <IssueThread
+                issueId={supportIssue.id}
+                status={supportIssue.status}
+                replies={replies}
+                viewerId={session.user.id}
+                viewerRole={session.user.role}
+                csrfToken={csrfToken}
+                canEdit
+              />
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70">
+                <ReplyComposer
+                  issueId={supportIssue.id}
+                  csrfToken={csrfToken}
+                  returnTo={returnTo ?? undefined}
+                />
+              </div>
+            </main>
+
+            <IssueDetailSidebar
+              part="context"
+              className="lg:col-start-2 lg:row-start-2 lg:self-start"
+              {...sidebarProps}
+            />
+          </div>
+      ) : (
+        // Library reader: a capped reading column (long lines are hard to
+        // read) and the way forward beside it, sticky on desktop. On a phone
+        // it follows the answer, in DOM order.
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,48rem)_18rem] xl:grid-cols-[minmax(0,48rem)_20rem] xl:gap-x-10">
+          <main className="min-w-0 space-y-10">
+            <IssueProblemSection
+              question={supportIssue.question}
+              videoLinks={supportIssue.videoLinks ?? []}
+              uploads={supportIssue.uploads ?? []}
+              tags={supportIssue.tags ?? []}
+            />
+            <IssueThread
+              issueId={supportIssue.id}
+              status={supportIssue.status}
+              replies={replies}
+              viewerId={session.user.id}
+              viewerRole={session.user.role}
+              csrfToken={csrfToken}
+              canEdit={false}
+            />
+          </main>
           {showNextStep && (
             <IssueNextStep
+              stacked
+              className="lg:sticky lg:top-20"
               join={{
                 csrfToken,
                 shift: currentShift(new Date()),
@@ -229,15 +278,8 @@ export default async function IssueDetailPage({
               }
             />
           )}
-        </main>
-
-        <IssueDetailSidebar
-          part="context"
-          className={canEdit ? "lg:col-start-2 lg:row-start-2 lg:self-start" : "lg:col-start-2 lg:row-start-1 lg:self-start"}
-          {...sidebarProps}
-        />
-
-      </div>
+        </div>
+      )}
     </div>
   );
 }

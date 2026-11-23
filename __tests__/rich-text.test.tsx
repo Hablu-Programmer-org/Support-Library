@@ -209,3 +209,30 @@ describe("RichText links", () => {
     expect(container.textContent).toBe("see [x](https://example.com)");
   });
 });
+
+describe("RichText backslash escapes", () => {
+  it("shows an escaped list number as plain text, without the backslash", () => {
+    const container = renderText(String.raw`1\. Open the console
+2\. Add the user`);
+
+    expect(container.querySelector("ol")).toBeNull();
+    expect(container.textContent).toBe("1. Open the console\n2. Add the user");
+  });
+
+  it("keeps escaped emphasis markers literal", () => {
+    const container = renderText(String.raw`use \*star\* and \_under\_`);
+
+    expect(container.querySelector("em")).toBeNull();
+    expect(container.textContent).toBe("use *star* and _under_");
+  });
+
+  it("leaves backslashes inside inline code untouched", () => {
+    const container = renderText(String.raw`run ` + "`" + String.raw`a\.b` + "`" + " now");
+
+    expect(container.querySelector("code")?.textContent).toBe(String.raw`a\.b`);
+  });
+
+  it("keeps a backslash before a non-punctuation character", () => {
+    expect(renderText(String.raw`C:\Users\me`).textContent).toBe(String.raw`C:\Users\me`);
+  });
+});

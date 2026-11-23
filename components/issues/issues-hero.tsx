@@ -35,7 +35,7 @@ export function IssuesHero({
   return (
     <section
       aria-labelledby="issues-hero-title"
-      className="relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-white px-5 pb-[152px] pointer-coarse:pb-[164px] pt-7 sm:px-8 sm:pt-9 dark:border-slate-800 dark:bg-slate-900/60"
+      className="relative isolate overflow-hidden rounded-3xl border border-slate-200 bg-white px-5 pb-[152px] pointer-coarse:pb-[164px] pt-5 sm:px-6 sm:pt-6 dark:border-slate-800 dark:bg-slate-900/60"
     >
       {/* Decorative brand light; static so it costs nothing on scroll. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -44,16 +44,16 @@ export function IssuesHero({
         <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-cyan-400/40 to-transparent" />
       </div>
 
-      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           <h1
             id="issues-hero-title"
-            className="bg-linear-to-r from-slate-950 via-slate-800 to-slate-600 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl dark:from-white dark:via-cyan-100 dark:to-violet-200"
+            className="text-2xl font-bold tracking-tight text-slate-950 sm:text-[1.75rem] dark:text-white"
           >
             {title}
           </h1>
           {description && (
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
               {description}
             </p>
           )}
@@ -62,7 +62,7 @@ export function IssuesHero({
       </div>
 
       {visibleTags.length > 0 && (
-        <nav aria-label="Popular tags" className="mt-5">
+        <nav aria-label="Popular tags" className="mt-4">
           <ul className="flex flex-wrap gap-2">
             {visibleTags.map(({ tag, href, active }) => (
               <li key={tag}>

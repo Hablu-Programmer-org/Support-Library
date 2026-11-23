@@ -173,10 +173,10 @@ Admins can see:
 - Priority label.
 - `Student Library` badge if currently published.
 - Issue title.
-- Last updated time.
+- Created time and the last staff answer time (not "Updated": publishing or retagging bumps that).
 - Full problem description.
 - Tags.
-- The first reply as `Solution` (solved) or `Answer`, then later replies as `Responses`.
+- Every reply under `Responses`; on a solved case the team's **last** staff reply carries the `Solution` mark, and the header links to it (**Jump to solution**).
 - Reply author names.
 - Reply creation and edited markers.
 - Video links and image attachments (private until the case is published).
@@ -576,7 +576,7 @@ Student issue detail can show:
 - Full problem description.
 - Issue-level video links.
 - Tags.
-- The first reply as `Solution` or `Answer`, then later `Responses`.
+- Every reply under `Responses`; on a solved case the last staff reply is marked `Solution`.
 - Reply video links.
 - Course.
 - Batch.
