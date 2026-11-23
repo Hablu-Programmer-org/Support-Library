@@ -22,7 +22,6 @@ export type LandingCta = {
 };
 
 export type LandingCopy = {
-  badge: string;
   /** Headline pieces so one word can keep the brand gradient. */
   lead: string;
   highlight: string;
@@ -52,7 +51,6 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
       staff,
       student,
       copy: {
-        badge: "Hablu Programmer Staff Tool",
         lead: "Support operations,",
         highlight: "answers",
         rest: "and student requests.",
@@ -94,7 +92,6 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
       staff,
       student,
       copy: {
-        badge: "Hablu Programmer Student Support",
         lead: "Find answers. Get the",
         highlight: "help",
         rest: "you need.",
@@ -135,13 +132,12 @@ export function copyFor(role: UserRole | null | undefined): LandingView {
     staff,
     student,
     copy: {
-      badge: "Hablu Programmer Support",
       lead: "Find answers from",
       highlight: "Hablu Programmer",
       rest: "Support.",
       description:
-        "Browse published solutions from the support library, or sign in to manage your own issues.",
-      ctas: [{ label: "Staff Sign In", href: "/login", variant: "primary" }],
+        "Sign in to search published solutions and track your issues.",
+      ctas: [{ label: "Sign in to get help", href: "/login", variant: "primary" }],
       cards: [
         {
           icon: FileTextIcon,

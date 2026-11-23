@@ -136,11 +136,17 @@ html.dark {
     box-shadow: 0 12px 40px -16px rgb(0 0 0 / 0.65);
   }
 
+  /* Light mode starts on cyan-600 (3.7:1 on white; cyan-500 was 2.4:1, under
+     the 3:1 large-text minimum). Dark mode keeps the brighter cyan-500. */
   .brand-text {
-    background-image: linear-gradient(90deg, #06b6d4, #8b5cf6);
+    background-image: linear-gradient(90deg, #0891b2, #8b5cf6);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+
+  .dark .brand-text {
+    background-image: linear-gradient(90deg, #06b6d4, #8b5cf6);
   }
 
   .brand-bg {

@@ -16,7 +16,7 @@ describe("copyFor (landing copy per audience)", () => {
     const view = copyFor(undefined);
     expect(view.staff).toBe(false);
     expect(view.student).toBe(false);
-    expect(view.copy.ctas).toEqual([{ label: "Staff Sign In", href: "/login", variant: "primary" }]);
+    expect(view.copy.ctas).toEqual([{ label: "Sign in to get help", href: "/login", variant: "primary" }]);
     expect(hrefs(undefined).some((href) => href.startsWith("/dashboard"))).toBe(false);
   });
 

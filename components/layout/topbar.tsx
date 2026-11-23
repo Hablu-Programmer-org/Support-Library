@@ -62,14 +62,18 @@ export function Topbar({ user }: TopbarProps) {
         >
           {/* logo.png is 490x348; 32px tall renders 45px wide. Above the fold:
               load eagerly. */}
-          <Image
-            alt=""
-            className="h-8 w-auto object-contain"
-            height={32}
-            loading="eager"
-            src="/logo.png"
-            width={45}
-          />
+          {/* The logo is white: in light mode it sits on a small dark tile so
+              it stays visible; dark mode shows it bare, as before. */}
+          <span className="flex shrink-0 items-center rounded-md bg-slate-900 px-1 py-0.5 dark:bg-transparent dark:p-0">
+            <Image
+              alt=""
+              className="h-8 w-auto object-contain"
+              height={32}
+              loading="eager"
+              src="/logo.png"
+              width={45}
+            />
+          </span>
           <span
             aria-hidden
             className={cn("truncate text-base font-semibold tracking-tight lg:text-lg", navStyles.brandText)}
@@ -136,8 +140,8 @@ export function Topbar({ user }: TopbarProps) {
               <ThemeToggle />
               <Link
                 href="/login"
-                // Dark text: white on cyan-500 fails WCAG AA (2.42:1).
-                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-primary-600"
+                // Dark text: white on cyan-500 fails WCAG AA (2.42:1). 44px tall tap target.
+                className={cn("inline-flex min-h-11 items-center rounded-full bg-primary px-4 text-sm font-semibold text-slate-950 transition hover:bg-primary-600", navStyles.focus)}
               >
                 Sign in
               </Link>

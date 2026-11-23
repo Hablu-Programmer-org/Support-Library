@@ -6,6 +6,7 @@ import { ArrowRightIcon, SparklesIcon } from "@/components/icons";
 import { LibrarySearch } from "@/components/landing/library-search";
 import { Topbar } from "@/components/layout/topbar";
 import { copyFor, type LandingCta } from "@/lib/landing-copy";
+import { liveSupportNow } from "@/lib/live-support-status";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +86,7 @@ export default async function Home() {
   const session = await auth();
   const { copy, student } = copyFor(session?.user?.role);
   const signedIn = Boolean(session?.user);
+  const live = liveSupportNow(new Date());
 
   return (
     // overflow-clip, not overflow-hidden: `hidden` makes <main> a scroll
@@ -97,15 +99,22 @@ export default async function Home() {
 
       <section className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-28 sm:px-6 sm:pt-36 lg:px-8">
         <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+          {/* Live support status from the schedule only (no room link), so
+              it is the same safe fact for guests, students and staff. The
+              ping only runs while support is actually open. */}
           <span
             className="landing-rise glass inline-flex w-fit items-center gap-2.5 rounded-full px-4 py-2 text-sm font-medium text-cyan-700 dark:text-cyan-200"
             style={delay(0)}
           >
             <span aria-hidden className="relative flex h-2 w-2">
-              <span className="landing-ping absolute inset-0 rounded-full bg-cyan-400" />
-              <span className="relative h-2 w-2 rounded-full bg-linear-to-r from-cyan-500 to-violet-500" />
+              {live.open ? (
+                <span className="landing-ping absolute inset-0 rounded-full bg-emerald-400" />
+              ) : null}
+              <span
+                className={`relative h-2 w-2 rounded-full ${live.open ? "bg-emerald-500" : "bg-slate-400"}`}
+              />
             </span>
-            {copy.badge}
+            {live.label}
           </span>
 
           <h1

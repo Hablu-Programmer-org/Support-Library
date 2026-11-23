@@ -4,7 +4,7 @@ test.describe("Landing", () => {
   test("guest sees only the sign-in path, no library chrome", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("header")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Staff Sign In" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Sign in to get help" })).toBeVisible();
     // Guest chrome is hidden: no nav links, no search box, no student CTA.
     await expect(
       page.locator('header nav[aria-label="Primary"]').getByRole("link"),
@@ -237,7 +237,7 @@ test.describe("Landing contrast", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     const links = page.locator('a[href="/login"]');
-    await expect(links).toHaveCount(2); // topbar "Sign in" + hero "Staff Sign In"
+    await expect(links).toHaveCount(2); // topbar "Sign in" + hero "Sign in to get help"
 
     for (const link of await links.all()) {
       const ratio = async () => {
@@ -344,7 +344,7 @@ test.describe("Landing motion", () => {
     const heading = page.getByRole("heading", { level: 1 });
     await expect(heading).toBeVisible();
     expect(await heading.evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
-    const cta = page.locator("main").getByRole("link", { name: "Staff Sign In" });
+    const cta = page.locator("main").getByRole("link", { name: "Sign in to get help" });
     await expect(cta).toBeVisible();
     expect(await cta.evaluate((el) => getComputedStyle(el.parentElement!).opacity)).toBe("1");
   });
