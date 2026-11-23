@@ -117,6 +117,16 @@ const formatTime = (minutes: number) => {
 /** "সকাল ৯ টা থেকে দুপুর ১ টা এবং সন্ধ্যা ৬:৩০ থেকে রাত ১০ টা" */
 export const supportScheduleBn = `সকাল ${formatTime(SUPPORT_SHIFTS.morning.start)} টা থেকে দুপুর ${formatTime(SUPPORT_SHIFTS.morning.end)} টা এবং সন্ধ্যা ${formatTime(SUPPORT_SHIFTS.night.start)} থেকে রাত ${formatTime(SUPPORT_SHIFTS.night.end)} টা`;
 
+const formatClock = (minutes: number) => {
+  const h24 = Math.floor(minutes / 60) % 24;
+  const minute = String(minutes % 60).padStart(2, "0");
+  return `${h24 % 12 || 12}:${minute} ${h24 < 12 ? "AM" : "PM"}`;
+};
+
+/** One shift window for the schedule list, e.g. "6:30 PM – 10:00 PM". */
+export const shiftRangeLabel = (shift: SupportShift) =>
+  `${formatClock(SUPPORT_SHIFTS[shift].start)} – ${formatClock(SUPPORT_SHIFTS[shift].end)}`;
+
 /** Total daily support duration, e.g. "৮ ঘণ্টা ৩০ মিনিট". */
 export const supportHoursBn = () => {
   const total = Object.values(SUPPORT_SHIFTS).reduce(

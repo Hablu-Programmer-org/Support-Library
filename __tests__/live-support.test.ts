@@ -6,6 +6,7 @@ import {
   dayKeyInDhaka,
   formatCaseRef,
   shiftMinutes,
+  shiftRangeLabel,
   supportHoursBn,
   supportScheduleBn,
   SUPPORT_SHIFTS,
@@ -100,6 +101,8 @@ describe("Bengali schedule copy", () => {  it("converts digits to Bengali numera
 
   it("adds up the daily hours", () => {
     expect(supportHoursBn()).toBe("৭ ঘণ্টা ৩০ মিনিট");
+    expect(shiftRangeLabel("morning")).toBe("9:00 AM – 1:00 PM");
+    expect(shiftRangeLabel("night")).toBe("6:30 PM – 10:00 PM");
   });
 });
 

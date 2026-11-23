@@ -133,6 +133,7 @@ export function StudentRequestView({
           canPublish={false}
         >
           <LiveSupportPanel
+            caseRef={issue.caseRef}
             configured={Boolean(joinUrl)}
             csrfToken={csrfToken}
             issueId={issue.id}

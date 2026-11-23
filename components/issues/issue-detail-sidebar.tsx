@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 import {
   ChevronDownIcon,
+  FileTextIcon,
   SettingsIcon,
   UserIcon,
   WarningTriangleIcon,
@@ -84,20 +85,25 @@ function Info({
   label,
   value,
   valueNode,
-  wide = false,
+  muted = false,
 }: {
   label: string;
   value?: string | null;
   valueNode?: ReactNode;
-  wide?: boolean;
+  /** A placeholder-like value ("Not published") reads quieter than real data. */
+  muted?: boolean;
 }) {
+  const empty = !valueNode && !value;
   return (
-    // Dates ("21 Nov 2026, 12:03 PM") take the full row so AM/PM never wraps alone.
-    <div className={wide ? "col-span-2 min-w-0" : "min-w-0"}>
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        {label}
-      </dt>
-      <dd className="mt-1 wrap-break-word text-sm font-medium text-slate-800 dark:text-slate-200">
+    <div className="flex min-h-11 items-center justify-between gap-4 py-2">
+      <dt className="shrink-0 text-sm text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd
+        className={
+          muted || empty
+            ? "min-w-0 text-right text-sm text-slate-500 dark:text-slate-400"
+            : "min-w-0 wrap-break-word text-right text-sm font-semibold text-slate-900 dark:text-white"
+        }
+      >
         {valueNode ?? (value || "Not specified")}
       </dd>
     </div>
@@ -172,12 +178,11 @@ export function IssueDetailSidebar({
       {showManage ? manageCard() : null}
 
       <section className={card}>
-        <CardTitle icon={<SettingsIcon size={16} />}>Issue context</CardTitle>
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+        <CardTitle icon={<FileTextIcon size={16} />}>Issue context</CardTitle>
+        <dl className="mt-3 divide-y divide-slate-200 dark:divide-slate-800">
           {reader ? null : (
             <Info
               label="Reference"
-              wide
               valueNode={
                 caseRef ? (
                   <CopyValue label="reference" value={caseRef} variant="chip" />
@@ -193,7 +198,7 @@ export function IssueDetailSidebar({
               value={
                 publishedAt ? formatSupportDate(publishedAt) : "Not published"
               }
-              wide
+              muted={!publishedAt}
             />
           )}
           {staffView ? (
@@ -204,7 +209,6 @@ export function IssueDetailSidebar({
                   ? formatSupportDate(staffView.lastLiveSupportAt)
                   : null
               }
-              wide
             />
           ) : null}
         </dl>

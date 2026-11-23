@@ -57,12 +57,37 @@ describe("LiveSupportPanel", () => {
     expect(container.querySelector('a[href^="https://"]')).toBeNull();
   });
 
+  it("shows both shifts with their hours and marks the current one", () => {
+    render(<LiveSupportPanel {...baseProps} shift="night" />);
+
+    const hours = screen.getByRole("list", { name: "Daily support hours" });
+    const rows = Array.from(hours.querySelectorAll("li"));
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "Morning9:00 AM – 1:00 PM",
+      "Night (now)6:30 PM – 10:00 PM",
+    ]);
+    expect(rows[1].getAttribute("aria-current")).toBe("time");
+    expect(rows[0].getAttribute("aria-current")).toBeNull();
+    expect(screen.getByText("Open now")).not.toBeNull();
+    // The shifts are information, not controls.
+    expect(screen.queryByRole("button", { name: /shift/i })).toBeNull();
+  });
+
+  it("names the reference to say in the room and makes the meeting code copyable", () => {
+    render(<LiveSupportPanel {...baseProps} caseRef="000380" shift="morning" />);
+
+    expect(screen.getByText("000380")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Copy meeting code" })).not.toBeNull();
+  });
+
   it("blocks the join outside a support slot and hides the meeting code", () => {
     render(<LiveSupportPanel {...baseProps} shift="off" />);
 
+    expect(screen.getByText("Closed")).not.toBeNull();
     expect(
-      screen.getByText("Live support is closed right now. Please join during a support slot."),
+      screen.getByText("The room is closed right now. Join during one of the shifts above."),
     ).not.toBeNull();
+    expect(screen.queryByRole("listitem", { current: "time" })).toBeNull();
     expect(joinButton().disabled).toBe(true);
     expect(screen.queryByText("Meeting code")).toBeNull();
     expect(screen.queryByText("Passcode")).toBeNull();
