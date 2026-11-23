@@ -10,6 +10,7 @@ import { listStudentCourses } from "@/lib/lms";
 import { canMutate } from "@/lib/roles";
 import Link from "next/link";
 import { generateCsrfToken } from "@/lib/csrf";
+import { issueDraftKey } from "@/lib/issue-draft";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,11 @@ export default async function NewIssuePage() {
 
         {/* The form lays out its own two columns: the live checklist beside it
             reads the form's state. */}
-        <StudentIssueForm courses={courses} csrfToken={csrfToken} />
+        <StudentIssueForm
+          courses={courses}
+          csrfToken={csrfToken}
+          draftKey={issueDraftKey(session.user.id)}
+        />
       </div>
     );
   }

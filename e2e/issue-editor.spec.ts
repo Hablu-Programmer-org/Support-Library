@@ -263,6 +263,31 @@ test.describe("Issue details editor (student)", () => {
     await expect(body.getByRole("heading", { name: "কী হলো" })).toHaveCount(0);
   });
 
+  test("keeps an unsent draft across a reload until it is discarded", async ({ page }) => {
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create issue");
+    await form.locator('input[name="title"]').fill("Draft survives reload");
+    await issueDetailsEditor(form).click();
+    await page.keyboard.type("Module 5-এর video load হচ্ছে না।");
+    // Autosave runs shortly after typing stops.
+    await expect
+      .poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.includes("issue-draft")).length))
+      .toBe(1);
+
+    await page.reload();
+    const restored = formFor(page, "Create issue");
+    await expect(restored.locator('input[name="title"]')).toHaveValue("Draft survives reload");
+    await expect(question(restored)).toHaveValue("Module 5-এর video load হচ্ছে না।");
+    await expect(restored.getByRole("status").filter({ hasText: "Restored your unsent draft" })).toBeVisible();
+
+    await restored.getByRole("button", { name: "Discard draft" }).click();
+    await expect(restored.locator('input[name="title"]')).toHaveValue("");
+    await expect(question(restored)).toHaveValue("");
+    await page.reload();
+    await expect(issueDetailsEditor(formFor(page, "Create issue"))).toBeVisible();
+    await expect(formFor(page, "Create issue").locator('input[name="title"]')).toHaveValue("");
+  });
+
   test("restores the typed text after a server-side rejection is fixed", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");

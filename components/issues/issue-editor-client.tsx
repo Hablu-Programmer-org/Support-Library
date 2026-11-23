@@ -21,6 +21,8 @@ export type IssueEditorApi = {
    * the existing text (nothing is removed). The caret lands under the first.
    */
   insertTemplate: () => void;
+  /** Replace everything with this Markdown (restoring or discarding a draft). */
+  setMarkdown: (markdown: string) => void;
 };
 
 export type IssueEditorClientProps = {
@@ -165,6 +167,11 @@ export default function IssueEditorClient({
     () => ({
       focus: () => {
         if (editor && !editor.isDestroyed) editor.commands.focus("end");
+      },
+      setMarkdown: (markdown) => {
+        if (!editor || editor.isDestroyed) return;
+        // Reports the change through onUpdate like typing would.
+        editor.commands.setContent(markdown, { contentType: "markdown", emitUpdate: true });
       },
       insertTemplate: () => {
         if (!editor || editor.isDestroyed) return;

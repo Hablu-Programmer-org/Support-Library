@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { createStudentIssueAction } from "@/actions/issues";
 import {
@@ -32,6 +32,13 @@ import {
   issueDetailsMinimumProblem,
   TEMPLATE_ONLY_MESSAGE,
 } from "@/lib/issue-content-rules";
+import {
+  clearIssueDraft,
+  isEmptyIssueDraft,
+  readIssueDraft,
+  writeIssueDraft,
+  type IssueDraftFields,
+} from "@/lib/issue-draft";
 import { hasTemplateHeadings, withoutEmptyTemplateSections } from "@/lib/issue-template";
 
 const card =
@@ -91,9 +98,13 @@ type StudentIssueFormProps = {
   csrfToken: string;
   /** The student's LMS enrolments; the batch is derived from the chosen course. */
   courses: Array<{ slug: string; name: string; batchNo: number }>;
+  /** localStorage key for the unsent draft (per account); no autosave without it. */
+  draftKey?: string;
 };
 
-export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) {
+const draftTime = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" });
+
+export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueFormProps) {
   const [state, formAction, pending] = useActionState(
     createStudentIssueAction,
     {
@@ -110,12 +121,66 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
   const [detailsError, setDetailsError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const [screenshotCount, setScreenshotCount] = useState(0);
+  const [restoredAt, setRestoredAt] = useState<number | null>(null);
+  const [restoredOptional, setRestoredOptional] = useState(false);
+  // No autosave until the saved draft has been looked at: the empty first
+  // render would otherwise overwrite it.
+  const draftCheckedRef = useRef(false);
   const operationIdRef = useRef<HTMLInputElement>(null);
   const editorApi = useRef<IssueEditorApi | null>(null);
   // What the server receives: template sections the student left empty are
   // dropped. `question` keeps them so the editor (and a draft) is unchanged.
   const submittedQuestion = withoutEmptyTemplateSections(question);
   const selectedCourse = courses.find((course) => course.slug === courseSlug) ?? null;
+
+  const draftFields: IssueDraftFields = { title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks };
+
+  // Restored once the editor exists (it receives the Markdown). Reading
+  // storage during render would differ between server and client.
+  const handleEditorReady = () => {
+    setEditorReady(true);
+    if (!draftKey || draftCheckedRef.current) return;
+    draftCheckedRef.current = true;
+    const draft = readIssueDraft(draftKey);
+    // Someone already typing keeps what they typed.
+    if (!draft || !isEmptyIssueDraft(draftFields)) return;
+    setTitle(draft.title);
+    setCourseSlug(courses.some((course) => course.slug === draft.courseSlug) ? draft.courseSlug : "");
+    setModuleSlug(draft.moduleSlug);
+    setContentSlug(draft.contentSlug);
+    setTags(draft.tags);
+    setVideoLinks(draft.videoLinks);
+    editorApi.current?.setMarkdown(draft.question);
+    setRestoredOptional(Boolean(`${draft.moduleSlug}${draft.contentSlug}${draft.tags}${draft.videoLinks}`.trim()));
+    setRestoredAt(draft.savedAt);
+  };
+
+  const discardDraft = () => {
+    if (draftKey) clearIssueDraft(draftKey);
+    setTitle("");
+    setCourseSlug("");
+    setModuleSlug("");
+    setContentSlug("");
+    setTags("");
+    setVideoLinks("");
+    setDetailsError(null);
+    setRestoredOptional(false);
+    setRestoredAt(null);
+    editorApi.current?.setMarkdown("");
+    editorApi.current?.focus();
+  };
+
+  // Autosave shortly after typing stops. Paused while a submit is in flight
+  // (the draft was cleared for it); a rejected submit ends `pending` and the
+  // still-filled form is saved again.
+  useEffect(() => {
+    if (!draftKey || !draftCheckedRef.current || pending) return;
+    const timer = window.setTimeout(
+      () => writeIssueDraft(draftKey, { title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks }),
+      500,
+    );
+    return () => window.clearTimeout(timer);
+  }, [draftKey, pending, title, question, courseSlug, moduleSlug, contentSlug, tags, videoLinks]);
 
   const ensureOperationId = () => {
     if (operationIdRef.current && !operationIdRef.current.value) {
@@ -132,6 +197,8 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
       editorApi.current?.focus();
       return;
     }
+    // Success redirects away from this form, so the draft goes now.
+    if (draftKey) clearIssueDraft(draftKey);
     ensureOperationId();
   };
 
@@ -184,6 +251,25 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             </p>
           )}
 
+          {restoredAt !== null ? (
+            <div
+              role="status"
+              data-issue-draft-restored=""
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-cyan-200 bg-cyan-50 py-1 pl-5 pr-2 text-sm text-slate-700 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-slate-200"
+            >
+              <span className="min-w-0 flex-1 py-2">
+                Restored your unsent draft from {draftTime.format(restoredAt)}. Screenshots are not kept in drafts.
+              </span>
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-cyan-700 hover:bg-cyan-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 dark:text-cyan-300 dark:hover:bg-cyan-500/15"
+              >
+                Discard draft
+              </button>
+            </div>
+          ) : null}
+
           <section aria-labelledby="issue-section-heading" className={card}>
             <SectionTitle id="issue-section-heading" icon={<HelpCircleIcon size={18} />}>
               Describe your issue
@@ -219,7 +305,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
                 value={question}
                 submitValue={submittedQuestion}
                 onChange={onQuestionChange}
-                onReady={() => setEditorReady(true)}
+                onReady={handleEditorReady}
                 required
                 invalid={Boolean(questionError)}
                 apiRef={editorApi}
@@ -313,8 +399,8 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
 
           {/* Remounts open when one of its fields comes back with an error. */}
           <details
-            key={optionalDetailsHaveError ? "optional-error" : "optional-clean"}
-            open={optionalDetailsHaveError || undefined}
+            key={optionalDetailsHaveError ? "optional-error" : restoredOptional ? "optional-restored" : "optional-clean"}
+            open={optionalDetailsHaveError || restoredOptional || undefined}
             className="group rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70"
           >
             <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 rounded-2xl px-5 py-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 sm:px-6 [&::-webkit-details-marker]:hidden">
