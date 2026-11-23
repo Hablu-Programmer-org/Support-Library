@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { SearchIcon } from "@/components/icons";
-import { nativeFieldClass } from "@/lib/config/fields";
+import { nativeFieldClass, nativeSelectClass } from "@/lib/config/fields";
 import {
   buildAccessRequestHref,
   type AccessRequestListState,
@@ -87,11 +87,11 @@ export function AccessRequestToolbar({
   const searching = isPending;
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
+    <div className="space-y-1">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         <div
           aria-label="Access request type"
-          className="inline-flex gap-4 border-b border-slate-200 dark:border-slate-800"
+          className="inline-flex shrink-0 self-start rounded-lg border border-slate-200 bg-slate-100 p-0.5 lg:self-auto dark:border-slate-800 dark:bg-slate-900"
           role="group"
         >
           {TABS.map((tab) => {
@@ -101,53 +101,38 @@ export function AccessRequestToolbar({
               <button
                 key={tab.id}
                 aria-pressed={active}
-                className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-0.5 pb-2 text-sm font-semibold transition-colors ${
+                className={`inline-flex min-h-9 items-center gap-2 rounded-md px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 ${
                   active
-                    ? "border-cyan-500 text-slate-900 dark:text-white"
-                    : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
+                    ? "bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 }`}
                 onClick={() => navigate({ tab: tab.id })}
                 type="button"
               >
                 {tab.label}
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                  className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums ${
                     count > 0
                       ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                       : "bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300"
                   }`}
                 >
-                  {count} pending
+                  {count}
+                  <span className="sr-only"> pending</span>
                 </span>
               </button>
             );
           })}
         </div>
 
-        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <input
-            checked={showSent}
-            className="h-4 w-4 rounded border-slate-300 accent-cyan-600 dark:border-slate-600"
-            onChange={(event) => {
-              const next = event.target.checked;
-              setShowSent(next);
-              navigate({ showSent: next });
-            }}
-            type="checkbox"
-          />
-          Show completed
-        </label>
-      </div>
-
-      <div className="space-y-1">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sr-only" htmlFor="access-batch-filter">
             Filter by batch
           </label>
           <select
             id="access-batch-filter"
             aria-label="Filter by batch"
-            className={`${nativeFieldClass} sm:w-40`}
+            className={`${nativeSelectClass} sm:w-40`}
             value={state.batch === null ? "" : String(state.batch)}
             onChange={(event) => {
               const next = event.target.value;
@@ -209,12 +194,26 @@ export function AccessRequestToolbar({
             </span>
           </div>
         </div>
-        {value.trim().length === 1 && (
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Type at least 2 characters to search.
-          </p>
-        )}
+
+        <label className="inline-flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <input
+            checked={showSent}
+            className="h-4 w-4 rounded border-slate-300 accent-cyan-600 dark:border-slate-600"
+            onChange={(event) => {
+              const next = event.target.checked;
+              setShowSent(next);
+              navigate({ showSent: next });
+            }}
+            type="checkbox"
+          />
+          Show completed
+        </label>
       </div>
+      {value.trim().length === 1 && (
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Type at least 2 characters to search.
+        </p>
+      )}
     </div>
   );
 }

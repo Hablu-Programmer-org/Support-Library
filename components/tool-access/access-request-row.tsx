@@ -8,7 +8,7 @@ import { N8nSendForm } from "@/components/tool-access/n8n-send-form";
 import { OpenAiConfirmForm } from "@/components/tool-access/openai-confirm-form";
 import { RejectAccessRequestForm } from "@/components/tool-access/reject-access-request-form";
 import { RetryRejectionEmailForm } from "@/components/tool-access/retry-rejection-email-form";
-import { chipClass, rowHoverClass } from "@/lib/ui";
+import { accessTableColumnsClass, chipClass, rowHoverClass } from "@/lib/ui";
 
 export type AccessRowRequest = {
   id: string;
@@ -55,9 +55,13 @@ const STATUS_DOTS: Record<AccessRowRequest["statusTone"], string> = {
   muted: "bg-slate-400",
 };
 
+/** Visible label on stacked rows; the desktop header row labels the columns. */
+const cellLabelClass =
+  "mb-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 xl:sr-only dark:text-slate-500";
+
 /**
- * One request as a compact, scannable row. Actionable requests expose their
- * final control directly, without an intermediate Process/Close interaction.
+ * One request as a table row. Actionable requests expose their final control
+ * directly, without an intermediate Process/Close interaction.
  */
 export function AccessRequestRow({
   request,
@@ -81,136 +85,141 @@ export function AccessRequestRow({
   }, []);
 
   const rejectMode = canReject && rejectOpen;
+  const showControls = (canProcess || canReject) && !rejectMode;
+  const hasAction = showControls || request.rejectionNotificationFailed;
 
   return (
-    <li className={`px-1 py-2.5 sm:px-2 ${rowHoverClass}`}>
-      <div className="grid min-w-0 grid-cols-[36px_minmax(0,1fr)] items-start gap-x-2.5">
+    <li
+      className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 px-3 py-3 xl:items-center ${accessTableColumnsClass} ${rowHoverClass}`}
+    >
+      {/* Student */}
+      <div className="col-start-1 row-start-1 flex min-w-0 items-start gap-2.5">
         <ProfileAvatar imageUrl={request.studentImage} name={request.studentName} />
-
         <div className="min-w-0">
-          <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1">
-            <div className="min-w-0">
-              <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <h3 className="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">
-                  {request.studentName ?? "Unknown student"}
-                </h3>
-                <span className={chipClass}>{request.typeLabel}</span>
-                {request.createdByEmail && (
-                  <span
-                    className={`${chipClass} text-slate-500 dark:text-slate-400`}
-                    title={`Created by ${request.createdByEmail}`}
-                  >
-                    Admin created
-                  </span>
-                )}
-              </div>
-              <div className="mt-0.5 min-w-0">
-                {request.email ? (
-                  <CopyEmailButton email={request.email} />
-                ) : (
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Account unavailable
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <h3 className="min-w-0 break-words text-sm font-semibold text-slate-900 dark:text-white">
+              {request.studentName ?? "Unknown student"}
+            </h3>
+            {/* The OpenAI tab holds one request type; only n8n mixes two. */}
+            {request.variant === "n8n" && <span className={chipClass}>{request.typeLabel}</span>}
+            {request.createdByEmail && (
               <span
-                className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${STATUS_TONES[request.statusTone]}`}
+                className={`${chipClass} text-slate-500 dark:text-slate-400`}
+                title={`Created by ${request.createdByEmail}`}
               >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${STATUS_DOTS[request.statusTone]}`}
-                  aria-hidden
-                />
-                {request.statusLabel}
+                Admin created
               </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                {request.dateLabel}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-1.5 flex min-w-0 flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 text-slate-500 dark:text-slate-400">
-              {request.batchLabel ? (
-                <span className="font-medium text-slate-600 dark:text-slate-300">
-                  {request.batchLabel}
-                </span>
-              ) : (
-                <span className="font-medium text-amber-700 dark:text-amber-400">
-                  Not enrolled in the AI Agent course
-                </span>
-              )}
-              <span aria-hidden>·</span>
-              <span>{request.enrollmentLabel}</span>
-              <span aria-hidden>·</span>
-              <span>{request.firstRequestedLabel}</span>
-              <span aria-hidden>·</span>
-              <span>{request.historyLabel}</span>
-              <span aria-hidden>·</span>
-              <span className="font-medium text-slate-600 dark:text-slate-300">
-                {request.entitlementLabel}
-              </span>
-            </div>
-
-            {(canProcess || canReject) && !rejectMode && (
-              <div
-                className={`flex min-w-0 flex-wrap items-start justify-end gap-1.5 ${request.variant === "n8n" ? "lg:w-auto lg:max-w-[560px] lg:flex-nowrap" : ""}`}
-              >
-                {canProcess &&
-                  (request.variant === "openai" ? (
-                    <OpenAiConfirmForm
-                      requestId={request.id}
-                      csrfToken={csrfToken}
-                      requiresReauth={requiresReauth}
-                    />
-                  ) : (
-                    <N8nSendForm
-                      requestId={request.id}
-                      csrfToken={csrfToken}
-                      requiresReauth={requiresReauth}
-                    />
-                  ))}
-                {canReject && (
-                  <button
-                    ref={rejectButtonRef}
-                    aria-controls={`reject-panel-${request.id}`}
-                    aria-expanded={false}
-                    className="inline-flex shrink-0 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30 max-[420px]:w-full dark:border-rose-900 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/30"
-                    onClick={() => setRejectOpen(true)}
-                    type="button"
-                  >
-                    Reject
-                  </button>
-                )}
-              </div>
-            )}
-            {request.rejectionNotificationFailed && (
-              <RetryRejectionEmailForm
-                requestId={request.id}
-                csrfToken={csrfToken}
-                requiresReauth={requiresReauth}
-              />
             )}
           </div>
-
-          {rejectMode && (
-            <section
-              aria-label="Reject access request"
-              className="mt-1.5 w-full min-w-0"
-              id={`reject-panel-${request.id}`}
-            >
-              <RejectAccessRequestForm
-                requestId={request.id}
-                csrfToken={csrfToken}
-                onDecisionSaved={onDecisionSaved}
-                onCancel={closeReject}
-              />
-            </section>
-          )}
+          <div className="mt-0.5 min-w-0">
+            {request.email ? (
+              <CopyEmailButton email={request.email} />
+            ) : (
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Account unavailable
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Status */}
+      <div className="col-start-2 row-start-1 flex flex-col items-end gap-1 xl:col-start-4 xl:items-start">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${STATUS_TONES[request.statusTone]}`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${STATUS_DOTS[request.statusTone]}`}
+            aria-hidden
+          />
+          {request.statusLabel}
+        </span>
+        <span className="text-[11px] tabular-nums text-slate-500 dark:text-slate-400">
+          {request.dateLabel}
+        </span>
+      </div>
+
+      {/* Facts: their own two-column grid when stacked, plain cells on xl. */}
+      <div className="col-span-2 row-start-2 grid grid-cols-2 gap-x-4 sm:pl-[46px] xl:contents">
+        <div className="min-w-0 text-xs leading-5 xl:col-start-2 xl:row-start-1">
+          <p className={cellLabelClass}>Enrollment</p>
+          {request.batchLabel ? (
+            <p className="font-medium text-slate-700 dark:text-slate-200">{request.batchLabel}</p>
+          ) : (
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              Not enrolled in the AI Agent course
+            </p>
+          )}
+          <p className="text-slate-500 dark:text-slate-400">{request.enrollmentLabel}</p>
+        </div>
+
+        <div className="min-w-0 text-xs leading-5 xl:col-start-3 xl:row-start-1">
+          <p className={cellLabelClass}>Access</p>
+          <p className="font-medium text-slate-700 dark:text-slate-200">
+            {request.entitlementLabel}
+          </p>
+          <p className="text-slate-500 dark:text-slate-400">{request.historyLabel}</p>
+          <p className="text-slate-400 dark:text-slate-500">{request.firstRequestedLabel}</p>
+        </div>
+      </div>
+
+      {/* Action */}
+      {hasAction && (
+        <div className="col-span-2 row-start-3 flex min-w-0 flex-col gap-1.5 sm:pl-[46px] xl:col-span-1 xl:col-start-5 xl:row-start-1 xl:items-end xl:pl-0">
+          {showControls && (
+            <div className="flex w-full min-w-0 max-w-[560px] flex-nowrap items-start gap-1.5 max-[420px]:flex-wrap xl:justify-end">
+              {canProcess &&
+                (request.variant === "openai" ? (
+                  <OpenAiConfirmForm
+                    requestId={request.id}
+                    csrfToken={csrfToken}
+                    requiresReauth={requiresReauth}
+                  />
+                ) : (
+                  <N8nSendForm
+                    requestId={request.id}
+                    csrfToken={csrfToken}
+                    requiresReauth={requiresReauth}
+                  />
+                ))}
+              {canReject && (
+                <button
+                  ref={rejectButtonRef}
+                  aria-controls={`reject-panel-${request.id}`}
+                  aria-expanded={false}
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg border border-rose-300 bg-white px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-400 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30 max-[420px]:w-full dark:border-rose-900 dark:bg-slate-900 dark:text-rose-300 dark:hover:bg-rose-950/30"
+                  onClick={() => setRejectOpen(true)}
+                  type="button"
+                >
+                  Reject
+                </button>
+              )}
+            </div>
+          )}
+          {request.rejectionNotificationFailed && (
+            <RetryRejectionEmailForm
+              requestId={request.id}
+              csrfToken={csrfToken}
+              requiresReauth={requiresReauth}
+            />
+          )}
+        </div>
+      )}
+
+      {rejectMode && (
+        <section
+          aria-label="Reject access request"
+          className="col-span-2 min-w-0 sm:pl-[46px] xl:col-span-5 xl:pl-0"
+          id={`reject-panel-${request.id}`}
+        >
+          <RejectAccessRequestForm
+            requestId={request.id}
+            csrfToken={csrfToken}
+            onDecisionSaved={onDecisionSaved}
+            onCancel={closeReject}
+          />
+        </section>
+      )}
     </li>
   );
 }

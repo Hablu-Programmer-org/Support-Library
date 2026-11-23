@@ -101,17 +101,21 @@ test.describe("access request administration", () => {
     await expect(adminPage.getByRole("region", { name: "OpenAI API access" })).toBeVisible();
 
     // While the streamed page settles, React briefly keeps a hidden copy of the
-    // segment, so this heading can exist twice. Wait for the single live one
-    // before opening its <details>: toggling a copy that is about to be swapped
-    // out would leave the form closed.
-    const createHeading = adminPage.getByText("Create requests manually", { exact: true });
-    await expect(createHeading).toHaveCount(1);
-    await adminPage.getByRole("heading", { name: "Create requests manually" }).click();
-    await adminPage.getByLabel("Student email", { exact: true }).fill("e2e.lms.student@test.com");
-    await adminPage.getByRole("checkbox", { name: "n8n access" }).check();
-    await adminPage.getByRole("checkbox", { name: "OpenAI API access" }).check();
-    await adminPage.getByRole("button", { name: "Create requests" }).click();
-    await expect(adminPage.getByRole("status")).toContainText("2 requests created");
+    // segment, so the trigger can exist twice. Wait for the single live one
+    // before opening the slide-over.
+    const createButton = adminPage.getByRole("button", { name: "Create request", exact: true });
+    await expect(createButton).toHaveCount(1);
+    await createButton.click();
+    const createPanel = adminPage.getByRole("dialog", { name: "Create requests manually" });
+    await expect(createPanel).toBeVisible();
+    await createPanel.getByLabel("Student email", { exact: true }).fill("e2e.lms.student@test.com");
+    await createPanel.getByRole("checkbox", { name: "n8n access" }).check();
+    await createPanel.getByRole("checkbox", { name: "OpenAI API access" }).check();
+    await createPanel.getByRole("button", { name: "Create requests" }).click();
+    await expect(createPanel.getByRole("status")).toContainText("2 requests created");
+    // Escape closes the panel and returns the queue to interaction.
+    await adminPage.keyboard.press("Escape");
+    await expect(createPanel).toBeHidden();
 
     // The OpenAI tab is open by default and shows only its own request.
     const openAiQueue = adminPage.getByRole("region", { name: "OpenAI API access" });

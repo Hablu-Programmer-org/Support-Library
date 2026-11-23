@@ -58,3 +58,13 @@ export const chipClass =
 export const focusRingClass = focusRing;
 
 export const mutedTextClass = "text-slate-500 dark:text-slate-400";
+
+/**
+ * Access-request queue column tracks, shared by the header row and every request row, so the
+ * header can never drift from the cells below it. Below `xl` the row stacks:
+ * student + status, then the facts, then the action.
+ *
+ * Lives here (not in the client row file) so the server page can read the string.
+ */
+export const accessTableColumnsClass =
+  "xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(490px,1.6fr)]";

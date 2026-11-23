@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { AutoRefresh } from "@/components/shared/auto-refresh";
+import { EmptyState } from "@/components/shared/empty-state";
 import { AccessRequestRow } from "@/components/tool-access/access-request-row";
 import { AccessRequestToolbar } from "@/components/tool-access/access-request-toolbar";
-import { AdminCreateAccessRequestForm } from "@/components/tool-access/admin-create-access-request-form";
+import { CreateAccessRequestPanel } from "@/components/tool-access/create-access-request-panel";
 import {
   accessQueueStatuses,
   buildAccessRequestHref,
@@ -24,6 +25,7 @@ import {
   listN8nRequestQueue,
 } from "@/lib/services/n8n-requests";
 import { requestEntitlementAllowsProcessing } from "@/lib/tool-access-policy";
+import { accessTableColumnsClass, secondaryButtonClass } from "@/lib/ui";
 import { getAccessRequestActivitySnapshot } from "@/lib/services/access-request-activity";
 import type { N8nRequestType } from "@/models";
 
@@ -73,9 +75,10 @@ function emptyMessage(state: AccessRequestListState) {
     : `No pending ${name} requests${batch}.`;
 }
 
-function QueuePagination({
+function QueueFooter({
   state,
   page,
+  total,
   totalPages,
 }: {
   state: AccessRequestListState;
@@ -83,31 +86,30 @@ function QueuePagination({
   total: number;
   totalPages: number;
 }) {
-  if (totalPages <= 1) return null;
+  if (total === 0) return null;
+  const pagerClass = `${secondaryButtonClass} px-3 py-1.5 text-xs`;
 
   return (
-    <div className="flex items-center justify-between px-1 text-xs text-slate-500 dark:text-slate-400">
-      <span>
-        Page {page} of {totalPages}
+    <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-slate-500 dark:text-slate-400">
+      <span className="tabular-nums">
+        {total} {total === 1 ? "request" : "requests"}
+        {state.showSent ? "" : " pending"}
+        {totalPages > 1 && ` · Page ${page} of ${totalPages}`}
       </span>
-      <div className="flex gap-2">
-        {page > 1 && (
-          <Link
-            className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
-            href={buildAccessRequestHref(state, { page: page - 1 })}
-          >
-            Previous
-          </Link>
-        )}
-        {page < totalPages && (
-          <Link
-            className="rounded-lg border border-slate-300 px-2.5 py-1.5 font-medium transition hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500"
-            href={buildAccessRequestHref(state, { page: page + 1 })}
-          >
-            Next
-          </Link>
-        )}
-      </div>
+      {totalPages > 1 && (
+        <div className="flex gap-2">
+          {page > 1 && (
+            <Link className={pagerClass} href={buildAccessRequestHref(state, { page: page - 1 })}>
+              Previous
+            </Link>
+          )}
+          {page < totalPages && (
+            <Link className={pagerClass} href={buildAccessRequestHref(state, { page: page + 1 })}>
+              Next
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -148,26 +150,26 @@ export default async function AccessRequestsPage({
   return (
     <div className="space-y-4">
       <PageHeader
-        description="AI Agent course students only. Copy the email, then confirm OpenAI access or send the n8n link. API keys are never accepted, stored or emailed."
+        action={
+          <>
+            <AutoRefresh
+              endpoint="/api/access-requests/activity"
+              initialRevision={activity.revision}
+              intervalMs={10_000}
+              enabled={activity.count > 0}
+              idleLabel={activity.count > 0 ? `${activity.count} email queued` : "Queue up to date"}
+              status="dot"
+            />
+            <CreateAccessRequestPanel csrfToken={csrfToken} requiresReauth={!isRecent} />
+          </>
+        }
         eyebrow="Admin"
         title="Access requests"
       />
 
-      <div className="flex justify-end">
-        <AutoRefresh
-          endpoint="/api/access-requests/activity"
-          initialRevision={activity.revision}
-          intervalMs={10_000}
-          enabled={activity.count > 0}
-          idleLabel={activity.count > 0 ? `${activity.count} email queued` : "Queue up to date"}
-        />
-      </div>
-
-      <AdminCreateAccessRequestForm csrfToken={csrfToken} requiresReauth={!isRecent} />
-
       {/* Filters stay reachable while the queue scrolls (desktop only: on a
           phone the bar would cover too much of the list). */}
-      <div className="border-y border-slate-200 py-3 sm:sticky sm:top-16 sm:z-20 sm:bg-white/95 sm:backdrop-blur-sm dark:border-slate-800 sm:dark:bg-slate-950/95">
+      <div className="py-2 sm:sticky sm:top-16 sm:z-20 sm:bg-white/95 sm:backdrop-blur-sm sm:dark:bg-slate-950/95">
         <AccessRequestToolbar
           batches={batchNumbers}
           counts={{ openai: openAiPending, n8n: n8nPending }}
@@ -175,95 +177,94 @@ export default async function AccessRequestsPage({
         />
       </div>
 
-      <section aria-label={TAB_TITLES[state.tab]} className="space-y-2">
-        <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-            {TAB_TITLES[state.tab]}
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {requests.total} {requests.total === 1 ? "request" : "requests"}
-            {state.showSent ? "" : " pending"}
-          </p>
-        </div>
-
+      <section aria-label={TAB_TITLES[state.tab]} className="space-y-3">
+        <h2 className="sr-only">{TAB_TITLES[state.tab]}</h2>
         {requests.items.length === 0 ? (
-          <div className="border-y border-slate-200 px-4 py-7 text-center dark:border-slate-800">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              {emptyMessage(state)}
-            </p>
-          </div>
+          <EmptyState>{emptyMessage(state)}</EmptyState>
         ) : (
-          <ul className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-            {requests.items.map((request) => {
-              const status = STATUS_META[request.status];
-              const dateLabel =
-                request.status === "SENT" && request.sentAt
-                  ? `Sent ${formatSupportDate(request.sentAt)}`
-                  : formatSupportDate(request.createdAt);
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+            <div
+              aria-hidden
+              className={`hidden gap-x-4 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 xl:grid dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 ${accessTableColumnsClass}`}
+            >
+              <span>Student</span>
+              <span>Enrollment</span>
+              <span>Access</span>
+              <span>Status</span>
+              <span className="text-right">Action</span>
+            </div>
+            <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+              {requests.items.map((request) => {
+                const status = STATUS_META[request.status];
+                const dateLabel =
+                  request.status === "SENT" && request.sentAt
+                    ? `Sent ${formatSupportDate(request.sentAt)}`
+                    : formatSupportDate(request.createdAt);
 
-              return (
-                <AccessRequestRow
-                  key={request.id}
-                  csrfToken={csrfToken}
-                  requiresReauth={!isRecent}
-                  request={{
-                    id: request.id,
-                    typeLabel: TYPE_LABELS[request.requestType],
-                    statusLabel: status.label,
-                    statusTone: status.tone,
-                    dateLabel,
-                    studentName: request.student?.name ?? null,
-                    studentImage: request.student?.image ?? null,
-                    email: request.student?.email ?? null,
-                    batchLabel:
-                      request.batchNo && request.agentEligible
-                        ? `Batch ${request.batchNo}`
-                        : request.batchNo
-                          ? `Requested Batch ${request.batchNo}`
-                          : request.agentEligible
-                            ? "Batch unavailable"
-                            : null,
-                    historyLabel: accessHistoryLabel(
-                      request.requestType,
-                      request.accessHistory.count,
-                      request.accessHistory.lastSentAt,
-                    ),
-                    createdByEmail: request.createdBy?.email ?? null,
-                    variant,
-                    canApprove: request.agentEligible &&
-                      (request.status === "PENDING" || request.status === "FAILED") &&
-                      requestEntitlementAllowsProcessing(
+                return (
+                  <AccessRequestRow
+                    key={request.id}
+                    csrfToken={csrfToken}
+                    requiresReauth={!isRecent}
+                    request={{
+                      id: request.id,
+                      typeLabel: TYPE_LABELS[request.requestType],
+                      statusLabel: status.label,
+                      statusTone: status.tone,
+                      dateLabel,
+                      studentName: request.student?.name ?? null,
+                      studentImage: request.student?.image ?? null,
+                      email: request.student?.email ?? null,
+                      batchLabel:
+                        request.batchNo && request.agentEligible
+                          ? `Batch ${request.batchNo}`
+                          : request.batchNo
+                            ? `Requested Batch ${request.batchNo}`
+                            : request.agentEligible
+                              ? "Batch unavailable"
+                              : null,
+                      historyLabel: accessHistoryLabel(
                         request.requestType,
-                        request.entitlement?.state ?? null,
+                        request.accessHistory.count,
+                        request.accessHistory.lastSentAt,
                       ),
-                    canReject: request.status === "PENDING" || request.status === "FAILED",
-                    rejectionNotificationFailed:
-                      request.status === "REJECTED" && request.rejectionEmailStatus === "FAILED",
-                    firstRequestedLabel: `Requested ${formatSupportShortDate(request.accessHistory.firstRequestedAt) ?? "unknown"}`,
-                    enrollmentLabel: request.currentBatchNo && request.currentBatchNo !== request.batchNo
-                      ? `Now Batch ${request.currentBatchNo}`
-                      : request.agentEligible
-                        ? "Enrollment active"
-                        : request.batchNo
-                          ? "Enrollment inactive"
-                          : "No enrollment",
-                    entitlementLabel: request.entitlement
-                      ? request.entitlement.state === "ACTIVE"
-                        ? `Access until ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
-                        : request.entitlement.state === "EXPIRED"
-                          ? `Expired ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
-                          : "Access revoked"
-                      : request.status === "REJECTED"
-                        ? "Not granted"
-                        : "No prior access",
-                  }}
-                />
-              );
-            })}
-          </ul>
+                      createdByEmail: request.createdBy?.email ?? null,
+                      variant,
+                      canApprove: request.agentEligible &&
+                        (request.status === "PENDING" || request.status === "FAILED") &&
+                        requestEntitlementAllowsProcessing(
+                          request.requestType,
+                          request.entitlement?.state ?? null,
+                        ),
+                      canReject: request.status === "PENDING" || request.status === "FAILED",
+                      rejectionNotificationFailed:
+                        request.status === "REJECTED" && request.rejectionEmailStatus === "FAILED",
+                      firstRequestedLabel: `Requested ${formatSupportShortDate(request.accessHistory.firstRequestedAt) ?? "unknown"}`,
+                      enrollmentLabel: request.currentBatchNo && request.currentBatchNo !== request.batchNo
+                        ? `Now Batch ${request.currentBatchNo}`
+                        : request.agentEligible
+                          ? "Enrollment active"
+                          : request.batchNo
+                            ? "Enrollment inactive"
+                            : "No enrollment",
+                      entitlementLabel: request.entitlement
+                        ? request.entitlement.state === "ACTIVE"
+                          ? `Access until ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
+                          : request.entitlement.state === "EXPIRED"
+                            ? `Expired ${formatSupportShortDate(request.entitlement.expiresAt) ?? "unknown"}`
+                            : "Access revoked"
+                        : request.status === "REJECTED"
+                          ? "Not granted"
+                          : "No prior access",
+                    }}
+                  />
+                );
+              })}
+            </ul>
+          </div>
         )}
 
-        <QueuePagination
+        <QueueFooter
           page={requests.page}
           state={state}
           total={requests.total}
