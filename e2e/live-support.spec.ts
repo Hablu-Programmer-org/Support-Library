@@ -10,6 +10,7 @@ import {
 } from "../models";
 import { chooseStudentCourse, fillIssueDetails, formFor, submitAndWait } from "./form-helpers";
 import { STAFF_USERS } from "./fixtures/staff-users";
+import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
 
 /**
  * Live support is reached from a request, and only from a request.
@@ -54,6 +55,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
 
   test.beforeAll(async () => {
     await resetStudentRequests();
+    await resetStudentCreateBudget();
   });
 
   test("submitting lands on the request with its live support panel", async ({ page }) => {

@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
+
 import { chooseStudentCourse, fillIssueDetails, formFor, issueDetailsEditor, submitAndWait } from "./form-helpers";
 
 /**
@@ -11,6 +13,7 @@ import { chooseStudentCourse, fillIssueDetails, formFor, issueDetailsEditor, sub
  */
 test.describe("STUDENT issue submission", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
+  test.beforeEach(resetStudentCreateBudget);
 
   test("submits a request that staff can pick up", async ({ page, browser }) => {
     const pageErrors: Error[] = [];

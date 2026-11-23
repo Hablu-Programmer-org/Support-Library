@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
+
 import { chooseStudentCourse, fillIssueDetails, formFor, submitAndWait } from "./form-helpers";
 import { TINY_PNG, tinyPngFile } from "./image-fixture";
 
@@ -11,6 +13,7 @@ import { TINY_PNG, tinyPngFile } from "./image-fixture";
  */
 test.describe("uploaded attachments", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
+  test.beforeEach(resetStudentCreateBudget);
 
   test("a student can attach an image and staff can open it; strangers cannot", async ({
     page,

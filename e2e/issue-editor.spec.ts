@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 
+import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
+
 import {
   chooseStudentCourse,
   fillIssueDetails,
@@ -16,6 +18,7 @@ import { TINY_PNG } from "./image-fixture";
  */
 test.describe("Issue details editor (student)", () => {
   test.use({ storageState: "e2e/.auth/student.json" });
+  test.beforeEach(resetStudentCreateBudget);
 
   const question = (form: ReturnType<typeof formFor>) =>
     form.locator('input[type="hidden"][name="question"]');
