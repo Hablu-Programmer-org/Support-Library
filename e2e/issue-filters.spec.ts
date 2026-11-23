@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { formFor } from "./form-helpers";
+import { fillMarkdownEditor, formFor } from "./form-helpers";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
@@ -62,9 +62,7 @@ async function createIssue(
   await form.locator('input[name="studentName"]').fill("E2E Filter Student");
   await form.locator('input[name="studentEmail"]').fill(`e2e.filter.${suffix}@test.com`);
   await form.locator('input[name="title"]').fill(title);
-  await form
-    .locator('textarea[name="question"]')
-    .fill(`Detailed support context for ${title}, including the observed error and attempted fix.`);
+  await fillMarkdownEditor(form, "Issue details", "question", `Detailed support context for ${title}, including the observed error and attempted fix.`);
 
   // Course slug and batch live inside a collapsed <details>.
   await form.locator("details").filter({ hasText: "Additional Details" }).locator("summary").click();

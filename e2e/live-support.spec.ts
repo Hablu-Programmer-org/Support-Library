@@ -8,7 +8,7 @@ import {
   SupportIssueModel,
   SupportReplyModel,
 } from "../models";
-import { chooseStudentCourse, fillIssueDetails, formFor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, fillIssueDetails, fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 import { STAFF_USERS } from "./fixtures/staff-users";
 import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
 
@@ -114,9 +114,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await form.locator('input[name="studentName"]').fill("E2E Foreign Student");
     await form.locator('input[name="studentEmail"]').fill(`foreign.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("This unpublished request belongs to another student and must remain private.");
+    await fillMarkdownEditor(form, "Issue details", "question", "This unpublished request belongs to another student and must remain private.");
     await submitAndWait(adminPage, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
     const issuePath = new URL(adminPage.url()).pathname;
     await adminContext.close();

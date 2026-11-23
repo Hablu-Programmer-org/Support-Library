@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 import { tinyPngFile } from "./image-fixture";
 
 test.describe("edit-mode attachments", () => {
@@ -15,9 +15,7 @@ test.describe("edit-mode attachments", () => {
     await createForm.locator('input[name="studentName"]').fill("E2E Attachment Student");
     await createForm.locator('input[name="studentEmail"]').fill(`e2e.attach.${Date.now()}@test.com`);
     await createForm.locator('input[name="title"]').fill(title);
-    await createForm
-      .locator('textarea[name="question"]')
-      .fill("This request verifies that an existing image can be replaced safely in edit mode.");
+    await fillMarkdownEditor(createForm, "Issue details", "question", "This request verifies that an existing image can be replaced safely in edit mode.");
     await createForm.locator('input[name="solveIssue"]').uncheck();
 
     await createForm.locator('input[name="uploads"]').setInputFiles(tinyPngFile("old.png"));

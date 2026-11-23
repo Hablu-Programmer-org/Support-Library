@@ -8,7 +8,8 @@ import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
-import type { IssueEditorApi } from "@/components/issues/issue-editor";
+import { IssueEditor, type IssueEditorApi } from "@/components/issues/issue-editor";
+import { staffIssueDetailsProblem } from "@/lib/issue-content-rules";
 import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
@@ -29,8 +30,6 @@ import {
 import {
   CASE_PRIORITIES,
   CASE_STATUSES,
-  ISSUE_DETAILS_CREATE_MIN,
-  ISSUE_DETAILS_MAX,
   ISSUE_TITLE_CREATE_MAX,
   ISSUE_TITLE_MAX,
   ISSUE_TITLE_WARN_AT,
@@ -281,6 +280,8 @@ export function IssueForm({
   );
   const operationIdRef = useRef<HTMLInputElement>(null);
   const solutionEditorApi = useRef<IssueEditorApi | null>(null);
+  const questionEditorApi = useRef<IssueEditorApi | null>(null);
+  const [questionClientError, setQuestionClientError] = useState<string | null>(null);
   const [solutionBodyError, setSolutionBodyError] = useState<string | null>(null);
 
   // Sync formData with supportIssue when it changes (for edit mode)
@@ -341,13 +342,28 @@ export function IssueForm({
     if (solutionBodyError && !solutionProblem(value)) setSolutionBodyError(null);
   };
 
+  const detailsMode = supportIssue ? "edit" : "create";
+  const questionError = questionClientError ?? state.fieldErrors?.question?.[0];
+
+  const handleQuestionChange = (value: string) => {
+    updateField("question", value);
+    if (questionClientError && !staffIssueDetailsProblem(value, detailsMode)) setQuestionClientError(null);
+  };
+
+  /** Hidden inputs are never validated by the browser: check both editors. */
+  const reportEditorProblems = () => {
+    const questionProblem = staffIssueDetailsProblem(formData.question, detailsMode);
+    const answerProblem = solutionProblem(formData.solutionBody);
+    setQuestionClientError(questionProblem);
+    setSolutionBodyError(answerProblem);
+    return { questionProblem, answerProblem };
+  };
+
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    // The answer lives in a hidden input, which the browser never validates.
-    const problem = solutionProblem(formData.solutionBody);
-    if (problem) {
+    const { questionProblem, answerProblem } = reportEditorProblems();
+    if (questionProblem || answerProblem) {
       event.preventDefault();
-      setSolutionBodyError(problem);
-      solutionEditorApi.current?.focus();
+      (questionProblem ? questionEditorApi : solutionEditorApi).current?.focus();
       return;
     }
     ensureOperationId();
@@ -360,6 +376,9 @@ export function IssueForm({
       className="space-y-6"
       onKeyDown={handleKeyDown}
       onSubmit={onSubmit}
+      // A native rule (title, student email) blocks the submit before
+      // `onSubmit` runs; report the editors in the same attempt.
+      onInvalidCapture={reportEditorProblems}
     >
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
       {supportIssue && <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt ?? ""} />}
@@ -406,33 +425,33 @@ export function IssueForm({
             )}
           </FieldWrapper>
 
-          <FieldWrapper
-             label="Issue details"
+          <IssueEditor
+            id="issue-question"
+            name="question"
+            label={
+              <span className="flex items-center gap-1.5">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Issue details</span>
+                <RequiredIndicator />
+              </span>
+            }
+            value={formData.question}
+            onChange={handleQuestionChange}
             required
-            error={state.fieldErrors?.question?.[0]}
-          >
-            <ControlledTextarea
-              name="question"
-              value={formData.question}
-              onChange={handleChange("question")}
-               required
-               rows={supportIssue ? 5 : 7}
-               minLength={supportIssue ? 5 : ISSUE_DETAILS_CREATE_MIN}
-               maxLength={ISSUE_DETAILS_MAX}
-               error={state.fieldErrors?.question?.[0]}
-               placeholder={
-                 supportIssue
-                   ? "Describe the issue in detail."
-                   : "What were they trying to do?\nWhat happened or what exact error appeared?\nWhat has already been tried?"
-               }
-             />
-             {!state.fieldErrors?.question?.[0] && (
-               <IssueDetailsHint
-                 value={formData.question}
-                 requireCreateMinimum={!supportIssue}
-               />
-             )}
-           </FieldWrapper>
+            invalid={Boolean(questionError)}
+            apiRef={questionEditorApi}
+            placeholder={
+              supportIssue
+                ? "Describe the issue in detail."
+                : "What were they trying to do, what happened, and what has already been tried?"
+            }
+            footer={
+              questionError ? (
+                <ErrorMessage error={questionError} />
+              ) : (
+                <IssueDetailsHint value={formData.question} requireCreateMinimum={!supportIssue} />
+              )
+            }
+          />
 
           {!minimal && (
             <FieldWrapper

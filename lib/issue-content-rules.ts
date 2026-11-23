@@ -46,3 +46,28 @@ export function issueDetailsLength(value: string): number {
 export function isIssueDetailsTooLong(value: string): boolean {
   return issueDetailsLength(value) > ISSUE_DETAILS_MAX;
 }
+
+/** The edit contract keeps the old five-character floor (`supportIssueInputSchema`). */
+export const ISSUE_DETAILS_EDIT_MIN = 5;
+
+/**
+ * Client copy of the staff form's details rules: the create schema on a new
+ * issue, the wider edit schema on an existing one. The editor submits through
+ * a hidden input, which the browser never validates.
+ */
+export function staffIssueDetailsProblem(value: string, mode: "create" | "edit"): string | null {
+  if (!value.trim()) return "Describe the issue.";
+  if (mode === "create") {
+    const minimum = issueDetailsMinimumProblem(value);
+    if (minimum === "template-only") return TEMPLATE_ONLY_MESSAGE;
+    if (minimum === "too-short") {
+      return `Add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue.`;
+    }
+  } else if (issueDetailsLength(value) < ISSUE_DETAILS_EDIT_MIN) {
+    return `Add at least ${ISSUE_DETAILS_EDIT_MIN} characters.`;
+  }
+  if (isIssueDetailsTooLong(value)) {
+    return `Keep the details to ${ISSUE_DETAILS_MAX.toLocaleString("en-US")} characters or fewer.`;
+  }
+  return null;
+}

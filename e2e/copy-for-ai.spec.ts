@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 /**
  * "Copy for AI" is an admin-only affordance on an internal issue. It must copy
@@ -30,7 +30,7 @@ test.describe("Copy for AI prompt", () => {
     await form.locator('input[name="studentName"]').fill(studentName);
     await form.locator('input[name="studentEmail"]').fill(studentEmail);
     await form.locator('input[name="title"]').fill(title);
-    await form.locator('textarea[name="question"]').fill(question);
+    await fillMarkdownEditor(form, "Issue details", "question", question);
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
     const issuePath = new URL(page.url()).pathname;

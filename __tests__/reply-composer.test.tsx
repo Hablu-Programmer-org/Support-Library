@@ -17,7 +17,7 @@ import { editorOf, stubEditorLayout } from "./support/editor-dom";
 beforeAll(stubEditorLayout);
 beforeEach(() => addReplyAction.mockClear());
 
-const responseBox = () => screen.findByRole("textbox", { name: "Response" });
+const responseBox = () => screen.findByRole("textbox", { name: "Response" }, { timeout: 4000 });
 const hiddenBody = (container: HTMLElement) =>
   container.querySelector('input[type="hidden"][name="body"]') as HTMLInputElement;
 

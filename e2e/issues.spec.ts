@@ -20,9 +20,7 @@ test.describe("Issue CRUD (mentor)", () => {
       await form.locator('input[name="studentName"]').fill("E2E Answer Student");
       await form.locator('input[name="studentEmail"]').fill(`e2e.answer.${Date.now()}@test.com`);
       await form.locator('input[name="title"]').fill(`E2E ${scenario.label}`);
-      await form
-        .locator('textarea[name="question"]')
-        .fill("How do I fix the broken image path after deploying the React application?");
+      await fillMarkdownEditor(form, "Issue details", "question", "How do I fix the broken image path after deploying the React application?");
       await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
       await expect(form.locator('textarea[name="solutionFileLinks"]')).toHaveCount(0);
       await fillMarkdownEditor(form, "Answer", "solutionBody", scenario.body);
@@ -48,9 +46,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Ref Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.ref.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("Find this request by its six-digit reference from the staff issue search.");
+    await fillMarkdownEditor(form, "Issue details", "question", "Find this request by its six-digit reference from the staff issue search.");
     await submitCreate(page);
 
     const reference = (
@@ -71,9 +67,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Auto Search Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.auto.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("Typing part of this issue title should find the request without pressing Enter.");
+    await fillMarkdownEditor(form, "Issue details", "question", "Typing part of this issue title should find the request without pressing Enter.");
     await submitCreate(page);
 
     await page.goto("/dashboard/issues");
@@ -91,9 +85,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Test Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.student.${Date.now().toString()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E React image not rendering");
-    await form
-      .locator('textarea[name="question"]')
-      .fill("Image show hocche na in React component after I changed the public asset path.");
+    await fillMarkdownEditor(form, "Issue details", "question", "Image show hocche na in React component after I changed the public asset path.");
     await expect(form.locator('select[name="status"]')).toHaveCount(0);
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
@@ -150,9 +142,7 @@ test.describe("Issue CRUD (mentor)", () => {
       .toBe("E2E LMS Student");
 
     await form.locator('input[name="title"]').fill("E2E LMS autofill submission");
-    await form
-      .locator('textarea[name="question"]')
-      .fill("Does the disabled LMS student-name field submit the matched account correctly?");
+    await fillMarkdownEditor(form, "Issue details", "question", "Does the disabled LMS student-name field submit the matched account correctly?");
     await submitCreate(page);
     await expect(page.getByText("E2E LMS autofill submission")).toBeVisible();
   });
@@ -163,7 +153,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentEmail"]').fill("e2e.lms.student@test.com");
     await expect(page.getByText("Found in LMS")).toBeVisible();
     await form.locator('input[name="title"]').fill("E2E mismatched LMS identity");
-    await form.locator('textarea[name="question"]').fill("The server must reject a mismatched LMS identity.");
+    await fillMarkdownEditor(form, "Issue details", "question", "The server must reject a mismatched LMS identity.");
     // The visible fields above are React-controlled, so any re-render would reset a
     // plain DOM value assignment. Tamper with the hidden input and submit in the same
     // synchronous task so the submitted FormData carries the tampered value.
@@ -182,7 +172,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Stale Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.stale.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E stale issue update");
-    await form.locator('textarea[name="question"]').fill("A stale revision must not overwrite newer data.");
+    await fillMarkdownEditor(form, "Issue details", "question", "A stale revision must not overwrite newer data.");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
     await page.getByRole("link", { name: "Edit issue details" }).click();
@@ -220,9 +210,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Mobile Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.mobile.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E mobile issue article");
-    await form.locator('textarea[name="question"]').fill(
-      "A long support question should remain readable without creating horizontal scrolling on a phone.",
-    );
+    await fillMarkdownEditor(form, "Issue details", "question", "A long support question should remain readable without creating horizontal scrolling on a phone.",);
     await form.locator('input[name="solveIssue"]').uncheck();
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -254,7 +242,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Edit Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.edit.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E editable issue");
-    await form.locator('textarea[name="question"]').fill("This issue is going to be edited successfully.");
+    await fillMarkdownEditor(form, "Issue details", "question", "This issue is going to be edited successfully.");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
 
@@ -272,7 +260,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Guard Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.guard.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E archive guard issue");
-    await form.locator('textarea[name="question"]').fill("Editing must not be able to archive this issue.");
+    await fillMarkdownEditor(form, "Issue details", "question", "Editing must not be able to archive this issue.");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
 
@@ -318,9 +306,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create Issue");
     await form.locator('input[name="title"]').fill("E2E general issue without student");
-    await form
-      .locator('textarea[name="question"]')
-      .fill("A general problem that does not identify any learner.");
+    await fillMarkdownEditor(form, "Issue details", "question", "A general problem that does not identify any learner.");
     await form.locator('input[name="solveIssue"]').uncheck();
 
     // Student Identity is optional: submitting with both fields empty must succeed
@@ -339,9 +325,7 @@ test.describe("Issue CRUD (mentor)", () => {
     await form.locator('input[name="studentName"]').fill("E2E Archive Student");
     await form.locator('input[name="studentEmail"]').fill(`e2e.archive.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill("E2E issue to archive");
-    await form
-      .locator('textarea[name="question"]')
-      .fill("This issue should be archived safely and removed from the active staff queue.");
+    await fillMarkdownEditor(form, "Issue details", "question", "This issue should be archived safely and removed from the active staff queue.");
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
 
