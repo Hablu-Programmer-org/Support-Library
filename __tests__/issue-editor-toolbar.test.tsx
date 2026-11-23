@@ -47,6 +47,16 @@ describe("IssueEditorToolbar structure", () => {
     expect(toolbar().getAttribute("aria-controls")).toBe("q");
   });
 
+  it("is usable before the editor was ever focused (first click on Bold works)", async () => {
+    await setup();
+    // No focus, no transaction yet: the state must already reflect the mounted view.
+    expect(tool("Bold").getAttribute("aria-disabled")).toBeNull();
+    expect(tool("Bulleted list").getAttribute("aria-disabled")).toBeNull();
+
+    fireEvent.click(tool("Bulleted list"));
+    expect(markdown()).toBe("-");
+  });
+
   it("moves focus with arrow keys, Home and End (roving tabindex)", async () => {
     await setup();
     const buttons = within(toolbar()).getAllByRole("button");

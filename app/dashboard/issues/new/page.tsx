@@ -2,7 +2,6 @@ import {
   ArrowLeftIcon,
   SparklesIcon,
 } from "@/components/icons";
-import { BeforeSubmitGuide } from "@/components/issues/before-submit-guide";
 import { IssueForm } from "@/components/issues/issue-form";
 import { StudentIssueForm } from "@/components/issues/student-issue-form";
 import { QuickTips } from "@/components/issues/quick-tips";
@@ -39,14 +38,9 @@ export default async function NewIssuePage() {
           </h1>
         </header>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
-          <div className="order-2 min-w-0 lg:order-1">
-            <StudentIssueForm courses={courses} csrfToken={csrfToken} />
-          </div>
-          <div className="order-1 min-w-0 lg:order-2">
-            <BeforeSubmitGuide />
-          </div>
-        </div>
+        {/* The form lays out its own two columns: the live checklist beside it
+            reads the form's state. */}
+        <StudentIssueForm courses={courses} csrfToken={csrfToken} />
       </div>
     );
   }

@@ -59,7 +59,9 @@ describe("StudentIssueForm layout", () => {
   it("groups the form into titled sections", () => {
     renderForm();
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Describe your issue", "Screenshots", "Course context"]);
+    // Screenshots now sit under the editor inside "Describe your issue"; the
+    // checklist beside the form has its own heading.
+    expect(headings).toEqual(["Describe your issue", "Course context", "Before you submit"]);
   });
 
   it("keeps optional details closed by default", () => {
@@ -69,9 +71,10 @@ describe("StudentIssueForm layout", () => {
     expect(optional?.querySelector('[name="tags"]')).not.toBeNull();
   });
 
-  it("does not repeat the 'After creating it' line under the form", () => {
-    renderForm();
-    expect(screen.queryByText(/After creating it/)).toBeNull();
+  it("keeps the 'After creating it' line in the checklist, never in the form", () => {
+    const { container } = renderForm();
+    expect(container.querySelector("form")?.textContent).not.toMatch(/After creating it/);
+    expect(container.querySelector("aside")?.textContent).toMatch(/After creating it/);
   });
 
   it("falls back to a notice when the student has no course", () => {

@@ -205,6 +205,8 @@ export function AttachmentField({
   existingCount = 0,
   description = `Images only: PNG, JPEG, GIF or WebP. Add up to ${maxFiles} images, 5 MB each.`,
   accept = ACCEPTED_IMAGE_ACCEPT,
+  onCountChange,
+  labelClassName = nativeLabelClass,
 }: {
   name?: string;
   label?: string;
@@ -214,6 +216,10 @@ export function AttachmentField({
   existingCount?: number;
   description?: string;
   accept?: string;
+  /** Number of selected (not yet uploaded) images, after every change. */
+  onCountChange?: (count: number) => void;
+  /** To match the other labels of the form it sits in. */
+  labelClassName?: string;
 }) {
   const [previews, setPreviews] = useState<{ file: File; url: string }[]>([]);
   const [note, setNote] = useState<string | null>(null);
@@ -222,6 +228,10 @@ export function AttachmentField({
   const containerRef = useRef<HTMLDivElement>(null);
   const urlsRef = useRef(new Map<string, string>());
   const filesRef = useRef<File[]>([]);
+  const onCountChangeRef = useRef(onCountChange);
+  useEffect(() => {
+    onCountChangeRef.current = onCountChange;
+  }, [onCountChange]);
   const inputId = useId();
   const descriptionId = `${inputId}-description`;
 
@@ -259,6 +269,7 @@ export function AttachmentField({
 
     filesRef.current = next;
     setPreviews(nextPreviews);
+    onCountChangeRef.current?.(next.length);
   }, []);
 
   const addFiles = useCallback(
@@ -340,7 +351,7 @@ export function AttachmentField({
 
   return (
     <div ref={containerRef} data-attachment-drop="" className="space-y-3">
-      <label htmlFor={inputId} className={nativeLabelClass}>
+      <label htmlFor={inputId} className={labelClassName}>
         {label}
       </label>
       {/* The real input stays in the form (name, multiple, accept) but is visually

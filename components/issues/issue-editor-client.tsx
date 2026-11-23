@@ -85,6 +85,11 @@ export default function IssueEditorClient({
   });
 
   const [linkOpen, setLinkOpen] = useState(false);
+  // Bumped when Tiptap attaches its view. The toolbar reads command
+  // availability on its first render, before the view exists (every command
+  // reports "unavailable" then) and only re-reads on a transaction, so without
+  // this every button but Link looked disabled until the first click or key.
+  const [viewMounts, setViewMounts] = useState(0);
   // The last smart paste while it can still be undone; the extension clears it
   // on the next edit.
   const [codePaste, setCodePaste] = useState<CodePaste | null>(null);
@@ -132,6 +137,7 @@ export default function IssueEditorClient({
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
     editorProps: { attributes: attributes(invalid) },
+    onMount: () => setViewMounts((count) => count + 1),
     onUpdate: ({ editor: current }) => {
       setAttachNotice(null);
       onChangeRef.current(getIssueMarkdown(current));
@@ -193,6 +199,7 @@ export default function IssueEditorClient({
     <>
       {editor ? (
         <IssueEditorToolbar
+          key={viewMounts}
           editor={editor}
           editorId={id}
           linkOpen={linkOpen}
