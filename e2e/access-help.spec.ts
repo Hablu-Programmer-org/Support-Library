@@ -100,7 +100,13 @@ test.describe("access request administration", () => {
     await expect(adminPage.getByRole("checkbox", { name: "Show completed" })).not.toBeChecked();
     await expect(adminPage.getByRole("region", { name: "OpenAI API access" })).toBeVisible();
 
-    await adminPage.getByText("Create requests manually", { exact: true }).click();
+    // While the streamed page settles, React briefly keeps a hidden copy of the
+    // segment, so this heading can exist twice. Wait for the single live one
+    // before opening its <details>: toggling a copy that is about to be swapped
+    // out would leave the form closed.
+    const createHeading = adminPage.getByText("Create requests manually", { exact: true });
+    await expect(createHeading).toHaveCount(1);
+    await adminPage.getByRole("heading", { name: "Create requests manually" }).click();
     await adminPage.getByLabel("Student email", { exact: true }).fill("e2e.lms.student@test.com");
     await adminPage.getByRole("checkbox", { name: "n8n access" }).check();
     await adminPage.getByRole("checkbox", { name: "OpenAI API access" }).check();
