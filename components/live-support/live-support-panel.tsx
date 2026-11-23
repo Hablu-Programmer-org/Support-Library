@@ -2,16 +2,16 @@
 
 import { joinLiveSupportAction } from "@/actions/live-support";
 import { VideoIcon } from "@/components/icons";
-import { CopyValue } from "@/components/shared/copy-value";
-import { ExternalActionForm } from "@/components/shared/external-action-form";
-import { cn } from "@/lib/cn";
 import {
-  LIVE_SUPPORT_CTA,
-  meetingCodeLabel,
-  shiftRangeLabel,
-  type SupportPhase,
-  type SupportShift,
-} from "@/lib/config/live-support";
+  LiveStatusPill,
+  RoomDetails,
+  ShiftSchedule,
+  liveSupportCardClass,
+  liveSupportErrorClass,
+  liveSupportJoinClass,
+} from "@/components/live-support/live-support-parts";
+import { ExternalActionForm } from "@/components/shared/external-action-form";
+import { LIVE_SUPPORT_CTA, type SupportPhase } from "@/lib/config/live-support";
 import { LIVE_SUPPORT_ELIGIBLE_STATUSES, type CaseStatus } from "@/lib/constants";
 
 type LiveSupportPanelProps = {
@@ -36,51 +36,6 @@ type LiveSupportPanelProps = {
   csrfToken: string;
 };
 
-const SHIFTS: Array<{ id: SupportShift; label: string }> = [
-  { id: "morning", label: "Morning" },
-  { id: "night", label: "Night" },
-];
-
-const joinClass = cn(
-  "inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition",
-  "bg-primary text-white hover:bg-primary-600",
-  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
-  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200",
-  "dark:disabled:bg-slate-800 dark:disabled:text-slate-400",
-);
-
-const errorClass = "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300";
-
-function StatusPill({ open }: { open: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-        open
-          ? "bg-success-500/15 text-success-700 dark:text-success-300"
-          : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn("size-1.5 rounded-full", open ? "bg-success-500" : "bg-slate-400")}
-      />
-      {open ? "Open now" : "Closed"}
-    </span>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
-      <dt className="text-sm text-slate-500 dark:text-slate-400">{label}</dt>
-      <dd className="text-sm font-semibold text-slate-900 dark:text-white">
-        <CopyValue label={label.toLowerCase()} value={value} />
-      </dd>
-    </div>
-  );
-}
-
 /**
  * "Take this request to the room" panel, rendered on the student's own request.
  *
@@ -104,14 +59,9 @@ export function LiveSupportPanel({
   const isOpen = shift !== "off";
   const isEligible = (LIVE_SUPPORT_ELIGIBLE_STATUSES as readonly string[]).includes(status);
   const canJoin = isEligible && configured;
-  const showRoomDetails = canJoin && isOpen && Boolean(meetingId || passcode);
 
   return (
-    <section
-      aria-labelledby="live-support-panel-heading"
-      // Same card as the rest of the request sidebar it sits in.
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70"
-    >
+    <section aria-labelledby="live-support-panel-heading" className={liveSupportCardClass}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
@@ -124,7 +74,7 @@ export function LiveSupportPanel({
             Live support
           </h2>
         </div>
-        <StatusPill open={isOpen} />
+        <LiveStatusPill open={isOpen} />
       </div>
 
       <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -133,45 +83,9 @@ export function LiveSupportPanel({
           : "This issue is closed, so it can no longer be taken to the room. Submit a new issue if the problem comes back."}
       </p>
 
-      <ul aria-label="Daily support hours" className="mt-4 space-y-2">
-        {SHIFTS.map(({ id, label }) => {
-          const current = shift === id;
-          return (
-            <li
-              key={id}
-              aria-current={current ? "time" : undefined}
-              className={cn(
-                "flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm",
-                current
-                  ? "border-primary-500/40 bg-primary-500/10"
-                  : "border-slate-200 dark:border-slate-800",
-              )}
-            >
-              <span
-                className={cn(
-                  "font-medium",
-                  current
-                    ? "text-primary-700 dark:text-primary-300"
-                    : "text-slate-700 dark:text-slate-300",
-                )}
-              >
-                {label}
-                {current ? <span className="sr-only"> (now)</span> : null}
-              </span>
-              <span
-                className={cn(
-                  "tabular-nums",
-                  current
-                    ? "font-semibold text-slate-900 dark:text-white"
-                    : "text-slate-500 dark:text-slate-400",
-                )}
-              >
-                {shiftRangeLabel(id)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-4">
+        <ShiftSchedule shift={shift} />
+      </div>
 
       {!isOpen ? (
         <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -188,9 +102,9 @@ export function LiveSupportPanel({
         <div className="mt-5">
           <ExternalActionForm
             action={joinLiveSupportAction}
-            className={joinClass}
+            className={liveSupportJoinClass}
             disabled={!isOpen}
-            errorClassName={errorClass}
+            errorClassName={liveSupportErrorClass}
             fallbackLabel={LIVE_SUPPORT_CTA.open}
             fields={{ csrfToken, issueId }}
             label={LIVE_SUPPORT_CTA.join}
@@ -199,11 +113,8 @@ export function LiveSupportPanel({
         </div>
       ) : null}
 
-      {showRoomDetails ? (
-        <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-          {meetingId ? <DetailRow label={meetingCodeLabel(platform)} value={meetingId} /> : null}
-          {passcode ? <DetailRow label="Passcode" value={passcode} /> : null}
-        </dl>
+      {canJoin && isOpen ? (
+        <RoomDetails className="mt-4" meetingId={meetingId} passcode={passcode} platform={platform} />
       ) : null}
 
       {canJoin ? (

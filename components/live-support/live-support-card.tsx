@@ -1,15 +1,17 @@
 "use client";
 
 import { joinLiveSupportAction } from "@/actions/live-support";
-import { ExternalActionForm } from "@/components/shared/external-action-form";
-import { cn } from "@/lib/cn";
+import { VideoIcon } from "@/components/icons";
 import {
-  LIVE_SUPPORT_CTA,
-  meetingCodeLabel,
-  supportHoursBn,
-  supportScheduleBn,
-  type SupportPhase,
-} from "@/lib/config/live-support";
+  LiveStatusPill,
+  RoomDetails,
+  ShiftSchedule,
+  liveSupportCardClass,
+  liveSupportErrorClass,
+  liveSupportJoinClass,
+} from "@/components/live-support/live-support-parts";
+import { ExternalActionForm } from "@/components/shared/external-action-form";
+import { LIVE_SUPPORT_CTA, type SupportPhase } from "@/lib/config/live-support";
 
 type LiveSupportCardProps = {
   platform: string;
@@ -28,23 +30,6 @@ type LiveSupportCardProps = {
   csrfToken: string;
 };
 
-const SHIFT_LABELS: Record<Exclude<SupportPhase, "off">, string> = {
-  morning: "Morning shift",
-  night: "Night shift",
-};
-
-const ORDER: Array<Exclude<SupportPhase, "off">> = ["morning", "night"];
-
-const joinClass = cn(
-  "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition",
-  "bg-primary text-white hover:bg-primary-600",
-  "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950",
-  "disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200",
-  "dark:disabled:bg-slate-800 dark:disabled:text-slate-400",
-);
-
-const errorClass = "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300";
-
 /**
  * Staff join panel for the daily live support session.
  *
@@ -53,6 +38,8 @@ const errorClass = "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 da
  * and are not queued. The room URL is never held here — submitting the form runs
  * a server action that re-checks the shift and only then returns the URL, which
  * `ExternalActionForm` opens in a new tab (the queue tab stays open).
+ *
+ * Same layout as the student's `LiveSupportPanel` (shared parts).
  */
 export function LiveSupportCard({
   platform,
@@ -65,101 +52,66 @@ export function LiveSupportCard({
   const isOpen = shift !== "off";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        {ORDER.map((item) => (
-          // Display-only chips (they carry no action), so they are inert.
-          <button
-            key={item}
-            type="button"
-            aria-label={`${SHIFT_LABELS[item]} button`}
-            className={cn(
-              "rounded-full px-6 py-2.5 text-sm font-semibold transition",
-              shift === item
-                ? "bg-primary text-white"
-                : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-            )}
-            disabled
-          >
-            {SHIFT_LABELS[item]}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
-        {isOpen ? (
-          <p className="font-medium text-success-700 dark:text-success-300">
-            Live support is open right now.
-          </p>
-        ) : (
-          <p className="font-medium text-danger-700 dark:text-danger-300">
-            Live support is closed right now. Please join during a support slot.
-          </p>
-        )}
-        {!configured && (
-          <p className="font-medium text-danger-700 dark:text-danger-300">
-            The support room is not configured for this deployment yet.
-          </p>
-        )}
-        <p className="text-slate-500 dark:text-slate-400">
-          Daily hours:{" "}
-          <span className="font-medium text-slate-700 dark:text-slate-300">
-            {supportScheduleBn}
+    <section aria-labelledby="live-support-room-heading" className={liveSupportCardClass}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span aria-hidden="true" className="text-slate-400 dark:text-slate-500">
+            <VideoIcon size={16} />
           </span>
-        </p>
+          <h2
+            id="live-support-room-heading"
+            className="text-sm font-semibold text-slate-950 dark:text-white"
+          >
+            Support room
+          </h2>
+        </div>
+        <LiveStatusPill open={isOpen} />
       </div>
 
-      <p className="text-sm text-slate-600 dark:text-slate-300">
-        You are joining as staff — no request is required and you will not appear in the waiting
-        list.
+      <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        You join as staff — no issue needed, and you are not added to the waiting list.
       </p>
 
-      {configured && (
-        <ExternalActionForm
-          action={joinLiveSupportAction}
-          className={joinClass}
-          disabled={!isOpen}
-          errorClassName={errorClass}
-          fallbackLabel={LIVE_SUPPORT_CTA.open}
-          fields={{ csrfToken }}
-          label={LIVE_SUPPORT_CTA.join}
-          pendingLabel={LIVE_SUPPORT_CTA.pending}
-        />
-      )}
+      <div className="mt-4">
+        <ShiftSchedule shift={shift} />
+      </div>
 
-      {isOpen && configured && (meetingId || passcode) && (
-        <div className="divide-y divide-slate-200 border-y border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-          {meetingId && (
-            <div className="flex items-center justify-between gap-4 py-3">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                {meetingCodeLabel(platform)}
-              </span>
-              <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-                {meetingId}
-              </span>
-            </div>
-          )}
-          {passcode && (
-            <div className="flex items-center justify-between gap-4 py-3">
-              <span className="text-sm text-slate-500 dark:text-slate-400">Passcode</span>
-              <span className="select-all text-sm font-semibold text-slate-900 dark:text-white">
-                {passcode}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isOpen && configured && (
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          You may be asked to sign in before the room lets you in.
+      {!isOpen ? (
+        <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+          The room is closed right now. Join during one of the shifts above.
         </p>
-      )}
+      ) : null}
+      {!configured ? (
+        <p className="mt-3 text-sm font-medium text-danger-700 dark:text-danger-300">
+          The support room is not configured for this deployment yet.
+        </p>
+      ) : null}
 
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Say the request reference out loud when you let the student in. Total daily support time:{" "}
-        {supportHoursBn()}.
-      </p>
-    </div>
+      {configured ? (
+        <div className="mt-5">
+          <ExternalActionForm
+            action={joinLiveSupportAction}
+            className={liveSupportJoinClass}
+            disabled={!isOpen}
+            errorClassName={liveSupportErrorClass}
+            fallbackLabel={LIVE_SUPPORT_CTA.open}
+            fields={{ csrfToken }}
+            label={LIVE_SUPPORT_CTA.join}
+            pendingLabel={LIVE_SUPPORT_CTA.pending}
+          />
+        </div>
+      ) : null}
+
+      {configured && isOpen ? (
+        <RoomDetails className="mt-4" meetingId={meetingId} passcode={passcode} platform={platform} />
+      ) : null}
+
+      {configured ? (
+        <ul className="mt-4 space-y-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          <li>Ask each student for their issue reference and match it in Waiting students.</li>
+          {isOpen ? <li>The room may ask you to sign in before letting you in.</li> : null}
+        </ul>
+      ) : null}
+    </section>
   );
 }

@@ -31,8 +31,25 @@ describe("LiveSupportCard", () => {
     expect(container.textContent).not.toContain("Google Meet");
   });
 
+  it("matches the student panel: status pill, shift list with the current one marked", () => {
+    render(<LiveSupportCard {...baseProps} shift="morning" />);
+
+    expect(screen.getByRole("heading", { name: "Support room" })).not.toBeNull();
+    expect(screen.getByText("Open now")).not.toBeNull();
+    const rows = Array.from(
+      screen.getByRole("list", { name: "Daily support hours" }).querySelectorAll("li"),
+    );
+    expect(rows[0].getAttribute("aria-current")).toBe("time");
+    expect(rows[1].getAttribute("aria-current")).toBeNull();
+    // The shifts are information, not controls.
+    expect(screen.queryByRole("button", { name: /shift/i })).toBeNull();
+    expect(screen.getByRole("button", { name: "Copy meeting code" })).not.toBeNull();
+  });
+
   it("disables the join outside a shift and hides the room details", () => {
     render(<LiveSupportCard {...baseProps} shift="off" />);
+
+    expect(screen.getByText("Closed")).not.toBeNull();
 
     const button = screen.getByRole("button", {
       name: "Join Live support",

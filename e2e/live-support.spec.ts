@@ -174,7 +174,7 @@ test.describe("STAFF: they run the room", () => {
     await page.goto("/dashboard/support");
 
     await expect(page.getByRole("heading", { name: "Live support" })).toBeVisible();
-    await expect(page.getByText(/You are joining as staff/).first()).toBeVisible();
+    await expect(page.getByText(/You join as staff/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Waiting students" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Join Live support" }),
