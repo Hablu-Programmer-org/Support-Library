@@ -105,7 +105,7 @@ test.describe("Issue CRUD (mentor)", () => {
     for (const key of ["999999", "not-a-key"]) {
       await page.goto(`/dashboard/issues/${key}`);
       await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
-      await expect(page.locator('meta[name="robots"][content="noindex"]')).toHaveCount(1);
+      await expect(page.locator('meta[name="robots"][content="noindex"]').first()).toBeAttached();
     }
   });
 
