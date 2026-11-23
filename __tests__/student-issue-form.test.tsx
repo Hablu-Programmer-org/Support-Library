@@ -43,15 +43,17 @@ describe("StudentIssueForm layout", () => {
     expect(batch.hasAttribute("name")).toBe(false);
   });
 
-  it("keeps the client-side limits on title and details", () => {
+  it("keeps the client-side title limits and sends details as hidden Markdown", () => {
     const { container } = renderForm();
     const title = container.querySelector('input[name="title"]') as HTMLInputElement;
-    const details = container.querySelector('textarea[name="question"]') as HTMLTextAreaElement;
     expect(title.required).toBe(true);
     expect(title.maxLength).toBe(80);
-    expect(details.required).toBe(true);
-    expect(details.minLength).toBe(40);
-    expect(details.maxLength).toBe(20_000);
+    // Details limits are checked on submit (issue-editor.test.tsx): a hidden
+    // input has no native required/minLength.
+    const details = container.querySelector('[name="question"]') as HTMLInputElement;
+    expect(details.tagName).toBe("INPUT");
+    expect(details.type).toBe("hidden");
+    expect(container.querySelector("textarea[name='question']")).toBeNull();
   });
 
   it("groups the form into titled sections", () => {

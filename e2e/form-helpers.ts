@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Next.js App Router streaming plus React hydration can transiently leave a
@@ -29,6 +29,22 @@ export async function chooseStudentCourse(form: Locator) {
     // Index 0 is the "Select your course" placeholder.
     await select.selectOption({ index: 1 });
   }
+}
+
+/** The student create form's rich-text details editor (a contenteditable). */
+export function issueDetailsEditor(form: Locator) {
+  return form.getByRole("textbox", { name: /Issue details/ });
+}
+
+/**
+ * Type plain text into the student details editor and wait until its hidden
+ * Markdown input has caught up, so a following submit sends the text.
+ */
+export async function fillIssueDetails(form: Locator, text: string) {
+  const editor = issueDetailsEditor(form);
+  await editor.click();
+  await editor.fill(text);
+  await expect(form.locator('input[type="hidden"][name="question"]')).not.toHaveValue("");
 }
 
 /**

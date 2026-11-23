@@ -89,7 +89,7 @@ export function StudentFields({
     lookup === "checking" ? (
       <span className="text-slate-500 dark:text-slate-400">Searching the LMS…</span>
     ) : lookup === "found" ? (
-      <span className="inline-flex w-fit rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-950/50 dark:text-success-200">
+      <span className="inline-flex w-fit rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-50/50 dark:text-success-200">
         Found in LMS
       </span>
     ) : lookup === "notFound" ? (

@@ -186,7 +186,7 @@ function renderBlocks(text: string): ReactNode[] {
     if (/^\s*>/.test(line)) {
       const quoted: string[] = [];
       while (index < lines.length && /^\s*>/.test(lines[index])) quoted.push(lines[index++].replace(/^\s*>\s?/, ""));
-      blocks.push(<blockquote key={`quote-${index}`} className="space-y-3 rounded-r-lg border-l-4 border-primary-400 bg-primary-50/70 px-4 py-2.5 text-slate-600 dark:border-primary-500 dark:bg-primary-950/30 dark:text-slate-300">{renderBlocks(quoted.join("\n"))}</blockquote>);
+      blocks.push(<blockquote key={`quote-${index}`} className="space-y-3 rounded-r-lg border-l-4 border-primary-400 bg-primary-50/70 px-4 py-2.5 text-slate-600 dark:border-primary-500 dark:bg-primary-900/30 dark:text-slate-300">{renderBlocks(quoted.join("\n"))}</blockquote>);
       continue;
     }
 

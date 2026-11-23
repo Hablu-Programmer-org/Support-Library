@@ -163,7 +163,7 @@ export function ReplyItem({
                 type="submit"
                 aria-label="Delete"
                 title="Delete reply"
-                className="inline-flex size-10 items-center justify-center rounded-lg text-slate-400 transition hover:bg-danger-50 hover:text-danger-600 focus-visible:bg-danger-50 focus-visible:text-danger-600 dark:text-slate-500 dark:hover:bg-danger-950/40 dark:hover:text-danger-300 dark:focus-visible:bg-danger-950/40 dark:focus-visible:text-danger-300"
+                className="inline-flex size-10 items-center justify-center rounded-lg text-slate-400 transition hover:bg-danger-50 hover:text-danger-600 focus-visible:bg-danger-50 focus-visible:text-danger-600 dark:text-slate-500 dark:hover:bg-danger-50/40 dark:hover:text-danger-300 dark:focus-visible:bg-danger-50/40 dark:focus-visible:text-danger-300"
               >
                 <TrashIcon size={16} />
               </button>

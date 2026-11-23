@@ -189,7 +189,7 @@ export function IssueCard({
             </span>
           )}
           {staff?.waitingLive && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-950/50 dark:text-success-300">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success-100 px-2 py-1 text-xs font-semibold text-success-700 dark:bg-success-50/50 dark:text-success-300">
               <span aria-hidden="true" className="relative flex size-1.5">
                 <span className="absolute inline-flex size-full rounded-full bg-success-500 opacity-75 motion-safe:animate-ping" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-success-500" />

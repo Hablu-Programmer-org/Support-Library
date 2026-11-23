@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillIssueDetails, formFor, issueDetailsEditor, submitAndWait } from "./form-helpers";
 
 /**
  * Student self-service: a STUDENT may submit an issue and nothing else.
@@ -29,9 +29,7 @@ test.describe("STUDENT issue submission", () => {
     await expect(form.getByLabel(/Issue title/)).toBeVisible();
     await expect(form.getByLabel(/Problem title/)).toHaveCount(0);
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("The lecture video keeps buffering on the third module.");
+    await fillIssueDetails(form, "The lecture video keeps buffering on the third module.");
     // Required course context is never hidden in the optional disclosure.
     const courseSelect = form.locator('select[name="courseSlug"]');
     await expect(courseSelect).toBeVisible();
@@ -86,14 +84,16 @@ test.describe("STUDENT issue submission", () => {
     await page.goto("/dashboard/issues/new");
 
     const form = formFor(page, "Create issue");
-    const details = form.locator('textarea[name="question"]');
+    const details = issueDetailsEditor(form);
     await form.locator('input[name="title"]').fill("Assignment page does not load");
-    await details.fill("Page broken");
-
-    expect(await details.evaluate((field) => (field as HTMLTextAreaElement).validity.tooShort)).toBe(true);
+    await fillIssueDetails(form, "Page broken");
     await form.getByRole("button", { name: "Create issue" }).click();
     await expect(page).toHaveURL("/dashboard/issues/new");
-    await expect(form.getByText("Add at least 40 characters.")).toBeVisible();
+    // The hidden Markdown input has no native validation: the form explains
+    // the problem itself and puts the caret back in the editor.
+    await expect(form.getByRole("alert")).toContainText("Add at least 40 characters");
+    await expect(details).toBeFocused();
+    await expect(details).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByRole("button", { name: "Create issue" })).toBeVisible();
     expect(
       await page.evaluate(

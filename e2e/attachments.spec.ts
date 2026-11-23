@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { chooseStudentCourse, formFor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, fillIssueDetails, formFor, submitAndWait } from "./form-helpers";
 import { TINY_PNG, tinyPngFile } from "./image-fixture";
 
 /**
@@ -24,9 +24,7 @@ test.describe("uploaded attachments", () => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("The lecture video keeps buffering on the third module.");
+    await fillIssueDetails(form, "The lecture video keeps buffering on the third module.");
     // The course is required once the account has LMS enrolments.
     await chooseStudentCourse(form);
 
@@ -132,9 +130,7 @@ test.describe("uploaded attachments", () => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");
     await form.locator('input[name="title"]').fill(title);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("My selected image is actually a text file and should be rejected safely.");
+    await fillIssueDetails(form, "My selected image is actually a text file and should be rejected safely.");
     await chooseStudentCourse(form);
 
     await form
@@ -156,9 +152,7 @@ test.describe("uploaded attachments", () => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");
     await form.locator('input[name="title"]').fill(`E2E multi pick ${Date.now()}`);
-    await form
-      .locator('textarea[name="question"]')
-      .fill("Two separate picks must both stay attached to the request.");
+    await fillIssueDetails(form, "Two separate picks must both stay attached to the request.");
     await chooseStudentCourse(form);
 
     const uploadInput = form.locator('input[name="uploads"]');

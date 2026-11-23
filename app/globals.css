@@ -136,6 +136,71 @@ html.dark {
     box-shadow: 0 12px 40px -16px rgb(0 0 0 / 0.65);
   }
 
+  /* Issue editor (components/issues/issue-editor-client.tsx). Preflight strips
+     list markers and heading sizes; these mirror lib/rich-text so the editor
+     shows what the issue page will. */
+  .issue-editor-content > * + * {
+    @apply mt-3;
+  }
+  .issue-editor-content p {
+    @apply leading-7;
+  }
+  .issue-editor-content h1 {
+    @apply text-[1.5em] font-bold tracking-tight text-slate-950 dark:text-white;
+  }
+  .issue-editor-content h2 {
+    @apply border-l-4 border-primary pl-3 text-[1.3em] font-semibold text-slate-950 dark:text-white;
+  }
+  .issue-editor-content h3 {
+    @apply text-[1.15em] font-semibold text-slate-950 dark:text-white;
+  }
+  .issue-editor-content :is(h4, h5, h6) {
+    @apply text-[0.95em] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300;
+  }
+  .issue-editor-content ul {
+    @apply list-disc space-y-1.5 pl-6 marker:text-primary-400;
+  }
+  .issue-editor-content ol {
+    @apply list-decimal space-y-1.5 pl-6 marker:font-semibold marker:text-primary-600;
+  }
+  .issue-editor-content ul[data-type="taskList"] {
+    @apply list-none pl-1;
+  }
+  .issue-editor-content ul[data-type="taskList"] li {
+    @apply flex items-start gap-2;
+  }
+  .issue-editor-content ul[data-type="taskList"] li > label {
+    @apply mt-1.5 shrink-0;
+  }
+  .issue-editor-content code {
+    @apply rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[0.85em] text-primary-700 dark:bg-slate-800 dark:text-primary-300;
+  }
+  .issue-editor-content pre {
+    @apply overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-[0.85em] leading-6 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300;
+  }
+  .issue-editor-content pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+  .issue-editor-content blockquote {
+    @apply rounded-r-lg border-l-4 border-primary-400 bg-primary-50/70 px-4 py-2.5 text-slate-600 dark:border-primary-500 dark:bg-primary-900/30 dark:text-slate-300;
+  }
+  .issue-editor-content a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .issue-editor-content hr {
+    @apply my-6 h-px border-0 bg-slate-300 dark:bg-slate-700;
+  }
+  .issue-editor-content table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .issue-editor-content :is(th, td) {
+    @apply border border-slate-200 px-3 py-2 align-top dark:border-slate-800;
+  }
+  .issue-editor-content p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-slate-400 dark:text-slate-500;
+  }
+
   /* Light mode starts on cyan-600 (3.7:1 on white; cyan-500 was 2.4:1, under
      the 3:1 large-text minimum). Dark mode keeps the brighter cyan-500. */
   .brand-text {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, type ReactNode } from "react";
+import { useActionState, useRef, useState, type FormEvent, type ReactNode } from "react";
 
 import { createStudentIssueAction } from "@/actions/issues";
 import {
@@ -11,14 +11,13 @@ import {
   ImageIcon,
   SettingsIcon,
 } from "@/components/icons";
+import { IssueEditor, type IssueEditorApi } from "@/components/issues/issue-editor";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
-import { MarkdownField } from "@/components/shared/markdown-field";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import {
   nativeFieldClass,
   nativeSelectClass,
-  nativeTextareaClass,
   nativeTextareaCompactClass,
 } from "@/lib/config/fields";
 import {
@@ -27,6 +26,7 @@ import {
   ISSUE_TITLE_CREATE_MAX,
   ISSUE_TITLE_WARN_AT,
 } from "@/lib/constants";
+import { hasEnoughIssueDetails, isIssueDetailsTooLong } from "@/lib/issue-content-rules";
 
 const card =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70";
@@ -57,6 +57,18 @@ function FieldLabel({ children, required = false }: { children: ReactNode; requi
   );
 }
 
+/** Client copy of the server's details rules; the server still decides. */
+export function issueDetailsProblem(value: string): string | null {
+  if (!value.trim()) return "Describe your issue so the support team can help.";
+  if (!hasEnoughIssueDetails(value)) {
+    return `Add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue.`;
+  }
+  if (isIssueDetailsTooLong(value)) {
+    return `Keep the details to ${ISSUE_DETAILS_MAX.toLocaleString("en-US")} characters or fewer.`;
+  }
+  return null;
+}
+
 type StudentIssueFormProps = {
   csrfToken: string;
   /** The student's LMS enrolments; the batch is derived from the chosen course. */
@@ -77,7 +89,9 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
   const [moduleSlug, setModuleSlug] = useState("");
   const [contentSlug, setContentSlug] = useState("");
   const [tags, setTags] = useState("");
+  const [detailsError, setDetailsError] = useState<string | null>(null);
   const operationIdRef = useRef<HTMLInputElement>(null);
+  const editorApi = useRef<IssueEditorApi | null>(null);
   const selectedCourse = courses.find((course) => course.slug === courseSlug) ?? null;
 
   const ensureOperationId = () => {
@@ -86,6 +100,24 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
     }
   };
 
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    // The details live in a hidden input, which the browser never validates.
+    const problem = issueDetailsProblem(question);
+    if (problem) {
+      event.preventDefault();
+      setDetailsError(problem);
+      editorApi.current?.focus();
+      return;
+    }
+    ensureOperationId();
+  };
+
+  const onQuestionChange = (value: string) => {
+    setQuestion(value);
+    if (detailsError && !issueDetailsProblem(value)) setDetailsError(null);
+  };
+
+  const questionError = detailsError ?? state.fieldErrors?.question?.[0];
   const formError = state.fieldErrors?._form?.[0];
   const optionalDetailsHaveError = Boolean(
     state.fieldErrors?.videoLinks?.[0] ||
@@ -105,7 +137,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
     <form
       action={formAction}
       className="space-y-6"
-      onSubmit={ensureOperationId}
+      onSubmit={onSubmit}
       aria-describedby={formError ? "student-issue-error" : undefined}
     >
       <input ref={operationIdRef} type="hidden" name="operationId" />
@@ -149,22 +181,22 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             )}
           </label>
 
-          <MarkdownField
+          <IssueEditor
             id="issue-question"
-            label={<FieldLabel required>Issue details</FieldLabel>}
-            className={nativeTextareaClass}
             name="question"
+            label={<FieldLabel required>Issue details</FieldLabel>}
             value={question}
-            onChange={setQuestion}
+            onChange={onQuestionChange}
             required
-            rows={10}
-            minLength={ISSUE_DETAILS_CREATE_MIN}
-            maxLength={ISSUE_DETAILS_MAX}
-            aria-invalid={state.fieldErrors?.question?.[0] ? "true" : "false"}
-            placeholder={
-              "What were you trying to do?\nWhat happened or what exact error did you see?\nWhat have you already tried?"
+            invalid={Boolean(questionError)}
+            apiRef={editorApi}
+            placeholder="What were you trying to do, what happened, and what have you tried?"
+            footer={
+              <div className="space-y-1">
+                {errorText(questionError)}
+                <IssueDetailsHint value={question} />
+              </div>
             }
-            footer={errorText(state.fieldErrors?.question?.[0]) ?? <IssueDetailsHint value={question} />}
           />
         </div>
       </section>
@@ -227,7 +259,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             </label>
           </div>
         ) : (
-          <p className="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950/40 dark:text-warning-200">
+          <p className="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-50/40 dark:text-warning-200">
             We could not find a course on your LMS account. You can still submit
             this issue — the team will ask for the course if it matters.
           </p>
@@ -326,7 +358,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || isIssueDetailsTooLong(question)}
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:w-auto sm:min-w-52"
         >
           <CheckCircleIcon size={18} />
