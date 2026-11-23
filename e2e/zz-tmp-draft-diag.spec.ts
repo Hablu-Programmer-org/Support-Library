@@ -39,7 +39,7 @@ test("diag draft restore", async ({ page }) => {
     };
     let last = "";
     new MutationObserver(() => {
-      const el = document.querySelector('[role="textbox"][aria-label="Issue details"], [aria-label="Issue details"]');
+      const el = document.querySelector(".ProseMirror");
       const text = el ? (el.textContent ?? "").replace(/\s+/g, " ").trim() : "(no editor)";
       if (text !== last) {
         last = text;
