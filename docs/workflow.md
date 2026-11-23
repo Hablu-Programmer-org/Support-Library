@@ -75,15 +75,17 @@ Help Center (dashboard sidebar)
    request, the shift, and the per-user budget (`live-support.join`, 10 / 10 min),
    records one join per request per shift per day, audits it, and only then
    returns the room URL. The client opens it **in a new tab** (the request page
-   stays open); a blocked popup or JavaScript-off falls back to an
-   `Open Live support` link, which is also a new tab.
+   stays open). The button then becomes an `Open Live support` link styled the
+   same (new tab, no second action), which also covers a blocked popup.
 8. **Come back.** `My issues` (`/dashboard/my-issues`) lists the student's own
    issues (newest first) with status and a `Live now` chip during a shift. The
    nav also keeps `Create issue` and `My Courses` (back to the LMS).
 
-> **Request-less shortcut (owner decision, 2026-11-01).** Students also get a
-> **Join Live support** button at the top of the issues page, beside **Submit an
-> issue**. It walks straight into the room with no request: CSRF, the
+> **Request-less shortcut (owner decision, 2026-11-01; dialog since 2026-11-23).**
+> Students also get a **Join Live support** button at the top of the issues page,
+> beside **Create an issue**. It opens the **How to get live support** dialog
+> (issue-first steps, Create an issue / My issues) whose direct join walks
+> straight into the room with no request: CSRF, the
 > server-resolved shift, the shared `live-support.join` budget (10 / 10 min) and a
 > `LIVE_SUPPORT_QUICK_JOIN` audit row still apply, but it records **no** queue
 > row — the student does not appear in staff `Waiting today` and has no reference
@@ -118,7 +120,7 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Retention | Join rows expire after 180 days |
 | Privacy | The queue shows student name/email, reference, request title, status, shift and time — never a passcode, IP or token |
 | Availability display | The meeting code is absent from the response while the room is closed |
-| Quick join (issues page) | Students join without a request (owner decision, 2026-11-01): not queued, no reference; the request page remains the tracked path |
+| Quick join (issues page) | Students join without a request from the how-to dialog (owner decisions, 2026-11-01 / 2026-11-23): not queued, no reference; the request page remains the tracked path |
 
 ## 6. Data and security notes
 
@@ -129,8 +131,9 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 - **Room credentials** exist only in this app (`LIVE_SUPPORT_*`), resolved on the
   server; the LMS bundle carries none of them. The join action returns the URL
   only to an authorized, eligible session — it is never part of the initial HTML.
-  The client opens it in a new tab with `opener` severed, and an
-  `Open Live support` link is always available when a popup is blocked.
+  The client opens it in a new tab with `opener` severed; the button then turns
+  into an `Open Live support` link (same style), so a blocked popup or closed tab
+  never needs a second join.
 - **Replies** are read-only for students; the public projection strips author ids
   and reply attachments.
 - **Audit**: request-backed joins (success and denial) write
@@ -147,8 +150,8 @@ dashboard card/section, as a chip in the issue list, and on the queue page.
 | Situation | Result |
 | --- | --- |
 | Outside a support shift | Join disabled; meeting details absent |
-| Popup blocked / tab closed | `Open Live support` link is rendered instead (still a new tab) |
-| No open request | The issues-page shortcut still joins (not queued, no reference); the request page shows no join panel until one is submitted |
+| After a join / popup blocked / tab closed | The button becomes an `Open Live support` link (same style, new tab, no second action) |
+| No open request | The issues-page dialog explains the issue-first steps; its direct join still works (not queued, no reference); the request page shows no join panel until one is submitted |
 | Request solved or archived | No join; submit a new request |
 | Another student's unpublished request | `404` |
 | Another student's published issue | Read-only library view — text, videos, and every attachment (issue and replies) |

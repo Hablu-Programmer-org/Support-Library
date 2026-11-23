@@ -103,9 +103,14 @@
   (`npm run check:live-support`) guards the schedule, the Bengali schedule wording,
   the join CTA wording ("Join Live support") and asserts the room credentials
   exist **only** here.
-- **Request-less quick join (owner decision, 2026-11-01).** The issues page's
-  header carries a student-only **Join Live support** button beside **Submit an
-  issue**, wired to `joinLiveSupportQuickAction`. It re-checks CSRF, role, the
+- **Request-less quick join (owner decision, 2026-11-01; moved into a dialog
+  2026-11-23).** The issues page's header (and the "Still stuck?" block at the
+  end of a library answer) carries a student-only, always-enabled **Join Live
+  support** button that opens the **How to get live support** dialog
+  (`components/live-support/live-support-guide-button.tsx`): the issue-first
+  steps (create an issue → join from it → tell the mentor the reference), the
+  live status, the Bengali schedule, Create an issue / My issues, and the direct
+  join, wired to `joinLiveSupportQuickAction`. It re-checks CSRF, role, the
   server-resolved shift and the shared `live-support.join` budget, writes a
   `LIVE_SUPPORT_QUICK_JOIN` audit row, and returns the room URL only then (opened
   in a new tab by `ExternalActionForm`). It records **no** queue row, so those
@@ -346,3 +351,12 @@ cmd /c "npm run test:e2e"
 - The n8n/OpenAI access card button is now "Request access", so "request" on a button never means a support case.
 - Unchanged internal names: `/api/my-requests/activity`, the `my-requests.activity` rate-limit key, `MyRequestsRefresh`, `StudentRequestView`.
 - Gates: typecheck clean; lint clean; 83 test files / 617 tests passing (1 skipped). Production build and Playwright not run (dev server on :12000; the e2e specs write to the dev DB).
+
+### Session log — issue pages review + fixes, tag migration, live support dialog (2026-11-23)
+- **UI review → fixes (owner picked 1–8; #6 reverted):** no horizontal page scroll (`overflow-x-clip` on the dashboard shell; the stuck search bar's `-inset-x-[50vw]` glass caused it); the hero says why live support is unavailable/closed (`liveSupportNow`); a student reading a library answer gets a **Still stuck?** block (`components/issues/issue-next-step.tsx`) and sees no priority / library chip / reference / published date (`showPriority`, `showLibraryChip`, sidebar `reader`); hero tag chips are the most-used browsable tags with variants merged (`lib/issue-tags.ts`, `listIssueFilterOptions().popularTags`); 44px touch targets on status + tag chips under `pointer-coarse` (hero `pb`/form pull-up grow by 12px together); a card hides a question that only repeats the title (`repeatsTitle`). Tool access stays under the hero (owner); its whole header row toggles it.
+- **Tags on save:** `parseTagList` strips a leading `#` and trailing punctuation (incl. `।`), lowercases and de-duplicates.
+- **Tag migration (production `support_library`, owner-approved):** `scripts/normalize-issue-tags.ts` (`npm run db:normalize-issue-tags`, planner `planTagNormalization`): dry run 378 scanned / 2 to change → apply modified=2, conflicts=0 → dry run toChange=0. Backup + rollback command in `scratchpad/2026-11-23-issue-tags-migration.md`. `search:backfill` NOT applied (pre-existing drift: ~247 staff / 253 public texts).
+- **Live support dialog (owner):** the issues-page **Join Live support** is always enabled and opens **How to get live support** (`components/live-support/live-support-guide-button.tsx`, native `<dialog>`): three issue-first steps, status, Bengali schedule, Create an issue / My issues, and the direct quick join (`QuickLiveSupportButton`, new `className`). Same dialog in Still stuck?.
+- **`ExternalActionForm`:** after a successful action the button becomes one `Open Live support` link styled like the button (new tab, no second action) instead of a disabled button plus a separate link.
+- **E2E flakes fixed (test-only):** `staff-form-failures` and `access-help` hit a transient hidden copy of the streamed segment (duplicate `expectedUpdatedAt` input / heading); both now wait for a single element and scope to the live card. `access-help` cannot use `--repeat-each` (it leaves pending requests until teardown).
+- Gates: typecheck clean; lint clean; 110 test files / 905 tests passing (1 skipped); production build clean. Playwright (port 12001, `support_library_e2e`): last full run 128 passed / 1 failed (`access-help`, since fixed: 5/5 separate runs) / 1 skipped; `staff-form-failures` 8/8 after its fix. **Not verified:** touch/phone layout (no device emulation available), post-join `Open Live support` in a browser (local `.env.local` points at production), light theme, signed-in staff views.

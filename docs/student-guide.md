@@ -283,7 +283,9 @@ The flow:
 
 1. Create an issue (**Create issue**), or open one you already submitted from **My issues**.
 2. You land on the request page. It shows the status, a six-digit reference (for example `000123`), what you wrote, your images and video links, and any update the team has written.
-3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Live support` button, plus the meeting code in case you want to enter it in the room yourself. You may be asked to sign in before the room lets you in. The button opens the room **in a new tab**, so your request page stays open; if your browser blocks the new tab, an `Open Live support` link appears instead.
+3. A **Live support** panel sits at the bottom of that page. During a support shift it has a `Join Live support` button, plus the meeting code in case you want to enter it in the room yourself. You may be asked to sign in before the room lets you in. The button opens the room **in a new tab**, so your request page stays open. After that it turns into `Open Live support`: press it to get back into the room if you closed the tab or your browser blocked it.
+
+The `Join Live support` button at the top of the **Issues** page explains these same steps in a small window, with **Create an issue** and **My issues** buttons. It also has a direct join, but joining from your own issue is better: the mentor then knows your reference.
 4. Say the request reference when you join — the mentor sees the same reference in the waiting list. The reference is highlighted for you: double-click it, or tap the copy icon next to it, to copy it.
 
 Rules that matter:
