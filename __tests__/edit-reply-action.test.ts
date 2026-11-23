@@ -23,6 +23,9 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/safe-action", () => ({ csrfTokenIsValid: mocks.csrfTokenIsValid }));
 vi.mock("@/lib/auth-guard", () => ({ assertRole: mocks.assertRole }));
 vi.mock("@/lib/services/audit", () => ({ recordAuditEvent: vi.fn() }));
+vi.mock("@/lib/services/issues", () => ({
+  getIssueUrlRef: vi.fn(async (id: string) => ({ id, caseRef: null })),
+}));
 vi.mock("@/lib/request-context", () => ({ getRequestContext: vi.fn() }));
 vi.mock("@/lib/services/rate-limit", () => ({
   consumeRateLimit: mocks.consumeRateLimit,

@@ -20,7 +20,7 @@ test.describe("edit-mode attachments", () => {
 
     await createForm.locator('input[name="uploads"]').setInputFiles(tinyPngFile("old.png"));
 
-    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/\d{6}$/);
     await expect(page.getByRole("heading", { name: "Attachments" })).toBeVisible();
     await expect(page.locator('img[alt="old.png"]')).toBeVisible();
 
@@ -39,7 +39,7 @@ test.describe("edit-mode attachments", () => {
     await editForm.locator('input[name="removeUploadIds"][value]').first().check();
     await editForm.locator('input[name="uploads"]').setInputFiles(tinyPngFile("new.png"));
 
-    await submitAndWait(page, "Save Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(page, "Save Issue", /\/dashboard\/issues\/\d{6}$/);
 
     await expect(page.locator('img[alt="old.png"]')).toHaveCount(0);
     await expect(page.locator('img[alt="new.png"]')).toBeVisible();

@@ -70,7 +70,7 @@ async function createIssue(
   await form.locator('input[name="batchNo"]').fill(batchNo);
 
   await form.locator('input[name="solveIssue"]').uncheck();
-  await submit(page, /\/dashboard\/issues\/[a-f0-9]{24}$/);
+  await submit(page, /\/dashboard\/issues\/\d{6}$/);
 }
 
 const issueHeading = (page: Page, title: string) => page.getByRole("heading", { name: title });

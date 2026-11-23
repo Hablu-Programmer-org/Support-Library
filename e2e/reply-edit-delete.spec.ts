@@ -4,7 +4,7 @@ import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
-const ISSUE_URL = /\/dashboard\/issues\/[a-f0-9]{24}$/;
+const ISSUE_URL = /\/dashboard\/issues\/\d{6}$/;
 
 async function createIssueWithReply(page: import("@playwright/test").Page, body: string, emailTag: string) {
   await page.goto("/dashboard/issues/new");

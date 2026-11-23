@@ -32,7 +32,7 @@ test.describe("Copy for AI prompt", () => {
     await form.locator('input[name="title"]').fill(title);
     await fillMarkdownEditor(form, "Issue details", "question", question);
     await form.locator('input[name="solveIssue"]').uncheck();
-    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/\d{6}$/);
     const issuePath = new URL(page.url()).pathname;
 
     await expect(page.getByRole("button", { name: "Copy for AI" })).toBeVisible();

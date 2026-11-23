@@ -28,7 +28,7 @@ test.describe("STUDENT content gating", () => {
     await fillMarkdownEditor(form, "Issue details", "question", "Which parts of this support issue may a student see after an admin publishes it?");
     await form.locator('input[name="solveIssue"]').uncheck();
 
-    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/\d{6}$/);
     const issuePath = new URL(page.url()).pathname;
 
     const replyForm = formFor(page, "Add response");
@@ -54,7 +54,7 @@ test.describe("STUDENT content gating", () => {
 
     await page.getByRole("checkbox", { name: /student personal information/i }).check();
     await page.getByRole("button", { name: "Publish to library" }).click();
-    await expect(page).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await expect(page).toHaveURL(/\/dashboard\/issues\/\d{6}$/);
     await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
 
     // The student sees the issue and its public reply, but never student PII.

@@ -21,7 +21,7 @@ test.describe("Reply edit/delete permissions", () => {
     await form.locator('input[name="title"]').fill("E2E permission issue");
     await fillMarkdownEditor(form, "Issue details", "question", "Which staff account may edit or delete this saved reply after another user opens it?");
     await form.locator('input[name="solveIssue"]').uncheck();
-    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(page, "Create Issue", /\/dashboard\/issues\/\d{6}$/);
     const issuePath = new URL(page.url()).pathname;
 
     // Admin authors a reply.

@@ -48,7 +48,7 @@ test.describe("STUDENT issue submission", () => {
     await expect(form.locator('[name="videoLinks"]')).toHaveCount(0);
     await optional.locator('input[name="tags"]').fill("buffering, video");
 
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
     await expect(page.getByRole("status")).toContainText("Your issue has been submitted.");
     await expect(pageErrors).toEqual([]);
 
@@ -72,7 +72,7 @@ test.describe("STUDENT issue submission", () => {
 
     // The optional course context is preserved.
     await issueHeading.click();
-    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}(\?returnTo=|$)/);
+    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/\d{6}(\?returnTo=|$)/);
     await expect(adminPage.getByText("jfwd")).toBeVisible();
 
     await adminContext.close();
@@ -85,7 +85,7 @@ test.describe("STUDENT issue submission", () => {
     await form.locator('input[name="title"]').fill(`E2E follow-up ${Date.now()}`);
     await fillIssueDetails(form, "The quiz page shows a spinner forever after I press submit.");
     await chooseStudentCourse(form);
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
     const issuePath = new URL(page.url()).pathname;
 
     // Staff write the first response with the editor; it is sent as Markdown.

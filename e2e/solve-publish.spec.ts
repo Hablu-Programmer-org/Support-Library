@@ -4,7 +4,7 @@ import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 test.use({ storageState: "e2e/.auth/admin.json" });
 
-const ISSUE_URL = /\/dashboard\/issues\/[a-f0-9]{24}$/;
+const ISSUE_URL = /\/dashboard\/issues\/\d{6}$/;
 
 const submitCreate = (page: Page) => submitAndWait(page, "Create Issue", ISSUE_URL);
 

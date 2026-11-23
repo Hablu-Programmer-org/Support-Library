@@ -53,7 +53,7 @@ test.describe("Issue details editor (student)", () => {
 
     await form.locator('input[name="title"]').fill(title);
     await chooseStudentCourse(form);
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
 
     const body = page.locator("main");
     await expect(body.locator("strong", { hasText: "every time" })).toBeVisible();
@@ -157,7 +157,7 @@ test.describe("Issue details editor (student)", () => {
     await page.keyboard.type("The submit button on the assignment page does nothing, see the screenshots.");
     await form.locator('input[name="title"]').fill(title);
     await chooseStudentCourse(form);
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
   });
 
   test("works at 375px with Bangla text and no horizontal scroll", async ({ page }) => {
@@ -261,7 +261,7 @@ test.describe("Issue details editor (student)", () => {
       "## কী করতে চাচ্ছিলাম\n\nModule 5-এর assignment submit করলে link থেকে 404 আসছে।",
     );
 
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
     const body = page.locator("main");
     await expect(body.getByRole("heading", { name: "কী করতে চাচ্ছিলাম" })).toBeVisible();
     await expect(body.getByRole("heading", { name: "কী হলো" })).toHaveCount(0);

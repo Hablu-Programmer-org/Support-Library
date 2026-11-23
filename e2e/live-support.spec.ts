@@ -41,7 +41,7 @@ async function resetStudentRequests() {
   ]);
 }
 
-const REQUEST_URL = /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/;
+const REQUEST_URL = /\/dashboard\/issues\/\d{6}\?created=1$/;
 
 test.describe("LIVE support: sign-in gate", () => {
   test("sends guests to login, remembering the page they wanted", async ({ page }) => {
@@ -95,7 +95,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await expect(row).toContainText("Open");
     await expect(row.getByRole("link")).toHaveAttribute(
       "href",
-      /^\/dashboard\/issues\/[a-f0-9]{24}$/,
+      /^\/dashboard\/issues\/\d{6}$/,
     );
   });
 
@@ -115,7 +115,7 @@ test.describe("STUDENT: a request is the way into the room", () => {
     await form.locator('input[name="studentEmail"]').fill(`foreign.${Date.now()}@test.com`);
     await form.locator('input[name="title"]').fill(title);
     await fillMarkdownEditor(form, "Issue details", "question", "This unpublished request belongs to another student and must remain private.");
-    await submitAndWait(adminPage, "Create Issue", /\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await submitAndWait(adminPage, "Create Issue", /\/dashboard\/issues\/\d{6}$/);
     const issuePath = new URL(adminPage.url()).pathname;
     await adminContext.close();
 

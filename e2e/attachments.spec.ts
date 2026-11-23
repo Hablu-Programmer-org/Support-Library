@@ -49,7 +49,7 @@ test.describe("uploaded attachments", () => {
       ),
     ).toEqual(["attachment.png"]);
 
-    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/\d{6}\?created=1$/);
     await expect(pageErrors).toEqual([]);
 
     // Staff pick up the case and the selected image is visible as an attachment.
@@ -60,7 +60,7 @@ test.describe("uploaded attachments", () => {
     const adminPage = await adminContext.newPage();
     await adminPage.goto("/dashboard/issues");
     await adminPage.getByRole("heading", { name: title }).click();
-    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/[a-f0-9]{24}$/);
+    await expect(adminPage).toHaveURL(/\/dashboard\/issues\/\d{6}$/);
     await expect(adminPage.getByRole("heading", { name: "Attachments" })).toBeVisible();
 
     const image = adminPage.locator('img[alt="attachment.png"]');

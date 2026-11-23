@@ -1,11 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { dbConnect } from "../lib/db";
+import { SupportIssueModel } from "../models";
 import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 import { tinyPngFile } from "./image-fixture";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
-const ISSUE_URL = /\/dashboard\/issues\/[a-f0-9]{24}$/;
+const ISSUE_URL = /\/dashboard\/issues\/\d{6}$/;
 
 const submitCreate = (page: Page) => submitAndWait(page, "Create Issue", ISSUE_URL);
 
@@ -65,6 +67,41 @@ test.describe("Issue CRUD (mentor)", () => {
     // Staff can now search by the same digits the student reads out in the room.
     await page.goto(`/dashboard/issues?q=${reference}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  });
+
+  test("keys the case URL by its reference and moves old id links to it", async ({ page }) => {
+    const title = `E2E reference url ${Date.now()}`;
+
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create Issue");
+    await form.locator('input[name="studentName"]').fill("E2E Ref Url Student");
+    await form.locator('input[name="studentEmail"]').fill(`e2e.refurl.${Date.now()}@test.com`);
+    await form.locator('input[name="title"]').fill(title);
+    await fillMarkdownEditor(form, "Issue details", "question", "The case page address should use the six-digit reference, not the database id.");
+    await submitCreate(page);
+
+    const reference = new URL(page.url()).pathname.split("/").pop() ?? "";
+    expect(reference).toMatch(/^\d{6}$/);
+
+    await dbConnect();
+    const issue = await SupportIssueModel.findOne({ caseRef: reference }, "_id title").lean();
+    expect(issue?.title).toBe(title);
+    const legacyId = String(issue?._id);
+
+    // A bookmark from before the switch still opens the case, at the new address,
+    // and keeps the list context.
+    await page.goto(`/dashboard/issues/${legacyId}?returnTo=${encodeURIComponent("/dashboard/issues?page=2")}`);
+    await expect(page).toHaveURL(
+      new RegExp(`/dashboard/issues/${reference}\\?returnTo=%2Fdashboard%2Fissues%3Fpage%3D2$`),
+    );
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
+
+    await page.goto(`/dashboard/issues/${legacyId}/edit`);
+    await expect(page).toHaveURL(new RegExp(`/dashboard/issues/${reference}/edit$`));
+
+    // An unknown reference and a malformed key are both plain 404s.
+    expect((await page.goto("/dashboard/issues/999999"))?.status()).toBe(404);
+    expect((await page.goto("/dashboard/issues/not-a-key"))?.status()).toBe(404);
   });
 
   test("searches while typing, without pressing Enter", async ({ page }) => {
