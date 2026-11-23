@@ -48,7 +48,8 @@ describe("StudentIssueForm draft", () => {
     const box = await findIssueTextbox();
 
     await waitFor(() => expect(input(container, "title").value).toBe("Blank assignment page"), slow);
-    expect(box.querySelector("strong")?.textContent).toBe("blank");
+    // The editor paints the restored Markdown in its own update, after the title.
+    await waitFor(() => expect(box.querySelector("strong")?.textContent).toBe("blank"), slow);
     expect(input(container, "question").value).toBe("The page is **blank** after login.");
     expect((container.querySelector('select[name="courseSlug"]') as HTMLSelectElement).value).toBe("web");
     expect(input(container, "moduleSlug").value).toBe("module-5");
