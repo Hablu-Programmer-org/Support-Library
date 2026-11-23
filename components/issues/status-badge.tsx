@@ -1,10 +1,14 @@
 import type { CaseStatus } from "@/models";
 
-const statusLabel: Record<CaseStatus, string> = {
+/**
+ * Staff-facing (and neutral) label per status. `AWAITING_STUDENT` names who
+ * holds the ball; only the owning student sees it phrased as "Needs your reply".
+ */
+export const STATUS_LABELS: Record<CaseStatus, string> = {
   OPEN: "Open",
   SOLVED: "Solved",
   PENDING: "Pending",
-  AWAITING_STUDENT: "Needs your reply",
+  AWAITING_STUDENT: "Waiting on student",
   FOLLOW_UP: "Follow-up",
   ARCHIVED: "Archived",
 };
@@ -18,10 +22,18 @@ const statusClass: Record<CaseStatus, string> = {
   ARCHIVED: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };
 
-export function StatusBadge({ status }: { status: CaseStatus }) {
+/** Who is looking: the student who owns the issue, or anyone else (staff, library readers). */
+export type StatusViewer = "owner" | "other";
+
+export function statusLabelFor(status: CaseStatus, viewer: StatusViewer = "other"): string {
+  if (viewer === "owner" && status === "AWAITING_STUDENT") return "Needs your reply";
+  return STATUS_LABELS[status];
+}
+
+export function StatusBadge({ status, viewer = "other" }: { status: CaseStatus; viewer?: StatusViewer }) {
   return (
     <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusClass[status]}`}>
-      {statusLabel[status]}
+      {statusLabelFor(status, viewer)}
     </span>
   );
 }

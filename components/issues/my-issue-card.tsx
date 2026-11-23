@@ -142,7 +142,7 @@ export function MyIssueCard({ issue, roomOpen, now, enterIndex = 0 }: MyIssueCar
         </h2>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <StatusBadge status={issue.status} />
+          <StatusBadge status={issue.status} viewer="owner" />
           {teamReplied && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-100 px-2 py-1 text-xs font-semibold text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-200">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-cyan-500" />

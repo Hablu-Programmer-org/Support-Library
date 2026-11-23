@@ -56,6 +56,7 @@ export function StudentRequestView({
       <IssueDetailHeader
         title={issue.title}
         status={issue.status}
+        statusViewer="owner"
         showPriority={false}
         isPublished={issue.visibility === "PUBLISHED"}
         createdAt={issue.createdAt}

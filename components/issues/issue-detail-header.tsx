@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { ArrowDownIcon, ArrowLeftIcon, PencilIcon } from "@/components/icons";
 import { CopyForAiButton } from "@/components/issues/copy-for-ai-button";
-import { StatusBadge } from "@/components/issues/status-badge";
+import { StatusBadge, type StatusViewer } from "@/components/issues/status-badge";
 import { formatSupportDate } from "@/lib/format-date";
 import type { CaseStatus } from "@/models";
 
@@ -28,6 +28,8 @@ const actionClass =
 type IssueDetailHeaderProps = {
   title: string;
   status: CaseStatus;
+  /** The owning student sees "Needs your reply"; everyone else "Waiting on student". */
+  statusViewer?: StatusViewer;
   priority?: string | null;
   isPublished: boolean;
   createdAt?: Date | null;
@@ -72,6 +74,7 @@ function MetaTime({ label, value }: { label: string; value?: Date | null }) {
 export function IssueDetailHeader({
   title,
   status,
+  statusViewer = "other",
   priority,
   isPublished,
   createdAt,
@@ -111,7 +114,7 @@ export function IssueDetailHeader({
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={status} />
+            <StatusBadge status={status} viewer={statusViewer} />
             {showPriority ? (
               <span className={`${chip} ${priorityClass[priorityKey] ?? neutralChip}`}>
                 {priorityLabels[priorityKey] ?? priorityKey}
