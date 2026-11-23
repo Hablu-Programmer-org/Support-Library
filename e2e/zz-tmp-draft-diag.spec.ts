@@ -18,14 +18,41 @@ test("diag draft restore", async ({ page }) => {
   await issueDetailsEditor(form).click();
   await page.keyboard.type("Module 5 text");
   await expect.poll(async () => ((await dump(page)) ?? "").includes("Module 5")).toBe(true);
-  const before = await dump(page);
+
+  // From here on, log every draft write and every time the editor text changes.
+  await page.addInitScript(() => {
+    const log: string[] = [];
+    (window as unknown as { __log: string[] }).__log = log;
+    const t0 = performance.now();
+    const stamp = () => Math.round(performance.now() - t0);
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key.includes("issue-draft")) {
+        log.push(`${stamp()}ms setItem question=${JSON.stringify(JSON.parse(value).question)}`);
+      }
+      return set.call(this, key, value);
+    };
+    const rm = Storage.prototype.removeItem;
+    Storage.prototype.removeItem = function (key: string) {
+      if (key.includes("issue-draft")) log.push(`${stamp()}ms removeItem`);
+      return rm.call(this, key);
+    };
+    let last = "";
+    new MutationObserver(() => {
+      const el = document.querySelector('[role="textbox"][aria-label="Issue details"], [aria-label="Issue details"]');
+      const text = el ? (el.textContent ?? "").replace(/\s+/g, " ").trim() : "(no editor)";
+      if (text !== last) {
+        last = text;
+        log.push(`${stamp()}ms editorText=${JSON.stringify(text)}`);
+      }
+    }).observe(document, { childList: true, subtree: true, characterData: true });
+  });
 
   await page.reload();
   const restored = formFor(page, "Create issue");
   await expect(restored.locator('input[name="title"]')).toHaveValue("Draft survives reload");
   await page.waitForTimeout(1500);
-  const after = await dump(page);
+  const log = await page.evaluate(() => (window as unknown as { __log: string[] }).__log);
   const editorText = (await issueDetailsEditor(restored).innerText()).replace(/\s+/g, " ").trim();
-  const hidden = await restored.locator('input[type="hidden"][name="question"]').inputValue();
-  console.log("DIAG " + JSON.stringify({ before, after, editorText, hidden }));
+  console.log("DIAG final=" + JSON.stringify(editorText) + " log=" + JSON.stringify(log));
 });
