@@ -1,24 +1,20 @@
 import Link from "next/link";
+import type { ComponentProps } from "react";
 
-import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
-import type { SupportPhase } from "@/lib/config/live-support";
+import { LiveSupportGuideButton } from "@/components/live-support/live-support-guide-button";
 
 /**
  * End of a published issue for a student: the answer above did not help, so
  * point to the two ways forward instead of ending the page on metadata.
- * The live-support line comes from the schedule (`liveSupportNow`), so the
- * disabled join button always has its reason in plain text next to it.
+ * Live support opens the how-to dialog (`LiveSupportGuideButton`), which also
+ * carries the direct join.
  */
 export function IssueNextStep({
-  csrfToken,
-  shift,
-  liveSupportConfigured,
-  liveSupportLabel,
+  liveSupportStatus,
+  join,
 }: {
-  csrfToken: string;
-  shift: SupportPhase;
-  liveSupportConfigured: boolean;
-  liveSupportLabel: string;
+  liveSupportStatus: string;
+  join: ComponentProps<typeof LiveSupportGuideButton>["join"];
 }) {
   return (
     <section
@@ -32,9 +28,7 @@ export function IssueNextStep({
         >
           Still stuck?
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          {liveSupportConfigured ? liveSupportLabel : "Live support is unavailable right now"}
-        </p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{liveSupportStatus}</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Link
@@ -43,11 +37,7 @@ export function IssueNextStep({
         >
           Create an issue
         </Link>
-        <QuickLiveSupportButton
-          configured={liveSupportConfigured}
-          csrfToken={csrfToken}
-          shift={shift}
-        />
+        <LiveSupportGuideButton join={join} statusLabel={liveSupportStatus} />
       </div>
     </section>
   );

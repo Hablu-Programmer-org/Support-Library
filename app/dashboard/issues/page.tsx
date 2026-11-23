@@ -13,7 +13,7 @@ import {
   NoIssuesState,
   NoResultsState,
 } from "@/components/issues/issue-list-states";
-import { QuickLiveSupportButton } from "@/components/live-support/quick-live-support-button";
+import { LiveSupportGuideButton } from "@/components/live-support/live-support-guide-button";
 import { PageHeader } from "@/components/shared/page-header";
 import { AccessHelpCard } from "@/components/tool-access/access-help-card";
 import { requireSession } from "@/lib/auth-guard";
@@ -154,8 +154,19 @@ export default async function IssuesPage({
   const activity = canManage ? await getIssueActivitySnapshot() : null;
   // Both are resolved here, server-side: the browser clock is display only and
   // the room URL never leaves the action.
-  const quickJoinShift = showQuickJoin ? currentShift(new Date()) : "off";
-  const quickJoinConfigured = showQuickJoin ? isLiveSupportConfigured() : false;
+  // Live support starts from the student's own issue; the list button only
+  // explains how (owner, 2026-11-23). The status line is resolved here.
+  const liveSupportConfigured = showQuickJoin && isLiveSupportConfigured();
+  const liveSupportStatus = liveSupportConfigured
+    ? `${liveSupportNow(new Date()).label}.`
+    : "Live support is unavailable right now.";
+  // The dialog's direct join: shift and room resolved server-side; the room URL
+  // only ever comes back from the action.
+  const directJoin = {
+    csrfToken,
+    shift: showQuickJoin ? currentShift(new Date()) : ("off" as const),
+    configured: liveSupportConfigured,
+  };
 
   // The list URL travelling with every row: a detail page hands it back so
   // "Back to results" (and every action that redirects) returns to this exact
@@ -179,11 +190,7 @@ export default async function IssuesPage({
         {canManage ? "New Issue" : "Create an issue"}
       </Link>
       {showQuickJoin && (
-        <QuickLiveSupportButton
-          configured={quickJoinConfigured}
-          csrfToken={csrfToken}
-          shift={quickJoinShift}
-        />
+        <LiveSupportGuideButton join={directJoin} statusLabel={liveSupportStatus} />
       )}
       {canManage && activity && (
         <IssueRefreshControl initialRevision={activity.revision} />
@@ -204,11 +211,7 @@ export default async function IssuesPage({
           actions={headerActions}
           // The join button sits beside this line and is disabled off-shift;
           // the reason lives here, not under the button (owner, 2026-11-03).
-          description={`Search first — issues can be submitted 24/7. ${
-            quickJoinConfigured
-              ? `${liveSupportNow(new Date()).label}.`
-              : "Live support is unavailable right now."
-          }`}
+          description={`Search first — issues can be submitted 24/7. ${liveSupportStatus}`}
           tags={popularTags.map(({ tag, label }) => ({
             tag: label,
             active: filters.tag === tag,

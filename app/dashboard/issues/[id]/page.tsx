@@ -97,9 +97,8 @@ export default async function IssueDetailPage({
   });
   const csrfToken = await generateCsrfToken(session.user.id);
   // A student reading someone else's published answer gets a way forward at
-  // the end; staff already have the composer there. Shift resolved server-side.
+  // the end; staff already have the composer there.
   const showNextStep = !canEdit && canCreateIssue(session.user.role);
-  const now = new Date();
 
   // Admin-only: the prompt carries the full thread, which mentors can read but
   // only admins may hand to an external assistant. It is built from an explicit
@@ -218,10 +217,16 @@ export default async function IssueDetailPage({
 
           {showNextStep && (
             <IssueNextStep
-              csrfToken={csrfToken}
-              liveSupportConfigured={isLiveSupportConfigured()}
-              liveSupportLabel={liveSupportNow(now).label}
-              shift={currentShift(now)}
+              join={{
+                csrfToken,
+                shift: currentShift(new Date()),
+                configured: isLiveSupportConfigured(),
+              }}
+              liveSupportStatus={
+                isLiveSupportConfigured()
+                  ? `${liveSupportNow(new Date()).label}.`
+                  : "Live support is unavailable right now."
+              }
             />
           )}
         </main>

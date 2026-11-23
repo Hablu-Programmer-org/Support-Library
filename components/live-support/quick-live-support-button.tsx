@@ -14,6 +14,8 @@ type QuickLiveSupportButtonProps = {
   /** Whether this deployment has a room URL to redirect to. */
   configured: boolean;
   csrfToken: string;
+  /** Extra classes for the button (e.g. matching a dialog's action row height). */
+  className?: string;
 };
 
 const joinClass = cn(
@@ -48,6 +50,7 @@ export function QuickLiveSupportButton({
   shift,
   configured,
   csrfToken,
+  className,
 }: QuickLiveSupportButtonProps) {
   const isOpen = shift !== "off";
 
@@ -55,7 +58,7 @@ export function QuickLiveSupportButton({
     <ExternalActionForm
       action={joinLiveSupportQuickAction}
       ariaLabel={LIVE_SUPPORT_CTA.join}
-      className={joinClass}
+      className={cn(joinClass, className)}
       disabled={!isOpen || !configured}
       errorClassName={errorClass}
       fallbackLabel={LIVE_SUPPORT_CTA.open}
