@@ -31,19 +31,19 @@ test.describe("Reply edit and delete interactions", () => {
     const reply = await createIssueWithReply(page, "Original reply body", Date.now().toString());
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
-    const editor = reply.locator('textarea[name="body"]');
+    const editor = reply.getByRole("textbox", { name: "Edit reply", exact: true });
     await expect(editor).toBeVisible();
 
     await editor.fill("Never saved");
     await reply.getByRole("button", { name: "Cancel" }).click();
-    await expect(reply.locator('textarea[name="body"]')).toHaveCount(0);
+    await expect(reply.getByRole("textbox", { name: "Edit reply", exact: true })).toHaveCount(0);
     await expect(reply).toContainText("Original reply body");
     await expect(reply).not.toContainText("Never saved");
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
-    await reply.locator('textarea[name="body"]').fill("Updated reply body");
+    await fillMarkdownEditor(reply, "Edit reply", "body", "Updated reply body");
     await reply.getByRole("button", { name: "Save" }).click();
-    await expect(reply.locator('textarea[name="body"]')).toHaveCount(0);
+    await expect(reply.getByRole("textbox", { name: "Edit reply", exact: true })).toHaveCount(0);
     await expect(reply).toContainText("Updated reply body");
     await expect(reply).not.toContainText("Original reply body");
     await expect(reply).toContainText("edited");

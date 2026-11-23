@@ -43,11 +43,11 @@ type AttachNotice = { message: string; container: HTMLElement | null };
 
 /** Status line for screenshots pasted or dropped on the editor. */
 export function describeAttach(
-  outcome: (AttachOutcome & { container: HTMLElement | null }) | null,
+  outcome: (AttachOutcome & { container: HTMLElement | null; label?: string }) | null,
 ): AttachNotice {
-  if (!outcome) return { message: "Add screenshots in the Screenshots section.", container: null };
-  const { added, note, container } = outcome;
-  const addedText = added > 0 ? `${added} screenshot${added === 1 ? "" : "s"} added to Screenshots below.` : "";
+  if (!outcome) return { message: "Screenshots can't be attached here.", container: null };
+  const { added, note, container, label = "Screenshots" } = outcome;
+  const addedText = added > 0 ? `${added} screenshot${added === 1 ? "" : "s"} added to ${label} below.` : "";
   return { message: [addedText, note].filter(Boolean).join(" ") || "No screenshots were added.", container };
 }
 

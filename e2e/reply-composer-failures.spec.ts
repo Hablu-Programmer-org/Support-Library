@@ -106,14 +106,14 @@ test.describe("Reply composer failure reporting", () => {
     await expect(reply).toBeVisible();
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
-    await reply.locator('textarea[name="body"]').fill("Edited body that must survive");
+    await fillMarkdownEditor(reply, "Edit reply", "body", "Edited body that must survive");
     await reply.locator('textarea[name="videoLinks"]').fill("not a usable link");
     await reply.getByRole("button", { name: "Save" }).click();
 
     await expect(page.getByRole("alert").filter({ hasText: /Video links could not be read/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Something Went Wrong" })).toHaveCount(0);
     // The editor stays open, with the edit still in it.
-    await expect(reply.locator('textarea[name="body"]')).toHaveValue("Edited body that must survive");
+    await expect(markdownValue(reply, "body")).toHaveValue("Edited body that must survive");
     await expect(reply.locator('textarea[name="videoLinks"]')).toHaveValue("not a usable link");
   });
 });

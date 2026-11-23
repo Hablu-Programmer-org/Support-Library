@@ -150,6 +150,9 @@ describe("describeAttach", () => {
     expect(describeAttach({ added: 0, note: "1 file skipped: already selected.", container }).message).toBe(
       "1 file skipped: already selected.",
     );
-    expect(describeAttach(null)).toEqual({ message: "Add screenshots in the Screenshots section.", container: null });
+    expect(describeAttach({ added: 1, note: null, container, label: "Attachments" }).message).toBe(
+      "1 screenshot added to Attachments below.",
+    );
+    expect(describeAttach(null)).toEqual({ message: "Screenshots can't be attached here.", container: null });
   });
 });

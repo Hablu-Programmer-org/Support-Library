@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { type FormEvent, useActionState, useRef, useState } from "react";
 
 import { deleteReplyAction, editReplyAction, type ReplyFormState } from "@/actions/replies";
 import { CheckCircleIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import type { IssueEditorApi } from "@/components/issues/issue-editor";
+import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { AttachmentList, formatByteSize } from "@/components/shared/attachment-list";
 import { LinkList } from "@/components/shared/link-list";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
@@ -66,6 +68,34 @@ export function ReplyItem({
   authorLabel?: string;
 }) {
   const [editing, setEditing] = useState(false);
+  // The editor's Markdown. Filled from the saved reply each time the editor
+  // opens; a rejected save keeps what was typed.
+  const [editBody, setEditBody] = useState(reply.body);
+  const [editBodyError, setEditBodyError] = useState<string | null>(null);
+  const editorApi = useRef<IssueEditorApi | null>(null);
+
+  const toggleEditing = () => {
+    if (!editing) {
+      setEditBody(reply.body);
+      setEditBodyError(null);
+    }
+    setEditing(!editing);
+  };
+
+  const onEditSubmit = (event: FormEvent<HTMLFormElement>) => {
+    // The body lives in a hidden input, which the browser never validates.
+    const problem = replyBodyProblem(editBody, { emptyMessage: "A reply can't be empty. Delete it instead." });
+    if (problem) {
+      event.preventDefault();
+      setEditBodyError(problem);
+      editorApi.current?.focus();
+    }
+  };
+
+  const onEditBodyChange = (value: string) => {
+    setEditBody(value);
+    if (editBodyError && !replyBodyProblem(value)) setEditBodyError(null);
+  };
   const [editState, editFormAction, editPending] = useActionState(
     editReplyAction.bind(null, issueId, reply.id),
     INITIAL_STATE,
@@ -143,7 +173,7 @@ export function ReplyItem({
               aria-label="Edit"
               aria-expanded={editing}
               title="Edit reply"
-              onClick={() => setEditing((value) => !value)}
+              onClick={toggleEditing}
               className="inline-flex size-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               <PencilIcon size={16} />
@@ -190,22 +220,22 @@ export function ReplyItem({
       )}
 
       {canEdit && editing && (
-        <form action={editFormAction} className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+        <form
+          action={editFormAction}
+          onSubmit={onEditSubmit}
+          className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800"
+        >
           <input type="hidden" name="csrfToken" value={csrfToken} />
-          <label className={nativeLabelClass}>
-            Edit Reply <span className="text-danger">*</span>
-            <textarea
-              name="body"
-              defaultValue={editState.values?.body ?? reply.body}
-              rows={4}
-              required
-              maxLength={20_000}
-              className={nativeTextareaClass}
-            />
-            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
-              Use ### for headings, - for lists, **text** for bold, `code`, and [label](https://example.com) for links.
-            </span>
-          </label>
+          <ReplyBodyField
+            id={`reply-edit-${reply.id}`}
+            name="body"
+            label="Edit reply"
+            required
+            value={editBody}
+            onChange={onEditBodyChange}
+            error={editBodyError}
+            apiRef={editorApi}
+          />
           <label className={nativeLabelClass}>
             Video links
             <textarea

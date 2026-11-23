@@ -44,6 +44,8 @@ export type AttachOutcome = {
 
 type DropTarget = {
   container: () => HTMLElement | null;
+  /** The field's visible label, for messages about where files went. */
+  label: () => string;
   add: (files: readonly File[]) => AttachOutcome;
 };
 
@@ -151,7 +153,8 @@ function nearestDropTarget(source: Element | null): DropTarget | null {
 
 /**
  * Hand files to the attachment field that belongs with `source` — the nearest
- * one in the same form, else the first one on screen — the way a drop on the page
+ * one in the same form (none if that form has no field), else the first one on
+ * screen — the way a drop on the page
  * would. Used by the issue editor for pasted and dropped screenshots, which
  * must never become inline images (attachments stay private until publish).
  * Returns null when no field is mounted.
@@ -159,15 +162,16 @@ function nearestDropTarget(source: Element | null): DropTarget | null {
 export function attachFilesNear(
   source: Element | null,
   files: readonly File[],
-): (AttachOutcome & { container: HTMLElement | null }) | null {
+): (AttachOutcome & { container: HTMLElement | null; label: string }) | null {
   // A drop the editor consumed never reaches the window listener.
   stopTracking();
-  const target =
-    nearestDropTarget(source) ||
-    Array.from(dropTargets).find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ||
-    null;
+  // A source inside a form only ever feeds that form: a form without a field
+  // (editing a reply) must not attach to another form on the page.
+  const target = source?.closest("form")
+    ? nearestDropTarget(source)
+    : Array.from(dropTargets).find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ?? null;
   if (!target) return null;
-  return { ...target.add(files), container: target.container() };
+  return { ...target.add(files), container: target.container(), label: target.label() };
 }
 
 function installDropListeners() {
@@ -250,9 +254,11 @@ export function AttachmentField({
   const urlsRef = useRef(new Map<string, string>());
   const filesRef = useRef<File[]>([]);
   const onCountChangeRef = useRef(onCountChange);
+  const labelRef = useRef(label);
   useEffect(() => {
     onCountChangeRef.current = onCountChange;
-  }, [onCountChange]);
+    labelRef.current = label;
+  }, [onCountChange, label]);
   const inputId = useId();
   const descriptionId = `${inputId}-description`;
 
@@ -335,6 +341,7 @@ export function AttachmentField({
   useEffect(() => {
     const target: DropTarget = {
       container: () => containerRef.current,
+      label: () => labelRef.current,
       add: (incoming) => addFilesRef.current(incoming),
     };
 

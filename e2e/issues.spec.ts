@@ -113,7 +113,7 @@ test.describe("Issue CRUD (mentor)", () => {
     // While editing, the body paragraph is replaced by the editor, so anchor the
     // editor on the reply article itself rather than on the old body text.
     const editor = reply;
-    await editor.locator('textarea[name="body"]').fill("Edited: use /public/image.png");
+    await fillMarkdownEditor(editor, "Edit reply", "body", "Edited: use /public/image.png");
     await editor.getByRole("button", { name: "Save" }).click();
 
     await expect(
