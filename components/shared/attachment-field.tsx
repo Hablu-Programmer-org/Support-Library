@@ -34,9 +34,17 @@ export const ACCEPTED_IMAGE_TYPES = ACCEPTED_IMAGE_ACCEPT;
  * somewhere else (a heading, the page margin), so the gesture never does
  * nothing.
  */
+/** What happened to files handed to a field. */
+export type AttachOutcome = {
+  /** Files that joined the selection. */
+  added: number;
+  /** The field's own note about skipped files (type, limit, duplicate), if any. */
+  note: string | null;
+};
+
 type DropTarget = {
   container: () => HTMLElement | null;
-  add: (files: readonly File[]) => void;
+  add: (files: readonly File[]) => AttachOutcome;
 };
 
 const dropTargets = new Set<DropTarget>();
@@ -113,6 +121,32 @@ function handleDrop(event: DragEvent) {
   const dropped = event.dataTransfer ? Array.from(event.dataTransfer.files) : [];
   stopTracking();
   if (target && dropped.length) target.add(dropped);
+}
+
+/**
+ * Hand files to the attachment field that belongs with `source` — the field in
+ * the same form, else the first one on screen — the way a drop on the page
+ * would. Used by the issue editor for pasted and dropped screenshots, which
+ * must never become inline images (attachments stay private until publish).
+ * Returns null when no field is mounted.
+ */
+export function attachFilesNear(
+  source: Element | null,
+  files: readonly File[],
+): (AttachOutcome & { container: HTMLElement | null }) | null {
+  // A drop the editor consumed never reaches the window listener.
+  stopTracking();
+  const form = source?.closest("form") ?? null;
+  const targets = Array.from(dropTargets);
+  const target =
+    (form && targets.find((candidate) => {
+      const container = candidate.container();
+      return Boolean(container && form.contains(container));
+    })) ||
+    targets.find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ||
+    null;
+  if (!target) return null;
+  return { ...target.add(files), container: target.container() };
 }
 
 function installDropListeners() {
@@ -228,13 +262,15 @@ export function AttachmentField({
   }, []);
 
   const addFiles = useCallback(
-    (incoming: readonly File[]) => {
-      if (!incoming.length) return;
+    (incoming: readonly File[]): AttachOutcome => {
+      if (!incoming.length) return { added: 0, note: null };
       if (budget === 0) {
-        setNote(`This item already has ${maxFiles} images. Remove one to add another.`);
-        return;
+        const full = `This item already has ${maxFiles} images. Remove one to add another.`;
+        setNote(full);
+        return { added: 0, note: full };
       }
 
+      const before = filesRef.current.length;
       const result = mergeFileSelection({
         existing: filesRef.current,
         incoming,
@@ -242,7 +278,9 @@ export function AttachmentField({
       });
 
       replaceFiles(result.files);
-      setNote(describeMerge(result, budget));
+      const note = describeMerge(result, budget);
+      setNote(note);
+      return { added: result.files.length - before, note };
     },
     [budget, maxFiles, replaceFiles],
   );

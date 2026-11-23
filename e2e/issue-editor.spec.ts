@@ -7,6 +7,7 @@ import {
   issueDetailsEditor,
   submitAndWait,
 } from "./form-helpers";
+import { TINY_PNG } from "./image-fixture";
 
 /**
  * The student details field is a Tiptap editor that submits Markdown through
@@ -105,6 +106,55 @@ test.describe("Issue details editor (student)", () => {
     await expect(question(form)).toHaveValue(
       "My error:\n\nTypeError: Cannot read properties of undefined (reading 'map')\n\nat App (App.jsx:12:5)",
     );
+  });
+
+  test("pasted and dropped screenshots go to Screenshots and are uploaded with the issue", async ({ page }) => {
+    const title = `E2E editor screenshot ${Date.now()}`;
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create issue");
+    const editor = issueDetailsEditor(form);
+    await editor.click();
+
+    const pngBase64 = TINY_PNG.toString("base64");
+    // Clipboard screenshot: an image and no text.
+    await editor.evaluate((element, data) => {
+      const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes], "pasted.png", { type: "image/png", lastModified: 1 }));
+      element.dispatchEvent(new ClipboardEvent("paste", { clipboardData: transfer, bubbles: true, cancelable: true }));
+    }, pngBase64);
+    await expect(form.getByRole("status").filter({ hasText: "1 screenshot added to Screenshots below." })).toBeVisible();
+    await expect(form.locator('img[alt="Preview of pasted.png"]')).toBeVisible();
+    await expect(editor.locator("img")).toHaveCount(0);
+
+    // Dragged from the desktop onto the text.
+    await editor.evaluate((element, data) => {
+      const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0));
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([bytes], "dropped.png", { type: "image/png", lastModified: 2 }));
+      const box = element.getBoundingClientRect();
+      element.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: transfer, bubbles: true, cancelable: true, clientX: box.left + 10, clientY: box.top + 10 }),
+      );
+    }, pngBase64);
+    await expect(form.locator('img[alt="Preview of dropped.png"]')).toBeVisible();
+    // Added once, not also by the page-wide drop listener.
+    await expect(form.locator('img[alt^="Preview of "]')).toHaveCount(2);
+
+    // Both ride in the real file input, so the existing upload path sends them
+    // (attachments.spec.ts covers what staff then see).
+    expect(
+      await form.locator('input[type="file"][name="uploads"]').evaluate((input) =>
+        Array.from((input as HTMLInputElement).files ?? []).map((file) => file.name),
+      ),
+    ).toEqual(["pasted.png", "dropped.png"]);
+
+    await editor.click();
+    await page.keyboard.press("ControlOrMeta+End");
+    await page.keyboard.type("The submit button on the assignment page does nothing, see the screenshots.");
+    await form.locator('input[name="title"]').fill(title);
+    await chooseStudentCourse(form);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
   });
 
   test("works at 375px with Bangla text and no horizontal scroll", async ({ page }) => {

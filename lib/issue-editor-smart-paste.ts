@@ -47,7 +47,9 @@ export const IssueSmartPaste = Extension.create<SmartPasteOptions, SmartPasteSto
         props: {
           handlePaste: (_view, event) => {
             const data = event.clipboardData;
-            if (!data || data.files.length > 0) return false;
+            // File-only pastes (screenshots) belong to IssueFileIntake; a file
+            // next to text (Word's PNG of the selection) does not stop this.
+            if (!data) return false;
             const text = data.getData("text/plain");
             if (!text || !looksLikeCode(text) || isStructuredHtml(data.getData("text/html"))) return false;
             if (editor.isActive("codeBlock") || editor.isActive("code")) return false;
