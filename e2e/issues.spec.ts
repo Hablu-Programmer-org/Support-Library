@@ -89,7 +89,8 @@ test.describe("Issue CRUD (mentor)", () => {
     await expect(form.locator('select[name="status"]')).toHaveCount(0);
     await form.locator('input[name="solveIssue"]').uncheck();
     await submitCreate(page);
-    await expect(page.getByText("E2E React image not rendering")).toBeVisible();
+    // The h1, not Next.js's route announcer, which repeats it after a navigation.
+    await expect(page.getByRole("heading", { level: 1, name: "E2E React image not rendering" })).toBeVisible();
     await expect(page.locator("span").filter({ hasText: /^Open$/ }).first()).toBeVisible();
     await expect(page.locator("p").filter({ hasText: "Image show hocche na in React component" }).first()).toBeVisible();
 

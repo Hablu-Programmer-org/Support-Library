@@ -145,7 +145,7 @@ test.describe("Issue search (mentor)", () => {
 
   test("shows a recoverable empty state", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${encodeURIComponent(`nomatch${token}`)}`);
-    await expect(page.getByText(`No results for`, { exact: false })).toBeVisible();
+    await expect(page.getByRole("main").getByText(`No results for`, { exact: false })).toBeVisible();
     await expect(page.getByRole("link", { name: "Clear search" })).toBeVisible();
   });
 
@@ -165,12 +165,12 @@ test.describe("Issue search (student)", () => {
 
   test("does not expose the student's name through search", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=${privateName}`);
-    await expect(page.getByText("No results for", { exact: false })).toBeVisible();
+    await expect(page.getByRole("main").getByText("No results for", { exact: false })).toBeVisible();
     await expect(heading(page, "published")).toHaveCount(0);
   });
 
   test("does not expose staff-only reply content", async ({ page }) => {
     await page.goto(`/dashboard/issues?q=studentprivatewords`);
-    await expect(page.getByText("No results for", { exact: false })).toBeVisible();
+    await expect(page.getByRole("main").getByText("No results for", { exact: false })).toBeVisible();
   });
 });
