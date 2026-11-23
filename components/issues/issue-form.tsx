@@ -8,6 +8,8 @@ import { StudentFields } from "@/components/issues/student-fields";
 import { Accordion } from "@/components/issues/accordion";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { AttachmentField } from "@/components/shared/attachment-field";
+import type { IssueEditorApi } from "@/components/issues/issue-editor";
+import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
 import { formatByteSize } from "@/components/shared/attachment-list";
@@ -278,6 +280,8 @@ export function IssueForm({
     initFormData(supportIssue),
   );
   const operationIdRef = useRef<HTMLInputElement>(null);
+  const solutionEditorApi = useRef<IssueEditorApi | null>(null);
+  const [solutionBodyError, setSolutionBodyError] = useState<string | null>(null);
 
   // Sync formData with supportIssue when it changes (for edit mode)
   // Using key prop on form to reset instead of useEffect to avoid lint warning
@@ -330,13 +334,32 @@ export function IssueForm({
     }
   };
 
+  const solutionProblem = (value: string) => replyBodyProblem(value, { required: false });
+
+  const handleSolutionBodyChange = (value: string) => {
+    updateField("solutionBody", value);
+    if (solutionBodyError && !solutionProblem(value)) setSolutionBodyError(null);
+  };
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    // The answer lives in a hidden input, which the browser never validates.
+    const problem = solutionProblem(formData.solutionBody);
+    if (problem) {
+      event.preventDefault();
+      setSolutionBodyError(problem);
+      solutionEditorApi.current?.focus();
+      return;
+    }
+    ensureOperationId();
+  };
+
   return (
     <form
       key={formKey}
       action={formAction}
       className="space-y-6"
       onKeyDown={handleKeyDown}
-      onSubmit={ensureOperationId}
+      onSubmit={onSubmit}
     >
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
       {supportIssue && <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt ?? ""} />}
@@ -541,21 +564,17 @@ export function IssueForm({
             saved as the first reply.
           </p>
           <div className="space-y-4">
-            <FieldWrapper
-              label="Answer"
-              className="pt-2.5"
-              error={state.fieldErrors?.solutionBody?.[0]}
-            >
-              <ControlledTextarea
+            <div className="pt-2.5">
+              <ReplyBodyField
+                id="issue-solution-body"
                 name="solutionBody"
+                label="Answer"
                 value={formData.solutionBody}
-                onChange={handleChange("solutionBody")}
-                rows={4}
-                maxLength={20_000}
-                error={state.fieldErrors?.solutionBody?.[0]}
-                placeholder="Write your solution here..."
+                onChange={handleSolutionBodyChange}
+                error={solutionBodyError ?? state.fieldErrors?.solutionBody?.[0]}
+                apiRef={solutionEditorApi}
               />
-            </FieldWrapper>
+            </div>
 
             <div className="flex flex-col gap-1.5">
               <AttachmentField

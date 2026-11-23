@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+import { REPLY_BODY_MAX } from "@/lib/constants";
+
 import { objectIdSchema, videoLinksSchema } from "./common";
 
 export const supportReplyInputSchema = z.strictObject({
   issueId: objectIdSchema,
-  body: z.string().trim().min(1).max(20_000),
+  body: z.string().trim().min(1).max(REPLY_BODY_MAX),
   videoLinks: videoLinksSchema,
 });
 

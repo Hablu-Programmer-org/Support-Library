@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
@@ -25,7 +25,7 @@ test.describe("Issue CRUD (mentor)", () => {
         .fill("How do I fix the broken image path after deploying the React application?");
       await expect(form.locator('textarea[name="fileLinks"]')).toHaveCount(0);
       await expect(form.locator('textarea[name="solutionFileLinks"]')).toHaveCount(0);
-      await form.locator('textarea[name="solutionBody"]').fill(scenario.body);
+      await fillMarkdownEditor(form, "Answer", "solutionBody", scenario.body);
       await form
         .locator('textarea[name="solutionVideoLinks"]')
         .fill("Walkthrough|https://example.com/fix.mp4|01:20");
@@ -105,7 +105,7 @@ test.describe("Issue CRUD (mentor)", () => {
       .locator("form")
       .filter({ has: page.getByRole("button", { name: "Add response" }) })
       .first();
-    await replyForm.locator('textarea[name="body"]').fill("Use public folder with /image.png");
+    await fillMarkdownEditor(replyForm, "Response", "body", "Use public folder with /image.png");
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: "Use public folder with /image.png" })).toBeVisible();
 

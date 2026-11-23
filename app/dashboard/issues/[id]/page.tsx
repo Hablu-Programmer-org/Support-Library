@@ -226,7 +226,9 @@ export default async function IssueDetailPage({
               />
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70">
+                {/* A new reply remounts it, so the sent response leaves the editor. */}
                 <ReplyComposer
+                  key={replies.length}
                   issueId={supportIssue.id}
                   csrfToken={csrfToken}
                   returnTo={returnTo ?? undefined}

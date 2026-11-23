@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 import { dbConnect } from "../lib/db";
 import { SupportIssueModel } from "../models";
-import { formFor } from "./form-helpers";
+import { fillMarkdownEditor, formFor, markdownValue } from "./form-helpers";
 
 /**
  * The reply composer reports its failures in the form.
@@ -46,7 +46,7 @@ test.describe("Reply composer failure reporting", () => {
     // this has to look like an image to the client and fail the server's
     // magic-byte check — that is the rejection this test is about.
     const replyForm = formFor(page, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill("Reply with a bad attachment");
+    await fillMarkdownEditor(replyForm, "Response", "body", "Reply with a bad attachment");
     await replyForm.getByText("Add attachments or video links").click();
     await replyForm.locator('input[type="file"]').setInputFiles({
       name: "reply-not-an-image.png",
@@ -58,14 +58,14 @@ test.describe("Reply composer failure reporting", () => {
     await expect(page.getByRole("alert").filter({ hasText: /not a supported image/ })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Something Went Wrong" })).toHaveCount(0);
     // The half-written response survives the failure.
-    await expect(formFor(page, "Add response").locator('textarea[name="body"]')).toHaveValue(
+    await expect(markdownValue(formFor(page, "Add response"), "body")).toHaveValue(
       "Reply with a bad attachment",
     );
   });
 
   test("a stale CSRF token asks for a reload instead of crashing the page", async ({ page }) => {
     const replyForm = formFor(page, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill("Reply with a stale token");
+    await fillMarkdownEditor(replyForm, "Response", "body", "Reply with a stale token");
     await replyForm.locator('input[name="csrfToken"]').evaluate((input) => {
       (input as HTMLInputElement).value = "v1.1.1.deadbeef.invalid";
     });
@@ -73,14 +73,14 @@ test.describe("Reply composer failure reporting", () => {
 
     await expect(page.getByRole("alert").filter({ hasText: /session expired/i })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Something Went Wrong" })).toHaveCount(0);
-    await expect(formFor(page, "Add response").locator('textarea[name="body"]')).toHaveValue(
+    await expect(markdownValue(formFor(page, "Add response"), "body")).toHaveValue(
       "Reply with a stale token",
     );
   });
 
   test("two responses written on the same page view both save", async ({ page }) => {
     const firstForm = formFor(page, "Add response");
-    await firstForm.locator('textarea[name="body"]').fill("First response body");
+    await fillMarkdownEditor(firstForm, "Response", "body", "First response body");
     await firstForm.getByRole("button", { name: "Add response" }).click();
     await expect(
       page.locator('[data-testid^="reply-"]').filter({ hasText: "First response body" }),
@@ -88,7 +88,7 @@ test.describe("Reply composer failure reporting", () => {
 
     // No reload: the composer regenerates the operation id for the new text.
     const secondForm = formFor(page, "Add response");
-    await secondForm.locator('textarea[name="body"]').fill("Second response body");
+    await fillMarkdownEditor(secondForm, "Response", "body", "Second response body");
     await secondForm.getByRole("button", { name: "Add response" }).click();
 
     await expect(
@@ -99,7 +99,7 @@ test.describe("Reply composer failure reporting", () => {
 
   test("a rejected edit keeps the editor open with what was typed", async ({ page }) => {
     const composer = formFor(page, "Add response");
-    await composer.locator('textarea[name="body"]').fill("Response to edit");
+    await fillMarkdownEditor(composer, "Response", "body", "Response to edit");
     await composer.getByRole("button", { name: "Add response" }).click();
 
     const reply = page.locator('[data-testid^="reply-"]').filter({ hasText: "Response to edit" });

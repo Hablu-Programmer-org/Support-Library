@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 test.use({ storageState: "e2e/.auth/mentor.json" });
 
@@ -20,7 +20,7 @@ async function createIssueWithReply(page: import("@playwright/test").Page, body:
   await submitAndWait(page, "Create Issue", ISSUE_URL);
 
   const replyForm = formFor(page, "Add response");
-  await replyForm.locator('textarea[name="body"]').fill(body);
+  await fillMarkdownEditor(replyForm, "Response", "body", body);
   await replyForm.getByRole("button", { name: "Add response" }).click();
 
   const reply = page.locator('[data-testid^="reply-"]');
@@ -100,7 +100,7 @@ test.describe("Reply edit and delete interactions", () => {
     await submitAndWait(page, "Create Issue", ISSUE_URL);
 
     const replyForm = formFor(page, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill("See the attached references.");
+    await fillMarkdownEditor(replyForm, "Response", "body", "See the attached references.");
     await replyForm.getByText("Add attachments or video links").click();
     await expect(replyForm.locator('textarea[name="fileLinks"]')).toHaveCount(0);
     await replyForm.locator('textarea[name="videoLinks"]').fill("Walkthrough|https://example.com/fix.mp4|01:20");

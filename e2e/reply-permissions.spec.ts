@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 /**
  * Reply mutation is author-scoped, with ADMIN as an override. This needs two
@@ -28,7 +28,7 @@ test.describe("Reply edit/delete permissions", () => {
 
     // Admin authors a reply.
     const replyForm = formFor(page, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill("Admin authored reply");
+    await fillMarkdownEditor(replyForm, "Response", "body", "Admin authored reply");
     await replyForm.getByRole("button", { name: "Add response" }).click();
 
     const adminReply = page.locator("article").filter({ hasText: "Admin authored reply" });

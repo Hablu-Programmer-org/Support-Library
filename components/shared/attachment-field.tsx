@@ -124,8 +124,34 @@ function handleDrop(event: DragEvent) {
 }
 
 /**
- * Hand files to the attachment field that belongs with `source` — the field in
- * the same form, else the first one on screen — the way a drop on the page
+ * The field closest to `source` in its form: the smallest ancestor that holds
+ * a field wins, and the first field in document order within it. A form with
+ * an issue field and an answer field sends each editor's files to its own.
+ */
+function nearestDropTarget(source: Element | null): DropTarget | null {
+  const form = source?.closest("form");
+  if (!source || !form) return null;
+  const targets = Array.from(dropTargets);
+  for (let node = source.parentElement; node; node = node.parentElement) {
+    const inside = targets.filter((candidate) => {
+      const container = candidate.container();
+      return Boolean(container && node.contains(container));
+    });
+    if (inside.length) {
+      return inside.reduce((first, candidate) =>
+        first.container()!.compareDocumentPosition(candidate.container()!) & Node.DOCUMENT_POSITION_PRECEDING
+          ? candidate
+          : first,
+      );
+    }
+    if (node === form) break;
+  }
+  return null;
+}
+
+/**
+ * Hand files to the attachment field that belongs with `source` — the nearest
+ * one in the same form, else the first one on screen — the way a drop on the page
  * would. Used by the issue editor for pasted and dropped screenshots, which
  * must never become inline images (attachments stay private until publish).
  * Returns null when no field is mounted.
@@ -136,14 +162,9 @@ export function attachFilesNear(
 ): (AttachOutcome & { container: HTMLElement | null }) | null {
   // A drop the editor consumed never reaches the window listener.
   stopTracking();
-  const form = source?.closest("form") ?? null;
-  const targets = Array.from(dropTargets);
   const target =
-    (form && targets.find((candidate) => {
-      const container = candidate.container();
-      return Boolean(container && form.contains(container));
-    })) ||
-    targets.find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ||
+    nearestDropTarget(source) ||
+    Array.from(dropTargets).find((candidate) => (candidate.container()?.getClientRects().length ?? 0) > 0) ||
     null;
   if (!target) return null;
   return { ...target.add(files), container: target.container() };

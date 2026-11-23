@@ -17,6 +17,8 @@ export const ISSUE_TITLE_MAX = 200;
  */
 export const ISSUE_DETAILS_CREATE_MIN = 40;
 export const ISSUE_DETAILS_MAX = 20_000;
+/** Replies (and the answer saved as a first reply) share the details cap. */
+export const REPLY_BODY_MAX = 20_000;
 export type CaseStatus = (typeof CASE_STATUSES)[number];
 
 export const CASE_PRIORITIES = ["LOW", "NORMAL", "HIGH", "URGENT"] as const;

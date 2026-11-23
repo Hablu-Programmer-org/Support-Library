@@ -1,10 +1,12 @@
 "use client";
 
-import type { TextareaHTMLAttributes } from "react";
-import { useActionState, useRef } from "react";
+import type { FormEvent, TextareaHTMLAttributes } from "react";
+import { useActionState, useRef, useState } from "react";
 
 import { addReplyAction, type ReplyFormState } from "@/actions/replies";
+import type { IssueEditorApi } from "@/components/issues/issue-editor";
 import { PendingSubmitButton } from "@/components/issues/pending-submit-button";
+import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { AttachmentField } from "@/components/shared/attachment-field";
 import { nativeLabelClass, nativeTextareaClass } from "@/lib/config/fields";
 
@@ -48,6 +50,13 @@ export function ReplyComposer({
   // idempotent), while new text must get a new one — the server rejects a reused
   // operation id that carries a different payload.
   const submittedPayloadRef = useRef<string | null>(null);
+  const editorApi = useRef<IssueEditorApi | null>(null);
+  // Kept in state, so a rejected response is still in the editor. The page
+  // remounts this composer once the reply exists (keyed by the thread).
+  const [body, setBody] = useState("");
+  const [bodyError, setBodyError] = useState<string | null>(null);
+  // A screenshot pasted into the editor must not land in a closed section.
+  const [extrasOpen, setExtrasOpen] = useState(false);
 
   const ensureOperationId = () => {
     const input = operationIdRef.current;
@@ -66,6 +75,23 @@ export function ReplyComposer({
     }
   };
 
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    // The body lives in a hidden input, which the browser never validates.
+    const problem = replyBodyProblem(body);
+    if (problem) {
+      event.preventDefault();
+      setBodyError(problem);
+      editorApi.current?.focus();
+      return;
+    }
+    ensureOperationId();
+  };
+
+  const onBodyChange = (value: string) => {
+    setBody(value);
+    if (bodyError && !replyBodyProblem(value)) setBodyError(null);
+  };
+
   const error = firstError(state);
 
   return (
@@ -79,27 +105,32 @@ export function ReplyComposer({
       <form
         ref={formRef}
         action={formAction}
-        onSubmit={ensureOperationId}
+        onSubmit={onSubmit}
         className="mt-4 space-y-3"
       >
         <input ref={operationIdRef} type="hidden" name="operationId" />
         <input type="hidden" name="csrfToken" value={csrfToken} />
         {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
-        {/* `defaultValue` from the returned state: React resets the form after a
-            form action runs, which would otherwise wipe a failed response. */}
-        <TextAreaField
+        <ReplyBodyField
+          id="reply-body"
           name="body"
           label="Response"
-          rows={5}
           required
-          maxLength={20_000}
-          description="Use ### for headings, - for lists, **text** for bold, `code`, and [label](https://example.com) for links."
-          defaultValue={state.values?.body ?? ""}
+          value={body}
+          onChange={onBodyChange}
+          error={bodyError}
+          apiRef={editorApi}
         />
-        <details className="border-t border-slate-200 pt-3 dark:border-slate-800">
+        <details
+          open={extrasOpen}
+          onToggle={(event) => setExtrasOpen(event.currentTarget.open)}
+          className="border-t border-slate-200 pt-3 dark:border-slate-800"
+        >
           <summary className="cursor-pointer text-sm font-semibold">Add attachments or video links</summary>
           <div className="mt-3 grid gap-3">
-            <AttachmentField />
+            <AttachmentField onCountChange={(count) => count > 0 && setExtrasOpen(true)} />
+            {/* `defaultValue` from the returned state: React resets the form
+                after a form action runs, which would otherwise wipe it. */}
             <TextAreaField
               name="videoLinks"
               label="Video links"

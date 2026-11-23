@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { formFor, submitAndWait } from "./form-helpers";
+import { fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 
 /**
  * STUDENT (students) must only see published issues, and never student PII.
@@ -34,7 +34,7 @@ test.describe("STUDENT content gating", () => {
     const issuePath = new URL(page.url()).pathname;
 
     const replyForm = formFor(page, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill(publicReply);
+    await fillMarkdownEditor(replyForm, "Response", "body", publicReply);
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.locator("article").filter({ hasText: publicReply }).first()).toBeVisible();
 
@@ -92,7 +92,7 @@ test.describe("STUDENT content gating", () => {
     await page.getByRole("button", { name: "Publish to library" }).click();
     await expect.poll(() => page.getByText("Student Library", { exact: true }).isVisible()).toBeTruthy();
 
-    await replyForm.locator('textarea[name="body"]').fill("E2E changed after publication");
+    await fillMarkdownEditor(replyForm, "Response", "body", "E2E changed after publication");
     await replyForm.getByRole("button", { name: "Add response" }).click();
     await expect(page.getByText("Student Library", { exact: true })).toHaveCount(0);
     await studentPage.goto(issuePath);

@@ -60,7 +60,7 @@ function showAttachments(container: HTMLElement | null) {
 }
 
 export const issueEditorContentClass =
-  "issue-editor-content min-h-56 px-4 py-3 text-base leading-7 text-slate-800 outline-none dark:text-slate-100";
+  "issue-editor-content min-h-[var(--issue-editor-min-h,14rem)] px-4 py-3 text-base leading-7 text-slate-800 outline-none dark:text-slate-100";
 
 /**
  * The Tiptap part of IssueEditor, loaded only through `next/dynamic` so the

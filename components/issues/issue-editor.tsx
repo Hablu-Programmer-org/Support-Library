@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ReactNode, RefObject } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 
 import type { IssueEditorApi } from "@/components/issues/issue-editor-client";
 import { Skeleton } from "@/components/shared/skeleton";
@@ -38,7 +38,7 @@ export function IssueEditorSkeleton() {
           </div>
         ))}
       </div>
-      <div className="min-h-56 space-y-3 px-4 py-4">
+      <div className="min-h-[var(--issue-editor-min-h,14rem)] space-y-3 px-4 py-4">
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
@@ -74,7 +74,12 @@ type IssueEditorProps = {
   /** Counter / error row under the editor; announced as its description. */
   footer?: ReactNode;
   apiRef?: RefObject<IssueEditorApi | null>;
+  /** Shorter writing area for replies (8rem instead of 14rem). */
+  compact?: boolean;
 };
+
+/** Read by the content and the skeleton, so both keep the same height. */
+const COMPACT_STYLE = { "--issue-editor-min-h": "8rem" } as CSSProperties;
 
 /**
  * WYSIWYG issue details field that submits plain Markdown.
@@ -100,6 +105,7 @@ export function IssueEditor({
   required = false,
   footer,
   apiRef,
+  compact = false,
 }: IssueEditorProps) {
   const labelId = `${id}-label`;
   const footerId = footer ? `${id}-footer` : undefined;
@@ -115,6 +121,7 @@ export function IssueEditor({
       </div>
       <input type="hidden" name={name} value={submitValue ?? value} />
       <div
+        style={compact ? COMPACT_STYLE : undefined}
         className={cn(
           // No overflow-hidden: toolbar tooltips must be able to leave the box.
           "rounded-lg border bg-white transition-colors dark:bg-slate-900",

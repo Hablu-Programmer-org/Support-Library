@@ -48,6 +48,23 @@ export async function fillIssueDetails(form: Locator, text: string) {
 }
 
 /**
+ * Type plain text into a reply-style Markdown editor (staff response, answer)
+ * and wait until its hidden input `name` holds it. Empty text leaves it empty.
+ */
+export async function fillMarkdownEditor(form: Locator, label: string, name: string, text: string) {
+  if (!text) return;
+  const editor = form.getByRole("textbox", { name: label, exact: true });
+  await editor.click();
+  await editor.fill(text);
+  await expect(markdownValue(form, name)).not.toHaveValue("");
+}
+
+/** The hidden input a Markdown editor submits. */
+export function markdownValue(form: Locator, name: string) {
+  return form.locator(`input[type="hidden"][name="${name}"]`);
+}
+
+/**
  * A submit click that lands before React hydrates falls back to a native form
  * post and silently stays on the same URL, so retry until the route changes.
  */

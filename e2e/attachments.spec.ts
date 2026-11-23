@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { resetStudentCreateBudget } from "./fixtures/student-create-budget";
 
-import { chooseStudentCourse, fillIssueDetails, formFor, submitAndWait } from "./form-helpers";
+import { chooseStudentCourse, fillIssueDetails, fillMarkdownEditor, formFor, submitAndWait } from "./form-helpers";
 import { TINY_PNG, tinyPngFile } from "./image-fixture";
 
 /**
@@ -80,7 +80,7 @@ test.describe("uploaded attachments", () => {
     // The team answers with a screenshot. The owner of the case can now open the
     // team's image on their own request page (not just the file they uploaded).
     const replyForm = formFor(adminPage, "Add response");
-    await replyForm.locator('textarea[name="body"]').fill("Look at this screenshot for the fix.");
+    await fillMarkdownEditor(replyForm, "Response", "body", "Look at this screenshot for the fix.");
     await replyForm.getByText("Add attachments or video links").click();
     await replyForm.locator('input[type="file"]').setInputFiles(tinyPngFile("answer.png"));
     await replyForm.getByRole("button", { name: "Add response" }).click();
