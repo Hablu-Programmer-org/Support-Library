@@ -124,6 +124,9 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   // No autosave until the saved draft has been looked at: the empty first
   // render would otherwise overwrite it.
   const draftCheckedRef = useRef(false);
+  // Draft text still waiting to show up in the editor; autosave holds off while
+  // the editor reports an empty question.
+  const restoreGuardRef = useRef<string | null>(null);
   const operationIdRef = useRef<HTMLInputElement>(null);
   const editorApi = useRef<IssueEditorApi | null>(null);
   // What the server receives: template sections the student left empty are
@@ -148,12 +151,21 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
     setContentSlug(draft.contentSlug);
     setTags(draft.tags);
     editorApi.current?.setMarkdown(draft.question);
+    // Never let a restore that did not land (editor not yet accepting commands)
+    // be saved over the stored draft as an empty form: try again once settled.
+    if (draft.question) {
+      restoreGuardRef.current = draft.question;
+      window.setTimeout(() => {
+        if (restoreGuardRef.current === draft.question) editorApi.current?.setMarkdown(draft.question);
+      }, 150);
+    }
     setRestoredOptional(Boolean(`${draft.moduleSlug}${draft.contentSlug}${draft.tags}`.trim()));
     setRestoredAt(draft.savedAt);
   };
 
   const discardDraft = () => {
     if (draftKey) clearIssueDraft(draftKey);
+    restoreGuardRef.current = null;
     setTitle("");
     setCourseSlug("");
     setModuleSlug("");
@@ -171,6 +183,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   // still-filled form is saved again.
   useEffect(() => {
     if (!draftKey || !draftCheckedRef.current || pending) return;
+    if (restoreGuardRef.current && !question) return;
     const timer = window.setTimeout(
       () => writeIssueDraft(draftKey, { title, question, courseSlug, moduleSlug, contentSlug, tags }),
       500,
@@ -207,6 +220,7 @@ export function StudentIssueForm({ csrfToken, courses, draftKey }: StudentIssueF
   };
 
   const onQuestionChange = (value: string) => {
+    if (value) restoreGuardRef.current = null;
     setQuestion(value);
     if (detailsError && !issueDetailsProblem(value)) setDetailsError(null);
   };

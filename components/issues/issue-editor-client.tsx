@@ -86,6 +86,17 @@ export default function IssueEditorClient({
     onReadyRef.current = onReady;
   });
 
+  // `apiRef` commands only reach the document once Tiptap has attached its
+  // view; reporting ready earlier lets a restored draft be set into a void and
+  // then overwritten by the empty form. Fires once, on whichever of "view
+  // mounted" / "editor created with a live view" comes first.
+  const readyAnnouncedRef = useRef(false);
+  const announceReady = () => {
+    if (readyAnnouncedRef.current) return;
+    readyAnnouncedRef.current = true;
+    onReadyRef.current?.();
+  };
+
   const [linkOpen, setLinkOpen] = useState(false);
   // Bumped when Tiptap attaches its view. The toolbar reads command
   // availability on its first render, before the view exists (every command
@@ -139,7 +150,10 @@ export default function IssueEditorClient({
     immediatelyRender: true,
     shouldRerenderOnTransaction: false,
     editorProps: { attributes: attributes(invalid) },
-    onMount: () => setViewMounts((count) => count + 1),
+    onMount: () => {
+      setViewMounts((count) => count + 1);
+      announceReady();
+    },
     onUpdate: ({ editor: current }) => {
       setAttachNotice(null);
       onChangeRef.current(getIssueMarkdown(current));
@@ -159,7 +173,7 @@ export default function IssueEditorClient({
   }, [editor, invalid, describedById, required, placeholder]);
 
   useEffect(() => {
-    if (editor) onReadyRef.current?.();
+    if (editor && !editor.isDestroyed && editor.view?.dom?.isConnected) announceReady();
   }, [editor]);
 
   useImperativeHandle(
