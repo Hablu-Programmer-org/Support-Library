@@ -19,7 +19,13 @@ import {
   RateLimitUnavailableError,
   consumeRateLimit,
 } from "@/lib/services/rate-limit";
-import { addReply, addStudentReply, editReply, softDeleteReply } from "@/lib/services/replies";
+import {
+  addReply,
+  addStudentReply,
+  editReply,
+  ReplyEditConflictError,
+  softDeleteReply,
+} from "@/lib/services/replies";
 import {
   formFiles,
   ingestUploads,
@@ -50,6 +56,16 @@ const GENERIC = "Unable to save the response. Please try again.";
 const CONFLICT =
   "This form was already submitted with different text. Reload the page and try again.";
 const VIDEO_LINKS = "Video links could not be read. Use one per line: title|https://url";
+const EDIT_CONFLICT =
+  "Someone else changed this reply while you were editing. Copy your text, reload, and apply it again.";
+
+/** ISO `updatedAt` the edit form was opened with; anything unreadable is ignored. */
+const readExpectedUpdatedAt = (formData: FormData) => {
+  const raw = formValue(formData, "expectedUpdatedAt");
+  if (!raw) return undefined;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
 
 const formValue = (formData: FormData, key: string) => {
   const value = formData.get(key);
@@ -86,6 +102,9 @@ function replyFailure(
   }
   if (error instanceof MutationConflictError) {
     return { fieldErrors: { _form: [CONFLICT] }, values };
+  }
+  if (error instanceof ReplyEditConflictError) {
+    return { fieldErrors: { _form: [EDIT_CONFLICT] }, values };
   }
   if (error instanceof MutationRateLimitError) {
     return { fieldErrors: { _form: [RATE_LIMITED] }, values };
@@ -345,12 +364,17 @@ export async function editReplyAction(
       .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
       .slice(0, 10);
 
+    const files = formFiles(formData, "uploads");
+
     try {
       await consumeRateLimit("reply.edit", guard.session.user.id, {
         action: "REPLY_EDIT",
         resourceType: "SupportReply",
         resourceId: replyId,
       });
+      if (files.length) {
+        await consumeRateLimit("attachment.upload", guard.session.user.id);
+      }
     } catch (error) {
       if (error instanceof MutationRateLimitError) {
         return { fieldErrors: { _form: [RATE_LIMITED] }, values };
@@ -359,6 +383,15 @@ export async function editReplyAction(
       return { fieldErrors: { _form: [GENERIC] }, values };
     }
 
+    let newUploads: IngestedUpload[] = [];
+    try {
+      newUploads = await ingestUploads(files, guard.session.user.id);
+    } catch (error) {
+      if (error instanceof UploadValidationError) throw error;
+      throw new Error("Upload failed");
+    }
+
+    // `editReply` discards `newUploads` itself when the edit does not commit.
     const reply = await editReply(
       issueId,
       replyId,
@@ -367,6 +400,7 @@ export async function editReplyAction(
       guard.session.user.role,
       videoLinks,
       removeUploadIds,
+      { newUploads, expectedUpdatedAt: readExpectedUpdatedAt(formData) },
     );
     if (!reply) {
       return { fieldErrors: { _form: ["This response can no longer be edited."] }, values };

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useCallback, useRef, useState } from "react";
+import { useActionState, useCallback, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 import { createIssueAction, updateIssueAction } from "@/actions/issues";
@@ -13,15 +14,24 @@ import { staffIssueDetailsProblem } from "@/lib/issue-content-rules";
 import { ReplyBodyField, replyBodyProblem } from "@/components/issues/reply-body-field";
 import { IssueDetailsHint } from "@/components/shared/issue-details-hint";
 import { ProblemTitleHint } from "@/components/shared/problem-title-hint";
-import { formatByteSize } from "@/components/shared/attachment-list";
+import { AttachmentList } from "@/components/shared/attachment-list";
 import { formatVideoLinks } from "@/lib/format-links";
 import {
+  ArrowLeftIcon,
   CheckCircleIcon,
   FileTextIcon,
   MessageSquareIcon,
   SettingsIcon,
   UserIcon,
+  WarningTriangleIcon,
 } from "@/components/icons";
+import {
+  eyebrowClass,
+  focusRingClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  surfaceClass,
+} from "@/lib/ui";
 import {
   nativeFieldClass,
   nativeSelectClass,
@@ -72,14 +82,28 @@ type IssueFormProps = {
       timestamp?: string | null;
       summary?: string | null;
     }[];
-    uploads?: { id: string; originalName: string; byteSize: number }[];
+    uploads?: {
+      id: string;
+      originalName: string;
+      byteSize: number;
+      mimeType?: string;
+      width?: number | null;
+      height?: number | null;
+    }[];
     updatedAt?: string;
   };
   minimal?: boolean;
   csrfToken?: string;
   /** List URL to return to after an edit is saved (keeps filter + page). */
   returnTo?: string;
+  /** Edit mode: where Back / Cancel go (the issue, keeping the list state). */
+  backHref?: string;
+  /** Edit mode: the issue is live in the Student Library (saving unpublishes it). */
+  isPublished?: boolean;
 };
+
+const noopSubscribe = () => () => {};
+const isApplePlatform = () => /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 
 type FormData = {
   studentName: string;
@@ -267,7 +291,11 @@ export function IssueForm({
   minimal = false,
   csrfToken = "",
   returnTo,
+  backHref,
+  isPublished = false,
 }: IssueFormProps) {
+  // Server render says "Ctrl"; the client corrects it without a hydration mismatch.
+  const apple = useSyncExternalStore(noopSubscribe, isApplePlatform, () => false);
   const action = supportIssue
     ? updateIssueAction.bind(null, supportIssue.id)
     : createIssueAction;
@@ -369,29 +397,382 @@ export function IssueForm({
     ensureOperationId();
   };
 
-  return (
-    <form
-      key={formKey}
-      action={formAction}
-      className="space-y-6"
-      onKeyDown={handleKeyDown}
-      onSubmit={onSubmit}
-      // A native rule (title, student email) blocks the submit before
-      // `onSubmit` runs; report the editors in the same attempt.
-      onInvalidCapture={reportEditorProblems}
-    >
+
+  const hiddenInputs = (
+    <>
       {!supportIssue && <input ref={operationIdRef} type="hidden" name="operationId" />}
       {supportIssue && <input type="hidden" name="expectedUpdatedAt" value={supportIssue.updatedAt ?? ""} />}
       <input type="hidden" name="csrfToken" value={csrfToken} id="csrfToken" />
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
-      {state.fieldErrors?._form?.[0] && (
-        <p
-          className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-600"
-          role="alert"
-        >
-          {state.fieldErrors._form[0]}
-        </p>
+    </>
+  );
+
+  const formError = state.fieldErrors?._form?.[0] ? (
+    <p
+      className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-600"
+      role="alert"
+    >
+      {state.fieldErrors._form[0]}
+    </p>
+  ) : null;
+
+  const titleField = (
+    <FieldWrapper
+      label="Issue title"
+      required
+      error={state.fieldErrors?.title?.[0]}
+    >
+      <ControlledInput
+        name="title"
+        value={formData.title}
+        onChange={handleChange("title")}
+        required
+        minLength={5}
+        maxLength={titleMax}
+        error={state.fieldErrors?.title?.[0]}
+        placeholder="Assignment submission link not found"
+      />
+      {!state.fieldErrors?.title?.[0] && (
+        <ProblemTitleHint
+          length={formData.title.length}
+          max={titleMax}
+          warnAt={titleWarnAt}
+        />
       )}
+    </FieldWrapper>
+  );
+
+  const detailsEditor = (
+    <IssueEditor
+      id="issue-question"
+      name="question"
+      label={
+        <span className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Issue details</span>
+          <RequiredIndicator />
+        </span>
+      }
+      value={formData.question}
+      onChange={handleQuestionChange}
+      required
+      invalid={Boolean(questionError)}
+      apiRef={questionEditorApi}
+      placeholder={
+        supportIssue
+          ? "Describe the issue in detail."
+          : "What were they trying to do, what happened, and what has already been tried?"
+      }
+      footer={
+        questionError ? (
+          <ErrorMessage error={questionError} />
+        ) : (
+          <IssueDetailsHint value={formData.question} requireCreateMinimum={!supportIssue} />
+        )
+      }
+    />
+  );
+
+  const statusField = (
+    <FieldWrapper
+      label="Status"
+      required
+      error={state.fieldErrors?.status?.[0]}
+    >
+      <ControlledSelect
+        name="status"
+        value={formData.status}
+        onChange={handleChange("status")}
+        error={state.fieldErrors?.status?.[0]}
+      >
+        {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
+          <option key={status} value={status}>
+            {statusLabels[status]}
+          </option>
+        ))}
+      </ControlledSelect>
+    </FieldWrapper>
+  );
+
+  const priorityField = (
+    <FieldWrapper
+      label="Priority"
+      error={state.fieldErrors?.priority?.[0]}
+    >
+      <ControlledSelect
+        name="priority"
+        value={formData.priority}
+        onChange={handleChange("priority")}
+        error={state.fieldErrors?.priority?.[0]}
+      >
+        {CASE_PRIORITIES.map((priority) => (
+          <option key={priority} value={priority}>
+            {priorityLabels[priority]}
+          </option>
+        ))}
+      </ControlledSelect>
+    </FieldWrapper>
+  );
+
+  const videoLinksField = (
+    <FieldWrapper
+      label="Video links"
+      description="One per line: title|https://url|timestamp|summary"
+      error={state.fieldErrors?.videoLinks?.[0]}
+    >
+      <ControlledTextarea
+        name="videoLinks"
+        value={formData.videoLinks}
+        onChange={handleChange("videoLinks")}
+        rows={2}
+        error={state.fieldErrors?.videoLinks?.[0]}
+        placeholder="Walkthrough|https://youtu.be/abc123|01:30|Reproduces the bug"
+      />
+    </FieldWrapper>
+  );
+
+  const studentFields = (
+    <StudentFields
+      name={formData.studentName}
+      email={formData.studentEmail}
+      lmsUserId={formData.lmsUserId}
+      nameError={state.fieldErrors?.studentName?.[0]}
+      emailError={state.fieldErrors?.studentEmail?.[0]}
+      onNameChange={handleStudentNameChange}
+      onEmailChange={handleStudentEmailChange}
+      onLmsUserIdChange={handleLmsUserIdChange}
+      csrfToken={csrfToken}
+    />
+  );
+
+  const courseField = (label: string) => (
+    <FieldWrapper label={label} error={state.fieldErrors?.courseSlug?.[0]}>
+      <ControlledInput
+        name="courseSlug"
+        value={formData.courseSlug}
+        onChange={handleChange("courseSlug")}
+        error={state.fieldErrors?.courseSlug?.[0]}
+        placeholder="e.g., react-beginner"
+      />
+    </FieldWrapper>
+  );
+
+  const batchField = (label: string) => (
+    <FieldWrapper label={label} error={state.fieldErrors?.batchNo?.[0]}>
+      <ControlledInput
+        name="batchNo"
+        value={formData.batchNo}
+        onChange={handleChange("batchNo")}
+        type="number"
+        error={state.fieldErrors?.batchNo?.[0]}
+        placeholder="e.g., 1"
+      />
+    </FieldWrapper>
+  );
+
+  const moduleField = (label: string) => (
+    <FieldWrapper label={label} error={state.fieldErrors?.moduleSlug?.[0]}>
+      <ControlledInput
+        name="moduleSlug"
+        value={formData.moduleSlug}
+        onChange={handleChange("moduleSlug")}
+        error={state.fieldErrors?.moduleSlug?.[0]}
+        placeholder="e.g., assets"
+      />
+    </FieldWrapper>
+  );
+
+  const lessonField = (label: string) => (
+    <FieldWrapper label={label} error={state.fieldErrors?.contentSlug?.[0]}>
+      <ControlledInput
+        name="contentSlug"
+        value={formData.contentSlug}
+        onChange={handleChange("contentSlug")}
+        error={state.fieldErrors?.contentSlug?.[0]}
+        placeholder="e.g., images-lecture"
+      />
+    </FieldWrapper>
+  );
+
+  const tagsField = (
+    <FieldWrapper
+      label="Tags"
+      description="Separate with commas: react, image, api"
+      error={state.fieldErrors?.tags?.[0]}
+    >
+      <ControlledInput
+        name="tags"
+        value={formData.tags}
+        onChange={handleChange("tags")}
+        error={state.fieldErrors?.tags?.[0]}
+        placeholder="react, image, rendering"
+      />
+    </FieldWrapper>
+  );
+
+  const formProps = {
+    action: formAction,
+    onKeyDown: handleKeyDown,
+    onSubmit,
+    // A native rule (title, student email) blocks the submit before
+    // `onSubmit` runs; report the editors in the same attempt.
+    onInvalidCapture: reportEditorProblems,
+  };
+
+  if (supportIssue) {
+    const uploads = supportIssue.uploads ?? [];
+    return (
+      <form key={formKey} {...formProps} className="w-full pb-10">
+        {hiddenInputs}
+
+        {/* Action bar: sticks under the fixed 4rem topbar so Save is always in
+            reach on a long form. One submit button only (e2e `formFor`). The
+            negative margins match PageContainer's gutters so the bar spans it. */}
+        <div className="sticky top-16 z-30 -mx-4 mb-6 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 dark:border-slate-800 dark:bg-slate-950/85">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="min-w-0 flex-1">
+              <Link
+                href={backHref ?? `/dashboard/issues/${supportIssue.id}`}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  focusRingClass,
+                )}
+              >
+                <ArrowLeftIcon size={14} />
+                Back to issue
+              </Link>
+              <h1 className="mt-0.5 text-xl font-bold tracking-tight text-slate-950 dark:text-white">
+                Edit issue
+              </h1>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <Link
+                href={backHref ?? `/dashboard/issues/${supportIssue.id}`}
+                className={cn(secondaryButtonClass, "min-h-11 flex-1 sm:min-h-10 sm:flex-none")}
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                disabled={pending}
+                aria-keyshortcuts={apple ? "Meta+Enter" : "Control+Enter"}
+                className={cn(primaryButtonClass, "min-h-11 flex-1 sm:min-h-10 sm:flex-none")}
+              >
+                {pending ? "Saving..." : "Save Issue"}
+                <kbd
+                  aria-hidden="true"
+                  className="hidden rounded bg-white/20 px-1.5 py-0.5 font-mono text-[11px] font-medium text-white md:inline-flex"
+                >
+                  {apple ? "⌘↵" : "Ctrl+↵"}
+                </kbd>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* DOM order is the phone order: Manage, the issue, then student and
+            course context. On desktop the grid moves both side parts right,
+            matching the issue detail page. */}
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
+          <section
+            aria-labelledby="edit-manage-heading"
+            className={cn(surfaceClass, "space-y-4 p-5 lg:col-start-2 lg:row-start-1")}
+          >
+            <h2 id="edit-manage-heading" className={eyebrowClass}>Manage</h2>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+              {statusField}
+              {priorityField}
+            </div>
+            {isPublished && (
+              <p className="flex gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                <WarningTriangleIcon size={14} className="mt-0.5 shrink-0" />
+                Published in the Student Library. Saving moves it back to admin review.
+              </p>
+            )}
+          </section>
+
+          <main className="min-w-0 space-y-6 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            {formError}
+
+            <section
+              aria-labelledby="edit-issue-heading"
+              className={cn(surfaceClass, "space-y-5 p-5 sm:p-6")}
+            >
+              <h2 id="edit-issue-heading" className={eyebrowClass}>Issue</h2>
+              {titleField}
+              {detailsEditor}
+            </section>
+
+            <section
+              aria-labelledby="edit-media-heading"
+              className={cn(surfaceClass, "space-y-5 p-5 sm:p-6")}
+            >
+              <h2 id="edit-media-heading" className={eyebrowClass}>Media</h2>
+
+              {/* Same tiles and preview dialog as the issue detail page, plus
+                  a Remove checkbox per image. */}
+              <AttachmentList
+                bare
+                title="Saved images"
+                uploads={uploads}
+                renderAction={(upload) => (
+                  <label className="inline-flex min-h-9 w-fit cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      name="removeUploadIds"
+                      value={upload.id}
+                      aria-label={`Remove ${upload.originalName}`}
+                      className="h-4 w-4 rounded border-slate-300 text-danger focus:ring-danger-500"
+                    />
+                    Remove
+                  </label>
+                )}
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <AttachmentField
+                  label={uploads.length > 0 ? "Add images" : "Attachments"}
+                  existingCount={uploads.length}
+                  description="PNG, JPEG, GIF or WebP · up to 5 images, 5 MB each · staff-only until published"
+                />
+                <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
+              </div>
+
+              {videoLinksField}
+            </section>
+          </main>
+
+          <div className="space-y-6 lg:col-start-2 lg:row-start-2 lg:self-start">
+            <section
+              aria-labelledby="edit-student-heading"
+              className={cn(surfaceClass, "space-y-4 p-5")}
+            >
+              <h2 id="edit-student-heading" className={eyebrowClass}>Student</h2>
+              <div className="grid gap-4">{studentFields}</div>
+            </section>
+
+            <section
+              aria-labelledby="edit-context-heading"
+              className={cn(surfaceClass, "space-y-4 p-5")}
+            >
+              <h2 id="edit-context-heading" className={eyebrowClass}>Course context</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {courseField("Course slug")}
+                {batchField("Batch")}
+                {moduleField("Module slug")}
+                {lessonField("Lesson slug")}
+              </div>
+              {tagsField}
+            </section>
+          </div>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <form key={formKey} {...formProps} className="space-y-6">
+      {hiddenInputs}
+      {formError}
       {/* Section 1: Issue Details — the issue and its answer are the priority. */}
       <div className="divide-y divide-slate-200 dark:divide-slate-800">
       <section className="py-8 first:pt-0">
@@ -401,177 +782,19 @@ export function IssueForm({
           description="Keep the title to one short line that names the problem."
         />
         <div className="mt-4 space-y-4">
-          <FieldWrapper
-             label="Issue title"
-            required
-            error={state.fieldErrors?.title?.[0]}
-          >
-            <ControlledInput
-              name="title"
-              value={formData.title}
-              onChange={handleChange("title")}
-              required
-              minLength={5}
-              maxLength={titleMax}
-              error={state.fieldErrors?.title?.[0]}
-              placeholder="Assignment submission link not found"
-            />
-            {!state.fieldErrors?.title?.[0] && (
-              <ProblemTitleHint
-                length={formData.title.length}
-                max={titleMax}
-                warnAt={titleWarnAt}
-              />
-            )}
-          </FieldWrapper>
-
-          <IssueEditor
-            id="issue-question"
-            name="question"
-            label={
-              <span className="flex items-center gap-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Issue details</span>
-                <RequiredIndicator />
-              </span>
-            }
-            value={formData.question}
-            onChange={handleQuestionChange}
-            required
-            invalid={Boolean(questionError)}
-            apiRef={questionEditorApi}
-            placeholder={
-              supportIssue
-                ? "Describe the issue in detail."
-                : "What were they trying to do, what happened, and what has already been tried?"
-            }
-            footer={
-              questionError ? (
-                <ErrorMessage error={questionError} />
-              ) : (
-                <IssueDetailsHint value={formData.question} requireCreateMinimum={!supportIssue} />
-              )
-            }
-          />
-
-          {!minimal && (
-            <FieldWrapper
-              label="Status"
-              required
-              error={state.fieldErrors?.status?.[0]}
-            >
-              <ControlledSelect
-                name="status"
-                value={formData.status}
-                onChange={handleChange("status")}
-                error={state.fieldErrors?.status?.[0]}
-              >
-                {CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabels[status]}
-                  </option>
-                ))}
-              </ControlledSelect>
-            </FieldWrapper>
-          )}
-
-          <FieldWrapper
-            label="Video Links"
-            description="One per line: title|https://url|timestamp|summary"
-            error={state.fieldErrors?.videoLinks?.[0]}
-          >
-            <ControlledTextarea
-              name="videoLinks"
-              value={formData.videoLinks}
-              onChange={handleChange("videoLinks")}
-              rows={2}
-              error={state.fieldErrors?.videoLinks?.[0]}
-              placeholder="Walkthrough|https://youtu.be/abc123|01:30|Reproduces the bug"
-            />
-          </FieldWrapper>
-
-          {/* New issues use the first picker; edit mode shows existing private
-              image attachments below and provides a second picker for additions. */}
-          {!supportIssue && (
-            <div className="flex flex-col gap-1.5">
-              <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published." />
-              <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
-            </div>
-          )}
-
-          {supportIssue && (supportIssue.uploads?.length ?? 0) > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Existing attachments
-              </span>
-              <ul className="grid gap-3 sm:grid-cols-2">
-                {(supportIssue.uploads ?? []).map((upload) => {
-                  const src = `/api/attachments/${upload.id}`;
-                  return (
-                    <li
-                      key={upload.id}
-                      className="space-y-1"
-                    >
-                      <a
-                        href={src}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block overflow-hidden rounded-md border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950"
-                        aria-label={`Open ${upload.originalName}`}
-                      >
-                        {/* A direct image request carries the staff session cookie;
-                            next/image's optimizer request would not. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={src}
-                          alt={upload.originalName}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-40 w-full object-contain"
-                        />
-                      </a>
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div
-                            className="truncate text-sm text-slate-700 dark:text-slate-300"
-                            title={upload.originalName}
-                          >
-                            {upload.originalName}
-                          </div>
-                          <div className="text-xs text-slate-400 dark:text-slate-500">
-                            {formatByteSize(upload.byteSize)}
-                          </div>
-                        </div>
-                        <label className="flex shrink-0 items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                          <input
-                            type="checkbox"
-                            name="removeUploadIds"
-                            value={upload.id}
-                            className="h-4 w-4 rounded border-slate-300 text-danger focus:ring-danger-500"
-                          />
-                          Remove
-                        </label>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {supportIssue && (
-            <div className="flex flex-col gap-1.5">
-              <AttachmentField
-                existingCount={supportIssue.uploads?.length ?? 0}
-                description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published."
-              />
-              <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
-            </div>
-          )}
+          {titleField}
+          {detailsEditor}
+          {!minimal && statusField}
+          {videoLinksField}
+          <div className="flex flex-col gap-1.5">
+            <AttachmentField description="Images only: PNG, JPEG, GIF or WebP. Add up to 5 images, 5 MB each. Only staff can open them until the case is published." />
+            <ErrorMessage error={state.fieldErrors?.uploads?.[0]} />
+          </div>
         </div>
       </section>
 
       {/* Section 2: Answer (Optional) - only on create/minimal */}
-      {!supportIssue && minimal && (
+      {minimal && (
         <Accordion
           title="Answer (Optional)"
           icon={<MessageSquareIcon size={20} />}
@@ -649,19 +872,7 @@ export function IssueForm({
           learner; the name auto-fills from the LMS by email. Leave both empty for a
           general issue or solution that does not identify anyone.
         </p>
-        <div className="grid gap-4 md:grid-cols-2">
-          <StudentFields
-            name={formData.studentName}
-            email={formData.studentEmail}
-            lmsUserId={formData.lmsUserId}
-            nameError={state.fieldErrors?.studentName?.[0]}
-            emailError={state.fieldErrors?.studentEmail?.[0]}
-            onNameChange={handleStudentNameChange}
-            onEmailChange={handleStudentEmailChange}
-            onLmsUserIdChange={handleLmsUserIdChange}
-            csrfToken={csrfToken}
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-2">{studentFields}</div>
       </Accordion>
 
       {/* Section 4: Additional Details (Metadata) */}
@@ -672,90 +883,12 @@ export function IssueForm({
         contentClassName="space-y-4"
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <FieldWrapper
-            label="Course Slug"
-            error={state.fieldErrors?.courseSlug?.[0]}
-          >
-            <ControlledInput
-              name="courseSlug"
-              value={formData.courseSlug}
-              onChange={handleChange("courseSlug")}
-              error={state.fieldErrors?.courseSlug?.[0]}
-              placeholder="e.g., react-beginner"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
-            label="Batch No"
-            error={state.fieldErrors?.batchNo?.[0]}
-          >
-            <ControlledInput
-              name="batchNo"
-              value={formData.batchNo}
-              onChange={handleChange("batchNo")}
-              type="number"
-              error={state.fieldErrors?.batchNo?.[0]}
-              placeholder="e.g., 1"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
-            label="Module Slug"
-            error={state.fieldErrors?.moduleSlug?.[0]}
-          >
-            <ControlledInput
-              name="moduleSlug"
-              value={formData.moduleSlug}
-              onChange={handleChange("moduleSlug")}
-              error={state.fieldErrors?.moduleSlug?.[0]}
-              placeholder="e.g., assets"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
-            label="Content/Lesson Slug"
-            error={state.fieldErrors?.contentSlug?.[0]}
-          >
-            <ControlledInput
-              name="contentSlug"
-              value={formData.contentSlug}
-              onChange={handleChange("contentSlug")}
-              error={state.fieldErrors?.contentSlug?.[0]}
-              placeholder="e.g., images-lecture"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
-            label="Tags"
-            description="Separate with commas: react, image, api"
-            error={state.fieldErrors?.tags?.[0]}
-          >
-            <ControlledInput
-              name="tags"
-              value={formData.tags}
-              onChange={handleChange("tags")}
-              error={state.fieldErrors?.tags?.[0]}
-              placeholder="react, image, rendering"
-            />
-          </FieldWrapper>
-
-          <FieldWrapper
-            label="Priority"
-            error={state.fieldErrors?.priority?.[0]}
-          >
-            <ControlledSelect
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange("priority")}
-              error={state.fieldErrors?.priority?.[0]}
-            >
-              {CASE_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priorityLabels[priority]}
-                </option>
-              ))}
-            </ControlledSelect>
-          </FieldWrapper>
+          {courseField("Course Slug")}
+          {batchField("Batch No")}
+          {moduleField("Module Slug")}
+          {lessonField("Content/Lesson Slug")}
+          {tagsField}
+          {priorityField}
         </div>
       </Accordion>
 
@@ -767,15 +900,7 @@ export function IssueForm({
           disabled={pending}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-950 w-full"
         >
-          <span>
-            {pending
-              ? supportIssue
-                ? "Saving..."
-                : "Creating..."
-              : supportIssue
-                ? "Save Issue"
-                : "Create Issue"}
-          </span>
+          <span>{pending ? "Creating..." : "Create Issue"}</span>
           <kbd
             aria-hidden="true"
             className="hidden items-center justify-center rounded bg-slate-200 px-1.5 py-0.5 text-xs font-mono text-slate-600 dark:bg-slate-700 dark:text-slate-300 md:inline-flex"

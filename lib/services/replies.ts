@@ -10,7 +10,8 @@ import { rebuildIssueSearchFields } from "@/lib/services/search-index";
 import { settleReplayedUploads, toAttachmentViews, type AttachmentView } from "@/lib/services/attachments";
 import { getRequestContext } from "@/lib/request-context";
 import { deriveIssueReplyState, EFFECTIVE_STAFF_REPLY_EXPRESSION, isEffectiveStaffReply } from "@/lib/reply-state";
-import { discardUploads, type IngestedUpload } from "@/lib/uploads/ingest";
+import { discardUploads, UploadValidationError, type IngestedUpload } from "@/lib/uploads/ingest";
+import { uploadLimit } from "@/lib/uploads/limits";
 import { supportReplyInputSchema, type SupportReplyInput } from "@/lib/validation";
 import { buildOwnIssueFilter } from "@/lib/issue-ownership";
 import { projectRepliesForViewer, type ReplyViewer } from "@/lib/reply-view";
@@ -430,6 +431,17 @@ function replyMutationFilter(
   return { ...base, authorId: actorId };
 }
 
+/**
+ * Raised when the reply changed after the editor was opened (another staff
+ * member saved first). The action reports it instead of overwriting their text.
+ */
+export class ReplyEditConflictError extends Error {
+  constructor() {
+    super("The reply changed after it was opened for editing");
+    this.name = "ReplyEditConflictError";
+  }
+}
+
 export async function editReply(
   issueId: string,
   replyId: string,
@@ -438,17 +450,43 @@ export async function editReply(
   actorRole?: UserRole | null,
   videoLinks?: SupportReplyInput["videoLinks"],
   removeUploadIds: readonly string[] = [],
+  options: {
+    /** Images uploaded with the edit; discarded here if the edit does not commit. */
+    newUploads?: readonly IngestedUpload[];
+    /** `updatedAt` the editor was opened with; a mismatch is a conflict. */
+    expectedUpdatedAt?: Date;
+  } = {},
 ) {
+  const newUploads = options.newUploads ?? [];
   if (!mongoose.Types.ObjectId.isValid(issueId) || !mongoose.Types.ObjectId.isValid(replyId)) {
+    await discardUploads(newUploads);
     return null;
   }
   await dbConnect();
 
   let removedUploads: { key: string }[] = [];
-  const result = await mongoose.connection.transaction(async (session) => {
+  let result: SupportReplyListItem | null;
+  try {
+    result = await editReplyTransaction();
+  } catch (error) {
+    await discardUploads(newUploads);
+    throw error;
+  }
+
+  // The removed objects are no longer referenced by any document. Delete them
+  // only after the write committed, so a failed edit cannot destroy a live image.
+  if (!result) {
+    await discardUploads(newUploads);
+    return null;
+  }
+  await discardUploads(removedUploads);
+  return result;
+
+  async function editReplyTransaction() {
+  return mongoose.connection.transaction(async (session) => {
     const filter = replyMutationFilter(issueId, replyId, actorId, actorRole);
     const existingReply = await SupportReplyModel.findOne(filter)
-      .select("_id uploads")
+      .select("_id uploads updatedAt")
       .session(session)
       .lean();
     if (!existingReply) {
@@ -471,24 +509,53 @@ export async function editReply(
     const kept = currentUploads.filter((entry) => !removeSet.has(String(entry._id)));
     removedUploads = removed as unknown as { key: string }[];
 
+    const expected = options.expectedUpdatedAt;
+    const current = existingReply.updatedAt as Date | undefined;
+    if (expected && current && current.getTime() !== expected.getTime()) {
+      throw new ReplyEditConflictError();
+    }
+
+    // Kept + newly added images share the per-item cap (ingest only sees the batch).
+    const remaining = uploadLimit() - kept.length;
+    if (newUploads.length > remaining) {
+      throw new UploadValidationError(
+        "uploads",
+        `This reply already has ${kept.length} image(s); you can add at most ${Math.max(0, remaining)} more`,
+      );
+    }
+
     // Video links are replace-only: the edit form always posts the full list, so
     // omitting the field leaves the stored links untouched and an empty string
     // clears them. Uploads follow the same rule — an empty `removeUploadIds`
     // leaves the existing images alone.
     const update: Record<string, unknown> = { body: body.trim(), editedAt: new Date() };
     if (videoLinks !== undefined) update.videoLinks = videoLinks;
-    if (removed.length) update.uploads = kept;
+    if (removed.length || newUploads.length) update.uploads = [...kept, ...newUploads];
 
     const reply = await SupportReplyModel.findOneAndUpdate(
-      filter,
+      // Same `updatedAt` in the write itself: a save that lands between the
+      // read and this update still cannot be overwritten.
+      expected ? { ...filter, updatedAt: expected } : filter,
       update,
       { new: true, runValidators: true, session },
     ).lean();
-    if (!reply) return null;
+    if (!reply) {
+      if (expected) throw new ReplyEditConflictError();
+      return null;
+    }
     await requirePublicationReview(issueId, actorId, session);
     await refreshIssueReplySearchText(issueId, session);
     await refreshIssueReplyState(issueId, session);
     const context = await getRequestContext();
+    for (const upload of newUploads) {
+      await recordAuditEvent({
+        actorId,
+        action: "ATTACHMENT_UPLOAD",
+        resourceType: "SupportAttachment",
+        resourceId: upload._id,
+        result: "SUCCEEDED",
+      }, context, session);
+    }
     for (const entry of removed) {
       await recordAuditEvent({
         actorId,
@@ -507,12 +574,7 @@ export async function editReply(
     }, context, session);
     return toReplyListItem(reply);
   });
-
-  // The removed objects are no longer referenced by any document. Delete them
-  // only after the write committed, so a failed edit cannot destroy a live image.
-  if (!result) return null;
-  await discardUploads(removedUploads);
-  return result;
+  }
 }
 
 export async function softDeleteReply(

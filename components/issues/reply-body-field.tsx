@@ -38,6 +38,8 @@ type ReplyBodyFieldProps = {
   required?: boolean;
   placeholder?: string;
   apiRef?: RefObject<IssueEditorApi | null>;
+  /** Called once the editor has loaded (e.g. to focus it). */
+  onReady?: () => void;
 };
 
 /**
@@ -54,6 +56,7 @@ export function ReplyBodyField({
   required = false,
   placeholder,
   apiRef,
+  onReady,
 }: ReplyBodyFieldProps) {
   const length = replyBodyLength(value);
   const tooLong = length > REPLY_BODY_MAX;
@@ -95,6 +98,7 @@ export function ReplyBodyField({
       invalid={Boolean(error) || tooLong}
       placeholder={placeholder}
       apiRef={apiRef}
+      onReady={onReady}
       footer={footer}
     />
   );

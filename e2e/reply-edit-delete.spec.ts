@@ -36,6 +36,9 @@ test.describe("Reply edit and delete interactions", () => {
 
     await editor.fill("Never saved");
     await reply.getByRole("button", { name: "Cancel" }).click();
+    // Unsaved changes ask first instead of disappearing.
+    await expect(reply.getByText("Discard your changes?")).toBeVisible();
+    await reply.getByRole("button", { name: "Discard", exact: true }).click();
     await expect(reply.getByRole("textbox", { name: "Edit reply", exact: true })).toHaveCount(0);
     await expect(reply).toContainText("Original reply body");
     await expect(reply).not.toContainText("Never saved");
@@ -54,6 +57,8 @@ test.describe("Reply edit and delete interactions", () => {
     const line = "Walkthrough|https://youtu.be/e2e-demo|01:30|Shows the fix";
 
     await reply.getByRole("button", { name: "Edit", exact: true }).click();
+    // Collapsed like the composer while the reply has no links.
+    await reply.getByText("Add images or video links").click();
     await reply.locator('textarea[name="videoLinks"]').fill(line);
     await reply.getByRole("button", { name: "Save" }).click();
 
@@ -74,12 +79,12 @@ test.describe("Reply edit and delete interactions", () => {
     test.setTimeout(120000);
     const reply = await createIssueWithReply(page, "Reply to delete", Date.now().toString());
 
-    page.once("dialog", (dialog) => dialog.dismiss());
-    await reply.getByRole("button", { name: "Delete" }).click();
+    await reply.getByRole("button", { name: "Delete", exact: true }).click();
+    await reply.getByRole("button", { name: "Keep reply" }).click();
     await expect(reply).toContainText("Reply to delete");
 
-    page.once("dialog", (dialog) => dialog.accept());
-    await reply.getByRole("button", { name: "Delete" }).click();
+    await reply.getByRole("button", { name: "Delete", exact: true }).click();
+    await reply.getByRole("button", { name: "Delete reply" }).click();
     await expect(reply).toHaveCount(0);
   });
 

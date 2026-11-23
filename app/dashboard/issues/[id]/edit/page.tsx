@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ArrowLeftIcon, SettingsIcon } from "@/components/icons";
 import { IssueForm } from "@/components/issues/issue-form";
 import { requireMentorOrAdmin } from "@/lib/auth-guard";
 import { buildIssueDetailHref, parseIssueListReturnTo } from "@/lib/issue-list-params";
@@ -27,25 +25,7 @@ export default async function EditIssuePage({
   const csrfToken = await generateCsrfToken(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-6">
-      <Link
-        href={buildIssueDetailHref(supportIssue.id, returnTo)}
-        className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-      >
-        <ArrowLeftIcon size={18} />
-        Back to issue
-      </Link>
-
-      <header className="mb-7 flex items-start gap-3">
-        <SettingsIcon size={20} className="mt-1.5 shrink-0 text-slate-400 dark:text-slate-500" />
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Edit issue</h1>
-          <p className="mt-1 text-slate-600 dark:text-slate-400">
-            Updating public content will remove it from the Student Library until an admin reviews it again.
-          </p>
-        </div>
-      </header>
-
+    <div className="w-full">
       <IssueForm
         supportIssue={{
           id: supportIssue.id,
@@ -66,11 +46,16 @@ export default async function EditIssuePage({
             id: upload.id,
             originalName: upload.originalName,
             byteSize: upload.byteSize,
+            mimeType: upload.mimeType,
+            width: upload.width,
+            height: upload.height,
           })),
           updatedAt: supportIssue.updatedAt?.toISOString(),
         }}
         csrfToken={csrfToken}
         returnTo={returnTo ?? undefined}
+        backHref={buildIssueDetailHref(supportIssue.id, returnTo)}
+        isPublished={supportIssue.visibility === "PUBLISHED"}
       />
     </div>
   );

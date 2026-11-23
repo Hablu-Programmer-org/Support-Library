@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { CloseIcon, SearchIcon } from "@/components/icons";
 
 type Attachment = {
   id: string;
   originalName: string;
-  mimeType: string;
+  mimeType?: string;
   byteSize: number;
   width?: number | null;
   height?: number | null;
@@ -42,7 +42,19 @@ const FRAME_HEIGHT = 192;
 export const knownSize = ({ width, height }: Pick<Attachment, "width" | "height">) =>
   width && height && width > 0 && height > 0 ? { width, height } : null;
 
-export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
+export function AttachmentList({
+  uploads,
+  title = "Attachments",
+  bare = false,
+  renderAction,
+}: {
+  uploads: Attachment[];
+  title?: string;
+  /** Drop the top divider when the list sits in its own section (edit form). */
+  bare?: boolean;
+  /** Extra control under a tile, e.g. the edit form's Remove checkbox. */
+  renderAction?: (upload: Attachment) => ReactNode;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const open = uploads.find((upload) => upload.id === openId) ?? null;
 
@@ -59,10 +71,16 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
   if (!uploads.length) return null;
 
   return (
-    <div className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
+    <div
+      className={
+        bare
+          ? "space-y-3"
+          : "mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800"
+      }
+    >
       <div className="flex items-baseline justify-between gap-2">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Attachments
+          {title}
         </h4>
         <span className="text-[11px] text-slate-400 dark:text-slate-500">
           Click to preview
@@ -75,7 +93,11 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
           const src = `/api/attachments/${upload.id}`;
           const size = knownSize(upload);
           return (
-            <li key={upload.id} className="inline-flex min-w-36 max-w-full flex-col gap-1">
+            // `has-[:checked]`: a tile marked for removal (edit form) fades out.
+            <li
+              key={upload.id}
+              className="inline-flex min-w-36 max-w-full flex-col gap-1 transition-opacity has-[:checked]:opacity-50"
+            >
               <button
                 type="button"
                 onClick={() => setOpenId(upload.id)}
@@ -131,6 +153,7 @@ export function AttachmentList({ uploads }: { uploads: Attachment[] }) {
                   {formatByteSize(upload.byteSize)}
                 </span>
               </div>
+              {renderAction?.(upload)}
             </li>
           );
         })}
