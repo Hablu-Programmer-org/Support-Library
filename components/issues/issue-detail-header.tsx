@@ -60,7 +60,7 @@ type IssueDetailHeaderProps = {
 function MetaTime({ label, value }: { label: string; value?: Date | null }) {
   if (!value) return null;
   return (
-    <span>
+    <span className="whitespace-nowrap">
       {label}{" "}
       <time dateTime={value.toISOString()} className="font-medium text-slate-700 dark:text-slate-300">
         {formatSupportDate(value)}
@@ -96,8 +96,8 @@ export function IssueDetailHeader({
   const showEdit = canEdit && Boolean(editHref);
 
   return (
-    <header className="mb-8">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <header className="mb-6 lg:mb-8">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3 sm:mb-5">
         <Link
           href={backHref}
           className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-cyan-700 transition hover:text-cyan-600 hover:underline dark:text-cyan-300 dark:hover:text-cyan-200"
@@ -128,13 +128,13 @@ export function IssueDetailHeader({
             {title}
           </h1>
 
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
             <MetaTime label="Created" value={createdAt} />
-            {createdAt && secondTime.value ? <span aria-hidden="true">·</span> : null}
+            {createdAt && secondTime.value ? <span aria-hidden="true" className="hidden sm:inline">·</span> : null}
             <MetaTime label={secondTime.label} value={secondTime.value} />
             {courseLabel ? (
               <>
-                <span aria-hidden="true">·</span>
+                <span aria-hidden="true" className="hidden sm:inline">·</span>
                 <span className="font-medium text-slate-700 dark:text-slate-300">{courseLabel}</span>
               </>
             ) : null}
@@ -152,7 +152,7 @@ export function IssueDetailHeader({
         </div>
 
         {showAi || showEdit ? (
-          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end">
+          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:items-end">
             {showAi && aiPrompt ? <CopyForAiButton prompt={aiPrompt} /> : null}
             {showEdit && editHref ? (
               <Link href={editHref} className={actionClass}>

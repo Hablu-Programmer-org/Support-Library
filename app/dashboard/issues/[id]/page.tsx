@@ -175,7 +175,7 @@ export default async function IssueDetailPage({
   return (
     // Same width as the issue list: `PageContainer` already caps it at
     // max-w-screen-2xl, so the page adds no narrower max-width of its own.
-    <div className="w-full py-6">
+    <div className="w-full pt-2 pb-6 sm:pt-6">
       <IssueDetailHeader
         title={supportIssue.title}
         status={supportIssue.status}
@@ -200,14 +200,14 @@ export default async function IssueDetailPage({
       {canEdit ? (
           // DOM order is the phone order: Manage, the case, then its context. On
           // desktop the grid moves Manage and the context into the right column.
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
+          <div className="grid items-start gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
             <IssueDetailSidebar
               part="manage"
               className="lg:col-start-2 lg:row-start-1"
               {...sidebarProps}
             />
 
-            <main className="min-w-0 space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            <main className="min-w-0 space-y-8 lg:space-y-10 lg:col-start-1 lg:row-span-2 lg:row-start-1">
               <IssueProblemSection
                 question={supportIssue.question}
                 videoLinks={supportIssue.videoLinks ?? []}
@@ -241,11 +241,12 @@ export default async function IssueDetailPage({
             />
           </div>
       ) : (
-        // Library reader: a capped reading column (long lines are hard to
-        // read) and the way forward beside it, sticky on desktop. On a phone
-        // it follows the answer, in DOM order.
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,48rem)_18rem] xl:grid-cols-[minmax(0,48rem)_20rem] xl:gap-x-10">
-          <main className="min-w-0 space-y-10">
+        // Library reader: the same full-width grid as the staff and owner
+        // views (owner, 2026-11-23: a capped column left the page visibly
+        // narrower than the list), with the way forward beside it, sticky on
+        // desktop. On a phone it follows the answer, in DOM order.
+        <div className="grid items-start gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
+          <main className="min-w-0 space-y-8 lg:space-y-10">
             <IssueProblemSection
               question={supportIssue.question}
               videoLinks={supportIssue.videoLinks ?? []}

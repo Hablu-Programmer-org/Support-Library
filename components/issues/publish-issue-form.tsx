@@ -39,7 +39,7 @@ export function PublishIssueForm({
 
   if (isPublished) {
     return (
-      <form action={unpublishFormAction} className="mt-3">
+      <form action={unpublishFormAction} className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="expectedUpdatedAt" value={reviewedAt} />
         {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
@@ -58,7 +58,7 @@ export function PublishIssueForm({
   }
 
   return (
-    <form action={formAction} className="mt-3 space-y-3">
+    <form action={formAction} className="mt-4 space-y-3 border-t border-slate-200 pt-4 dark:border-slate-800">
       <input type="hidden" name="reviewedAt" value={reviewedAt} />
       <input type="hidden" name="csrfToken" value={csrfToken} />
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}

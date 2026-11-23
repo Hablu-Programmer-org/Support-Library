@@ -52,7 +52,7 @@ export function StudentRequestView({
   const teamReplied = replies.some((reply) => reply.isStaffReply);
 
   return (
-    <div className="w-full py-6">
+    <div className="w-full pt-2 pb-6 sm:pt-6">
       <IssueDetailHeader
         title={issue.title}
         status={issue.status}
@@ -83,7 +83,7 @@ export function StudentRequestView({
         </div>
       )}
 
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
+      <div className="grid items-start gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-10">
         <main className="min-w-0 space-y-10">
           <IssueProblemSection
             question={issue.question}

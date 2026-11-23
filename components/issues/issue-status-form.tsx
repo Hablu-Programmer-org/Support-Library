@@ -14,7 +14,9 @@ function PendingHint() {
   const { pending } = useFormStatus();
 
   return (
-    <p aria-live="polite" className="min-h-4 text-xs text-slate-500 dark:text-slate-400">
+    // Takes no room while idle (`empty:sr-only`) but stays in the DOM, so the
+    // live region still announces "Updating status…".
+    <p aria-live="polite" className="text-xs text-slate-500 empty:sr-only dark:text-slate-400">
       {pending ? "Updating status…" : ""}
     </p>
   );
@@ -67,7 +69,7 @@ export function IssueStatusForm({
   return (
     <form
       action={formAction}
-      className="mt-3 space-y-2"
+      className="mt-4 space-y-2"
     >
       <input type="hidden" name="csrfToken" value={csrfToken} />
       <input type="hidden" name="expectedUpdatedAt" value={expectedUpdatedAt} />
