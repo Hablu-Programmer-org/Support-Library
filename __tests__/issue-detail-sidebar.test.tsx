@@ -43,10 +43,10 @@ const renderSidebar = (extra: Partial<Props> = {}) =>
   render(<IssueDetailSidebar {...base} {...extra} />);
 
 describe("IssueDetailSidebar roles", () => {
-  it("admin gets Manage (with Publish) first, then context, student and danger zone", () => {
+  it("admin gets student, context, Manage (with Publish), then the danger zone", () => {
     renderSidebar({ canEdit: true, canPublish: true, staff });
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Manage issue", "Issue context", "Student snapshot", "Archive this issue"]);
+    expect(headings).toEqual(["Student snapshot", "Issue context", "Manage issue", "Archive this issue"]);
     expect(screen.getByTestId("status-form")).toBeTruthy();
     expect(screen.getAllByTestId("publish-form")).toHaveLength(1);
     expect(screen.getByText("karim@example.com")).toBeTruthy();
@@ -135,30 +135,47 @@ describe("IssueDetailSidebar content", () => {
 });
 
 describe("IssueDetailSidebar parts (phone order on the case page)", () => {
-  it("part=manage renders only the Manage card, in its own landmark", () => {
-    renderSidebar({ canEdit: true, canPublish: true, staff, part: "manage" });
-    const manage = screen.getByRole("complementary", { name: "Manage issue" });
-    expect(manage.textContent).toContain("Manage issue");
-    expect(screen.getByTestId("status-form")).toBeTruthy();
-    expect(screen.queryByText("Issue context")).toBeNull();
+  it("part=top renders student, context and Manage, without the danger zone", () => {
+    renderSidebar({ canEdit: true, canPublish: true, staff, part: "top" });
+    const top = screen.getByRole("complementary", { name: "Issue sidebar" });
+    expect(top.textContent).toContain("Manage issue");
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    expect(headings).toEqual(["Student snapshot", "Issue context", "Manage issue"]);
     expect(screen.queryByText("Danger zone")).toBeNull();
   });
 
-  it("part=manage renders nothing for a non-staff viewer", () => {
-    const { container } = renderSidebar({ part: "manage" });
-    expect(container.innerHTML).toBe("");
-  });
-
-  it("part=context leaves Manage out, so the forms exist once on the page", () => {
-    renderSidebar({ canEdit: true, canPublish: true, staff, part: "context" });
+  it("part=bottom leaves the top cards out, so the forms exist once on the page", () => {
+    renderSidebar({ canEdit: true, canPublish: true, staff, part: "bottom" });
     expect(screen.queryByTestId("status-form")).toBeNull();
     expect(screen.queryByTestId("publish-form")).toBeNull();
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
-    expect(headings).toEqual(["Issue context", "Student snapshot", "Archive this issue"]);
+    expect(headings).toEqual(["Archive this issue"]);
+  });
+
+  it("part=bottom renders nothing for a non-staff viewer", () => {
+    const { container } = renderSidebar({ part: "bottom" });
+    expect(container.innerHTML).toBe("");
   });
 
   it("passes layout classes through", () => {
-    renderSidebar({ canEdit: true, staff, part: "manage", className: "lg:col-start-2" });
-    expect(screen.getByRole("complementary", { name: "Manage issue" }).className).toContain("lg:col-start-2");
+    renderSidebar({ canEdit: true, staff, part: "top", className: "lg:col-start-2" });
+    expect(screen.getByRole("complementary", { name: "Issue sidebar" }).className).toContain("lg:col-start-2");
+  });
+});
+
+describe("IssueDetailSidebar student photo", () => {
+  it("shows the student's profile photo when one is known", () => {
+    const { container } = renderSidebar({
+      canEdit: true,
+      staff: { ...staff, studentImage: "https://lh3.googleusercontent.com/a/photo" },
+    });
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src")).toContain("lh3.googleusercontent.com");
+  });
+
+  it("falls back to initials without a photo", () => {
+    const { container } = renderSidebar({ canEdit: true, staff: { ...staff, studentName: "Akash Khan" } });
+    expect(container.querySelector("img")).toBeNull();
+    expect(screen.getByText("AK")).toBeTruthy();
   });
 });

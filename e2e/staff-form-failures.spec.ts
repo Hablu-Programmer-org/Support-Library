@@ -41,7 +41,7 @@ test.describe("Staff form failure reporting", () => {
     // form, then work inside the Manage card only: editing the hidden copy (or
     // one that is about to be swapped out) would lose the stale value.
     await expect(page.locator('input[name="expectedUpdatedAt"]')).toHaveCount(1);
-    const manage = page.getByRole("complementary", { name: "Manage issue" });
+    const manage = page.getByRole("complementary", { name: "Issue sidebar" });
 
     // Pretend the page was rendered against an older revision of the issue.
     await manage.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {

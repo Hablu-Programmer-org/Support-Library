@@ -25,6 +25,7 @@ import {
 import { canCreateIssue, canMutate, isAdmin } from "@/lib/roles";
 import { getOwnIssueActivitySnapshot } from "@/lib/services/issue-activity";
 import { getIssueDetail, getOwnIssueDetail, getPublishedIssueDetail } from "@/lib/services/issues";
+import { getIssueStudentAccount } from "@/lib/services/issue-student-account";
 import { listReplies } from "@/lib/services/replies";
 import { CASE_STATUSES } from "@/models";
 import { generateCsrfToken } from "@/lib/csrf";
@@ -94,10 +95,13 @@ export default async function IssueDetailPage({
   const supportIssue = staffIssue ?? (await getPublishedIssueDetail(id));
   if (!supportIssue) notFound();
 
-  const [replies, csrfToken, courseNames] = await Promise.all([
+  const [replies, csrfToken, courseNames, studentAccount] = await Promise.all([
     listReplies(supportIssue.id, { viewer: canEdit ? "staff" : "public" }),
     generateCsrfToken(session.user.id),
     canEdit ? Promise.resolve(null) : listCourseNames(),
+    staffIssue
+      ? getIssueStudentAccount(staffIssue.id, staffIssue.studentEmail)
+      : Promise.resolve(null),
   ]);
   const solutionReplyId = pickSolutionReplyId(supportIssue.status, replies);
   // Readers get the course in the header meta line (no context card) and the
@@ -164,7 +168,13 @@ export default async function IssueDetailPage({
     canEdit,
     canPublish,
     reader: !canEdit,
-    staff: staffIssue,
+    staff: staffIssue
+      ? {
+          ...staffIssue,
+          studentEmail: studentAccount?.email ?? null,
+          studentImage: studentAccount?.image ?? null,
+        }
+      : null,
     statusOptions: CASE_STATUSES.filter((status) => status !== "ARCHIVED").map((status) => ({
       value: status,
       label: statusLabels[status],
@@ -198,11 +208,12 @@ export default async function IssueDetailPage({
       />
 
       {canEdit ? (
-          // DOM order is the phone order: Manage, the case, then its context. On
-          // desktop the grid moves Manage and the context into the right column.
+          // DOM order is the phone order: Student snapshot, Issue context and
+          // Manage, the case, then the danger zone. On desktop the grid moves
+          // both sidebar parts into the right column.
           <div className="grid items-start gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-x-10">
             <IssueDetailSidebar
-              part="manage"
+              part="top"
               className="lg:col-start-2 lg:row-start-1"
               {...sidebarProps}
             />
@@ -237,7 +248,7 @@ export default async function IssueDetailPage({
             </main>
 
             <IssueDetailSidebar
-              part="context"
+              part="bottom"
               className="lg:col-start-2 lg:row-start-2 lg:self-start"
               {...sidebarProps}
             />
