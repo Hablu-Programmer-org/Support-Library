@@ -30,7 +30,7 @@ export function IssueDetailsHint({
         className={cn(
           "inline-flex min-w-0 items-center gap-1.5",
           tooLong
-            ? "text-danger-600 dark:text-danger-400"
+            ? "text-danger-600 dark:text-danger-500"
             : enough
               ? "text-success-700 dark:text-success-300"
               : "text-warning-700 dark:text-warning-300",
@@ -48,7 +48,7 @@ export function IssueDetailsHint({
       <span
         className={cn(
           "shrink-0 tabular-nums",
-          tooLong ? "font-semibold text-danger-600 dark:text-danger-400" : "text-slate-500 dark:text-slate-400",
+          tooLong ? "font-semibold text-danger-600 dark:text-danger-500" : "text-slate-500 dark:text-slate-400",
         )}
       >
         {count.toLocaleString("en-US")}/{ISSUE_DETAILS_MAX.toLocaleString("en-US")}

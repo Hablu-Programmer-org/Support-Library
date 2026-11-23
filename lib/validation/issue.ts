@@ -5,7 +5,7 @@ import {
   ISSUE_DETAILS_MAX,
   ISSUE_TITLE_CREATE_MAX,
 } from "@/lib/constants";
-import { hasEnoughIssueDetails } from "@/lib/issue-content-rules";
+import { issueDetailsMinimumProblem, TEMPLATE_ONLY_MESSAGE } from "@/lib/issue-content-rules";
 import { CASE_PRIORITIES, CASE_STATUSES } from "@/models/shared";
 import {
   objectIdSchema,
@@ -68,10 +68,19 @@ export const createSupportIssueInputSchema = supportIssueInputSchema.safeExtend(
     .string()
     .trim()
     .max(ISSUE_DETAILS_MAX)
-    .refine(
-      hasEnoughIssueDetails,
-      `Please add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue`,
-    ),
+    // Template headings never count (lib/issue-template), so a request that
+    // is only the "Use template" outline is refused with its own message.
+    .superRefine((value, ctx) => {
+      const problem = issueDetailsMinimumProblem(value);
+      if (!problem) return;
+      ctx.addIssue({
+        code: "custom",
+        message:
+          problem === "template-only"
+            ? TEMPLATE_ONLY_MESSAGE
+            : `Please add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue`,
+      });
+    }),
 });
 
 export const supportIssueFilterSchema = z.strictObject({

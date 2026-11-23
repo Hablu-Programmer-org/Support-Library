@@ -342,7 +342,7 @@ function LinkPanel({
           className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
         {error ? (
-          <p id={errorId} role="alert" className="text-xs text-danger-600 dark:text-danger-400">
+          <p id={errorId} role="alert" className="text-xs text-danger-600 dark:text-danger-500">
             {error}
           </p>
         ) : null}
@@ -352,7 +352,7 @@ function LinkPanel({
           {hasLink ? "Update link" : "Add link"}
         </button>
         {hasLink ? (
-          <button type="button" onClick={remove} className={cn(buttonClass, "text-danger-600 hover:bg-danger-50 dark:text-danger-400 dark:hover:bg-danger-500/10")}>
+          <button type="button" onClick={remove} className={cn(buttonClass, "text-danger-600 hover:bg-danger-50 dark:text-danger-500 dark:hover:bg-danger-500/10")}>
             Remove link
           </button>
         ) : null}

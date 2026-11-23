@@ -47,7 +47,7 @@ export function DeleteButton({
         <DeleteSubmitButton disabled={disabled} />
       </form>
       {error && (
-        <p role="alert" className="mt-1 max-w-xs text-xs text-danger-700 dark:text-danger-300">
+        <p role="alert" className="mt-1 max-w-xs text-xs text-danger-700 dark:text-danger-600">
           {error}
         </p>
       )}
@@ -63,7 +63,7 @@ function DeleteSubmitButton({ disabled }: { disabled: boolean }) {
       type="submit"
       disabled={disabled || pending}
       aria-busy={pending}
-      className="inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-danger-400"
+      className="inline-flex items-center justify-center rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-danger-500"
       aria-label="Delete issue"
     >
       <TrashIcon size={18} />

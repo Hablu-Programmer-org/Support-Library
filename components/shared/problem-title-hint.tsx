@@ -18,7 +18,7 @@ export function ProblemTitleHint({
 }) {
   const tone =
     length >= max
-      ? "text-danger-600 dark:text-danger-400"
+      ? "text-danger-600 dark:text-danger-500"
       : length >= warnAt
         ? "text-warning-700 dark:text-warning-400"
         : "text-slate-500 dark:text-slate-400";

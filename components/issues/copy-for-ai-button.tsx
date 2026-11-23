@@ -68,7 +68,7 @@ export function CopyForAiButton({ prompt }: { prompt: string }) {
         <div className="w-full text-left sm:max-w-xl">
           <p
             role="alert"
-            className="text-xs font-medium text-danger-700 dark:text-danger-300"
+            className="text-xs font-medium text-danger-700 dark:text-danger-600"
           >
             Could not copy automatically. Select the prompt below and copy it
             manually.

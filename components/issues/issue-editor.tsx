@@ -61,7 +61,13 @@ type IssueEditorProps = {
   label: ReactNode;
   /** Current Markdown. The editor starts from it and reports every change. */
   value: string;
+  /** What the hidden input submits, when it differs from `value` (cleaned up). */
+  submitValue?: string;
   onChange: (markdown: string) => void;
+  /** Called once the editor chunk has loaded and `apiRef` works. */
+  onReady?: () => void;
+  /** Control shown at the end of the label row (e.g. "Use template"). */
+  labelAction?: ReactNode;
   placeholder?: string;
   invalid?: boolean;
   required?: boolean;
@@ -85,7 +91,10 @@ export function IssueEditor({
   name,
   label,
   value,
+  submitValue,
   onChange,
+  onReady,
+  labelAction,
   placeholder,
   invalid = false,
   required = false,
@@ -97,11 +106,14 @@ export function IssueEditor({
 
   return (
     <div className="flex flex-col gap-1.5">
-      {/* A contenteditable is not labelable, so the label focuses it by hand. */}
-      <label id={labelId} onClick={() => apiRef?.current?.focus()} className="w-fit">
-        {label}
-      </label>
-      <input type="hidden" name={name} value={value} />
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        {/* A contenteditable is not labelable, so the label focuses it by hand. */}
+        <label id={labelId} onClick={() => apiRef?.current?.focus()} className="w-fit">
+          {label}
+        </label>
+        {labelAction}
+      </div>
+      <input type="hidden" name={name} value={submitValue ?? value} />
       <div
         className={cn(
           // No overflow-hidden: toolbar tooltips must be able to leave the box.
@@ -121,6 +133,7 @@ export function IssueEditor({
           invalid={invalid}
           required={required}
           onChange={onChange}
+          onReady={onReady}
           apiRef={apiRef}
         />
       </div>

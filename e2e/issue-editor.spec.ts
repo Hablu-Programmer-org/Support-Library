@@ -180,6 +180,39 @@ test.describe("Issue details editor (student)", () => {
     );
   });
 
+  test("Use template: blocks a template-only submit, then submits only filled sections", async ({ page }) => {
+    const title = `E2E template ${Date.now()}`;
+    await page.goto("/dashboard/issues/new");
+    const form = formFor(page, "Create issue");
+    const editor = issueDetailsEditor(form);
+    await expect(editor).toBeVisible();
+    await form.locator('input[name="title"]').fill(title);
+
+    const useTemplate = form.getByRole("button", { name: /Use template/ });
+    await useTemplate.click();
+    await expect(editor.locator("h2")).toHaveText(["কী করতে চাচ্ছিলাম", "কী হলো", "কী try করেছি"]);
+    await expect(useTemplate).toBeDisabled();
+
+    // Headings alone are not the student's words.
+    await form.getByRole("button", { name: "Create issue", exact: true }).click();
+    await expect(form.getByRole("alert")).toContainText("নিজের ভাষায় সমস্যাটা লিখুন");
+    await expect(page).toHaveURL("/dashboard/issues/new");
+
+    // The caret is under the first heading; fill only that section.
+    await editor.locator("p").first().click();
+    await page.keyboard.type("Module 5-এর assignment submit করলে link থেকে 404 আসছে।");
+    await expect(form.getByRole("alert")).toHaveCount(0);
+    await expect(question(form)).toHaveValue(
+      "## কী করতে চাচ্ছিলাম\n\nModule 5-এর assignment submit করলে link থেকে 404 আসছে।",
+    );
+
+    await chooseStudentCourse(form);
+    await submitAndWait(page, "Create issue", /\/dashboard\/issues\/[a-f0-9]{24}\?created=1$/);
+    const body = page.locator("main");
+    await expect(body.getByRole("heading", { name: "কী করতে চাচ্ছিলাম" })).toBeVisible();
+    await expect(body.getByRole("heading", { name: "কী হলো" })).toHaveCount(0);
+  });
+
   test("restores the typed text after a server-side rejection is fixed", async ({ page }) => {
     await page.goto("/dashboard/issues/new");
     const form = formFor(page, "Create issue");

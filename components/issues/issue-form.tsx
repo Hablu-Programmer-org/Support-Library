@@ -103,7 +103,7 @@ function ErrorMessage({ error }: { error?: string }) {
   if (!error) return null;
   return (
     <p
-      className="mt-1.5 text-sm text-danger-600 dark:text-danger-400 flex items-center gap-1"
+      className="mt-1.5 text-sm text-danger-600 dark:text-danger-500 flex items-center gap-1"
       role="alert"
     >
       <CheckCircleIcon size={12} />
@@ -344,7 +344,7 @@ export function IssueForm({
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       {state.fieldErrors?._form?.[0] && (
         <p
-          className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-300"
+          className="border-l-2 border-danger-400 pl-3 py-2 text-sm text-danger-700 dark:text-danger-600"
           role="alert"
         >
           {state.fieldErrors._form[0]}

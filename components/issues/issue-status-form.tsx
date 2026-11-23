@@ -106,7 +106,7 @@ export function IssueStatusForm({
       </select>
 
       {statusError && (
-        <p role="alert" className="text-sm text-danger-700 dark:text-danger-300">
+        <p role="alert" className="text-sm text-danger-700 dark:text-danger-600">
           {statusError}
         </p>
       )}

@@ -169,3 +169,78 @@ describe("StudentIssueForm details validation", () => {
     expect(screen.getByText("Shorten by 1 characters.")).toBeInTheDocument();
   });
 });
+
+describe("StudentIssueForm template (piece 5)", () => {
+  const renderForm = () => render(<StudentIssueForm courses={[]} csrfToken="csrf-1" />);
+  const templateButton = () => screen.getByRole("button", { name: /Use template/ });
+
+  it("fills an empty editor with the three headings and puts the caret under the first", async () => {
+    const { container } = renderForm();
+    const box = await textbox();
+    await waitFor(() => expect(templateButton()).toBeEnabled());
+
+    fireEvent.click(templateButton());
+
+    const headings = Array.from(box.querySelectorAll("h2")).map((h) => h.textContent);
+    expect(headings).toEqual(["কী করতে চাচ্ছিলাম", "কী হলো", "কী try করেছি"]);
+    const editor = editorOf(box);
+    const { $from } = editor.state.selection;
+    expect($from.parent.type.name).toBe("paragraph");
+    expect(editor.state.doc.child($from.index(0) - 1).textContent).toBe("কী করতে চাচ্ছিলাম");
+    // The hint shows as a placeholder, never as text.
+    const hints = Array.from(box.querySelectorAll("p.is-empty")).map((p) => p.getAttribute("data-placeholder"));
+    expect(hints[0]).toMatch(/lesson বা assignment/);
+    expect(box.textContent).not.toMatch(/lesson বা assignment/);
+    // Nothing written yet, so empty sections are not submitted.
+    expect(hiddenQuestion(container).value).toBe("");
+    expect(templateButton()).toBeDisabled();
+  });
+
+  it("adds the template after existing text without removing it", async () => {
+    renderForm();
+    const box = await textbox();
+    act(() => {
+      editorOf(box).commands.insertContent("Already wrote this.");
+    });
+    await waitFor(() => expect(templateButton()).toBeEnabled());
+
+    fireEvent.click(templateButton());
+
+    expect(box.querySelector("p")?.textContent).toBe("Already wrote this.");
+    expect(box.querySelectorAll("h2")).toHaveLength(3);
+  });
+
+  it("blocks a template-only submit with the Bangla message (spec bad situation)", async () => {
+    createStudentIssueAction.mockClear();
+    const { container } = renderForm();
+    const box = await textbox();
+    await waitFor(() => expect(templateButton()).toBeEnabled());
+    fireEvent.click(templateButton());
+
+    fireEvent.submit(container.querySelector("form")!);
+
+    expect(await screen.findByText(/নিজের ভাষায় সমস্যাটা লিখুন/)).toBeInTheDocument();
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expect(createStudentIssueAction).not.toHaveBeenCalled();
+  });
+
+  it("submits filled sections and drops the ones left empty", async () => {
+    createStudentIssueAction.mockClear();
+    const { container } = renderForm();
+    const box = await textbox();
+    await waitFor(() => expect(templateButton()).toBeEnabled());
+    fireEvent.click(templateButton());
+    act(() => {
+      editorOf(box).commands.insertContent("Submit the module 5 assignment, but the link returns 404.");
+    });
+    fireEvent.change(container.querySelector('input[name="title"]')!, { target: { value: "Assignment link 404" } });
+
+    fireEvent.submit(container.querySelector("form")!);
+
+    await waitFor(() => expect(createStudentIssueAction).toHaveBeenCalledTimes(1));
+    const calls = createStudentIssueAction.mock.calls as unknown as Array<[unknown, FormData]>;
+    expect(calls[0][1].get("question")).toBe(
+      "## কী করতে চাচ্ছিলাম\n\nSubmit the module 5 assignment, but the link returns 404.",
+    );
+  });
+});

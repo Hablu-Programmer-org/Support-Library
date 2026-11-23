@@ -49,7 +49,7 @@ export function PublishIssueForm({
           variant="secondary"
         />
         {unpublishError && (
-          <p className="mt-2 text-sm text-danger-600 dark:text-danger-400" role="alert">
+          <p className="mt-2 text-sm text-danger-600 dark:text-danger-500" role="alert">
             {unpublishError}
           </p>
         )}
@@ -72,12 +72,12 @@ export function PublishIssueForm({
         <span>No student personal information in this issue, including its images and video links.</span>
       </label>
       {state.fieldErrors?.reviewConfirmed && (
-        <p className="text-sm text-danger-600 dark:text-danger-400 ml-6" role="alert">
+        <p className="text-sm text-danger-600 dark:text-danger-500 ml-6" role="alert">
           {state.fieldErrors.reviewConfirmed[0]}
         </p>
       )}
       {state.fieldErrors?._form && (
-        <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+        <p className="text-sm text-danger-600 dark:text-danger-500" role="alert">
           {state.fieldErrors._form[0]}
         </p>
       )}

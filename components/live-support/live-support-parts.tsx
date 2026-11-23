@@ -26,7 +26,7 @@ export const liveSupportJoinClass = cn(
 );
 
 export const liveSupportErrorClass =
-  "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300";
+  "border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-600";
 
 export function LiveStatusPill({ open }: { open: boolean }) {
   return (

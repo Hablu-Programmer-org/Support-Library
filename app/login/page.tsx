@@ -50,7 +50,7 @@ function LoginShell({ message }: { message?: string | null }) {
         </div>
         <div className="mt-6 space-y-4">
           {message ? (
-            <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900/40 dark:bg-danger-50/40 dark:text-danger-200">
+            <div className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-900/40 dark:bg-danger-50/40 dark:text-danger-700">
               {message}
             </div>
           ) : null}

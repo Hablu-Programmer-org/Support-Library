@@ -82,7 +82,7 @@ export function LiveSupportCard({
         </p>
       ) : null}
       {!configured ? (
-        <p className="mt-3 text-sm font-medium text-danger-700 dark:text-danger-300">
+        <p className="mt-3 text-sm font-medium text-danger-700 dark:text-danger-600">
           The support room is not configured for this deployment yet.
         </p>
       ) : null}

@@ -1,17 +1,23 @@
 "use client";
 
 import { EditorContent, Extension, useEditor } from "@tiptap/react";
-import { Placeholder } from "@tiptap/extensions";
 import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react";
 
 import { CodeBlockIcon } from "@/components/issues/issue-editor-icons";
 import { IssueEditorToolbar } from "@/components/issues/issue-editor-toolbar";
 import { getIssueMarkdown, issueEditorExtensions } from "@/lib/issue-editor-markdown";
 import { IssueSmartPaste, revertCodePaste, type CodePaste } from "@/lib/issue-editor-smart-paste";
+import { IssuePlaceholder } from "@/lib/issue-editor-placeholder";
+import { ISSUE_TEMPLATE_SECTIONS } from "@/lib/issue-template";
 
 export type IssueEditorApi = {
   /** Put the caret in the editor (end of the text). */
   focus: () => void;
+  /**
+   * Add the "Use template" headings: they replace an empty editor, or go after
+   * the existing text (nothing is removed). The caret lands under the first.
+   */
+  insertTemplate: () => void;
 };
 
 export type IssueEditorClientProps = {
@@ -24,6 +30,7 @@ export type IssueEditorClientProps = {
   invalid: boolean;
   required: boolean;
   onChange: (markdown: string) => void;
+  onReady?: () => void;
   apiRef?: RefObject<IssueEditorApi | null>;
 };
 
@@ -44,11 +51,14 @@ export default function IssueEditorClient({
   invalid,
   required,
   onChange,
+  onReady,
   apiRef,
 }: IssueEditorClientProps) {
   const onChangeRef = useRef(onChange);
+  const onReadyRef = useRef(onReady);
   useEffect(() => {
     onChangeRef.current = onChange;
+    onReadyRef.current = onReady;
   });
 
   const [linkOpen, setLinkOpen] = useState(false);
@@ -59,7 +69,7 @@ export default function IssueEditorClient({
   // Built once: the editor must not be recreated when the parent re-renders.
   const [extensions] = useState(() => [
     ...issueEditorExtensions(),
-    Placeholder.configure({ placeholder: placeholder ?? "" }),
+    IssuePlaceholder.configure({ placeholder: placeholder ?? "" }),
     // State setters are stable, so these closures never go stale.
     IssueSmartPaste.configure({ onCodePasteChange: setCodePaste }),
     Extension.create({
@@ -109,11 +119,40 @@ export default function IssueEditorClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, invalid, describedById, required, placeholder]);
 
+  useEffect(() => {
+    if (editor) onReadyRef.current?.();
+  }, [editor]);
+
   useImperativeHandle(
     apiRef,
     () => ({
       focus: () => {
         if (editor && !editor.isDestroyed) editor.commands.focus("end");
+      },
+      insertTemplate: () => {
+        if (!editor || editor.isDestroyed) return;
+        const { doc } = editor.state;
+        const last = doc.lastChild;
+        // Reuse an empty last paragraph (or the empty doc) instead of leaving
+        // a blank line above the template.
+        const from = editor.isEmpty
+          ? 0
+          : last?.type.name === "paragraph" && last.content.size === 0
+            ? doc.content.size - last.nodeSize
+            : doc.content.size;
+        const nodes = ISSUE_TEMPLATE_SECTIONS.flatMap(({ heading }) => [
+          { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: heading }] },
+          { type: "paragraph" },
+        ]);
+        // Inside the paragraph under the first heading: heading = text + 2.
+        const caret = from + ISSUE_TEMPLATE_SECTIONS[0].heading.length + 2 + 1;
+        editor
+          .chain()
+          .insertContentAt({ from, to: doc.content.size }, nodes)
+          .setTextSelection(caret)
+          .scrollIntoView()
+          .focus()
+          .run();
       },
     }),
     [editor],

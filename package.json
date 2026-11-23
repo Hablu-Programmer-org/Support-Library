@@ -46,7 +46,6 @@
   "dependencies": {
     "@tiptap/extension-list": "3.33.0",
     "@tiptap/extension-table": "3.33.0",
-    "@tiptap/extensions": "3.33.0",
     "@tiptap/markdown": "3.33.0",
     "@tiptap/pm": "3.33.0",
     "@tiptap/react": "3.33.0",

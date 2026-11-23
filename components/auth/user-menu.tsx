@@ -124,7 +124,7 @@ export function UserMenu({ user }: UserMenuProps) {
             type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
             className={cn(
-              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-danger-600 transition-colors hover:bg-danger-500/10 dark:text-danger-400",
+              "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-danger-600 transition-colors hover:bg-danger-500/10 dark:text-danger-500",
               navStyles.focus,
             )}
           >

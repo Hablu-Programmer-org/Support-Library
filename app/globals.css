@@ -196,7 +196,9 @@ html.dark {
   .issue-editor-content :is(th, td) {
     @apply border border-slate-200 px-3 py-2 align-top dark:border-slate-800;
   }
-  .issue-editor-content p.is-editor-empty:first-child::before {
+  /* Placeholder runs with showOnlyCurrent: false, so any empty paragraph may
+     carry a hint (the editor's prompt, or a template section's). */
+  .issue-editor-content p.is-empty::before {
     content: attr(data-placeholder);
     @apply pointer-events-none float-left h-0 text-slate-400 dark:text-slate-500;
   }

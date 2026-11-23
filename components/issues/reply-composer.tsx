@@ -113,7 +113,7 @@ export function ReplyComposer({
           <PendingSubmitButton label="Add response" pendingLabel="Adding..." />
         </div>
         {error && (
-          <p role="alert" className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-300">
+          <p role="alert" className="border-l-2 border-danger-500 pl-3 text-sm text-danger-700 dark:text-danger-600">
             {error}
           </p>
         )}

@@ -26,7 +26,7 @@ const joinClass = cn(
 );
 
 const errorClass =
-  "max-w-xs border-l-2 border-danger-500 pl-3 text-xs text-danger-700 dark:text-danger-300";
+  "max-w-xs border-l-2 border-danger-500 pl-3 text-xs text-danger-700 dark:text-danger-600";
 
 /**
  * "Join live support" shortcut on the issues page (owner decision, 2026-11-01).

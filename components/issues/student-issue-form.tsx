@@ -7,6 +7,7 @@ import {
   BookIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  FileTextIcon,
   HelpCircleIcon,
   ImageIcon,
   SettingsIcon,
@@ -26,7 +27,12 @@ import {
   ISSUE_TITLE_CREATE_MAX,
   ISSUE_TITLE_WARN_AT,
 } from "@/lib/constants";
-import { hasEnoughIssueDetails, isIssueDetailsTooLong } from "@/lib/issue-content-rules";
+import {
+  isIssueDetailsTooLong,
+  issueDetailsMinimumProblem,
+  TEMPLATE_ONLY_MESSAGE,
+} from "@/lib/issue-content-rules";
+import { hasTemplateHeadings, withoutEmptyTemplateSections } from "@/lib/issue-template";
 
 const card =
   "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/70";
@@ -57,13 +63,19 @@ function FieldLabel({ children, required = false }: { children: ReactNode; requi
   );
 }
 
-/** Client copy of the server's details rules; the server still decides. */
+/**
+ * Client copy of the server's details rules; the server still decides.
+ * `value` is the editor's Markdown, template outline included, so a request
+ * that is only the outline gets its own message rather than "empty".
+ */
 export function issueDetailsProblem(value: string): string | null {
+  const minimum = issueDetailsMinimumProblem(value);
+  if (minimum === "template-only") return TEMPLATE_ONLY_MESSAGE;
   if (!value.trim()) return "Describe your issue so the support team can help.";
-  if (!hasEnoughIssueDetails(value)) {
+  if (minimum === "too-short") {
     return `Add at least ${ISSUE_DETAILS_CREATE_MIN} characters so the support team can understand the issue.`;
   }
-  if (isIssueDetailsTooLong(value)) {
+  if (isIssueDetailsTooLong(withoutEmptyTemplateSections(value))) {
     return `Keep the details to ${ISSUE_DETAILS_MAX.toLocaleString("en-US")} characters or fewer.`;
   }
   return null;
@@ -90,8 +102,12 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
   const [contentSlug, setContentSlug] = useState("");
   const [tags, setTags] = useState("");
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
   const operationIdRef = useRef<HTMLInputElement>(null);
   const editorApi = useRef<IssueEditorApi | null>(null);
+  // What the server receives: template sections the student left empty are
+  // dropped. `question` keeps them so the editor (and a draft) is unchanged.
+  const submittedQuestion = withoutEmptyTemplateSections(question);
   const selectedCourse = courses.find((course) => course.slug === courseSlug) ?? null;
 
   const ensureOperationId = () => {
@@ -128,7 +144,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
 
   const errorText = (message?: string) =>
     message ? (
-      <p className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+      <p className="text-sm text-danger-600 dark:text-danger-500" role="alert">
         {message}
       </p>
     ) : null;
@@ -146,7 +162,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
       {formError && (
         <p
           id="student-issue-error"
-          className="rounded-2xl border border-danger-300 bg-danger-50 px-5 py-3 text-sm text-danger-700 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-300"
+          className="rounded-2xl border border-danger-300 bg-danger-50 px-5 py-3 text-sm text-danger-700 dark:border-danger-500/40 dark:bg-danger-500/10 dark:text-danger-600"
           role="alert"
         >
           {formError}
@@ -186,15 +202,32 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             name="question"
             label={<FieldLabel required>Issue details</FieldLabel>}
             value={question}
+            submitValue={submittedQuestion}
             onChange={onQuestionChange}
+            onReady={() => setEditorReady(true)}
             required
             invalid={Boolean(questionError)}
             apiRef={editorApi}
             placeholder="What were you trying to do, what happened, and what have you tried?"
+            labelAction={
+              <button
+                type="button"
+                onClick={() => editorApi.current?.insertTemplate()}
+                disabled={!editorReady || hasTemplateHeadings(question)}
+                aria-describedby="issue-template-note"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-cyan-400 hover:text-cyan-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none dark:border-slate-700 dark:text-slate-200 dark:hover:border-cyan-500 dark:hover:text-cyan-300"
+              >
+                <FileTextIcon size={16} />
+                Use template
+                <span id="issue-template-note" className="sr-only">
+                  Adds three headings: what you were trying to do, what happened, and what you tried.
+                </span>
+              </button>
+            }
             footer={
               <div className="space-y-1">
                 {errorText(questionError)}
-                <IssueDetailsHint value={question} />
+                <IssueDetailsHint value={submittedQuestion} />
               </div>
             }
           />
@@ -259,7 +292,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
             </label>
           </div>
         ) : (
-          <p className="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-50/40 dark:text-warning-200">
+          <p className="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-50/40 dark:text-warning-700">
             We could not find a course on your LMS account. You can still submit
             this issue — the team will ask for the course if it matters.
           </p>
@@ -358,7 +391,7 @@ export function StudentIssueForm({ csrfToken, courses }: StudentIssueFormProps) 
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={pending || isIssueDetailsTooLong(question)}
+          disabled={pending || isIssueDetailsTooLong(submittedQuestion)}
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-cyan-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none sm:w-auto sm:min-w-52"
         >
           <CheckCircleIcon size={18} />

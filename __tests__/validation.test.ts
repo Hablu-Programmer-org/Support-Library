@@ -167,6 +167,29 @@ describe("product validation", () => {
     ).toBe("Short");
   });
 
+  it("never counts the 'Use template' headings towards the 40 characters", () => {
+    const title = "Assignment submission returns 404";
+    const headings = "## কী করতে চাচ্ছিলাম\n\n## কী হলো\n\n## কী try করেছি";
+    // The headings alone are longer than 40 characters.
+    expect(headings.replace(/\s+/g, " ").length).toBeGreaterThan(40);
+
+    expect(() => createSupportIssueInputSchema.parse({ title, question: headings })).toThrow(
+      /নিজের ভাষায় সমস্যাটা লিখুন/,
+    );
+    expect(() =>
+      createSupportIssueInputSchema.parse({
+        title,
+        question: "## কী করতে চাচ্ছিলাম\n\nSubmit\n\n## কী হলো\n\n404\n\n## কী try করেছি",
+      }),
+    ).toThrow(/at least 40 characters/i);
+    expect(
+      createSupportIssueInputSchema.parse({
+        title,
+        question: "## কী করতে চাচ্ছিলাম\n\nSubmit the module 5 assignment link.\n\n## কী হলো\n\nThe page returns 404.",
+      }).question,
+    ).toContain("404");
+  });
+
   it("keeps the wider title limit when editing a legacy issue", () => {
     expect(
       supportIssueInputSchema.parse({

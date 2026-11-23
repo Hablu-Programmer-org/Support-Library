@@ -40,7 +40,7 @@ export function ArchiveIssueButton({
         <ArchiveSubmitButton />
       </form>
       {error && (
-        <p role="alert" className="mt-3 text-sm text-danger-700 dark:text-danger-300">
+        <p role="alert" className="mt-3 text-sm text-danger-700 dark:text-danger-600">
           {error}
         </p>
       )}

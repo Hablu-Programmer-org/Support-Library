@@ -89,7 +89,7 @@ export function StudentFields({
     lookup === "checking" ? (
       <span className="text-slate-500 dark:text-slate-400">Searching the LMS…</span>
     ) : lookup === "found" ? (
-      <span className="inline-flex w-fit rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-50/50 dark:text-success-200">
+      <span className="inline-flex w-fit rounded-full bg-success-100 px-2 py-1 text-xs font-medium text-success-700 dark:bg-success-50/50 dark:text-success-700">
         Found in LMS
       </span>
     ) : lookup === "notFound" ? (
@@ -131,7 +131,7 @@ export function StudentFields({
           </span>
         )}
         {nameError && (
-          <span className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+          <span className="text-sm text-danger-600 dark:text-danger-500" role="alert">
             {nameError}
           </span>
         )}
@@ -164,7 +164,7 @@ export function StudentFields({
             empty to record a general issue without a student.
           </span>
           {emailError && (
-            <span className="text-sm text-danger-600 dark:text-danger-400" role="alert">
+            <span className="text-sm text-danger-600 dark:text-danger-500" role="alert">
               {emailError}
             </span>
           )}
