@@ -36,11 +36,18 @@ test.describe("Staff form failure reporting", () => {
   test("a stale status revision shows its reason instead of the error page", async ({ page }) => {
     await page.goto(issuePath);
 
+    // While the streamed page settles, React briefly keeps a hidden copy of the
+    // segment, so the revision input can exist twice. Wait for the single live
+    // form, then work inside the Manage card only: editing the hidden copy (or
+    // one that is about to be swapped out) would lose the stale value.
+    await expect(page.locator('input[name="expectedUpdatedAt"]')).toHaveCount(1);
+    const manage = page.getByRole("complementary", { name: "Manage issue" });
+
     // Pretend the page was rendered against an older revision of the issue.
-    await page.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {
+    await manage.locator('input[name="expectedUpdatedAt"]').evaluate((input) => {
       (input as HTMLInputElement).value = "2000-01-01T00:00:00.000Z";
     });
-    await page.getByLabel("Status").selectOption("PENDING");
+    await manage.getByLabel("Status").selectOption("PENDING");
 
     await expect(
       page.getByRole("alert").filter({ hasText: /Issue changed since you opened it/ }),

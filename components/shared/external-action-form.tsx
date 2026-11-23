@@ -44,9 +44,9 @@ const INITIAL_STATE: ExternalRedirectState = {};
  *     popup and Safari/strict Chrome may block it), with `opener` severed;
  *  2. navigates that tab once the action returns its URL;
  *  3. closes it again if the action failed (closed shift, rate limit, denial);
- *  4. always renders a real `<a target="_blank" rel="noopener noreferrer">`
- *     fallback, so a blocked popup, a closed tab, or a browser with JavaScript
- *     off still ends in a new tab.
+ *  4. then replaces the button with a real `<a target="_blank"
+ *     rel="noopener noreferrer">` styled the same ("Open …"), so a blocked
+ *     popup or a closed tab still ends in a new tab without a second action.
  *
  * Generic by design: no platform, room or route knowledge lives here.
  */
@@ -121,7 +121,7 @@ export function ExternalActionForm({
     linkRef.current?.focus();
   }, [result]);
 
-  const buttonDisabled = disabled || pending || Boolean(result.url);
+  const buttonDisabled = disabled || pending;
 
   return (
     <form action={formAction} className="space-y-3" title={title}>
@@ -129,37 +129,37 @@ export function ExternalActionForm({
         <input key={name} type="hidden" name={name} value={value} />
       ))}
 
-      <button
-        type="submit"
-        aria-label={ariaLabel ?? label}
-        aria-disabled={buttonDisabled}
-        className={className}
-        disabled={buttonDisabled}
-        onClick={preOpenTab}
-      >
-        {pending ? pendingLabel : label}
-      </button>
-
-      {result.error && (
-        <p role="alert" className={errorClassName}>
-          {result.error}
-        </p>
-      )}
-
-      {result.url && (
-        <p role="status" className="text-sm">
+      {result.url ? (
+        // After a successful action the button becomes "Open …": a real
+        // new-tab link styled like the button, so reopening a closed or blocked
+        // tab never re-runs the action (and never spends the join budget).
+        <p role="status" className="m-0">
           <a
             ref={linkRef}
-            className={cn(
-              "font-semibold text-primary underline underline-offset-2 hover:text-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950",
-              linkClassName,
-            )}
+            className={cn(className, linkClassName)}
             href={result.url}
             rel="noopener noreferrer"
             target="_blank"
           >
             {fallbackLabel}
           </a>
+        </p>
+      ) : (
+        <button
+          type="submit"
+          aria-label={ariaLabel ?? label}
+          aria-disabled={buttonDisabled}
+          className={className}
+          disabled={buttonDisabled}
+          onClick={preOpenTab}
+        >
+          {pending ? pendingLabel : label}
+        </button>
+      )}
+
+      {result.error && (
+        <p role="alert" className={errorClassName}>
+          {result.error}
         </p>
       )}
     </form>

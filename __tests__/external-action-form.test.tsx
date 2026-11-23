@@ -61,7 +61,7 @@ describe("ExternalActionForm", () => {
     const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
     const action = vi.fn(async () => ({ url: ROOM_URL }));
 
-    renderForm(action);
+    renderForm(action, { className: "join-button" });
     fireEvent.click(screen.getByRole("button", { name: "Join Live support" }));
 
     await waitFor(() => expect(tab.location.replace).toHaveBeenCalledWith(ROOM_URL));
@@ -69,8 +69,13 @@ describe("ExternalActionForm", () => {
     // Opened inside the gesture, with the opener severed (reverse tabnabbing).
     expect(open).toHaveBeenCalledWith("", "_blank");
     expect(tab.opener).toBeNull();
-    // A real link is also rendered, so a blocked tab still has a way in.
-    expect(screen.getByRole("link", { name: "Open Live support" })).not.toBeNull();
+    // The button becomes one "Open" link with the button's look: no disabled
+    // button left behind, and reopening never re-runs the action.
+    const link = screen.getByRole("link", { name: "Open Live support" });
+    expect(link.className).toBe("join-button");
+    expect(screen.queryByRole("button")).toBeNull();
+    fireEvent.click(link);
+    expect(action).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to a new-tab link when the popup is blocked", async () => {
