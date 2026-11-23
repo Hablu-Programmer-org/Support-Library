@@ -355,7 +355,15 @@ export function AccessHelpCard({
       aria-labelledby="access-help-heading"
       className="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/70"
     >
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+      {/* The whole header row toggles: the Manage button's `after:inset-0`
+          stretches its hit area over the row (same pattern as IssueCard), so
+          it stays one real button for keyboard and screen readers. */}
+      <div
+        className={cn(
+          "relative flex flex-wrap items-center gap-x-4 gap-y-2 rounded-t-2xl px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40",
+          !open && "rounded-b-2xl",
+        )}
+      >
         <div className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-cyan-500/15 text-cyan-600 ring-1 ring-inset ring-cyan-500/25 dark:text-cyan-300">
             <KeyIcon />
@@ -382,7 +390,7 @@ export function AccessHelpCard({
           aria-controls="access-help-body"
           aria-expanded={open}
           className={cn(
-            "ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition",
+            "ml-auto inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-500",
             open
               ? "bg-cyan-500/15 text-cyan-700 ring-1 ring-inset ring-cyan-500/30 dark:text-cyan-300"
               : "text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-800 dark:hover:text-white",

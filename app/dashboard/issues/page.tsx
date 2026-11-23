@@ -248,6 +248,22 @@ export default async function IssuesPage({
         }
       />
 
+      {/* Under the hero (owner, 2026-11-23): the hero's search card is pulled
+          up into the hero, so nothing can sit between them; this follows the
+          result count instead. */}
+      {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
+        <AccessHelpCard
+          csrfToken={csrfToken}
+          entitlements={accessEntitlements}
+          requests={accessRequests.map((request) => ({
+            id: request._id.toString(),
+            requestType: request.requestType,
+            status: request.status,
+            sentAt: request.sentAt?.toISOString() ?? null,
+          }))}
+        />
+      )}
+
       <section>
         {issues.items.length === 0 ? (
           searchFailed ? (
@@ -313,21 +329,6 @@ export default async function IssuesPage({
         total={issues.total}
         totalPages={issues.totalPages}
       />
-
-      {/* After the list, not between the result count and the first row:
-          the search results read as one block. */}
-      {showQuickJoin && agentEnrollmentAllows(agentAccess) && (
-        <AccessHelpCard
-          csrfToken={csrfToken}
-          entitlements={accessEntitlements}
-          requests={accessRequests.map((request) => ({
-            id: request._id.toString(),
-            requestType: request.requestType,
-            status: request.status,
-            sentAt: request.sentAt?.toISOString() ?? null,
-          }))}
-        />
-      )}
     </div>
   );
 }
