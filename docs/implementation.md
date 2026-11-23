@@ -2,6 +2,18 @@
 
 ## Completed
 
+- **Tiptap issue editor on the student create page (2026-11-23).** Spec card v2, pieces 1–8.
+  - `IssueEditor` (`components/issues/issue-editor.tsx`; Tiptap part `issue-editor-client.tsx` via `next/dynamic` + same-size skeleton) submits plain Markdown in a hidden `question` input. The form validates it on submit (hidden inputs have no native `required`/`minLength`) and focuses the editor on error.
+  - Markdown fidelity lives in `lib/issue-editor-markdown.ts` (one schema for editor and tests): HTML stays literal text, no HTML entities (RichText never decodes them), line-start block markers escaped, paragraph indent dropped, http(s)-only links, `![alt](url)` becomes a `🖼 alt` link (no image node — attachments stay private). Proven by `__tests__/issue-editor-markdown.test.ts`; re-run before bumping `@tiptap/*` or `marked` (pinned exactly; two private `MarkdownManager` methods are wrapped).
+  - Toolbar `issue-editor-toolbar.tsx`: roving tabindex, `aria-pressed`/`aria-disabled`, tooltips with shortcuts, Mod-K link panel (http/https only). Remounted when the view mounts — before that every command reports unavailable.
+  - Smart paste (`lib/issue-editor-paste.ts` heuristics, `lib/issue-editor-smart-paste.ts`): multi-line code and stack traces become a code block with an "Undo" chip, retired on the next edit. Structured HTML (ChatGPT/Docs) and pastes inside code use the default paste.
+  - Template (`lib/issue-template.ts`): "Use template" inserts three Bangla headings with placeholder hints (`lib/issue-editor-placeholder.ts`). Headings never count towards the 40-character minimum — `issueDetailsCharacterCount` strips them and `createSupportIssueInputSchema` rejects a template-only request with its own message. Empty template sections are dropped from the submitted Markdown.
+  - Screenshots pasted or dropped on the editor go to `AttachmentField` (`lib/issue-editor-file-intake.ts`, `attachFilesNear`); a paste that also carries text (Word/Sheets) pastes the text.
+  - Page: live "Before you submit" checklist (`components/issues/issue-readiness-panel.tsx`), screenshots under the editor; `BeforeSubmitGuide` and `MarkdownField` removed.
+  - Drafts (`lib/issue-draft.ts`): per-account localStorage key, restored when the editor is ready (never over text already typed), 500 ms autosave, cleared on a valid submit and saved again if the server rejects it, 7-day expiry, "Discard draft". Screenshots are not stored.
+  - Colours: undefined `-950` shades fixed (success/danger/warning scales are swapped in `html.dark`, so the dark tint is `-50`); dark `text-*` classes below 4.5:1 swapped.
+  - Verification: unit ✓ (1082 tests). Playwright and `next build` not run in that session.
+
 - **Topbar redesign, LMS v2 navbar style (2026-11-21).** Replaces the same-day segmented-pill version.
   - Brand lockup (logo + "Hablu Support Library" text), text-only links (lg+) with cyan text and a 2px cyan underline on the active one, theme toggle (lg+), and the `UserMenu` avatar-ring Profile menu (identity, role, Sign out) at every width. Classes live in `components/layout/nav-styles.ts` (light + dark pairs of the v2 `navStyles`).
   - Below lg: `MobileMenu` (`components/layout/mobile-menu.tsx`, replaces `AccountSheet`) is a hamburger that opens a full-width panel under the bar: `<nav aria-label="Mobile">` with 44px rows and an Appearance row. The panel is portalled to `<body>` because the header's `backdrop-filter` makes it the containing block for `fixed` children. Closes on link click, route change, Esc (focus returns) and at lg.
