@@ -57,7 +57,7 @@ const STATUS_DOTS: Record<AccessRowRequest["statusTone"], string> = {
 
 /** Visible label on stacked rows; the desktop header row labels the columns. */
 const cellLabelClass =
-  "mb-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 xl:sr-only dark:text-slate-500";
+  "mb-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 lg:sr-only dark:text-slate-500";
 
 /**
  * One request as a table row. Actionable requests expose their final control
@@ -90,7 +90,7 @@ export function AccessRequestRow({
 
   return (
     <li
-      className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 px-3 py-3 xl:items-center ${accessTableColumnsClass} ${rowHoverClass}`}
+      className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-3 px-3 py-3 lg:items-center ${accessTableColumnsClass} ${rowHoverClass}`}
     >
       {/* Student */}
       <div className="col-start-1 row-start-1 flex min-w-0 items-start gap-2.5">
@@ -124,7 +124,7 @@ export function AccessRequestRow({
       </div>
 
       {/* Status */}
-      <div className="col-start-2 row-start-1 flex flex-col items-end gap-1 xl:col-start-4 xl:items-start">
+      <div className="col-start-2 row-start-1 flex flex-col items-end gap-1 lg:col-start-4 lg:items-start">
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${STATUS_TONES[request.statusTone]}`}
         >
@@ -140,8 +140,8 @@ export function AccessRequestRow({
       </div>
 
       {/* Facts: their own two-column grid when stacked, plain cells on xl. */}
-      <div className="col-span-2 row-start-2 grid grid-cols-2 gap-x-4 sm:pl-[46px] xl:contents">
-        <div className="min-w-0 text-xs leading-5 xl:col-start-2 xl:row-start-1">
+      <div className="col-span-2 row-start-2 grid grid-cols-2 gap-x-4 sm:pl-[46px] lg:contents">
+        <div className="min-w-0 text-xs leading-5 lg:col-start-2 lg:row-start-1">
           <p className={cellLabelClass}>Enrollment</p>
           {request.batchLabel ? (
             <p className="font-medium text-slate-700 dark:text-slate-200">{request.batchLabel}</p>
@@ -153,7 +153,7 @@ export function AccessRequestRow({
           <p className="text-slate-500 dark:text-slate-400">{request.enrollmentLabel}</p>
         </div>
 
-        <div className="min-w-0 text-xs leading-5 xl:col-start-3 xl:row-start-1">
+        <div className="min-w-0 text-xs leading-5 lg:col-start-3 lg:row-start-1">
           <p className={cellLabelClass}>Access</p>
           <p className="font-medium text-slate-700 dark:text-slate-200">
             {request.entitlementLabel}
@@ -165,9 +165,9 @@ export function AccessRequestRow({
 
       {/* Action */}
       {hasAction && (
-        <div className="col-span-2 row-start-3 flex min-w-0 flex-col gap-1.5 sm:pl-[46px] xl:col-span-1 xl:col-start-5 xl:row-start-1 xl:items-end xl:pl-0">
+        <div className="col-span-2 row-start-3 flex min-w-0 flex-col gap-1.5 sm:pl-[46px] lg:col-span-1 lg:col-start-5 lg:row-start-1 lg:items-end lg:pl-0">
           {showControls && (
-            <div className="flex w-full min-w-0 max-w-[560px] flex-nowrap items-start gap-1.5 max-[420px]:flex-wrap xl:justify-end">
+            <div className="flex w-full min-w-0 flex-nowrap items-start gap-1.5 max-[420px]:flex-wrap lg:justify-end">
               {canProcess &&
                 (request.variant === "openai" ? (
                   <OpenAiConfirmForm
@@ -209,7 +209,7 @@ export function AccessRequestRow({
       {rejectMode && (
         <section
           aria-label="Reject access request"
-          className="col-span-2 min-w-0 sm:pl-[46px] xl:col-span-5 xl:pl-0"
+          className="col-span-2 min-w-0 sm:pl-[46px] lg:col-span-5 lg:pl-0"
           id={`reject-panel-${request.id}`}
         >
           <RejectAccessRequestForm

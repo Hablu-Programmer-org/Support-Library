@@ -167,15 +167,11 @@ export default async function AccessRequestsPage({
         title="Access requests"
       />
 
-      {/* Filters stay reachable while the queue scrolls (desktop only: on a
-          phone the bar would cover too much of the list). */}
-      <div className="py-2 sm:sticky sm:top-16 sm:z-20 sm:bg-white/95 sm:backdrop-blur-sm sm:dark:bg-slate-950/95">
-        <AccessRequestToolbar
-          batches={batchNumbers}
-          counts={{ openai: openAiPending, n8n: n8nPending }}
-          state={state}
-        />
-      </div>
+      <AccessRequestToolbar
+        batches={batchNumbers}
+        counts={{ openai: openAiPending, n8n: n8nPending }}
+        state={state}
+      />
 
       <section aria-label={TAB_TITLES[state.tab]} className="space-y-3">
         <h2 className="sr-only">{TAB_TITLES[state.tab]}</h2>
@@ -185,7 +181,7 @@ export default async function AccessRequestsPage({
           <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
             <div
               aria-hidden
-              className={`hidden gap-x-4 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 xl:grid dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 ${accessTableColumnsClass}`}
+              className={`hidden gap-x-4 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 lg:grid dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 ${accessTableColumnsClass}`}
             >
               <span>Student</span>
               <span>Enrollment</span>

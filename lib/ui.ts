@@ -67,4 +67,4 @@ export const mutedTextClass = "text-slate-500 dark:text-slate-400";
  * Lives here (not in the client row file) so the server page can read the string.
  */
 export const accessTableColumnsClass =
-  "xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,0.8fr)_minmax(490px,1.6fr)]";
+  "lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,0.8fr)_auto]";
